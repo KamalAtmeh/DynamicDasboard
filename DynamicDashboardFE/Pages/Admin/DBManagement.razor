@@ -1,0 +1,251 @@
+﻿@page "/admin/dbmanagement"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@using DynamicDashboardCommon.Models
+
+<ExceptionHandler ErrorMessage="@errorMessage" />
+
+<h3>Database Management</h3>
+
+@if (databases == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <button @onclick="ShowAddDatabaseForm" class="btn btn-primary mb-3">Add Database</button>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Connection String</th>
+                <th>Description</th>
+                <th>Created By</th>
+                <th>DB Creation Script</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var db in databases)
+            {
+                <tr>
+                    <td>@db.Name</td>
+                    <td>@GetDatabaseTypeName(db.TypeID)</td>
+                    <td>@db.ConnectionString</td>
+                    <td>@db.Description</td>
+                    <td>@db.CreatedBy</td>
+                    <td>@db.DBCreationScript</td>
+                    <td>
+                        <button @onclick="() => EditDatabase(db)" class="btn btn-sm btn-warning">Edit</button>
+                        <button @onclick="() => DeleteDatabase(db.DatabaseID)" class="btn btn-sm btn-danger">Delete</button>
+                        <button @onclick="() => ViewMetadata(db.DatabaseID)" class="btn btn-sm btn-info">View Metadata</button>
+                        <button @onclick="() => TestConnection()" class="btn btn-sm btn-success">Test Connection</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showAddForm)
+{
+    <div class="modal" style="display:block; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(selectedDatabase == null ? "Add Database" : "Edit Database")</h5>
+                    <button @onclick="CloseForm" class="close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@databaseForm" OnValidSubmit="SaveDatabase">
+                        <div class="form-group">
+                            <label for="databaseName">Database Name</label>
+                            <InputText id="databaseName" @bind-Value="databaseForm.Name" placeholder="Database Name" class="form-control mb-2" />
+                        </div>
+                        <div class="form-group">
+                            <label for="databaseType">Database Type</label>
+                            <InputSelect id="databaseType" @bind-Value="databaseForm.TypeID" class="form-control mb-2">
+                                <option value="1">SQL Server</option>
+                                <option value="2">MySQL</option>
+                                <option value="3">Oracle</option>
+                            </InputSelect>
+                        </div>
+                        <div class="form-group">
+                            <label for="connectionString">Connection String</label>
+                            <InputText id="connectionString" @bind-Value="databaseForm.ConnectionString" placeholder="Connection String" class="form-control mb-2" />
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <InputTextArea id="description" @bind-Value="databaseForm.Description" placeholder="Description" class="form-control mb-2" />
+                        </div>
+                        <div class="form-group">
+                            <label for="createdBy">Created By</label>
+                            <InputNumber id="createdBy" @bind-Value="databaseForm.CreatedBy" placeholder="Created By" class="form-control mb-2" />
+                        </div>
+                        <div class="form-group">
+                            <label for="dbCreationScript">DB Creation Script</label>
+                            <InputTextArea id="dbCreationScript" @bind-Value="databaseForm.DBCreationScript" placeholder="DB Creation Script" class="form-control mb-2" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" @onclick="TestConnection" class="btn btn-secondary">Test Connection</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Database> databases;
+    private bool showAddForm = false;
+    private Database selectedDatabase = null;
+    private Database databaseForm = new Database();
+    private string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadDatabases();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task LoadDatabases()
+    {
+        try
+        {
+            databases = await Http.GetFromJsonAsync<List<Database>>("api/databases");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load databases: {ex.Message}";
+        }
+    }
+
+    private void ShowAddDatabaseForm()
+    {
+        try
+        {
+            databaseForm = new Database();
+            showAddForm = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private void EditDatabase(Database db)
+    {
+        try
+        {
+            selectedDatabase = db;
+            databaseForm = new Database
+            {
+                DatabaseID = db.DatabaseID,
+                Name = db.Name,
+                TypeID = db.TypeID,
+                ConnectionString = db.ConnectionString,
+                Description = db.Description,
+                CreatedBy = db.CreatedBy,
+                DBCreationScript = db.DBCreationScript
+            };
+            showAddForm = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task SaveDatabase()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(databaseForm.Name))
+                throw new ArgumentException("Database name cannot be empty.");
+
+            if (string.IsNullOrWhiteSpace(databaseForm.ConnectionString))
+                throw new ArgumentException("Connection string cannot be empty.");
+
+            if (selectedDatabase == null)
+            {
+                // Add new database
+                await Http.PostAsJsonAsync("api/databases", databaseForm);
+            }
+            else
+            {
+                // Update existing database
+                await Http.PutAsJsonAsync($"api/databases/{databaseForm.DatabaseID}", databaseForm);
+            }
+
+            showAddForm = false;
+            await LoadDatabases();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteDatabase(int databaseId)
+    {
+        try
+        {
+            await Http.DeleteAsync($"api/databases/{databaseId}");
+            await LoadDatabases();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete database: {ex.Message}";
+        }
+    }
+
+    private void CloseForm()
+    {
+        showAddForm = false;
+    }
+
+    private async Task TestConnection()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/databases/test-connection", databaseForm);
+            if (response.IsSuccessStatusCode)
+            {
+                errorMessage = "Connection successful!";
+            }
+            else
+            {
+                errorMessage = "Connection failed. Please check the connection details.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private void ViewMetadata(int databaseId)
+    {
+        // Navigate to the metadata page
+        NavigationManager.NavigateTo($"/admin/dbmetadata/{databaseId}");
+    }
+
+    private string GetDatabaseTypeName(int typeId)
+    {
+        return typeId switch
+        {
+            1 => "SQL Server",
+            2 => "MySQL",
+            3 => "Oracle",
+            _ => "Unknown"
+        };
+    }
+}

@@ -1,0 +1,99 @@
+﻿@page "/comparisonautomation"
+@inject HttpClient Http
+@using DynamicDashboardCommon.Models;
+
+<h3>Comparison Automation</h3>
+
+<InputFile OnChange="OnInputFileChange" accept=".json,.csv" />
+<button @onclick="UploadFile" disabled="@isLoading">Upload and Compare</button>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+
+@if (errorMessage != null)
+{
+    <p style="color: red;">@errorMessage</p>
+}
+
+@if (comparisons != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Question</th>
+                <th>GPT vs DeepSeek-Chat</th>
+                <th>DeepSeek vs DeepSeek-Chat</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var comparison in comparisons)
+            {
+                <tr>
+                    <td>@comparison.NaturalLanguageQuestion</td>
+                    <td>@comparison.GptVsDeepSeekChatComparison</td>
+                    <td>@comparison.DeepSeekVsDeepSeekChatComparison</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<QueryComparison> comparisons;
+    private IBrowserFile file;
+    private bool isLoading = false;
+    private string errorMessage;
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        if (e.File.Size > 10 * 1024 * 1024) // 10 MB limit
+        {
+            errorMessage = "File size exceeds the limit of 10 MB.";
+            file = null;
+        }
+        else
+        {
+            errorMessage = null;
+            file = e.File;
+        }
+    }
+
+    private async Task UploadFile()
+    {
+        if (file == null)
+        {
+            errorMessage = "Please select a file to upload.";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(file.OpenReadStream()), "file", file.Name);
+
+            var response = await Http.PostAsync("api/comparison/compare", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                comparisons = await response.Content.ReadFromJsonAsync<List<QueryComparison>>();
+            }
+            else
+            {
+                errorMessage = "An error occurred while processing the file. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An unexpected error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

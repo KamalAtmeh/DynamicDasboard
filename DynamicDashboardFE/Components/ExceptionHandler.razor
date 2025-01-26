@@ -1,0 +1,25 @@
+﻿@inject NavigationManager NavigationManager
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">
+        @errorMessage
+        <button @onclick="GoBack">Go Back</button>
+    </div>
+}
+
+@code {
+    private string errorMessage; // Define the errorMessage variable
+
+    [Parameter]
+    public string ErrorMessage
+    {
+        get => errorMessage;
+        set => errorMessage = value;
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

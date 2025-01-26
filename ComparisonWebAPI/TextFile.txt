@@ -1,0 +1,159 @@
+﻿CREATE TABLE [dbo].[Users] (
+    [UserID]           INT           IDENTITY (1, 1) NOT NULL,
+    [Username]         VARCHAR (100) NOT NULL,
+    [PasswordHash]     VARCHAR (255) NOT NULL,
+    [RoleID]           INT           NOT NULL,
+    [AllowedDatabases] TEXT          NULL,
+    [CreatedAt]        DATETIME      DEFAULT (getdate()) NULL,
+    PRIMARY KEY CLUSTERED ([UserID] ASC),
+    FOREIGN KEY ([RoleID]) REFERENCES [dbo].[UserRoles] ([RoleID])
+);
+
+CREATE TABLE [dbo].[UserRoles] (
+    [RoleID]   INT          NOT NULL,
+    [RoleName] VARCHAR (50) NOT NULL,
+    PRIMARY KEY CLUSTERED ([RoleID] ASC)
+);
+
+CREATE TABLE [dbo].[UserDatabaseAccess] (
+    [UserDatabaseAccessID] INT NOT NULL,
+    [UserID]               INT NOT NULL,
+    [DatabaseID]           INT NOT NULL,
+    PRIMARY KEY CLUSTERED ([UserDatabaseAccessID] ASC)
+);
+
+CREATE TABLE [dbo].[Tables] (
+    [TableID]          INT            IDENTITY (1, 1) NOT NULL,
+    [DatabaseID]       INT            NOT NULL,
+    [DBTableName]      NVARCHAR (100) NOT NULL,
+    [AdminTableName]   NVARCHAR (100) NULL,
+    [AdminDescription] NVARCHAR (MAX) NULL,
+    PRIMARY KEY CLUSTERED ([TableID] ASC),
+    FOREIGN KEY ([DatabaseID]) REFERENCES [dbo].[Databases] ([DatabaseID])
+);
+
+CREATE TABLE [dbo].[Results] (
+    [ResultID]          INT          NOT NULL,
+    [QueryID]           INT          NOT NULL,
+    [ResultData]        TEXT         NULL,
+    [VisualizationType] VARCHAR (50) NULL,
+    [CreatedAt]         DATETIME     DEFAULT (getdate()) NULL,
+    PRIMARY KEY CLUSTERED ([ResultID] ASC),
+    FOREIGN KEY ([QueryID]) REFERENCES [dbo].[Queries] ([QueryID])
+);
+
+CREATE TABLE [dbo].[Relationships] (
+    [RelationshipID]   INT            IDENTITY (1, 1) NOT NULL,
+    [TableID]          INT            NOT NULL,
+    [ColumnID]         INT            NOT NULL,
+    [RelatedTableID]   INT            NOT NULL,
+    [RelatedColumnID]  INT            NOT NULL,
+    [RelationshipType] NVARCHAR (50)  NOT NULL,
+    [Description]      NVARCHAR (MAX) NULL,
+    [IsEnforced]       BIT            DEFAULT ((1)) NOT NULL,
+    [CreatedAt]        DATETIME       DEFAULT (getdate()) NOT NULL,
+    [CreatedBy]        INT            NOT NULL,
+    PRIMARY KEY CLUSTERED ([RelationshipID] ASC),
+    FOREIGN KEY ([TableID]) REFERENCES [dbo].[Tables] ([TableID]),
+    FOREIGN KEY ([ColumnID]) REFERENCES [dbo].[Columns] ([ColumnID]),
+    FOREIGN KEY ([RelatedTableID]) REFERENCES [dbo].[Tables] ([TableID]),
+    FOREIGN KEY ([RelatedColumnID]) REFERENCES [dbo].[Columns] ([ColumnID])
+);
+
+CREATE TABLE [dbo].[QueryMetadata] (
+    [QueryMetadataID] INT NOT NULL,
+    [QueryID]         INT NOT NULL,
+    [MetadataID]      INT NOT NULL,
+    PRIMARY KEY CLUSTERED ([QueryMetadataID] ASC),
+    FOREIGN KEY ([QueryID]) REFERENCES [dbo].[Queries] ([QueryID]),
+    FOREIGN KEY ([MetadataID]) REFERENCES [dbo].[Metadata] ([MetadataID])
+);
+
+CREATE TABLE [dbo].[QueryLogs] (
+    [QueryID]      INT            IDENTITY (1, 1) NOT NULL,
+    [QueryText]    NVARCHAR (MAX) NOT NULL,
+    [ExecutedAt]   DATETIME       DEFAULT (getdate()) NOT NULL,
+    [ExecutedBy]   INT            NULL,
+    [DatabaseType] NVARCHAR (50)  NOT NULL,
+    [Result]       NVARCHAR (MAX) NULL,
+    PRIMARY KEY CLUSTERED ([QueryID] ASC)
+);
+
+CREATE TABLE [dbo].[Queries] (
+    [QueryID]       INT          NOT NULL,
+    [UserID]        INT          NOT NULL,
+    [DatabaseID]    INT          NOT NULL,
+    [QueryText]     TEXT         NOT NULL,
+    [ExecutedSQL]   TEXT         NULL,
+    [ExecutionTime] FLOAT (53)   NULL,
+    [Status]        VARCHAR (50) NULL,
+    [CreatedAt]     DATETIME     DEFAULT (getdate()) NULL,
+    PRIMARY KEY CLUSTERED ([QueryID] ASC)
+);
+
+
+GO
+CREATE NONCLUSTERED INDEX [idx_query_user]
+    ON [dbo].[Queries]([UserID] ASC);
+
+
+GO
+CREATE NONCLUSTERED INDEX [idx_query_database]
+    ON [dbo].[Queries]([DatabaseID] ASC);
+
+CREATE TABLE [dbo].[Metadata] (
+    [MetadataID]       INT           NOT NULL,
+    [DatabaseID]       INT           NOT NULL,
+    [TableName]        VARCHAR (100) NOT NULL,
+    [ColumnName]       VARCHAR (100) NOT NULL,
+    [Description]      TEXT          NULL,
+    [RelationshipType] VARCHAR (50)  NULL,
+    [RelatedTable]     VARCHAR (100) NULL,
+    [RelatedColumn]    VARCHAR (100) NULL,
+    PRIMARY KEY CLUSTERED ([MetadataID] ASC)
+);
+
+
+GO
+CREATE NONCLUSTERED INDEX [idx_metadata_database]
+    ON [dbo].[Metadata]([DatabaseID] ASC);
+
+CREATE TABLE [dbo].[Logs] (
+    [LogID]            INT          IDENTITY (1, 1) NOT NULL,
+    [UserID]           INT          NULL,
+    [EventType]        VARCHAR (50) NOT NULL,
+    [EventDescription] TEXT         NOT NULL,
+    [Timestamp]        DATETIME     DEFAULT (getdate()) NULL,
+    PRIMARY KEY CLUSTERED ([LogID] ASC)
+);
+
+CREATE TABLE [dbo].[DatabaseTypes] (
+    [TypeID]   INT          NOT NULL,
+    [TypeName] VARCHAR (50) NOT NULL,
+    PRIMARY KEY CLUSTERED ([TypeID] ASC)
+);
+
+CREATE TABLE [dbo].[Databases] (
+    [DatabaseID]       INT            IDENTITY (1, 1) NOT NULL,
+    [Name]             NVARCHAR (100) NOT NULL,
+    [TypeID]           INT            NOT NULL,
+    [ConnectionString] NVARCHAR (MAX) NOT NULL,
+    [CreatedAt]        DATETIME       DEFAULT (getdate()) NOT NULL,
+    [Description]      NVARCHAR (MAX) NULL,
+    [CreatedBy]        INT            NOT NULL,
+    [DBCreationScript] NVARCHAR (MAX) NULL,
+    PRIMARY KEY CLUSTERED ([DatabaseID] ASC)
+);
+
+CREATE TABLE [dbo].[Columns] (
+    [ColumnID]         INT            IDENTITY (1, 1) NOT NULL,
+    [TableID]          INT            NOT NULL,
+    [DBColumnName]     NVARCHAR (100) NOT NULL,
+    [AdminColumnName]  NVARCHAR (100) NULL,
+    [DataType]         NVARCHAR (50)  NOT NULL,
+    [IsNullable]       BIT            NOT NULL,
+    [AdminDescription] NVARCHAR (MAX) NULL,
+    PRIMARY KEY CLUSTERED ([ColumnID] ASC),
+    FOREIGN KEY ([TableID]) REFERENCES [dbo].[Tables] ([TableID])
+);
+

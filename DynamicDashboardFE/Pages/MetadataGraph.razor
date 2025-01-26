@@ -1,0 +1,105 @@
+﻿@page "/metadata-graph/{databaseId:int}"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@using DynamicDashboardCommon.Models
+
+<h3>Metadata Graph</h3>
+
+<div id="cy" style="width: 100%; height: 600px; border: 1px solid #ccc;"></div>
+
+@code {
+    [Parameter]
+    public int DatabaseId { get; set; }
+
+    private List<Table> tables;
+    private List<Column> columns;
+    private List<Relationship> relationships;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tables = await Http.GetFromJsonAsync<List<Table>>($"api/tables/database/{DatabaseId}");
+        // foreach (var table in tables)
+        // {
+        //     columns.AddRange(await Http.GetFromJsonAsync<List<Column>>($"api/columns/table/{table.TableID}"));
+        // }
+         columns = await Http.GetFromJsonAsync<List<Column>>($"api/columns/table/1");
+        relationships = new List<Relationship>();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // if (firstRender)
+        // {
+            await InitializeCytoscape();
+        // }
+    }
+
+    private async Task InitializeCytoscape()
+    {
+        var elements = new List<object>();
+
+        // Add tables as nodes
+        foreach (var table in tables)
+        {
+            elements.Add(new
+            {
+                group = "nodes",
+                data = new { id = $"table_{table.TableID}", label = table.AdminTableName }
+            });
+
+            // Add columns as child nodes
+            foreach (var column in columns.Where(c => c.TableID == table.TableID))
+            {
+                elements.Add(new
+                {
+                    group = "nodes",
+                    data = new { id = $"column_{column.ColumnID}", label = column.AdminColumnName, parent = $"table_{table.TableID}" }
+                });
+            }
+        }
+
+        // Add relationships as edges
+        foreach (var relationship in relationships)
+        {
+            elements.Add(new
+            {
+                group = "edges",
+                data = new
+                {
+                    id = $"relationship_{relationship.RelationshipID}",
+                    source = $"column_{relationship.ColumnID}",
+                    target = $"column_{relationship.RelatedColumnID}",
+                    label = relationship.RelationshipType
+                }
+            });
+        }
+
+        // Initialize Cytoscape
+        await JSRuntime.InvokeVoidAsync("initializeCytoscape", elements);
+    }
+
+
+        [JSInvokable]
+        public static void OnTableClick(string tableId)
+        {
+            // Navigate to the edit table page
+          //  NavigationManager.NavigateTo($"/edit-table/{tableId}");
+         
+        }
+
+        [JSInvokable]
+        public static void OnColumnClick(string columnId)
+        {
+            // Navigate to the edit column page
+            //NavigationManager.NavigateTo($"/edit-column/{columnId}");
+        }
+
+        [JSInvokable]
+        public static void OnRelationshipClick(string relationshipId)
+        {
+            // Navigate to the edit relationship page
+           // NavigationManager.NavigateTo($"/edit-relationship/{relationshipId}");
+        }
+    
+}
