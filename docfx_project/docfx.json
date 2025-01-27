@@ -1,0 +1,53 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../DynamicDasboardWebAPI",
+          "files": ["*.csproj"]
+        },
+        {
+          "src": "../DynamicDashboardCommon",
+          "files": ["*.csproj"]
+        },
+		        {
+          "src": "../ComparisonWebAPI",
+          "files": ["*.csproj"]
+        },
+        {
+          "src": "../DynamicDashboardFE",
+          "files": ["*.csproj"]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "api/**.yml",
+          "api/index.md"
+        ]
+      },
+      {
+        "files": [
+          "articles/**.md",
+          "articles/**/toc.yml"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "styles/**"
+        ]
+      }
+    ],
+    "globalMetadata": {
+      "_appTitle": "Dynamic Dashboard Documentation",
+      "_enableSearch": true
+    },
+    "dest": "_site"
+  }
+}

@@ -6,18 +6,30 @@ using System.Threading.Tasks;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
+    /// <summary>
+    /// API Controller for managing columns in the dynamic dashboard.
+    /// Provides endpoints to get, add, update, and delete columns.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ColumnsController : ControllerBase
     {
         private readonly ColumnService _service;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ColumnsController"/> class.
+        /// </summary>
+        /// <param name="service">The column service to handle business logic.</param>
         public ColumnsController(ColumnService service)
         {
             _service = service;
         }
 
-        // Get columns for a specific table
+        /// <summary>
+        /// Gets the columns for a specific table.
+        /// </summary>
+        /// <param name="tableId">The ID of the table.</param>
+        /// <returns>A list of columns for the specified table.</returns>
         [HttpGet("table/{tableId}")]
         public async Task<ActionResult<IEnumerable<Column>>> GetColumnsByTableId(int tableId)
         {
@@ -25,7 +37,11 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(columns);
         }
 
-        // Add a new column
+        /// <summary>
+        /// Adds a new column.
+        /// </summary>
+        /// <param name="column">The column to add.</param>
+        /// <returns>The ID of the newly added column.</returns>
         [HttpPost]
         public async Task<ActionResult<int>> AddColumn([FromBody] Column column)
         {
@@ -33,7 +49,12 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(result);
         }
 
-        // Update an existing column
+        /// <summary>
+        /// Updates an existing column.
+        /// </summary>
+        /// <param name="columnId">The ID of the column to update.</param>
+        /// <param name="column">The updated column data.</param>
+        /// <returns>The ID of the updated column.</returns>
         [HttpPut("{columnId}")]
         public async Task<ActionResult<int>> UpdateColumn(int columnId, [FromBody] Column column)
         {
@@ -44,7 +65,11 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(result);
         }
 
-        // Delete a column
+        /// <summary>
+        /// Deletes a column.
+        /// </summary>
+        /// <param name="columnId">The ID of the column to delete.</param>
+        /// <returns>The ID of the deleted column.</returns>
         [HttpDelete("{columnId}")]
         public async Task<ActionResult<int>> DeleteColumn(int columnId)
         {

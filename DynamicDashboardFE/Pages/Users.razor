@@ -3,6 +3,13 @@
 @using DynamicDashboardCommon.Models <!-- Add this to reference the namespace -->
 @using DynamicDashboardFE.Components
 <ExceptionHandler ErrorMessage="@errorMessage" />
+
+<!--
+	This page displays a list of users fetched from a WebAPI.
+	It shows user details such as User ID, Username, Role, and Created At date.
+	If there is an error during the fetch, it displays an error message.
+-->
+
 <h3>Users List</h3>
 
 @if (users == null)

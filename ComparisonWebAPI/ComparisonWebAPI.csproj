@@ -4,8 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild> -->
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
+
+  <Target Name="CopyDocumentation" AfterTargets="Build">
+    <Copy SourceFiles="$(DocumentationFile)" DestinationFolder="..\SharedDocs\SolutionDocumentations" />
+  </Target>
+  
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="7.5.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />

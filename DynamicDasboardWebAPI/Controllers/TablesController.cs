@@ -6,18 +6,30 @@ using System.Threading.Tasks;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
+    /// <summary>
+    /// API Controller for managing tables in the database.
+    /// Provides endpoints to get, add, update, and delete tables.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class TablesController : ControllerBase
     {
         private readonly TableService _service;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TablesController"/> class.
+        /// </summary>
+        /// <param name="service">The table service to interact with the data layer.</param>
         public TablesController(TableService service)
         {
             _service = service;
         }
 
-        // Get tables for a specific database
+        /// <summary>
+        /// Gets the list of tables for a specific database.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database.</param>
+        /// <returns>A list of tables in the specified database.</returns>
         [HttpGet("database/{databaseId}")]
         public async Task<ActionResult<IEnumerable<Table>>> GetTablesByDatabaseId(int databaseId)
         {
@@ -25,7 +37,11 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(tables);
         }
 
-        // Add a new table
+        /// <summary>
+        /// Adds a new table to the database.
+        /// </summary>
+        /// <param name="table">The table to add.</param>
+        /// <returns>The ID of the newly created table.</returns>
         [HttpPost]
         public async Task<ActionResult<int>> AddTable([FromBody] Table table)
         {
@@ -33,7 +49,12 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(result);
         }
 
-        // Update an existing table
+        /// <summary>
+        /// Updates an existing table in the database.
+        /// </summary>
+        /// <param name="tableId">The ID of the table to update.</param>
+        /// <param name="table">The updated table data.</param>
+        /// <returns>The ID of the updated table.</returns>
         [HttpPut("{tableId}")]
         public async Task<ActionResult<int>> UpdateTable(int tableId, [FromBody] Table table)
         {
@@ -44,7 +65,11 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(result);
         }
 
-        // Delete a table
+        /// <summary>
+        /// Deletes a table from the database.
+        /// </summary>
+        /// <param name="tableId">The ID of the table to delete.</param>
+        /// <returns>The ID of the deleted table.</returns>
         [HttpDelete("{tableId}")]
         public async Task<ActionResult<int>> DeleteTable(int tableId)
         {

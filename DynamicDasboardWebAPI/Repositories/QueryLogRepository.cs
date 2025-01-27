@@ -7,14 +7,9 @@ namespace DynamicDasboardWebAPI.Repositories
     /// <summary>
     /// Repository for logging executed queries into the QueryLogs table.
     /// </summary>
-    public class QueryLogsRepository
+    public class QueryLogsRepository(IDbConnection connection)
     {
-        private readonly IDbConnection _connection;
-
-        public QueryLogsRepository(IDbConnection connection)
-        {
-            _connection = connection;
-        }
+        private readonly IDbConnection _connection = connection;
 
         /// <summary>
         /// Logs an executed query into the QueryLogs table.
@@ -27,8 +22,8 @@ namespace DynamicDasboardWebAPI.Repositories
         public async Task<int> LogQueryAsync(string queryText, int? executedBy, string databaseType, string result)
         {
             string sql = @"
-                INSERT INTO QueryLogs (QueryText, ExecutedAt, ExecutedBy, DatabaseType, Result)
-                VALUES (@QueryText, GETDATE(), @ExecutedBy, @DatabaseType, @Result)";
+                    INSERT INTO QueryLogs (QueryText, ExecutedAt, ExecutedBy, DatabaseType, Result)
+                    VALUES (@QueryText, GETDATE(), @ExecutedBy, @DatabaseType, @Result)";
 
             return await _connection.ExecuteAsync(sql, new
             {

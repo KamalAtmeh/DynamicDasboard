@@ -8,10 +8,17 @@ using Microsoft.Extensions.Configuration;
 
 namespace DynamicDasboardWebAPI.Utilities
 {
+    /// <summary>
+    /// Factory class to create and manage database connections.
+    /// </summary>
     public class DbConnectionFactory
     {
         private readonly IConfiguration _configuration;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DbConnectionFactory"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration instance to retrieve connection strings.</param>
         public DbConnectionFactory(IConfiguration configuration)
         {
             _configuration = configuration;

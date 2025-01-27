@@ -1,0 +1,414 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DynamicDashboardCommon</name>
+    </assembly>
+    <members>
+        <member name="T:DynamicDashboardCommon.Models.Column">
+            <summary>
+            Represents a column in a database table.
+            This class is used to define the properties of a column, including its ID, name, data type, and other attributes.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.ColumnID">
+            <summary>
+            Gets or sets the unique identifier for the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.TableID">
+            <summary>
+            Gets or sets the identifier of the table to which this column belongs.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.DBColumnName">
+            <summary>
+            Gets or sets the actual name of the column in the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.AdminColumnName">
+            <summary>
+            Gets or sets the user-friendly name for the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.DataType">
+            <summary>
+            Gets or sets the data type of the column (e.g., varchar, int).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.IsNullable">
+            <summary>
+            Gets or sets a value indicating whether the column allows null values.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.AdminDescription">
+            <summary>
+            Gets or sets the description provided by the admin for the column.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.Database">
+            <summary>
+            Represents a database entity with connection details and type information.
+            This class is used to store and manage information about different types of databases
+            such as SQL Server, MySQL, and Oracle. It includes properties for the database ID, name,
+            type, connection string, creation date, description, creator, and an optional creation script.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.DatabaseID">
+            <summary>
+            Gets or sets the unique identifier for the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.Name">
+            <summary>
+            Gets or sets the name of the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.TypeID">
+            <summary>
+            Gets or sets the type identifier for the database.
+            1 = SQL Server, 2 = MySQL, 3 = Oracle.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.ConnectionString">
+            <summary>
+            Gets or sets the connection string used to connect to the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.CreatedAt">
+            <summary>
+            Gets or sets the date and time when the database entry was created.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.Description">
+            <summary>
+            Gets or sets the description of the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.CreatedBy">
+            <summary>
+            Gets or sets the identifier of the user who created the database connection.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.DBCreationScript">
+            <summary>
+            Gets or sets the optional script to create the database.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ExceptionDetails">
+            <summary>
+            Represents the details of an exception that occurs within the application.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.ErrorCode">
+            <summary>
+            Gets or sets a unique code for the error.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Message">
+            <summary>
+            Gets or sets a human-readable error message.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Details">
+            <summary>
+            Gets or sets additional details about the error (optional).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Timestamp">
+            <summary>
+            Gets or sets the timestamp of when the error occurred.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.Query">
+            <summary>
+            Represents a SQL query and its associated metadata.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Query.QueryID">
+            <summary>
+            Gets or sets the unique identifier for the query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Query.QueryText">
+            <summary>
+            Gets or sets the SQL query string.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Query.ExecutedAt">
+            <summary>
+            Gets or sets the timestamp when the query was executed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Query.ExecutedBy">
+            <summary>
+            Gets or sets the user ID of the person who executed the query. Nullable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Query.DatabaseType">
+            <summary>
+            Gets or sets the type of database where the query was executed (e.g., SQLServer, MySQL, Oracle).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Query.Result">
+            <summary>
+            Gets or sets the serialized result of the query execution. Optional, for logging purposes.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryComparison">
+            <summary>
+            Represents a comparison between different SQL query results generated from natural language questions.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.DbSchema">
+            <summary>
+            Gets or sets the database schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.NaturalLanguageQuestion">
+            <summary>
+            Gets or sets the natural language question.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.GptSqlQuery">
+            <summary>
+            Gets or sets the SQL query generated by GPT.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.DeepSeekSqlQuery">
+            <summary>
+            Gets or sets the SQL query generated by DeepSeek.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.DeepSeekChatSqlQuery">
+            <summary>
+            Gets or sets the SQL query generated by DeepSeek Chat.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.GptDataResult">
+            <summary>
+            Gets or sets the data result from the GPT SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.DeepSeekDataResult">
+            <summary>
+            Gets or sets the data result from the DeepSeek SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.DeepSeekChatDataResult">
+            <summary>
+            Gets or sets the data result from the DeepSeek Chat SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.GptVsDeepSeekChatComparison">
+            <summary>
+            Gets or sets a value indicating whether the GPT result is compared with the DeepSeek Chat result.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryComparison.DeepSeekVsDeepSeekChatComparison">
+            <summary>
+            Gets or sets a value indicating whether the DeepSeek result is compared with the DeepSeek Chat result.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryRequest">
+            <summary>
+            Represents a request to query a specific schema with a given question.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryRequest.Schema">
+            <summary>
+            Gets or sets the schema to be queried.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryRequest.Question">
+            <summary>
+            Gets or sets the question to be asked against the schema.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.Relationship">
+            <summary>
+            Represents a relationship between tables in a dynamic dashboard system.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelationshipID">
+            <summary>
+            Gets or sets the primary key of the relationship.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.TableID">
+            <summary>
+            Gets or sets the foreign key to the source table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.ColumnID">
+            <summary>
+            Gets or sets the foreign key to the column in the source table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelatedTableID">
+            <summary>
+            Gets or sets the foreign key to the related table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelatedColumnID">
+            <summary>
+            Gets or sets the foreign key to the column in the related table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelationshipType">
+            <summary>
+            Gets or sets the type of relationship (e.g., "One-to-Many", "Many-to-Many", "One-to-One").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.Description">
+            <summary>
+            Gets or sets the description of the relationship (for admin use).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.IsEnforced">
+            <summary>
+            Gets or sets a value indicating whether the relationship is enforced by a database constraint.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.CreatedAt">
+            <summary>
+            Gets or sets the timestamp for when the relationship was created.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Relationship.CreatedBy">
+            <summary>
+            Gets or sets the user who created the relationship.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.Result">
+            <summary>
+            Represents the result of an operation or a process.
+            This class can be used to encapsulate the outcome of a method or function,
+            including any relevant data or status information.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.Table">
+            <summary>
+            Represents a table in the dynamic dashboard system.
+            This class holds metadata about a database table, including its ID, 
+            the database it belongs to, its actual name in the database, 
+            a user-friendly name, and an admin-provided description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Table.TableID">
+            <summary>
+            Gets or sets the unique identifier for the table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Table.DatabaseID">
+            <summary>
+            Gets or sets the identifier of the database this table belongs to.
+            This is a foreign key to the Database table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Table.DBTableName">
+            <summary>
+            Gets or sets the actual name of the table in the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Table.AdminTableName">
+            <summary>
+            Gets or sets the user-friendly name for the table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Table.AdminDescription">
+            <summary>
+            Gets or sets the description provided by the admin for the table.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TableMetadata">
+            <summary>
+            Represents metadata information for a database table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBTableName">
+            <summary>
+            Gets or sets the name of the database table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdminTableName">
+            <summary>
+            Gets or sets the name of the admin table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBColumnName">
+            <summary>
+            Gets or sets the name of the database column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdmincnName">
+            <summary>
+            Gets or sets the name of the admin column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DataType">
+            <summary>
+            Gets or sets the data type of the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsNullable">
+            <summary>
+            Gets or sets a value indicating whether the column is nullable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsPrimary">
+            <summary>
+            Gets or sets a value indicating whether the column is a primary key.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsFK">
+            <summary>
+            Gets or sets a value indicating whether the column is a foreign key.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsUnique">
+            <summary>
+            Gets or sets a value indicating whether the column is unique.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBDescription">
+            <summary>
+            Gets or sets the description of the database column.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.User">
+            <summary>
+            The User class contains properties that define a user, including their ID, username, role, allowed databases, password hash, and creation date.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.User.UserID">
+            <summary>
+            Gets or sets the unique identifier for the user.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.User.Username">
+            <summary>
+            Gets or sets the username of the user.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.User.RoleID">
+            <summary>
+            Gets or sets the role ID associated with the user.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.User.AllowedDatabases">
+            <summary>
+            Gets or sets the databases that the user is allowed to access.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.User.PasswordHash">
+            <summary>
+            Gets or sets the hashed password of the user.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.User.CreatedAt">
+            <summary>
+            Gets or sets the date and time when the user was created.
+            </summary>
+        </member>
+    </members>
+</doc>

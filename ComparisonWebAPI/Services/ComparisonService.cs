@@ -8,13 +8,19 @@ using Microsoft.Extensions.Configuration;
 
 namespace DynamicDasboardWebAPI.Services
 {
+    /// <summary>
+    /// Service for executing SQL queries and comparing datasets.
+    /// </summary>
     public class ComparisonService
     {
         private readonly string _connectionString;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComparisonService"/> class.
+        /// </summary>
+        /// <param name="config">The configuration instance used to retrieve the connection string.</param>
         public ComparisonService(IConfiguration config)
         {
-            // Get the database connection string from appsettings.json
             _connectionString = config.GetConnectionString("DefaultConnection");
         }
 
@@ -25,7 +31,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>A list of dictionaries representing the query results.</returns>
         public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
         {
-            var result = new List<Dictionary<string, object>>();
+            var results = new List<Dictionary<string, object>>();
 
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -37,17 +43,17 @@ namespace DynamicDasboardWebAPI.Services
                         while (await reader.ReadAsync())
                         {
                             var row = new Dictionary<string, object>();
-                            for (var i = 0; i < reader.FieldCount; i++)
+                            for (int i = 0; i < reader.FieldCount; i++)
                             {
                                 row[reader.GetName(i)] = reader.GetValue(i);
                             }
-                            result.Add(row);
+                            results.Add(row);
                         }
                     }
                 }
             }
 
-            return result;
+            return results;
         }
 
         /// <summary>
@@ -59,13 +65,52 @@ namespace DynamicDasboardWebAPI.Services
         public bool CompareDatasets(List<Dictionary<string, object>> dataset1, List<Dictionary<string, object>> dataset2)
         {
             if (dataset1.Count != dataset2.Count)
+            {
                 return false;
+            }
 
-            // Convert each row to a string representation and compare the sets
-            var set1 = dataset1.Select(row => string.Join("|", row.OrderBy(kvp => kvp.Key).Select(kvp => $"{kvp.Key}={kvp.Value}"))).ToHashSet();
-            var set2 = dataset2.Select(row => string.Join("|", row.OrderBy(kvp => kvp.Key).Select(kvp => $"{kvp.Key}={kvp.Value}"))).ToHashSet();
+            foreach (var row1 in dataset1)
+            {
+                bool matchFound = false;
+                foreach (var row2 in dataset2)
+                {
+                    if (DictionariesEqual(row1, row2))
+                    {
+                        matchFound = true;
+                        break;
+                    }
+                }
+                if (!matchFound)
+                {
+                    return false;
+                }
+            }
 
-            return set1.SetEquals(set2);
+            return true;
+        }
+
+        /// <summary>
+        /// Compares two dictionaries for equality.
+        /// </summary>
+        /// <param name="dict1">The first dictionary to compare.</param>
+        /// <param name="dict2">The second dictionary to compare.</param>
+        /// <returns>True if the dictionaries are equal; otherwise, false.</returns>
+        private bool DictionariesEqual(Dictionary<string, object> dict1, Dictionary<string, object> dict2)
+        {
+            if (dict1.Count != dict2.Count)
+            {
+                return false;
+            }
+
+            foreach (var kvp in dict1)
+            {
+                if (!dict2.TryGetValue(kvp.Key, out var value) || !Equals(kvp.Value, value))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

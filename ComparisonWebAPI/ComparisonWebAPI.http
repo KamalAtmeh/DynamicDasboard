@@ -1,6 +1,6 @@
 @ComparisonWebAPI_HostAddress = http://localhost:5044
 
-GET {{ComparisonWebAPI_HostAddress}}/weatherforecast/
+GET {{ComparisonWebAPI_HostAddress}}/querygenerator/
 Accept: application/json
 
 ###

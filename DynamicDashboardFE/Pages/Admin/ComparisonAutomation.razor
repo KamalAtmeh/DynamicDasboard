@@ -2,9 +2,21 @@
 @inject HttpClient Http
 @using DynamicDashboardCommon.Models;
 
+<!-- 
+    Page: Comparison Automation
+    Purpose: This page allows users to upload a JSON or CSV file, which is then processed to compare query results from different sources.
+    Functionalities:
+    - File upload with size validation (max 10 MB)
+    - Display loading status during file processing
+    - Show error messages if any issues occur
+    - Display comparison results in a table format
+-->
+
 <h3>Comparison Automation</h3>
 
+<!-- File input for uploading JSON or CSV files -->
 <InputFile OnChange="OnInputFileChange" accept=".json,.csv" />
+<!-- Button to trigger file upload and comparison -->
 <button @onclick="UploadFile" disabled="@isLoading">Upload and Compare</button>
 
 @if (isLoading)
@@ -46,6 +58,7 @@
     private bool isLoading = false;
     private string errorMessage;
 
+    // Event handler for file input change
     private void OnInputFileChange(InputFileChangeEventArgs e)
     {
         if (e.File.Size > 10 * 1024 * 1024) // 10 MB limit
@@ -60,6 +73,7 @@
         }
     }
 
+    // Method to upload the file and process the comparison
     private async Task UploadFile()
     {
         if (file == null)

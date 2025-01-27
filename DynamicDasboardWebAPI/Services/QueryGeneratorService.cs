@@ -9,11 +9,19 @@ using System.Threading.Tasks;
 
 namespace DynamicDasboardWebAPI.Services
 {
+    /// <summary>
+    /// Service to generate SQL queries based on provided schema and questions, and process Excel files to insert generated queries.
+    /// </summary>
     public class QueryGeneratorService
     {
         private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryGeneratorService"/> class.
+        /// </summary>
+        /// <param name="config">The configuration settings.</param>
+        /// <param name="httpClient">The HTTP client for making API requests.</param>
         public QueryGeneratorService(IConfiguration config, HttpClient httpClient)
         {
             _config = config;
@@ -21,6 +29,11 @@ namespace DynamicDasboardWebAPI.Services
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Set EPPlus license context
         }
 
+        /// <summary>
+        /// Processes an Excel file to generate SQL queries based on the schema and questions provided in the file.
+        /// </summary>
+        /// <param name="fileStream">The stream of the Excel file to process.</param>
+        /// <returns>A byte array representing the modified Excel file.</returns>
         public async Task<byte[]> ProcessExcelFile(Stream fileStream)
         {
             using (var package = new ExcelPackage(fileStream))
@@ -51,6 +64,12 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+        /// <summary>
+        /// Generates a SQL query based on the provided schema and question.
+        /// </summary>
+        /// <param name="schema">The database schema.</param>
+        /// <param name="question">The question to generate the query for.</param>
+        /// <returns>An <see cref="IActionResult"/> containing the generated query or error message.</returns>
         public async Task<IActionResult> GenerateQuery(string schema, string question)
         {
             try
@@ -63,10 +82,10 @@ namespace DynamicDasboardWebAPI.Services
                         error = "The provided schema is unclear or invalid. Please provide a proper schema.",
                         suggestions = new[]
                         {
-                    "Provide a schema with table and column definitions.",
-                    "Ensure the schema includes CREATE TABLE statements.",
-                    "Check for missing or incomplete table definitions."
-                }
+                                "Provide a schema with table and column definitions.",
+                                "Ensure the schema includes CREATE TABLE statements.",
+                                "Check for missing or incomplete table definitions."
+                            }
                     });
                 }
 
@@ -75,18 +94,18 @@ namespace DynamicDasboardWebAPI.Services
                 var endpoint = _config["DeepSeek:Endpoint"];
 
                 var systemMessage = $@"
-You are a SQL expert. Given the following database schema:
-{schema}
+    You are a SQL expert. Given the following database schema:
+    {schema}
 
-Rules:
-1. Use proper table joins to retrieve data from multiple tables.
-2. Apply filters and conditions as needed.
-3. Use DISTINCT or GROUP BY to avoid duplicate rows.
-4. Use aggregate functions (e.g., SUM, COUNT, AVG) for calculations.
-5. Ensure the query is syntactically correct and optimized.
-6. Make sure that you are providing only the query in the output without explanations.
-7. If the question is not relevant to the schema, return an error message and suggest 3 alternative questions.
-";
+    Rules:
+    1. Use proper table joins to retrieve data from multiple tables.
+    2. Apply filters and conditions as needed.
+    3. Use DISTINCT or GROUP BY to avoid duplicate rows.
+    4. Use aggregate functions (e.g., SUM, COUNT, AVG) for calculations.
+    5. Ensure the query is syntactically correct and optimized.
+    6. Make sure that you are providing only the query in the output without explanations.
+    7. If the question is not relevant to the schema, return an error message and suggest 3 alternative questions.
+    ";
 
                 var prompt = $"Generate a SQL query for: {question}";
 
@@ -98,9 +117,9 @@ Rules:
                     model = "deepseek-chat",
                     messages = new[]
                     {
-                new { role = "system", content = systemMessage },
-                new { role = "user", content = prompt }
-            },
+                            new { role = "system", content = systemMessage },
+                            new { role = "user", content = prompt }
+                        },
                     temperature = temperature,
                     max_tokens = maxTokens,
                     stream = false
@@ -152,22 +171,36 @@ Rules:
             }
         }
 
+        /// <summary>
+        /// Validates the provided schema.
+        /// </summary>
+        /// <param name="schema">The database schema to validate.</param>
+        /// <returns><c>true</c> if the schema is valid; otherwise, <c>false</c>.</returns>
         private bool IsSchemaValid(string schema)
         {
             // Basic validation: Check if the schema contains CREATE TABLE statements
             return schema.Contains("CREATE TABLE", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Represents the response from the DeepSeek API.
+        /// </summary>
         private class DeepSeekResponse
         {
             public required Choice[] choices { get; set; }
         }
 
+        /// <summary>
+        /// Represents a choice in the DeepSeek API response.
+        /// </summary>
         private class Choice
         {
             public required Message message { get; set; }
         }
 
+        /// <summary>
+        /// Represents a message in the DeepSeek API response.
+        /// </summary>
         private class Message
         {
             public required string content { get; set; }

@@ -1,10 +1,21 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@* 
+    This file sets up the routing for the Blazor WebAssembly application.
+    It uses the Router component to define the routes and their corresponding views.
+    - The <Found> tag renders the RouteView component when a route is matched.
+    - The <NotFound> tag renders a custom message when no route is matched.
+    - The FocusOnNavigate component sets focus to the first <h1> element when navigation occurs.
+*@
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
+        @* Render the RouteView component with the matched route data and default layout *@
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        @* Set focus to the first <h1> element when navigation occurs *@
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
+        @* Set the page title to "Not found" when no route is matched *@
         <PageTitle>Not found</PageTitle>
+        @* Render a custom message within the MainLayout when no route is matched *@
         <LayoutView Layout="@typeof(MainLayout)">
             <p role="alert">Sorry, there's nothing at this address.</p>
         </LayoutView>

@@ -6,9 +6,8 @@ namespace DynamicDasboardWebAPI.Services
 {
     /// <summary>
     /// Service layer for logging events.
+    /// This class provides methods to log exceptions and other events into the database.
     /// </summary>
-
-
     public class LogsService : ILogsService
     {
         private readonly LogsRepository _repository;
@@ -28,6 +27,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <param name="userId">The ID of the user (nullable).</param>
         /// <param name="eventType">The type of the event.</param>
         /// <param name="eventDescription">The description of the event.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task LogExceptionAsync(int? userId, string eventType, string eventDescription)
         {
             await _repository.AddLogAsync(userId, eventType, eventDescription);

@@ -11,6 +11,10 @@ namespace DynamicDasboardWebAPI.Repositories
     {
         private readonly IDbConnection _connection;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryRepository"/> class.
+        /// </summary>
+        /// <param name="connection">The database connection to use.</param>
         public QueryRepository(IDbConnection connection)
         {
             _connection = connection;
