@@ -1,0 +1,260 @@
+﻿@page "/echarts"
+@inject IJSRuntime JSRuntime
+
+<!-- Include ECharts Library -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+
+<!-- Page Title -->
+<h3 class="text-center mb-4">ECharts Demo</h3>
+
+<!-- Chart Containers -->
+<div class="row">
+    <!-- Line Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Line Chart - Sales Over Time</h5>
+            </div>
+            <div class="card-body">
+                <div id="lineChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Bar Chart - Monthly Sales</h5>
+            </div>
+            <div class="card-body">
+                <div id="barChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Pie Chart - Market Share</h5>
+            </div>
+            <div class="card-body">
+                <div id="pieChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Radar Chart - Skill Assessment</h5>
+            </div>
+            <div class="card-body">
+                <div id="radarChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scatter Chart -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Scatter Chart - Correlation Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div id="scatterChart" style="width: 100%; height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize Line Chart
+            var lineChartOption = new
+            {
+                toolbox = new
+                {
+                    feature = new
+                    {
+                        saveAsImage = new
+                        {
+                            type = "png", // Image format
+                            name = "chart", // Default filename
+                            title = "Save as Image", // Tooltip text
+                            pixelRatio = 2 // Higher resolution
+                        }
+                    }
+                },
+                dataZoom = new[]
+                {
+                    new
+                    {
+                        type = "slider", // Slider for zooming
+                        start = 0, // Initial zoom start percentage
+                        end = 100 // Initial zoom end percentage
+                    },
+                    new
+                    {
+                        type = "inside", // Enable mouse wheel zooming
+                        start = 0,
+                        end = 100
+                    }
+                },
+                title = new { text = "Sales Over Time" },
+                tooltip = new { trigger = "axis" },
+                xAxis = new
+                {
+                    type = "category",
+                    data = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" }
+                },
+                yAxis = new { type = "value" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Sales",
+                        type = "line",
+                        data = new[] { 150, 230, 224, 218, 135, 147, 260 },
+                        smooth = true,
+                        lineStyle = new { color = "#5470C6" },
+                        areaStyle = new { opacity = 0.5, color = "#5470C6" }
+                    }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("initChart", "lineChart", lineChartOption);
+
+            // Initialize Bar Chart
+            var barChartOption = new
+            {
+                title = new { text = "Monthly Sales" },
+                tooltip = new { trigger = "axis" },
+                xAxis = new
+                {
+                    type = "category",
+                    data = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" }
+                },
+                yAxis = new { type = "value" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Sales",
+                        type = "bar",
+                        data = new[] { 120, 200, 150, 80, 70, 110, 130 },
+                        itemStyle = new { color = "#91CC75" }
+                    }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("initChart", "barChart", barChartOption);
+
+            // Initialize Pie Chart
+            var pieChartOption = new
+            {
+                title = new { text = "Market Share" },
+                tooltip = new { trigger = "item" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Market Share",
+                        type = "pie",
+                        radius = "50%",
+                        data = new[]
+                        {
+                            new { value = 1048, name = "Product A" },
+                            new { value = 735, name = "Product B" },
+                            new { value = 580, name = "Product C" },
+                            new { value = 484, name = "Product D" }
+                        },
+                        emphasis = new
+                        {
+                            itemStyle = new
+                            {
+                                shadowBlur = 10,
+                                shadowOffsetX = 0,
+                                shadowColor = "rgba(0, 0, 0, 0.5)"
+                            }
+                        }
+                    }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("initChart", "pieChart", pieChartOption);
+
+            // Initialize Radar Chart
+            var radarChartOption = new
+            {
+                title = new { text = "Skill Assessment" },
+                tooltip = new { trigger = "item" },
+                radar = new
+                {
+                    indicator = new[]
+                    {
+                        new { name = "Programming", max = 100 },
+                        new { name = "Design", max = 100 },
+                        new { name = "Testing", max = 100 },
+                        new { name = "Documentation", max = 100 },
+                        new { name = "Deployment", max = 100 }
+                    }
+                },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Skill Level",
+                        type = "radar",
+                        data = new[]
+                        {
+                            new
+                            {
+                                value = new[] { 80, 60, 90, 70, 85 },
+                                name = "Employee A"
+                            }
+                        }
+                    }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("initChart", "radarChart", radarChartOption);
+
+            // Initialize Scatter Chart
+            var scatterChartOption = new
+            {
+                title = new { text = "Correlation Analysis" },
+                tooltip = new { trigger = "axis" },
+                xAxis = new { type = "value" },
+                yAxis = new { type = "value" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Data Points",
+                        type = "scatter",
+                        data = new[]
+                        {
+                            new[] { 10, 20 },
+                            new[] { 15, 25 },
+                            new[] { 20, 30 },
+                            new[] { 25, 35 },
+                            new[] { 30, 40 }
+                        },
+                        itemStyle = new { color = "#EE6666" }
+                    }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("initChart", "scatterChart", scatterChartOption);
+        }
+    }
+}
+
+<!-- JavaScript to Initialize ECharts -->
+<script>
+    function initChart(containerId, option) {
+        const chart = echarts.init(document.getElementById(containerId));
+        chart.setOption(option);
+    }
+</script>

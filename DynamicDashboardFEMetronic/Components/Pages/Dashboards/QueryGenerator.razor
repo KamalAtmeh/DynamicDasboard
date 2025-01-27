@@ -1,0 +1,505 @@
+﻿@page "/QueryGenerator"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!--begin::Card-->
+<div class="card card-flush w-100 py-5">
+    <div class="card-body py-15 py-lg-20">
+        <!--begin::Heading-->
+        <h3 class="card-title text-center mb-10">Generate SQL Query</h3>
+        <!--end::Heading-->
+        <!-- Loading Screen -->
+        @if (isLoading)
+        {
+            <div class="overlay overlay-block">
+                <div class="spinner spinner-primary spinner-lg"></div>
+                <p class="text-center">Processing, please wait...</p>
+            </div>
+        }
+
+        <!--begin::Dashboard Section-->
+        <div class="row mb-10">
+            <div class="col-12">
+                <h4 class="text-center mb-5">Dashboard</h4>
+                <div class="row">
+                    <!-- Bar Chart -->
+                    <div class="col-md-6 mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Sales Overview</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="salesChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Line Chart -->
+                    <div class="col-md-6 mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">User Engagement</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="engagementChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pie Chart -->
+                    <div class="col-md-6 mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Product Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="pieChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doughnut Chart -->
+                    <div class="col-md-6 mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Market Share</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="doughnutChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Radar Chart -->
+                    <div class="col-md-6 mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Skill Assessment</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="radarChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Polar Area Chart -->
+                    <div class="col-md-6 mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Project Allocation</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="polarAreaChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::Dashboard Section-->
+        <!--begin::File Upload Section-->
+        <div class="row mb-10">
+            <div class="col-12">
+                <div class="form-group">
+                    <label for="fileUpload" class="form-label">Upload Excel File:</label>
+                    <div class="custom-file">
+                        <InputFile id="fileUpload" class="custom-file-input" OnChange="HandleFileUpload" />
+                        <label class="custom-file-label" for="fileUpload">
+                            @(uploadedFile?.Name ?? "Choose file")
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 mt-5" @onclick="ProcessExcelFile">Process Excel File</button>
+            </div>
+        </div>
+        <!--end::File Upload Section-->
+        <!--begin::Manual Input Section-->
+        <div class="row mb-10">
+            <div class="col-12">
+                <EditForm Model="@request" OnValidSubmit="GenerateQueryAsync">
+                    <div class="form-group mb-5">
+                        <label for="schema" class="form-label">Database Schema:</label>
+                        <InputTextArea id="schema" class="form-control" @bind-Value="request.Schema" rows="10" />
+                    </div>
+                    <div class="form-group mb-5">
+                        <label for="question" class="form-label">Question:</label>
+                        <InputText id="question" class="form-control" @bind-Value="request.Question" />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Generate Query</button>
+                </EditForm>
+            </div>
+        </div>
+        <!--end::Manual Input Section-->
+        <!--begin::Generated Query Section-->
+        @if (!string.IsNullOrEmpty(query))
+        {
+            <div class="row mb-10">
+                <div class="col-12">
+                    <h4 class="text-center mb-5">Generated SQL Query:</h4>
+                    <div class="card bg-light p-5">
+                        <pre class="mb-0">@query</pre>
+                        <button class="btn btn-sm btn-secondary mt-3" @onclick="CopyToClipboard">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+        }
+        <!--end::Generated Query Section-->
+        <!--begin::Error Message Section-->
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="row mb-10">
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i> @errorMessage
+                    </div>
+                </div>
+            </div>
+        }
+        <!--end::Error Message Section-->
+        <!--begin::Suggestions Section-->
+        @if (suggestions != null && suggestions.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="text-center mb-5">Suggested Questions:</h4>
+                    <div class="d-flex flex-wrap gap-3">
+                        @foreach (var suggestion in suggestions)
+                        {
+                            <button class="btn btn-outline-primary" @onclick="() => UseSuggestion(suggestion)">
+                                @suggestion
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        <!--end::Suggestions Section-->
+    </div>
+</div>
+<!--end::Card-->
+<!-- Footer -->
+<div class="footer text-center mt-10">
+    <p>Powered by <a href="https://keenthemes.com" target="_blank">Keenthemes</a></p>
+</div>
+
+@code {
+    // Define QueryRequest and QueryResponse classes
+    public class QueryRequest
+    {
+        public string Schema { get; set; }
+        public string Question { get; set; }
+    }
+
+    public class QueryResponse
+    {
+        public string Query { get; set; }
+        public string Error { get; set; }
+        public IEnumerable<string> Suggestions { get; set; }
+    }
+
+    private QueryRequest request = new QueryRequest();
+    private string query;
+    private string errorMessage;
+    private IBrowserFile uploadedFile;
+    private bool isLoading = false; // Track loading state
+    private List<string> suggestions = new List<string>(); // Track suggestions
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Inject the JavaScript function into the page
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                window.saveAs = function(filename, byteBase64) {
+                    const link = document.createElement('a');
+                    link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${byteBase64}`;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+
+                window.initializeChart = function(canvasId, config) {
+                    const ctx = document.getElementById(canvasId).getContext('2d');
+                    new Chart(ctx, config);
+                };
+            ");
+
+            // Add event listener for file input
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                document.querySelector('.custom-file-input').addEventListener('change', function (e) {
+                    var fileName = e.target.files[0].name;
+                    var label = document.querySelector('.custom-file-label');
+                    label.textContent = fileName;
+                });
+            ");
+
+            // Initialize charts
+            await InitializeCharts();
+        }
+    }
+
+    private async Task InitializeCharts()
+    {
+        // Bar Chart (Sales Overview)
+        var salesChartConfig = new
+        {
+            type = "bar",
+            data = new
+            {
+                labels = new[] { "January", "February", "March", "April", "May", "June", "July" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Sales",
+                        data = new[] { 65, 59, 80, 81, 56, 55, 40 },
+                        backgroundColor = "rgba(75, 192, 192, 0.2)",
+                        borderColor = "rgba(75, 192, 192, 1)",
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false
+            }
+        };
+        await JSRuntime.InvokeVoidAsync("initializeChart", "salesChart", salesChartConfig);
+
+        // Line Chart (User Engagement)
+        var engagementChartConfig = new
+        {
+            type = "line",
+            data = new
+            {
+                labels = new[] { "January", "February", "March", "April", "May", "June", "July" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Engagement",
+                        data = new[] { 28, 48, 40, 19, 86, 27, 90 },
+                        backgroundColor = "rgba(153, 102, 255, 0.2)",
+                        borderColor = "rgba(153, 102, 255, 1)",
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false
+            }
+        };
+        await JSRuntime.InvokeVoidAsync("initializeChart", "engagementChart", engagementChartConfig);
+
+        // Pie Chart (Product Distribution)
+        var pieChartConfig = new
+        {
+            type = "pie",
+            data = new
+            {
+                labels = new[] { "Product A", "Product B", "Product C", "Product D" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Distribution",
+                        data = new[] { 30, 20, 40, 10 },
+                        backgroundColor = new[] { "rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(255, 206, 86, 0.2)", "rgba(75, 192, 192, 0.2)" },
+                        borderColor = new[] { "rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)", "rgba(75, 192, 192, 1)" },
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false
+            }
+        };
+        await JSRuntime.InvokeVoidAsync("initializeChart", "pieChart", pieChartConfig);
+
+        // Doughnut Chart (Market Share)
+        var doughnutChartConfig = new
+        {
+            type = "doughnut",
+            data = new
+            {
+                labels = new[] { "Company A", "Company B", "Company C", "Company D" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Market Share",
+                        data = new[] { 40, 30, 20, 10 },
+                        backgroundColor = new[] { "rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(255, 206, 86, 0.2)", "rgba(75, 192, 192, 0.2)" },
+                        borderColor = new[] { "rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)", "rgba(75, 192, 192, 1)" },
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false
+            }
+        };
+        await JSRuntime.InvokeVoidAsync("initializeChart", "doughnutChart", doughnutChartConfig);
+
+        // Radar Chart (Skill Assessment)
+        var radarChartConfig = new
+        {
+            type = "radar",
+            data = new
+            {
+                labels = new[] { "Programming", "Design", "Testing", "Documentation", "Deployment" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Skill Level",
+                        data = new[] { 80, 60, 90, 70, 85 },
+                        backgroundColor = "rgba(153, 102, 255, 0.2)",
+                        borderColor = "rgba(153, 102, 255, 1)",
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false
+            }
+        };
+        await JSRuntime.InvokeVoidAsync("initializeChart", "radarChart", radarChartConfig);
+
+        // Polar Area Chart (Project Allocation)
+        var polarAreaChartConfig = new
+        {
+            type = "polarArea",
+            data = new
+            {
+                labels = new[] { "Project A", "Project B", "Project C", "Project D" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = "Allocation",
+                        data = new[] { 50, 30, 40, 20 },
+                        backgroundColor = new[] { "rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(255, 206, 86, 0.2)", "rgba(75, 192, 192, 0.2)" },
+                        borderColor = new[] { "rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)", "rgba(75, 192, 192, 1)" },
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false
+            }
+        };
+        await JSRuntime.InvokeVoidAsync("initializeChart", "polarAreaChart", polarAreaChartConfig);
+    }
+
+    private void HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        uploadedFile = e.File;
+    }
+
+    private async Task ProcessExcelFile()
+    {
+        if (uploadedFile == null)
+        {
+            errorMessage = "No file uploaded.";
+            return;
+        }
+
+        isLoading = true; // Show loading screen
+        errorMessage = null;
+        suggestions.Clear(); // Clear previous suggestions
+
+        try
+        {
+            // Create a multipart form data content
+            var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(uploadedFile.OpenReadStream());
+            content.Add(fileContent, "file", uploadedFile.Name);
+
+            // Send the file to the controller
+            var response = await Http.PostAsync("api/querygenerator/process-excel", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var fileBytes = await response.Content.ReadAsByteArrayAsync();
+                await SaveAs("Modified_Queries.xlsx", fileBytes);
+            }
+            else
+            {
+                errorMessage = "Error processing the Excel file.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false; // Hide loading screen
+        }
+    }
+
+    private async Task GenerateQueryAsync()
+    {
+        isLoading = true; // Show loading screen
+        errorMessage = null;
+        suggestions.Clear(); // Clear previous suggestions
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/querygenerator/generate", request);
+            var result = await response.Content.ReadFromJsonAsync<QueryResponse>();
+
+            if (result?.Error != null)
+            {
+                // If the model returned an error, display it and show suggestions
+                errorMessage = result.Error;
+                suggestions = result.Suggestions?.ToList() ?? new List<string>();
+            }
+            else
+            {
+                // If the model returned a query, display it
+                query = result?.Query;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false; // Hide loading screen
+        }
+    }
+
+    private async Task SaveAs(string filename, byte[] data)
+    {
+        var base64 = Convert.ToBase64String(data);
+        await JSRuntime.InvokeVoidAsync("saveAs", filename, base64);
+    }
+
+    private async Task CopyToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", query);
+    }
+
+    private void UseSuggestion(string suggestion)
+    {
+        request.Question = suggestion;
+    }
+}

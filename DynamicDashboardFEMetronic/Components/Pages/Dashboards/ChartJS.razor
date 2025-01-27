@@ -1,0 +1,183 @@
+﻿@page "/chartjs"
+@inject IJSRuntime JSRuntime
+
+<!-- Include Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Page Title -->
+<h3 class="text-center mb-4">Chart.js Demo</h3>
+
+<!-- Chart Containers -->
+<div class="row">
+    <!-- Line Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Line Chart - Sales Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="lineChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Bar Chart - Monthly Sales</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="barChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Pie Chart - Market Share</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="pieChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Radar Chart - Skill Assessment</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="radarChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize Line Chart
+            var lineChartConfig = new
+            {
+                type = "line",
+                data = new
+                {
+                    labels = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" },
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            label = "Sales",
+                            data = new[] { 65, 59, 80, 81, 56, 55, 40 },
+                            backgroundColor = "rgba(75, 192, 192, 0.2)",
+                            borderColor = "rgba(75, 192, 192, 1)",
+                            borderWidth = 1
+                        }
+                    }
+                },
+                options = new
+                {
+                    responsive = true,
+                    maintainAspectRatio = false
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderChart", "lineChart", lineChartConfig);
+
+            // Initialize Bar Chart
+            var barChartConfig = new
+            {
+                type = "bar",
+                data = new
+                {
+                    labels = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" },
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            label = "Sales",
+                            data = new[] { 120, 200, 150, 80, 70, 110, 130 },
+                            backgroundColor = "rgba(153, 102, 255, 0.2)",
+                            borderColor = "rgba(153, 102, 255, 1)",
+                            borderWidth = 1
+                        }
+                    }
+                },
+                options = new
+                {
+                    responsive = true,
+                    maintainAspectRatio = false
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderChart", "barChart", barChartConfig);
+
+            // Initialize Pie Chart
+            var pieChartConfig = new
+            {
+                type = "pie",
+                data = new
+                {
+                    labels = new[] { "Product A", "Product B", "Product C", "Product D" },
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            label = "Market Share",
+                            data = new[] { 30, 20, 40, 10 },
+                            backgroundColor = new[] { "rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)", "rgba(255, 206, 86, 0.2)", "rgba(75, 192, 192, 0.2)" },
+                            borderColor = new[] { "rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(255, 206, 86, 1)", "rgba(75, 192, 192, 1)" },
+                            borderWidth = 1
+                        }
+                    }
+                },
+                options = new
+                {
+                    responsive = true,
+                    maintainAspectRatio = false
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderChart", "pieChart", pieChartConfig);
+
+            // Initialize Radar Chart
+            var radarChartConfig = new
+            {
+                type = "radar",
+                data = new
+                {
+                    labels = new[] { "Programming", "Design", "Testing", "Documentation", "Deployment" },
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            label = "Skill Level",
+                            data = new[] { 80, 60, 90, 70, 85 },
+                            backgroundColor = "rgba(153, 102, 255, 0.2)",
+                            borderColor = "rgba(153, 102, 255, 1)",
+                            borderWidth = 1
+                        }
+                    }
+                },
+                options = new
+                {
+                    responsive = true,
+                    maintainAspectRatio = false
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderChart", "radarChart", radarChartConfig);
+        }
+    }
+}
+
+<!-- JavaScript to Initialize Chart.js -->
+<script>
+    function renderChart(canvasId, config) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        new Chart(ctx, config);
+    }
+</script>

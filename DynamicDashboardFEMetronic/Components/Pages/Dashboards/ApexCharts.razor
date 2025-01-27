@@ -1,0 +1,152 @@
+﻿@page "/apexcharts-demo"
+@inject IJSRuntime JSRuntime
+
+<!-- Include ApexCharts Library -->
+@* <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script> *@
+
+<!-- Page Title -->
+<h3 class="text-center mb-4">ApexCharts Demo</h3>
+
+<!-- Chart Containers -->
+<div class="row">
+    <!-- Line Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Line Chart - Sales Over Time</h5>
+            </div>
+            <div class="card-body">
+                <div id="lineChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Bar Chart - Monthly Sales</h5>
+            </div>
+            <div class="card-body">
+                <div id="barChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Pie Chart - Market Share</h5>
+            </div>
+            <div class="card-body">
+                <div id="pieChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Radar Chart - Skill Assessment</h5>
+            </div>
+            <div class="card-body">
+                <div id="radarChart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Ensure the ApexCharts library is loaded
+            await JSRuntime.InvokeVoidAsync("eval", "console.log('ApexCharts loaded');");
+
+            // Initialize Line Chart
+            var lineChartOptions = new
+            {
+                chart = new { type = "line" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Sales",
+                        data = new[] { 30, 40, 35, 50, 49, 60, 70, 91, 125 }
+                    }
+                },
+                xaxis = new
+                {
+                    categories = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep" }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderApexChart", "lineChart", lineChartOptions);
+
+            // Initialize Bar Chart
+            var barChartOptions = new
+            {
+                chart = new { type = "bar" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Sales",
+                        data = new[] { 120, 200, 150, 80, 70, 110, 130 }
+                    }
+                },
+                xaxis = new
+                {
+                    categories = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderApexChart", "barChart", barChartOptions);
+
+            // Initialize Pie Chart
+            var pieChartOptions = new
+            {
+                chart = new { type = "pie" },
+                series = new[] { 44, 55, 13, 43 },
+                labels = new[] { "Product A", "Product B", "Product C", "Product D" }
+            };
+            await JSRuntime.InvokeVoidAsync("renderApexChart", "pieChart", pieChartOptions);
+
+            // Initialize Radar Chart
+            var radarChartOptions = new
+            {
+                chart = new { type = "radar" },
+                series = new[]
+                {
+                    new
+                    {
+                        name = "Skill Level",
+                        data = new[] { 80, 60, 90, 70, 85 }
+                    }
+                },
+                xaxis = new
+                {
+                    categories = new[] { "Programming", "Design", "Testing", "Documentation", "Deployment" }
+                }
+            };
+            await JSRuntime.InvokeVoidAsync("renderApexChart", "radarChart", radarChartOptions);
+        }
+    }
+}
+
+<!-- JavaScript to Initialize ApexCharts -->
+<script>
+    function renderApexChart(containerId, options) {
+        // Check if the container exists
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`Container with ID ${containerId} not found.`);
+            return;
+        }
+
+        // Initialize the chart
+        const chart = new ApexCharts(container, options);
+        chart.render();
+    }
+</script>

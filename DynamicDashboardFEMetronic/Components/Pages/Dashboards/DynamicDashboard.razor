@@ -1,0 +1,353 @@
+﻿@page "/query-dashboard"
+@inject IJSRuntime JSRuntime
+
+<!-- Theme Switcher -->
+<div class="text-end mb-3">
+    <select class="form-select w-auto d-inline-block" @onchange="OnThemeChange">
+        <option value="light-blue">Light Blue</option>
+        <option value="white">White</option>
+        <option value="dark">Dark</option>
+    </select>
+</div>
+
+<!-- Query Input Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title">Enter Your Query</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <input type="text" class="form-control" placeholder="Enter your query (e.g., Show sales over time as a bar chart)" @bind="userQuery" @oninput="OnQueryInput" />
+                @if (showSuggestions)
+                {
+                    <div class="list-group mt-2">
+                        @foreach (var suggestion in querySuggestions)
+                        {
+                            <button class="list-group-item list-group-item-action" @onclick="() => UseSuggestion(suggestion)">@suggestion</button>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" @bind="selectedDatabase">
+                    <option value="Database1">Database 1</option>
+                    <option value="Database2">Database 2</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" @onclick="ProcessQuery">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+
+<!-- Chart Area -->
+@if (charts.Any())
+{
+    <div class="row">
+        @foreach (var chart in charts)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">@chart.Title</h5>
+                        <div class="card-toolbar">
+                            <button class="btn btn-sm btn-light" @onclick="() => ExportChart(chart.Id)">Export</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="@chart.Id" style="width: 100%; height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Toast Notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast @toast.Type.ToString().ToLower()" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" @onclick="() => RemoveToast(toast)"></button>
+            </div>
+            <div class="toast-body">
+                @toast.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // State variables
+    private string userQuery = "";
+    private string selectedDatabase = "Database1";
+    private string selectedTheme = "light-blue";
+    private List<ChartModel> charts = new();
+    private List<ToastModel> toasts = new();
+    private bool isLoading = false;
+    private bool showSuggestions = false;
+    private List<string> querySuggestions = new();
+    private bool shouldRenderCharts = false; // Flag to track when to render charts
+
+    // Sample suggestions
+    private readonly List<string> sampleQueries = new()
+    {
+        "Show sales over time as a line chart",
+        "Show monthly sales as a bar chart",
+        "Compare employee attendance for the last 2 months",
+        "Show market share as a pie chart"
+    };
+
+    // Process the user's query
+    private async Task ProcessQuery()
+    {
+        // Clear previous charts
+        charts.Clear();
+        isLoading = true;
+        StateHasChanged();
+
+        // Simulate query processing
+        ShowToast("Processing your query...", ToastType.Info);
+        await Task.Delay(1000); // Simulate delay
+
+        // Determine chart type from query
+        string chartType = "bar"; // Default to bar chart
+        if (userQuery.Contains("line chart"))
+            chartType = "line";
+        else if (userQuery.Contains("pie chart"))
+            chartType = "pie";
+
+        // Generate sample charts based on the query
+        if (userQuery.Contains("sales over time"))
+        {
+            charts = new List<ChartModel>
+            {
+                new ChartModel
+                {
+                    Id = "chart1",
+                    Title = "Sales Over Time",
+                    Type = chartType,
+                    Data = new[] { 30, 40, 35, 50, 49, 60 },
+                    Categories = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun" }
+                }
+            };
+        }
+        else if (userQuery.Contains("monthly sales"))
+        {
+            charts = new List<ChartModel>
+            {
+                new ChartModel
+                {
+                    Id = "chart1",
+                    Title = "Monthly Sales",
+                    Type = chartType,
+                    Data = new[] { 120, 200, 150, 80, 70, 110, 130 },
+                    Categories = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" }
+                }
+            };
+        }
+        else
+        {
+            // Default chart for unrecognized queries
+            charts = new List<ChartModel>
+            {
+                new ChartModel
+                {
+                    Id = "chart1",
+                    Title = "Default Chart",
+                    Type = chartType,
+                    Data = new[] { 10, 20, 30, 40, 50 },
+                    Categories = new[] { "A", "B", "C", "D", "E" }
+                }
+            };
+        }
+
+        isLoading = false;
+        shouldRenderCharts = true; // Set the flag to render charts
+        StateHasChanged();
+    }
+
+    // Render charts after the DOM is updated
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (shouldRenderCharts)
+        {
+            foreach (var chart in charts)
+            {
+                await RenderChart(chart);
+            }
+            shouldRenderCharts = false; // Reset the flag
+        }
+    }
+
+    // Render a chart using ApexCharts
+    private async Task RenderChart(ChartModel chart)
+    {
+        var options = new
+        {
+            chart = new { type = chart.Type },
+            series = new[] { new { name = "Results", data = chart.Data } },
+            xaxis = new { categories = chart.Categories }
+        };
+        await JSRuntime.InvokeVoidAsync("renderApexChart", chart.Id, options);
+    }
+
+    // Export chart data
+    private async Task ExportChart(string chartId)
+    {
+        // Simulate export logic
+        ShowToast("Exporting chart data...", ToastType.Info);
+        await Task.Delay(500); // Simulate delay
+        ShowToast("Chart data exported successfully!", ToastType.Success);
+    }
+
+    // Apply the selected theme
+    private async Task OnThemeChange(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+        {
+            selectedTheme = e.Value.ToString();
+            await JSRuntime.InvokeVoidAsync("applyTheme", selectedTheme);
+        }
+    }
+
+    // Show a toast notification
+    private void ShowToast(string message, ToastType type)
+    {
+        toasts.Add(new ToastModel { Message = message, Type = type });
+        StateHasChanged();
+    }
+
+    // Remove a toast notification
+    private void RemoveToast(ToastModel toast)
+    {
+        toasts.Remove(toast);
+        StateHasChanged();
+    }
+
+    // Handle query input for auto-suggestions
+    private void OnQueryInput(ChangeEventArgs e)
+    {
+        userQuery = e.Value.ToString();
+        showSuggestions = !string.IsNullOrEmpty(userQuery);
+        querySuggestions = sampleQueries
+            .Where(q => q.Contains(userQuery, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    // Use a suggestion
+    private void UseSuggestion(string suggestion)
+    {
+        userQuery = suggestion;
+        showSuggestions = false;
+    }
+
+    // Chart model
+    private class ChartModel
+    {
+        public string Id { get; set; }
+        public string Title { get; set; }
+        public string Type { get; set; }
+        public int[] Data { get; set; }
+        public string[] Categories { get; set; }
+    }
+
+    // Toast model
+    private class ToastModel
+    {
+        public string Message { get; set; }
+        public ToastType Type { get; set; }
+    }
+
+    // Toast type enum
+    private enum ToastType { Info, Success, Error }
+}
+<script>
+    // Function to render ApexCharts
+    function renderApexChart(containerId, options) {
+
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`Container with ID ${containerId} not found.`);
+            return;
+        }
+
+        // Destroy existing chart if it exists
+        if (container._chart) {
+            container._chart.destroy();
+        }
+
+        // Initialize and render the chart
+        const chart = new ApexCharts(container, options);
+        chart.render();
+
+        // Store the chart instance for future reference
+        container._chart = chart;
+    }
+
+    // Function to apply the selected theme
+    function applyTheme(theme) {
+        document.body.className = theme;
+    }
+</script>
+
+<!-- CSS for Themes -->
+<style>
+    /* Light Blue Theme */
+    body.light-blue {
+        background-color: #E3F2FD;
+        color: #333333;
+    }
+
+    /* White Theme */
+    body.white {
+        background-color: #FFFFFF;
+        color: #333333;
+    }
+
+    /* Dark Theme */
+    body.dark {
+        background-color: #1E1E1E;
+        color: #F5F5F5;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+        z-index: 1050;
+    }
+
+    .toast {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+
+        .toast.info {
+            background-color: #e9f5ff;
+            border-color: #b8daff;
+        }
+
+        .toast.success {
+            background-color: #e8f5e9;
+            border-color: #c3e6cb;
+        }
+
+        .toast.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+</style>

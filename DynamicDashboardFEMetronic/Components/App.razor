@@ -1,0 +1,49 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@using Starterkit.Components.Partials
+@using Starterkit.Components.Partials.ThemeMode
+@using Starterkit._keenthemes
+@using Starterkit._keenthemes.libs
+@inject IBootstrapBase BootstrapBase
+@inject IKTTheme KTTheme
+
+<!DOCTYPE html>
+<html id="kt_app_body" data-kt-app-layout="dark-sidebar" data-kt-app-header-fixed="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" data-kt-app-toolbar-enabled="true" class="app-default">
+<head>
+    <meta charset="utf-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="" />
+    <HeadOutlet />
+
+    <link rel="shortcut icon" href="@KTTheme.GetFavicon()" />
+
+    <!--begin::Fonts-->
+    @foreach (string font in KTTheme.GetFonts())
+    {
+    <link rel="stylesheet" href="@font" />
+    }
+    <!--end::Fonts-->
+
+    <!--begin::Global Stylesheets(mandatory)-->
+    @foreach (string file in KTTheme.GetGlobalAssets("Css"))
+    {
+    <link rel="stylesheet" type="text/css" href="@file" />
+    }
+    <!--end::Global Stylesheets-->
+</head>
+<body>
+    <_Init />
+
+    <_PageLoader />
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <script src="_framework/blazor.web.js"></script>
+    <!--begin::Global Javascript(mandatory)-->
+    @foreach (string file in KTTheme.GetGlobalAssets("Js")) {
+    <script src="@file"></script>
+    }
+    <!--end::Global Javascript-->
+</body>
+</html>
