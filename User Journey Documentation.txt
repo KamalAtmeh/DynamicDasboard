@@ -1,0 +1,142 @@
+### User Journey Documentation
+
+#### **Objective**
+To outline the detailed steps and interactions a user experiences while navigating the application, ensuring alignment with user expectations and business requirements.
+
+---
+
+#### **Actors**
+1. **Admin User**
+   - Responsible for configuring database connections, managing metadata, and overseeing system operations.
+2. **Normal User**
+   - Submits queries, accesses visualizations, and interacts with insights modules.
+
+---
+
+#### **Admin User Journey**
+
+**1. Login and Access**
+- **Entry Point**: Admin visits the login page.
+- **Action**: Enters credentials (username and password).
+- **Outcome**: Successfully logs into the admin panel.
+
+**2. Database Configuration**
+- **Entry Point**: Admin accesses the "Database Configuration" page.
+- **Action**: 
+  - Selects database type (SQL, MySQL, Oracle).
+  - Enters connection string or uploads database creation script.
+  - Submits the configuration.
+- **Outcome**: Database connection is validated and saved.
+
+**3. Metadata Management**
+- **Entry Point**: Admin accesses the "Metadata Management" page.
+- **Action**: 
+  - **Describes Tables and Columns**:
+    - Views the list of tables and their columns retrieved from the connected database.
+    - Clicks on a table name to open a description panel.
+    - Inputs meaningful descriptions for each column in the table (e.g., Column "Emp_Name" is described as "Employee Name").
+    - Saves the descriptions, which are stored for query context understanding.
+  - **Defines Relationships Between Tables**:
+    - Selects a table and navigates to the "Relationships" tab.
+    - Chooses related tables from a dropdown or visual schema.
+    - Specifies the relationship type (e.g., one-to-many, many-to-many).
+    - Marks columns as lookup keys (e.g., "Dept_ID" in the "Employees" table links to "ID" in the "Departments" table).
+    - Confirms and saves the relationships.
+- **Outcome**: Metadata and relationships are saved for model understanding.
+
+**4. Monitoring and Logging**
+- **Entry Point**: Admin accesses the "Performance Dashboard."
+- **Action**: 
+  - Selects a desired database or "All Databases" from a dropdown menu.
+  - Reviews query execution times and system usage.
+  - Investigates failed queries or connectivity issues.
+- **Outcome**: Admin resolves issues or optimizes configurations.
+
+---
+
+#### **Normal User Journey**
+
+**1. Login and Access**
+- **Entry Point**: User visits the login page.
+- **Action**: Enters credentials (username and password).
+- **Outcome**: Successfully logs into the user dashboard.
+
+**2. Query Submission**
+- **Entry Point**: User navigates to the "Query Dashboard."
+- **Action**: 
+  - Selects a database from the dropdown.
+  - Enters a natural language query (e.g., "Show employees with salaries above $1000").
+  - Submits the query.
+- **Outcome**: Query results are displayed with a description. The description provides a detailed explanation of the query's intent and the resulting data, ensuring users understand the context of the output. 
+
+- **Option 1 (Confirm)**: If the user presses "Yes" or "Confirm," the system displays the output. This may include:
+  - A **direct answer** (e.g., "Ahmed Salem has the highest salary").
+  - A **visual representation** such as a chart or table, depending on the query.
+
+- **Option 2 (Decline)**: If the user presses "No" or "Decline," the system provides:
+  - Three alternative query suggestions based on the original intent.
+  - Each suggestion is clickable, allowing the user to refine their search easily.
+
+For example, if the query "Show employees with salaries above $1000" is declined, the system may suggest:
+1. "Show employees with salaries between $1000 and $2000."
+2. "Show employees hired in the last year with salaries above $1000."
+3. "Show departments with employees earning over $1000."
+
+Each suggestion includes a **button** beside it for the user to select the desired query. Once the user selects one of these options, the system processes the new query and displays:
+- A **direct answer** (e.g., "Ahmed Salem has the highest salary").
+- A **visual representation** such as a chart or table, depending on the query.
+
+**3. Insights and Visualizations**
+- **Entry Point**: User accesses the "Insights" module.
+- **Action**: 
+  - Views predefined dashboards for selected datasets, such as "Employee attendance over the last 2 months compared to 2023."
+  - Interacts with multiple datasets visualized simultaneously through bar charts, line graphs, or other predefined chart types.
+  - Filters or refines datasets directly from the dashboard (e.g., by date range or specific attributes).
+- **Outcome**: Gains actionable insights from visualized data, with the ability to identify trends, compare metrics, and make informed decisions based on the results.
+
+**4. Data Export**
+- **Entry Point**: Query results or visualization page.
+- **Action**: 
+  - Clicks "Export" to download results.
+  - Chooses export format (e.g., Excel).
+- **Outcome**: File is downloaded with raw data and metadata.
+
+---
+
+#### **Exceptional Scenarios**
+
+**1. Query Errors**
+- **Scenario**: User submits an invalid query.
+- **Action**: 
+  - System notifies the user with a detailed error message.
+  - Suggests query modifications or examples.
+- **Outcome**: User refines the query and resubmits.
+
+**2. Connectivity Issues**
+- **Scenario**: Database connection fails.
+- **Action**: 
+  - System retries connection.
+  - Notifies the user of the issue.
+- **Outcome**: Admin resolves the connection issue.
+
+**3. Large Dataset Warnings**
+- **Scenario**: Query returns a large dataset.
+- **Action**: 
+  - System truncates results and notifies the user.
+  - Suggests adding filters to refine the query.
+- **Outcome**: User refines the query or exports the dataset.
+
+---
+
+#### **Future Enhancements**
+1. **Real-Time Updates**:
+   - Automatically update dashboards with database changes.
+2. **Personalized Dashboards**:
+   - Save user preferences for customized insights.
+3. **Collaborative Query Building**:
+   - Allow multiple users to collaborate on queries and insights.
+
+---
+
+#### **Conclusion**
+This document provides a detailed view of user journeys for both admin and normal users, ensuring their interactions align with the application’s objectives. Exceptional scenarios are addressed to enhance user satisfaction and system reliability.
