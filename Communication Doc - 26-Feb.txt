@@ -1,0 +1,10 @@
+Always make sure that our implementations are aligned with dynamic and scaled architecture , also aligned with business requirements document
+Take your time for handling implemementations , also get 360 degrees analysis to make sure changes or new implementations wouldnt affect other modules
+Always provide complete files, except when changes are easy to apply to the existing file
+Clearly indicate file names and locations for easier implementation
+Follow the existing project patterns and approaches
+Ask before implementing features beyond what you've explicitly requested
+Recommendations are welcome but should be presented as options rather than implementations
+Controllers shouldnt have any business logic inside
+Break Down Large Tasks and ask clarifying questions when needed
+Think step by step and how reasoning and take your time for complex matters , also give examples when applicable

@@ -1,0 +1,288 @@
+-- Customers table
+CREATE TABLE Customers (
+    CustomerID INT PRIMARY KEY,
+    FirstName NVARCHAR(50),
+    LastName NVARCHAR(50),
+    Email NVARCHAR(100) UNIQUE,
+    Phone NVARCHAR(20),
+    Address NVARCHAR(100),
+    City NVARCHAR(50),
+    State NVARCHAR(50),
+    ZipCode NVARCHAR(20),
+    Country NVARCHAR(50),
+    RegistrationDate DATETIME,
+    LoyaltyPoints INT DEFAULT 0,
+    CustomerRating INT,
+    IsActive BIT DEFAULT 1
+);
+
+-- Product Categories table
+CREATE TABLE ProductCategories (
+    CategoryID INT PRIMARY KEY,
+    CategoryName NVARCHAR(50) NOT NULL,
+    ParentCategoryID INT,
+    Description NVARCHAR(200),
+    ImageURL NVARCHAR(200),
+    FOREIGN KEY (ParentCategoryID) REFERENCES ProductCategories(CategoryID)
+);
+
+-- Products table
+CREATE TABLE Products (
+    ProductID INT PRIMARY KEY,
+    ProductName NVARCHAR(100) NOT NULL,
+    SKU NVARCHAR(50) UNIQUE,
+    CategoryID INT,
+    Description NVARCHAR(MAX),
+    UnitPrice DECIMAL(10, 2),
+    DiscountPercentage DECIMAL(5, 2) DEFAULT 0,
+    StockQuantity INT,
+    ReorderLevel INT,
+    Weight DECIMAL(10, 2),
+    Dimensions NVARCHAR(50),
+    ImageURL NVARCHAR(200),
+    IsActive BIT DEFAULT 1,
+    DateAdded DATETIME,
+    ManufacturerID INT,
+    FOREIGN KEY (CategoryID) REFERENCES ProductCategories(CategoryID),
+    FOREIGN KEY (ManufacturerID) REFERENCES Manufacturers(ManufacturerID)
+);
+
+-- Product Attributes table
+CREATE TABLE ProductAttributes (
+    AttributeID INT PRIMARY KEY,
+    ProductID INT,
+    AttributeName NVARCHAR(50),
+    AttributeValue NVARCHAR(100),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- Manufacturers table
+CREATE TABLE Manufacturers (
+    ManufacturerID INT PRIMARY KEY,
+    ManufacturerName NVARCHAR(100) NOT NULL,
+    ContactName NVARCHAR(100),
+    ContactEmail NVARCHAR(100),
+    ContactPhone NVARCHAR(20),
+    Address NVARCHAR(200),
+    Website NVARCHAR(100)
+);
+
+-- Suppliers table
+CREATE TABLE Suppliers (
+    SupplierID INT PRIMARY KEY,
+    SupplierName NVARCHAR(100) NOT NULL,
+    ContactName NVARCHAR(100),
+    ContactEmail NVARCHAR(100),
+    ContactPhone NVARCHAR(20),
+    Address NVARCHAR(200),
+    PaymentTerms NVARCHAR(100),
+    LeadTimeDays INT,
+    IsActive BIT DEFAULT 1,
+    Rating INT
+);
+
+-- Product Suppliers table (for many-to-many)
+CREATE TABLE ProductSuppliers (
+    ProductID INT,
+    SupplierID INT,
+    SupplierPrice DECIMAL(10, 2),
+    MinOrderQuantity INT DEFAULT 1,
+    PRIMARY KEY (ProductID, SupplierID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID)
+);
+
+-- Warehouses table
+CREATE TABLE Warehouses (
+    WarehouseID INT PRIMARY KEY,
+    WarehouseName NVARCHAR(100) NOT NULL,
+    Address NVARCHAR(200),
+    City NVARCHAR(50),
+    State NVARCHAR(50),
+    ZipCode NVARCHAR(20),
+    Country NVARCHAR(50),
+    ManagerID INT,
+    Capacity INT,
+    FOREIGN KEY (ManagerID) REFERENCES Employees(EmployeeID)
+);
+
+-- Inventory table
+CREATE TABLE Inventory (
+    InventoryID INT PRIMARY KEY,
+    ProductID INT,
+    WarehouseID INT,
+    Quantity INT,
+    LastUpdated DATETIME,
+    ShelfLocation NVARCHAR(50),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    FOREIGN KEY (WarehouseID) REFERENCES Warehouses(WarehouseID)
+);
+
+-- Employees table
+CREATE TABLE Employees (
+    EmployeeID INT PRIMARY KEY,
+    FirstName NVARCHAR(50),
+    LastName NVARCHAR(50),
+    Email NVARCHAR(100) UNIQUE,
+    Phone NVARCHAR(20),
+    HireDate DATETIME,
+    Position NVARCHAR(50),
+    DepartmentID INT,
+    ManagerID INT,
+    Salary DECIMAL(10, 2),
+    Address NVARCHAR(200),
+    IsActive BIT DEFAULT 1,
+    FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID),
+    FOREIGN KEY (ManagerID) REFERENCES Employees(EmployeeID)
+);
+
+-- Departments table
+CREATE TABLE Departments (
+    DepartmentID INT PRIMARY KEY,
+    DepartmentName NVARCHAR(50) NOT NULL,
+    Description NVARCHAR(200),
+    ManagerID INT,
+    Location NVARCHAR(100),
+    Budget DECIMAL(12, 2)
+);
+
+-- Orders table
+CREATE TABLE Orders (
+    OrderID INT PRIMARY KEY,
+    CustomerID INT,
+    OrderDate DATETIME,
+    ShippingMethod NVARCHAR(50),
+    ShippingAddress NVARCHAR(200),
+    ShippingCity NVARCHAR(50),
+    ShippingState NVARCHAR(50),
+    ShippingZipCode NVARCHAR(20),
+    ShippingCountry NVARCHAR(50),
+    OrderStatus NVARCHAR(20) DEFAULT 'Pending',
+    PaymentStatus NVARCHAR(20) DEFAULT 'Pending',
+    TrackingNumber NVARCHAR(50),
+    TotalAmount DECIMAL(10, 2),
+    DiscountAmount DECIMAL(10, 2) DEFAULT 0,
+    TaxAmount DECIMAL(10, 2) DEFAULT 0,
+    ShippingAmount DECIMAL(10, 2) DEFAULT 0,
+    EmployeeID INT,
+    Notes NVARCHAR(MAX),
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
+    FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID)
+);
+
+-- Order Items table
+CREATE TABLE OrderItems (
+    OrderItemID INT PRIMARY KEY,
+    OrderID INT,
+    ProductID INT,
+    Quantity INT NOT NULL,
+    UnitPrice DECIMAL(10, 2) NOT NULL,
+    Discount DECIMAL(10, 2) DEFAULT 0,
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- Payments table
+CREATE TABLE Payments (
+    PaymentID INT PRIMARY KEY,
+    OrderID INT,
+    PaymentDate DATETIME,
+    PaymentMethod NVARCHAR(50),
+    Amount DECIMAL(10, 2),
+    TransactionID NVARCHAR(100),
+    Status NVARCHAR(20),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID)
+);
+
+-- Shipping table
+CREATE TABLE Shipping (
+    ShippingID INT PRIMARY KEY,
+    OrderID INT,
+    ShippingDate DATETIME,
+    Carrier NVARCHAR(50),
+    TrackingNumber NVARCHAR(50),
+    EstimatedDelivery DATETIME,
+    ActualDelivery DATETIME,
+    ShippingCost DECIMAL(10, 2),
+    Status NVARCHAR(20),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID)
+);
+
+-- Customer Returns table
+CREATE TABLE Returns (
+    ReturnID INT PRIMARY KEY,
+    OrderID INT,
+    ProductID INT,
+    Quantity INT,
+    ReturnDate DATETIME,
+    Reason NVARCHAR(200),
+    Status NVARCHAR(20),
+    RefundAmount DECIMAL(10, 2),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- ProductReviews table
+CREATE TABLE ProductReviews (
+    ReviewID INT PRIMARY KEY,
+    ProductID INT,
+    CustomerID INT,
+    Rating INT,
+    ReviewText NVARCHAR(MAX),
+    ReviewDate DATETIME,
+    IsVerifiedPurchase BIT DEFAULT 0,
+    Helpful INT DEFAULT 0,
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+
+-- Marketing Campaigns table
+CREATE TABLE MarketingCampaigns (
+    CampaignID INT PRIMARY KEY,
+    CampaignName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(MAX),
+    StartDate DATETIME,
+    EndDate DATETIME,
+    Budget DECIMAL(10, 2),
+    ActualCost DECIMAL(10, 2),
+    TargetAudience NVARCHAR(100),
+    Goals NVARCHAR(200),
+    ROI DECIMAL(10, 2),
+    Status NVARCHAR(20)
+);
+
+-- Promotions table
+CREATE TABLE Promotions (
+    PromotionID INT PRIMARY KEY,
+    PromotionName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(MAX),
+    DiscountType NVARCHAR(20), -- Percentage, Fixed Amount, BOGO, etc.
+    DiscountValue DECIMAL(10, 2),
+    StartDate DATETIME,
+    EndDate DATETIME,
+    MinOrderAmount DECIMAL(10, 2),
+    MaxUsages INT,
+    CurrentUsages INT DEFAULT 0,
+    PromoCode NVARCHAR(20),
+    IsActive BIT DEFAULT 1
+);
+
+-- User Activity Logs table
+CREATE TABLE UserActivityLogs (
+    LogID INT PRIMARY KEY,
+    UserID INT, -- Either CustomerID or EmployeeID
+    UserType NVARCHAR(20), -- Customer or Employee
+    ActivityType NVARCHAR(50), -- Login, Order, View Product, etc.
+    ActivityDescription NVARCHAR(MAX),
+    IPAddress NVARCHAR(50),
+    UserAgent NVARCHAR(200),
+    ActivityTimestamp DATETIME,
+    RelatedEntityID INT, -- Could be OrderID, ProductID, etc.
+    RelatedEntityType NVARCHAR(50) -- Order, Product, etc.
+);
+
+
+-- Add foreign key constraint for ManagerID referencing Employees table
+ALTER TABLE Departments
+ADD CONSTRAINT FK_Departments_Employees_ManagerID
+FOREIGN KEY (ManagerID) REFERENCES Employees(EmployeeID);
