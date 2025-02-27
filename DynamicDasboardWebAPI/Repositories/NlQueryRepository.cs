@@ -2,17 +2,27 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using DynamicDasboardWebAPI.Utilities;
 using DynamicDashboardCommon.Models;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.Data.SqlClient;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
     public class NlQueryRepository
     {
         private readonly IDbConnection _connection;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly DatabaseRepository _databaseRepository;
 
-        public NlQueryRepository(IDbConnection connection)
+        public NlQueryRepository(
+            IDbConnection connection,
+            DbConnectionFactory connectionFactory,
+            DatabaseRepository databaseRepository)
         {
             _connection = connection;
+            _connectionFactory = connectionFactory;
+            _databaseRepository = databaseRepository;
         }
 
         /// <summary>
@@ -24,26 +34,94 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             var result = new List<Dictionary<string, object>>();
 
-            using (var command = _connection.CreateCommand())
+            try
             {
-                command.CommandText = query;
-
-                // Use synchronous version instead of async
-                using (var reader = command.ExecuteReader())
+                // Option 1: Use Dapper with the project's extension methods
+                var data = await _connection.QuerySafeAsync<dynamic>(query);
+                foreach (var item in data)
                 {
-                    while (reader.Read())
+                    var row = new Dictionary<string, object>();
+                    foreach (var prop in ((IDictionary<string, object>)item))
                     {
-                        var row = new Dictionary<string, object>();
-                        for (var i = 0; i < reader.FieldCount; i++)
-                        {
-                            row[reader.GetName(i)] = reader.GetValue(i);
-                        }
-                        result.Add(row);
+                        row[prop.Key] = prop.Value;
                     }
+                    result.Add(row);
                 }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception - use the logging pattern found elsewhere in the project
+                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Executes a query on a specific database using its ID
+        /// </summary>
+        /// <param name="query">SQL query to execute</param>
+        /// <param name="databaseId">ID of the database in the system</param>
+        /// <returns>Query results as a list of dictionaries</returns>
+        public async Task<List<Dictionary<string, object>>> ExecuteQueryOnDatabaseAsync(string query, int databaseId)
+        {
+            // Get the database information
+            var database = await _databaseRepository.GetDatabaseByIdAsync(databaseId);
+            if (database == null)
+            {
+                throw new ArgumentException($"Database with ID {databaseId} not found");
+            }
+
+            // Get database type name
+            string dbTypeName = GetDatabaseTypeName(database.DatabaseID);
+
+            // Use the connection factory to create a connection for this specific database
+            using var connection = _connectionFactory.CreateConnection(dbTypeName);
+            connection.ConnectionString = database.ConnectionString;
+
+            try
+            {
+                connection.Open();
+
+                var result = new List<Dictionary<string, object>>();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = query;
+                    command.CommandTimeout = 30;
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var row = new Dictionary<string, object>();
+                            for (var i = 0; i < reader.FieldCount; i++)
+                            {
+                                var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                                row[reader.GetName(i)] = value;
+                            }
+                            result.Add(row);
+                        }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error executing query on {database.Name}: {ex.Message}", ex);
+            }
+        }
+
+        private string GetDatabaseTypeName(int typeId)
+        {
+            return typeId switch
+            {
+                1 => "SQLServer",
+                2 => "MySQL",
+                3 => "Oracle",
+                4 => "SQLServer2",
+                _ => throw new ArgumentException($"Unsupported database type ID: {typeId}")
+            };
         }
 
         /// <summary>

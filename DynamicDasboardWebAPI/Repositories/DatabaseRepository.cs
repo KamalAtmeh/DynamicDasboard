@@ -165,6 +165,134 @@ namespace DynamicDasboardWebAPI.Repositories
             }
         }
 
+        /// <summary>
+        /// Get a comprehensive database details by ID
+        /// </summary>
+        public async Task<Database> GetDatabaseDetailsByIdAsync(int databaseId)
+        {
+            try
+            {
+                // Comprehensive query to fetch all database details with type name
+                const string query = @"
+                    SELECT 
+                        d.DatabaseID, 
+                        d.Name, 
+                        d.TypeID, 
+                        d.ServerAddress, 
+                        d.DatabaseName, 
+                        d.Port, 
+                        d.Username, 
+                        d.EncryptedCredentials, 
+                        d.CreatedAt, 
+                        d.CreatedBy, 
+                        d.Description, 
+                        d.IsActive, 
+                        d.LastTransactionDate, 
+                        d.LastConnectionStatus, 
+                        d.DBCreationScript, 
+                        d.ConnectionString,
+                        dt.TypeName as DatabaseTypeName
+                    FROM Databases d
+                    LEFT JOIN DatabaseTypes dt ON d.TypeID = dt.TypeID
+                    WHERE d.DatabaseID = @DatabaseID";
+
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<Database>(query, new { DatabaseID = databaseId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database details by ID: {DatabaseID}", databaseId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get all databases with their type names
+        /// </summary>
+        public async Task<IEnumerable<Database>> GetAllDatabasesWithTypesAsync()
+        {
+            try
+            {
+                const string query = @"
+                    SELECT 
+                        d.DatabaseID, 
+                        d.Name, 
+                        d.TypeID, 
+                        d.ServerAddress, 
+                        d.DatabaseName, 
+                        d.Port, 
+                        d.Username, 
+                        d.EncryptedCredentials, 
+                        d.CreatedAt, 
+                        d.CreatedBy, 
+                        d.Description, 
+                        d.IsActive, 
+                        d.LastTransactionDate, 
+                        d.LastConnectionStatus, 
+                        d.DBCreationScript, 
+                        d.ConnectionString,
+                        dt.TypeName as DatabaseTypeName
+                    FROM Databases d
+                    LEFT JOIN DatabaseTypes dt ON d.TypeID = dt.TypeID";
+
+                return await _appDbConnection.QuerySafeAsync<Database>(query);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving databases with types");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get database type name by ID
+        /// </summary>
+        public async Task<string> GetDatabaseTypeNameAsync(int typeId)
+        {
+            try
+            {
+                const string query = "SELECT TypeName FROM DatabaseTypes WHERE TypeID = @TypeID";
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<string>(query, new { TypeID = typeId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database type name for ID: {TypeID}", typeId);
+
+                // Fallback to hardcoded type names
+                return typeId switch
+                {
+                    1 => "SQLServer",
+                    2 => "MySQL",
+                    3 => "Oracle",
+                    4 => "SQLServer2",
+                    _ => $"CustomType_{typeId}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Get all database types
+        /// </summary>
+        public async Task<IEnumerable<(int TypeId, string TypeName)>> GetAllDatabaseTypesAsync()
+        {
+            try
+            {
+                const string query = "SELECT TypeID, TypeName FROM DatabaseTypes";
+                return await _appDbConnection.QueryAsync<(int, string)>(query);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database types");
+
+                // Fallback to hardcoded types
+                return new[]
+                {
+                    (1, "SQLServer"),
+                    (2, "MySQL"),
+                    (3, "Oracle")
+                };
+            }
+        }
+
         // Helper method to convert TypeID to database type name
         private string GetDatabaseTypeName(int typeId)
         {
@@ -173,8 +301,13 @@ namespace DynamicDasboardWebAPI.Repositories
                 1 => "SQLServer",
                 2 => "MySQL",
                 3 => "Oracle",
+                4 => "SQLServer2",
                 _ => throw new ArgumentException($"Invalid database type: {typeId}")
             };
         }
+
+
+
+
     }
 }

@@ -245,6 +245,26 @@
             Represents a log entry for a batch processing job.
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseDetailsByIdAsync(System.Int32)">
+            <summary>
+            Get a comprehensive database details by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetAllDatabasesWithTypesAsync">
+            <summary>
+            Get all databases with their type names
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseTypeNameAsync(System.Int32)">
+            <summary>
+            Get database type name by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetAllDatabaseTypesAsync">
+            <summary>
+            Get all database types
+            </summary>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.GenericRepository`1">
             <summary>  
             A generic repository class that provides basic CRUD operations for entities.  
@@ -377,6 +397,14 @@
             <param name="query">The SQL query to execute.</param>
             <returns>A list of dictionaries, where each dictionary represents a row of data.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.NlQueryRepository.ExecuteQueryOnDatabaseAsync(System.String,System.Int32)">
+            <summary>
+            Executes a query on a specific database using its ID
+            </summary>
+            <param name="query">SQL query to execute</param>
+            <param name="databaseId">ID of the database in the system</param>
+            <returns>Query results as a list of dictionaries</returns>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.NlQueryRepository.GetDatabaseMetadataAsync(System.Int32)">
             <summary>
             Retrieves metadata for a database including tables and columns.
@@ -505,6 +533,16 @@
         <member name="T:DynamicDasboardWebAPI.Services.DatabaseException">
             <summary>
             Custom exception for database operations
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetDatabaseDetailsByIdAsync(System.Int32)">
+            <summary>
+            Get comprehensive database details by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetAllDatabasesWithTypesAsync">
+            <summary>
+            Get all databases with their type names
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.IDataAccessService">
@@ -831,6 +869,11 @@
             Executes a command safely and returns the number of affected rows
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteQueryOnDatabaseAsync(DynamicDasboardWebAPI.Utilities.DbConnectionFactory,System.String,System.String,System.String)">
+            <summary>
+            Executes a query on a specific database and maps the results to a dictionary
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.QueryFirstOrDefaultSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
             <summary>
             Executes a query safely and returns the first result or default value
@@ -882,6 +925,13 @@
             programmatic way, ensuring that the queries are syntactically correct and 
             preventing SQL injection attacks by using parameterized queries.
             </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.QueryBuilder.ExtractSqlQueryFromMarkdown(System.String)">
+            <summary>
+            Extracts the SQL query from a markdown code block
+            </summary>
+            <param name="input">Input string containing a SQL query with markdown code block syntax</param>
+            <returns>The clean SQL query without markdown delimiters</returns>
         </member>
     </members>
 </doc>

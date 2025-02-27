@@ -43,6 +43,58 @@ namespace DynamicDasboardWebAPI.Utilities
         }
 
         /// <summary>
+        /// Executes a query on a specific database and maps the results to a dictionary
+        /// </summary>
+        public static async Task<List<Dictionary<string, object>>> ExecuteQueryOnDatabaseAsync(
+            this DbConnectionFactory connectionFactory,
+            string dbType,
+            string connectionString,
+            string query)
+        {
+            var result = new List<Dictionary<string, object>>();
+
+            try
+            {
+                // Create a new connection for the specified database
+                using (var connection = connectionFactory.CreateConnection(dbType))
+                {
+                    // Set the connection string explicitly
+                    connection.ConnectionString = connectionString;
+
+                    // Open the connection
+                    connection.Open();
+
+                    // Execute the query
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = query;
+                        command.CommandTimeout = 30;
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var row = new Dictionary<string, object>();
+                                for (var i = 0; i < reader.FieldCount; i++)
+                                {
+                                    var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                                    row[reader.GetName(i)] = value;
+                                }
+                                result.Add(row);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error executing query on {dbType} database: {ex.Message}", ex);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Executes a query safely and returns the first result or default value
         /// </summary>
         public static async Task<T> QueryFirstOrDefaultSafeAsync<T>(this IDbConnection connection, string sql, object param = null, IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)

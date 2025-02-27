@@ -18,10 +18,7 @@ namespace DynamicDasboardWebAPI.Services
             _repository = repository;
         }
 
-        public async Task<IEnumerable<Database>> GetAllDatabasesAsync()
-        {
-            return await _repository.GetAllDatabasesAsync();
-        }
+
 
         public async Task<int> AddDatabaseAsync(Database database)
         {
@@ -109,19 +106,57 @@ namespace DynamicDasboardWebAPI.Services
             return false;
         }
 
+        /// <summary>
+        /// Get comprehensive database details by ID
+        /// </summary>
+        public async Task<Database> GetDatabaseDetailsByIdAsync(int databaseId)
+        {
+            if (databaseId <= 0)
+                throw new ArgumentException("Database ID must be greater than zero.");
+
+            return await _repository.GetDatabaseDetailsByIdAsync(databaseId);
+        }
+
+        /// <summary>
+        /// Get all databases with their type names
+        /// </summary>
+        public async Task<IEnumerable<Database>> GetAllDatabasesWithTypesAsync()
+        {
+            return await _repository.GetAllDatabasesWithTypesAsync();
+        }
+
+        // Modify existing GetAllDatabasesAsync to use the new method
+        public async Task<IEnumerable<Database>> GetAllDatabasesAsync()
+        {
+            return await GetAllDatabasesWithTypesAsync();
+        }
+
+        public async Task<string> GetDatabaseTypeNameAsync(int typeId)
+        {
+            return await _repository.GetDatabaseTypeNameAsync(typeId);
+        }
+
+        public async Task<IEnumerable<(int TypeId, string TypeName)>> GetAllDatabaseTypesAsync()
+        {
+            return await _repository.GetAllDatabaseTypesAsync();
+        }
+
         private int GetDatabaseTypeId(string dbType)
         {
+            //Temp implementation
             return dbType.ToLower() switch
             {
                 "sqlserver" => 1,
                 "mysql" => 2,
                 "oracle" => 3,
+                "sqlserver2" => 4,
                 _ => throw new NotSupportedException($"Database type '{dbType}' is not supported.")
             };
         }
 
         private string BuildConnectionString(ConnectionTestRequest request)
         {
+            //Temp implementation
             switch (request.DbType.ToLower())
             {
                 case "sqlserver":
@@ -130,6 +165,8 @@ namespace DynamicDasboardWebAPI.Services
                     return BuildMySqlConnectionString(request);
                 case "oracle":
                     return BuildOracleConnectionString(request);
+                case "sqlserver2":
+                    return BuildSqlServerConnectionString(request);
                 default:
                     throw new NotSupportedException($"Database type '{request.DbType}' is not supported.");
             }

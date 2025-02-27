@@ -468,7 +468,7 @@
                 {
                     Server = dbServer,
                     Database = dbName,
-                    DbType = "SQLServer",   // Default to SQL Server, could be dynamic
+                    DbType = "SQLServer2",   // Default to SQL Server, could be dynamic
                     AuthType = dbAuthType,
                     Username = dbUsername,
                     Password = dbPassword
@@ -531,12 +531,13 @@
             // Create the request using the database connection info and question
             var request = new NlQueryRequest
                 {
+                    ConnectionString = "", //temp
                     Question = userQuestion,
-                    DatabaseType = "SQLServer",  // Based on the selected connection type
-                    DatabaseId = 1  // This would be dynamic in a real implementation
+                    DatabaseType = "SQLServer2",  // Based on the selected connection type, temp
+                    DatabaseId = 5  // This would be dynamic in a real implementation , temp 
                 };
 
-            var response = await Http.PostAsJsonAsync("api/nlquery/process", request);
+            var response = await Http.PostAsJsonAsync("api/NlQuery/process", request);
 
             if (response.IsSuccessStatusCode)
             {
@@ -590,7 +591,7 @@
             var request = new DirectSqlRequest
                 {
                     SqlQuery = directSqlQuery,
-                    DbType = "SQLServer"  // Based on the selected connection type
+                    DbType = "SQLServer2"  // Based on the selected connection type
                 };
 
             var response = await Http.PostAsJsonAsync("api/query/execute", request);

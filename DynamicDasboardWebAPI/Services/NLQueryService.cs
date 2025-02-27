@@ -9,6 +9,7 @@ using DynamicDashboardCommon.Models;
 using DynamicDasboardWebAPI.Repositories;
 using DynamicDasboardWebAPI.Utilities;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace DynamicDasboardWebAPI.Services
 {
@@ -198,7 +199,10 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // 4. Execute the query
-                var results = await _nlQueryRepository.ExecuteQueryAsync(sql);
+                // In ProcessNaturalLanguageQueryAsync method:
+
+                // Execute the query on the requested database
+                var results = await _nlQueryRepository.ExecuteQueryOnDatabaseAsync(sql, request.DatabaseId);
 
                 // 5. Generate explanation
                 var explanation = await GenerateExplanationAsync(request.Question, sql, results);
@@ -297,10 +301,10 @@ Database Schema:
 {schema}
 
 Available intents:
-{JsonSerializer.Serialize(_intents, new JsonSerializerOptions { WriteIndented = true })}
+{System.Text.Json.JsonSerializer.Serialize(_intents, new JsonSerializerOptions { WriteIndented = true })}
 
 Available operations:
-{JsonSerializer.Serialize(_operations, new JsonSerializerOptions { WriteIndented = true })}
+{System.Text.Json.JsonSerializer.Serialize(_operations, new JsonSerializerOptions { WriteIndented = true })}
 
 For the given question, analyze:
 1. Which intent best matches the question's primary goal
@@ -340,10 +344,23 @@ Return your analysis as a JSON object with the following structure:
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<DeepSeekResponse>(content);
+                var result = System.Text.Json.JsonSerializer.Deserialize<DeepSeekResponse>(content);
 
                 var jsonMatch = result?.choices[0].message.content;
-                return JsonSerializer.Deserialize<TemplateMatchInfo>(jsonMatch);
+
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<TemplateMatchInfo>(jsonMatch,
+        new Newtonsoft.Json.JsonSerializerSettings
+        {
+            Error = (sender, args) =>
+            {
+                Console.WriteLine($"Deserialization Error: {args.ErrorContext.Error.Message}");
+                args.ErrorContext.Handled = true;
+            },
+            MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore
+        });
+
+
+                //  return JsonSerializer.Deserialize<TemplateMatchInfo>(jsonMatch);
             }
 
             return null;
@@ -368,10 +385,10 @@ Intent: {intent.Name} - {intent.Description}
 Intent SQL Template: {intent.Template}
 
 Operations:
-{JsonSerializer.Serialize(operations, new JsonSerializerOptions { WriteIndented = true })}
+{System.Text.Json.JsonSerializer.Serialize(operations, new JsonSerializerOptions { WriteIndented = true })}
 
 Parameters:
-{JsonSerializer.Serialize(templateMatch.Parameters, new JsonSerializerOptions { WriteIndented = true })}
+{System.Text.Json.JsonSerializer.Serialize(templateMatch.Parameters, new JsonSerializerOptions { WriteIndented = true })}
 
 Rules:
 1. Generate a valid SQL query using the intent and operations as guidance
@@ -391,7 +408,7 @@ Rules:
                     new { role = "system", content = systemMessage },
                     new { role = "user", content = userMessage }
                 },
-                temperature = 0.1,
+                temperature = 0,
                 max_tokens = 500
             };
 
@@ -403,9 +420,13 @@ Rules:
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<DeepSeekResponse>(content);
+                var result = System.Text.Json.JsonSerializer.Deserialize<DeepSeekResponse>(content);
 
-                return result?.choices[0].message.content.Trim();
+                var sqlresult = result?.choices[0].message.content.Trim();
+                if (sqlresult != null)
+                {
+                    return QueryBuilder.ExtractSqlQueryFromMarkdown(sqlresult);
+                }
             }
 
             return null;
@@ -426,7 +447,7 @@ SQL Query:
 {sql}
 
 Query Results (first few rows):
-{JsonSerializer.Serialize(results.Take(3), new JsonSerializerOptions { WriteIndented = true })}
+{System.Text.Json.JsonSerializer.Serialize(results.Take(3), new JsonSerializerOptions { WriteIndented = true })}
 
 Number of rows returned: {results.Count}";
 
@@ -450,7 +471,7 @@ Number of rows returned: {results.Count}";
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<DeepSeekResponse>(content);
+                var result = System.Text.Json.JsonSerializer.Deserialize<DeepSeekResponse>(content);
 
                 return result?.choices[0].message.content.Trim();
             }

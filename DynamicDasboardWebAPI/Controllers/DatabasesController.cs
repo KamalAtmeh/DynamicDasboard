@@ -78,10 +78,34 @@ namespace DynamicDasboardWebAPI.Controllers
         }
 
         [HttpGet("types")]
-        public ActionResult<IEnumerable<string>> GetSupportedDatabaseTypes()
+        public async Task<ActionResult<IEnumerable<(int TypeId, string TypeName)>>> GetDatabaseTypes()
         {
-            var types = _service.GetSupportedDatabaseTypes();
-            return Ok(types);
+            try
+            {
+                var types = await _service.GetAllDatabaseTypesAsync();
+                return Ok(types);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving database types");
+                return StatusCode(500, "An error occurred while retrieving database types.");
+            }
         }
+
+        [HttpGet("type/{typeId}")]
+        public async Task<ActionResult<string>> GetDatabaseTypeName(int typeId)
+        {
+            try
+            {
+                var typeName = await _service.GetDatabaseTypeNameAsync(typeId);
+                return Ok(typeName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving database type name for ID {typeId}");
+                return StatusCode(500, "An error occurred while retrieving database type name.");
+            }
+        }
+
     }
 }

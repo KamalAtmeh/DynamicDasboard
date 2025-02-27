@@ -33,6 +33,7 @@ namespace DynamicDasboardWebAPI.Utilities
                 "SQLServer" => new SqlConnection(connectionString),
                 "MySQL" => new MySqlConnection(connectionString),
                 "Oracle" => new OracleConnection(connectionString),
+                "SQLServer2" => new OracleConnection(connectionString),
                 _ => throw new ArgumentException($"Unsupported database type: {dbType}")
             };
         }
@@ -54,11 +55,17 @@ namespace DynamicDasboardWebAPI.Utilities
             try
             {
                 switch (dbType)
-                {
+                {//temp implementation to be changed
                     case "SQLServer":
                         var sqlConnection = new SqlConnection(connectionString);
                         await sqlConnection.OpenAsync();
                         connection = sqlConnection;
+                        break;
+
+                    case "SQLServer2":
+                        var sqlConnection2 = new SqlConnection(connectionString);
+                        await sqlConnection2.OpenAsync();
+                        connection = sqlConnection2;
                         break;
 
                     case "MySQL":
@@ -113,8 +120,9 @@ namespace DynamicDasboardWebAPI.Utilities
         private string GetConnectionString(string dbType)
         {
             return dbType switch
-            {
-                "SQLServer" => _configuration.GetConnectionString("SQLServerWindowsAuth"),
+            {//temp implementation to be changed
+                "SQLServer" => _configuration.GetConnectionString("SQLServerWindowsAuth1"),
+                "SQLServer2" => _configuration.GetConnectionString("SQLServerWindowsAuth2"),
                 "MySQL" => _configuration.GetConnectionString("MySQL"),
                 "Oracle" => _configuration.GetConnectionString("Oracle"),
                 _ => throw new ArgumentException($"Unsupported database type: {dbType}")

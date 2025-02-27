@@ -47,51 +47,92 @@
         </member>
         <member name="T:DynamicDashboardCommon.Models.Database">
             <summary>
-            Represents a database entity with connection details and type information.
-            This class is used to store and manage information about different types of databases
-            such as SQL Server, MySQL, and Oracle. It includes properties for the database ID, name,
-            type, connection string, creation date, description, creator, and an optional creation script.
+            Represents a database connection in the system with comprehensive details
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.Database.DatabaseID">
             <summary>
-            Gets or sets the unique identifier for the database.
+            Unique identifier for the database connection
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.Database.Name">
             <summary>
-            Gets or sets the name of the database.
+            Name of the database connection
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.Database.TypeID">
             <summary>
-            Gets or sets the type identifier for the database.
-            1 = SQL Server, 2 = MySQL, 3 = Oracle.
+            Type ID of the database (Foreign key to DatabaseTypes)
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.Database.ConnectionString">
+        <member name="P:DynamicDashboardCommon.Models.Database.ServerAddress">
             <summary>
-            Gets or sets the connection string used to connect to the database.
+            Server address for the database connection
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.DatabaseName">
+            <summary>
+            Actual name of the database
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.Port">
+            <summary>
+            Port number for the database connection
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.Username">
+            <summary>
+            Username for database authentication
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.EncryptedCredentials">
+            <summary>
+            Encrypted credentials for secure storage
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.Database.CreatedAt">
             <summary>
-            Gets or sets the date and time when the database entry was created.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Database.Description">
-            <summary>
-            Gets or sets the description of the database.
+            Timestamp of database connection creation
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.Database.CreatedBy">
             <summary>
-            Gets or sets the identifier of the user who created the database connection.
+            User ID of the creator
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.Description">
+            <summary>
+            Description of the database connection
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.IsActive">
+            <summary>
+            Indicates if the database connection is active
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.LastTransactionDate">
+            <summary>
+            Timestamp of the last transaction
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.LastConnectionStatus">
+            <summary>
+            Indicates the last connection status
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.Database.DBCreationScript">
             <summary>
-            Gets or sets the optional script to create the database.
+            Database creation script
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.ConnectionString">
+            <summary>
+            Connection string for the database
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.DatabaseTypeName">
+            <summary>
+            Type name of the database (not a database column, but useful for display)
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.ExceptionDetails">
