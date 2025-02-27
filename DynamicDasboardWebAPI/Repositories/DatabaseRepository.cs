@@ -4,6 +4,9 @@ using DynamicDasboardWebAPI.Utilities;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
+using Oracle.ManagedDataAccess.Client;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
@@ -76,34 +79,92 @@ namespace DynamicDasboardWebAPI.Repositories
         /// </summary>
         /// <param name="database">The database entity to test the connection for.</param>
         /// <returns><c>true</c> if the connection is successful; otherwise, <c>false</c>.</returns>
+        //public async Task<bool> TestConnectionAsync(Database database)
+        //{
+        //    try
+        //    {
+        //        await _dynamicDbConnectionFactory.OpenConnectionAsync(GetDatabaseTypeName(database.TypeID));
+        //        return true;
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
+        //}
+
         public async Task<bool> TestConnectionAsync(Database database)
         {
             try
             {
-                await _dynamicDbConnectionFactory.OpenConnectionAsync(GetDatabaseTypeName(database.TypeID));
-                return true;
+                string connectionString = database.ConnectionString;
+
+                // Create connection based on database type
+                using (IDbConnection connection = CreateConnection(database.TypeID, connectionString))
+                {
+                    // For proper async opening, we need to cast to the specific connection type
+                    switch (database.TypeID)
+                    {
+                        case 1: // SQL Server
+                            await ((SqlConnection)connection).OpenAsync();
+                            break;
+                        case 2: // MySQL
+                            await ((MySqlConnection)connection).OpenAsync();
+                            break;
+                        case 3: // Oracle
+                            await ((OracleConnection)connection).OpenAsync();
+                            break;
+                        default:
+                            throw new NotSupportedException($"Database type ID '{database.TypeID}' is not supported.");
+                    }
+
+                    // Execute a simple query to verify connection
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = GetTestQuery(database.TypeID);
+                        command.CommandType = CommandType.Text;
+
+                        var result = command.ExecuteScalar();
+                        return true;
+                    }
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                // Log the exception
                 return false;
             }
         }
 
-        /// <summary>
-        /// Helper method to convert TypeID to database type name.
-        /// </summary>
-        /// <param name="typeId">The type ID of the database.</param>
-        /// <returns>The name of the database type.</returns>
-        /// <exception cref="ArgumentException">Thrown when the type ID is invalid.</exception>
-        private string GetDatabaseTypeName(int typeId)
+        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
+        {
+            string query = "SELECT * FROM Databases WHERE DatabaseID = @DatabaseID";
+
+            // Using Dapper to execute the query
+            return await _appDbConnection.QueryFirstOrDefaultAsync<Database>(query, new { DatabaseID = databaseId });
+        }
+
+        private IDbConnection CreateConnection(int typeId, string connectionString)
         {
             return typeId switch
             {
-                1 => "SQLServer",
-                2 => "MySQL",
-                3 => "Oracle",
-                _ => throw new ArgumentException("Invalid database type.")
+                1 => new SqlConnection(connectionString),
+                2 => new MySqlConnection(connectionString),
+                3 => new OracleConnection(connectionString),
+                _ => throw new NotSupportedException($"Database type ID '{typeId}' is not supported.")
             };
         }
+
+        private string GetTestQuery(int typeId)
+        {
+            return typeId switch
+            {
+                1 => "SELECT 1", // SQL Server
+                2 => "SELECT 1", // MySQL
+                3 => "SELECT 1 FROM DUAL", // Oracle
+                _ => "SELECT 1"
+            };
+        }
+
+
     }
 }

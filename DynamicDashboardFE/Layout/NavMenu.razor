@@ -5,49 +5,54 @@
     The navigation menu can be toggled between collapsed and expanded states.
 *@
 <div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">DynamicDashboardFE</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
+	<div class="container-fluid">
+		<a class="navbar-brand" href="">DynamicDashboardFE</a>
+		<button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+	</div>
 </div>
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="QueryGenerator">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Generate SQL Query
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="comparisonautomation">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Comparison
-            </NavLink>
-        </div>
-    </nav>
+	<nav class="flex-column">
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+				<span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="counter">
+				<span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="QueryGenerator">
+				<span class="oi oi-list-rich" aria-hidden="true"></span> Generate SQL Query
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="comparisonautomation">
+				<span class="oi oi-list-rich" aria-hidden="true"></span> Comparison
+			</NavLink>
+		</div>
+		<div class="nav-item px-3">
+			<NavLink class="nav-link" href="smartnlquery">
+				<span class="oi oi-magnifying-glass" aria-hidden="true"></span> Smart Query
+			</NavLink>
+		</div>
+	</nav>
 </div>
 
 @code {
-    // Boolean flag to track the collapsed state of the navigation menu
-    private bool collapseNavMenu = true;
+	// Boolean flag to track the collapsed state of the navigation menu
+	private bool collapseNavMenu = true;
 
-    // CSS class to apply based on the collapsed state of the navigation menu
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+	// CSS class to apply based on the collapsed state of the navigation menu
+	private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    // Method to toggle the collapsed state of the navigation menu
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
+	// Method to toggle the collapsed state of the navigation menu
+	private void ToggleNavMenu()
+	{
+		collapseNavMenu = !collapseNavMenu;
+	}
 }

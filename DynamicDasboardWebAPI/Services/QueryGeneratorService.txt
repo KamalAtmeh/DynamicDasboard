@@ -110,7 +110,7 @@ namespace DynamicDasboardWebAPI.Services
                 var prompt = $"Generate a SQL query for: {question}";
 
                 var temperature = double.TryParse(_config["Model:Model_Temp"], out var temp) ? temp : 0.0;
-                var maxTokens = int.TryParse(_config["Model:MaxTokens"], out var tokens) ? tokens : 1000;
+                var maxTokens = int.TryParse(_config["Model:MaxTokens"], out var tokens) ? tokens : 300;
 
                 var requestBody = new
                 {
@@ -185,7 +185,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <summary>
         /// Represents the response from the DeepSeek API.
         /// </summary>
-        public class DeepSeekResponse
+        private class DeepSeekResponse
         {
             public required Choice[] choices { get; set; }
         }
@@ -193,7 +193,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <summary>
         /// Represents a choice in the DeepSeek API response.
         /// </summary>
-        public class Choice
+        private class Choice
         {
             public required Message message { get; set; }
         }
@@ -201,7 +201,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <summary>
         /// Represents a message in the DeepSeek API response.
         /// </summary>
-        public class Message
+        private class Message
         {
             public required string content { get; set; }
         }

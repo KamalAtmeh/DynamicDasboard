@@ -1,33 +1,48 @@
-﻿using System.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using Dapper;
+using DynamicDasboardWebAPI.Utilities;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
-    /// <summary>
-    /// Repository for executing dynamic SQL queries.
-    /// </summary>
     public class QueryRepository
     {
-        private readonly IDbConnection _connection;
+        private readonly DbConnectionFactory _dbConnectionFactory;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="QueryRepository"/> class.
-        /// </summary>
-        /// <param name="connection">The database connection to use.</param>
-        public QueryRepository(IDbConnection connection)
+        public QueryRepository(DbConnectionFactory dbConnectionFactory)
         {
-            _connection = connection;
+            _dbConnectionFactory = dbConnectionFactory ?? throw new ArgumentNullException(nameof(dbConnectionFactory));
         }
 
-        /// <summary>
-        /// Executes a dynamic SQL query and returns the result.
-        /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <returns>The query result as a dynamic object.</returns>
-        public async Task<dynamic> ExecuteQueryAsync(string query)
+        public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query, string dbType)
         {
-            return await _connection.QueryAsync<dynamic>(query);
+            var result = new List<Dictionary<string, object>>();
+
+            using (var connection = _dbConnectionFactory.CreateConnection(dbType))
+            {
+                await connection.OpenAsync();
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = query;
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var row = new Dictionary<string, object>();
+                            for (var i = 0; i < reader.FieldCount; i++)
+                            {
+                                row[reader.GetName(i)] = reader.GetValue(i);
+                            }
+                            result.Add(row);
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
     }
 }

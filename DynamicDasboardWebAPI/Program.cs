@@ -41,6 +41,9 @@ builder.Services.AddScoped<ColumnRepository>();
 builder.Services.AddScoped<RelationshipRepository>();
 builder.Services.AddScoped<ILogsService, LogsService>();
 builder.Services.AddScoped<QueryRepository>();
+
+builder.Services.AddScoped<NlQueryRepository>();
+builder.Services.AddScoped<BatchProcessingRepository>();
 builder.Services.AddHttpClient<QueryGeneratorService>();
 builder.Services.AddScoped<QueryLogsRepository>();
 //builder.Services.AddScoped<QueryService>();
@@ -51,6 +54,10 @@ builder.Services.AddScoped<DatabaseService>();
 builder.Services.AddScoped<TableService>();
 builder.Services.AddScoped<ColumnService>();
 builder.Services.AddScoped<RelationshipService>();
+// Add NlQueryService
+builder.Services.AddScoped<NlQueryService>();
+// Register the batch processing service
+builder.Services.AddScoped<BatchProcessingService>();
 
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });
