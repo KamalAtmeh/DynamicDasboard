@@ -23,17 +23,6 @@
             <param name="request">The request containing the SQL queries to compare and other related information.</param>
             <returns>An <see cref="T:Microsoft.AspNetCore.Mvc.IActionResult"/> containing the comparison results or an error message.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Services.ComparisonService">
-            <summary>
-            Service for executing SQL queries and comparing datasets.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.ComparisonService.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.ComparisonService"/> class.
-            </summary>
-            <param name="config">The configuration instance used to retrieve the connection string.</param>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Services.ComparisonService.ExecuteQueryAsync(System.String)">
             <summary>
             Executes a SQL query asynchronously and returns the results as a list of dictionaries.
@@ -49,13 +38,15 @@
             <param name="dataset2">The second dataset to compare.</param>
             <returns>True if the datasets are identical; otherwise, false.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.ComparisonService.DictionariesEqual(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object})">
+        <member name="M:DynamicDasboardWebAPI.Services.ComparisonService.NormalizeRow(System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>
-            Compares two dictionaries for equality.
+            Normalizes a row by creating a consistent string representation
             </summary>
-            <param name="dict1">The first dictionary to compare.</param>
-            <param name="dict2">The second dictionary to compare.</param>
-            <returns>True if the dictionaries are equal; otherwise, false.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.ComparisonService.FormatValue(System.Object)">
+            <summary>
+            Formats a value to ensure consistent string representation
+            </summary>
         </member>
     </members>
 </doc>

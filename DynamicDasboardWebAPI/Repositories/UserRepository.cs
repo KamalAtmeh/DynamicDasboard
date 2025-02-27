@@ -1,58 +1,124 @@
 ﻿using Dapper;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models;
+using Microsoft.Extensions.Logging;
+using DynamicDasboardWebAPI.Utilities;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
-    /// <summary>
-    /// Repository class for managing user data in the database.
-    /// Provides methods to perform CRUD operations on the Users table.
-    /// </summary>
     public class UserRepository
     {
         private readonly IDbConnection _connection;
+        private readonly ILogger<UserRepository> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UserRepository"/> class.
-        /// </summary>
-        /// <param name="connection">The database connection to be used by the repository.</param>
-        public UserRepository(IDbConnection connection)
+        public UserRepository(IDbConnection connection, ILogger<UserRepository> logger = null)
         {
-            _connection = connection;
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _logger = logger;
         }
 
-        /// <summary>
-        /// Retrieves all users from the database.
-        /// </summary>
-        /// <returns>A collection of <see cref="User"/> objects.</returns>
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
-            string query = "SELECT * FROM Users";
-            return await _connection.QueryAsync<User>(query);
+            try
+            {
+                const string query = "SELECT * FROM Users";
+                return await _connection.QuerySafeAsync<User>(query);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving all users");
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Adds a new user to the database.
-        /// </summary>
-        /// <param name="user">The <see cref="User"/> object to be added.</param>
-        /// <returns>The number of rows affected.</returns>
         public async Task<int> AddUserAsync(User user)
         {
-            string query = "INSERT INTO Users (Username, RoleID, AllowedDatabases, PasswordHash , CreatedAt) VALUES (@Username, @RoleID, @AllowedDatabases, @PasswordHash, @CreatedAt)";
-            return await _connection.ExecuteAsync(query, user);
+            try
+            {
+                if (user == null) throw new ArgumentNullException(nameof(user));
+
+                const string query = @"
+                    INSERT INTO Users 
+                    (Username, RoleID, AllowedDatabases, PasswordHash, CreatedAt) 
+                    VALUES 
+                    (@Username, @RoleID, @AllowedDatabases, @PasswordHash, @CreatedAt);
+                    SELECT CAST(SCOPE_IDENTITY() as int)";
+
+                return await _connection.ExecuteScalarSafeAsync<int>(query, user);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error adding user: {Username}", user?.Username);
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Retrieves a user from the database by their ID.
-        /// </summary>
-        /// <param name="userId">The ID of the user to be retrieved.</param>
-        /// <returns>The <see cref="User"/> object if found; otherwise, null.</returns>
         public async Task<User> GetUserByIDAsync(int userId)
         {
-            string query = "SELECT * FROM Users WHERE UserID = @UserID";
-            return await _connection.QueryFirstOrDefaultAsync<User>(query, new { UserID = userId });
+            try
+            {
+                const string query = "SELECT * FROM Users WHERE UserID = @UserID";
+                return await _connection.QueryFirstOrDefaultSafeAsync<User>(query, new { UserID = userId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving user by ID: {UserID}", userId);
+                throw;
+            }
+        }
+
+        public async Task<User> GetUserByUsernameAsync(string username)
+        {
+            try
+            {
+                const string query = "SELECT * FROM Users WHERE Username = @Username";
+                return await _connection.QueryFirstOrDefaultSafeAsync<User>(query, new { Username = username });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving user by username: {Username}", username);
+                throw;
+            }
+        }
+
+        public async Task<int> UpdateUserAsync(User user)
+        {
+            try
+            {
+                if (user == null) throw new ArgumentNullException(nameof(user));
+
+                const string query = @"
+                    UPDATE Users 
+                    SET Username = @Username, 
+                        RoleID = @RoleID, 
+                        AllowedDatabases = @AllowedDatabases, 
+                        PasswordHash = @PasswordHash
+                    WHERE UserID = @UserID";
+
+                return await _connection.ExecuteSafeAsync(query, user);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error updating user: {UserID}", user?.UserID);
+                throw;
+            }
+        }
+
+        public async Task<int> DeleteUserAsync(int userId)
+        {
+            try
+            {
+                const string query = "DELETE FROM Users WHERE UserID = @UserID";
+                return await _connection.ExecuteSafeAsync(query, new { UserID = userId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting user: {UserID}", userId);
+                throw;
+            }
         }
     }
 }

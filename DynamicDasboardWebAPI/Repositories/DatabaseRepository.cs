@@ -1,170 +1,180 @@
 ﻿using Dapper;
 using DynamicDashboardCommon.Models;
 using DynamicDasboardWebAPI.Utilities;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
-using MySql.Data.MySqlClient;
-using Oracle.ManagedDataAccess.Client;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
-    /// <summary>
-    /// Repository class for managing database connections and operations.
-    /// </summary>
     public class DatabaseRepository
     {
         private readonly IDbConnection _appDbConnection; // Application Database
         private readonly DbConnectionFactory _dynamicDbConnectionFactory; // Dynamic Database
+        private readonly ILogger<DatabaseRepository> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DatabaseRepository"/> class.
-        /// </summary>
-        /// <param name="appDbConnection">The application database connection.</param>
-        /// <param name="dynamicDbConnectionFactory">The dynamic database connection factory.</param>
-        public DatabaseRepository(IDbConnection appDbConnection, DbConnectionFactory dynamicDbConnectionFactory)
+        public DatabaseRepository(
+            IDbConnection appDbConnection,
+            DbConnectionFactory dynamicDbConnectionFactory,
+            ILogger<DatabaseRepository> logger = null)
         {
-            _appDbConnection = appDbConnection;
-            _dynamicDbConnectionFactory = dynamicDbConnectionFactory;
+            _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+            _dynamicDbConnectionFactory = dynamicDbConnectionFactory ?? throw new ArgumentNullException(nameof(dynamicDbConnectionFactory));
+            _logger = logger;
         }
 
-        /// <summary>
-        /// Fetches all databases from the application database.
-        /// </summary>
-        /// <returns>A collection of <see cref="Database"/> objects.</returns>
+        // Fetch all databases from the Application Database
         public async Task<IEnumerable<Database>> GetAllDatabasesAsync()
         {
-            string query = "SELECT * FROM Databases";
-            return await _appDbConnection.QueryAsync<Database>(query);
+            try
+            {
+                const string query = "SELECT * FROM Databases";
+                return await _appDbConnection.QuerySafeAsync<Database>(query);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving all databases");
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Adds a new database connection.
-        /// </summary>
-        /// <param name="database">The database entity to add.</param>
-        /// <returns>The number of rows affected.</returns>
+        // Get a database by ID
+        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
+        {
+            try
+            {
+                const string query = "SELECT * FROM Databases WHERE DatabaseID = @DatabaseID";
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<Database>(query, new { DatabaseID = databaseId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database by ID: {DatabaseID}", databaseId);
+                throw;
+            }
+        }
+
+        // Get a database by name
+        public async Task<Database> GetDatabaseByNameAsync(string databaseName)
+        {
+            try
+            {
+                const string query = "SELECT * FROM Databases WHERE Name = @Name";
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<Database>(query, new { Name = databaseName });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database by name: {Name}", databaseName);
+                throw;
+            }
+        }
+
+        // Add a new database connection
         public async Task<int> AddDatabaseAsync(Database database)
         {
-            string query = "INSERT INTO Databases (Name, TypeID, ConnectionString, Description, CreatedBy, DBCreationScript) VALUES (@Name, @TypeID, @ConnectionString, @Description, @CreatedBy, @DBCreationScript)";
-            var rowsaffected = await _appDbConnection.ExecuteAsync(query, database);
-            return rowsaffected;
+            try
+            {
+                if (database == null) throw new ArgumentNullException(nameof(database));
+
+                const string query = @"
+                    INSERT INTO Databases 
+                    (Name, TypeID, ConnectionString, Description, CreatedBy, DBCreationScript) 
+                    VALUES 
+                    (@Name, @TypeID, @ConnectionString, @Description, @CreatedBy, @DBCreationScript);
+                    SELECT CAST(SCOPE_IDENTITY() as int)";
+
+                return await _appDbConnection.ExecuteScalarSafeAsync<int>(query, database);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error adding database: {Name}", database?.Name);
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Updates an existing database connection.
-        /// </summary>
-        /// <param name="database">The database entity to update.</param>
-        /// <returns>The number of rows affected.</returns>
+        // Update an existing database connection
         public async Task<int> UpdateDatabaseAsync(Database database)
         {
-            string query = "UPDATE Databases SET Name = @Name, TypeID = @TypeID, ConnectionString = @ConnectionString WHERE DatabaseID = @DatabaseID";
-            var rowsAffected = await _appDbConnection.ExecuteAsync(query, database);
-            return rowsAffected;
+            try
+            {
+                if (database == null) throw new ArgumentNullException(nameof(database));
+
+                const string query = @"
+                    UPDATE Databases 
+                    SET Name = @Name, 
+                        TypeID = @TypeID, 
+                        ConnectionString = @ConnectionString,
+                        Description = @Description,
+                        DBCreationScript = @DBCreationScript
+                    WHERE DatabaseID = @DatabaseID";
+
+                return await _appDbConnection.ExecuteSafeAsync(query, database);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error updating database: {DatabaseID}", database?.DatabaseID);
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Deletes a database connection.
-        /// </summary>
-        /// <param name="databaseId">The ID of the database to delete.</param>
-        /// <returns>The number of rows affected.</returns>
+        // Delete a database connection
         public async Task<int> DeleteDatabaseAsync(int databaseId)
         {
-            string query = "DELETE FROM Databases WHERE DatabaseID = @DatabaseID";
-            return await _appDbConnection.ExecuteAsync(query, new { DatabaseID = databaseId });
+            try
+            {
+                const string query = "DELETE FROM Databases WHERE DatabaseID = @DatabaseID";
+                return await _appDbConnection.ExecuteSafeAsync(query, new { DatabaseID = databaseId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting database: {DatabaseID}", databaseId);
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Tests the connection to a dynamic database.
-        /// </summary>
-        /// <param name="database">The database entity to test the connection for.</param>
-        /// <returns><c>true</c> if the connection is successful; otherwise, <c>false</c>.</returns>
-        //public async Task<bool> TestConnectionAsync(Database database)
-        //{
-        //    try
-        //    {
-        //        await _dynamicDbConnectionFactory.OpenConnectionAsync(GetDatabaseTypeName(database.TypeID));
-        //        return true;
-        //    }
-        //    catch
-        //    {
-        //        return false;
-        //    }
-        //}
-
+        // Test the connection to a dynamic database
         public async Task<bool> TestConnectionAsync(Database database)
         {
             try
             {
-                string connectionString = database.ConnectionString;
+                if (database == null) throw new ArgumentNullException(nameof(database));
 
-                // Create connection based on database type
-                using (IDbConnection connection = CreateConnection(database.TypeID, connectionString))
-                {
-                    // For proper async opening, we need to cast to the specific connection type
-                    switch (database.TypeID)
-                    {
-                        case 1: // SQL Server
-                            await ((SqlConnection)connection).OpenAsync();
-                            break;
-                        case 2: // MySQL
-                            await ((MySqlConnection)connection).OpenAsync();
-                            break;
-                        case 3: // Oracle
-                            await ((OracleConnection)connection).OpenAsync();
-                            break;
-                        default:
-                            throw new NotSupportedException($"Database type ID '{database.TypeID}' is not supported.");
-                    }
-
-                    // Execute a simple query to verify connection
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.CommandText = GetTestQuery(database.TypeID);
-                        command.CommandType = CommandType.Text;
-
-                        var result = command.ExecuteScalar();
-                        return true;
-                    }
-                }
+                string dbType = GetDatabaseTypeName(database.TypeID);
+                return await _dynamicDbConnectionFactory.TestConnectionAsync(dbType);
             }
             catch (Exception ex)
             {
-                // Log the exception
+                _logger?.LogError(ex, "Error testing connection to database: {Name}", database?.Name);
                 return false;
             }
         }
 
-        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
+        // Get database metadata as tables
+        public async Task<IEnumerable<Table>> GetDatabaseMetadataAsync(int databaseId)
         {
-            string query = "SELECT * FROM Databases WHERE DatabaseID = @DatabaseID";
-
-            // Using Dapper to execute the query
-            return await _appDbConnection.QueryFirstOrDefaultAsync<Database>(query, new { DatabaseID = databaseId });
+            try
+            {
+                const string query = "SELECT * FROM Tables WHERE DatabaseID = @DatabaseID";
+                return await _appDbConnection.QuerySafeAsync<Table>(query, new { DatabaseID = databaseId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving metadata for database: {DatabaseID}", databaseId);
+                throw;
+            }
         }
 
-        private IDbConnection CreateConnection(int typeId, string connectionString)
+        // Helper method to convert TypeID to database type name
+        private string GetDatabaseTypeName(int typeId)
         {
             return typeId switch
             {
-                1 => new SqlConnection(connectionString),
-                2 => new MySqlConnection(connectionString),
-                3 => new OracleConnection(connectionString),
-                _ => throw new NotSupportedException($"Database type ID '{typeId}' is not supported.")
+                1 => "SQLServer",
+                2 => "MySQL",
+                3 => "Oracle",
+                _ => throw new ArgumentException($"Invalid database type: {typeId}")
             };
         }
-
-        private string GetTestQuery(int typeId)
-        {
-            return typeId switch
-            {
-                1 => "SELECT 1", // SQL Server
-                2 => "SELECT 1", // MySQL
-                3 => "SELECT 1 FROM DUAL", // Oracle
-                _ => "SELECT 1"
-            };
-        }
-
-
     }
 }

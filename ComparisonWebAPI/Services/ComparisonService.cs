@@ -1,27 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
-using DynamicDashboardCommon.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
+using Dapper; // Add this import for Dapper extension methods
+using DynamicDashboardCommon.Models;
 
 namespace DynamicDasboardWebAPI.Services
 {
-    /// <summary>
-    /// Service for executing SQL queries and comparing datasets.
-    /// </summary>
     public class ComparisonService
     {
         private readonly string _connectionString;
+        private readonly ILogger<ComparisonService> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ComparisonService"/> class.
-        /// </summary>
-        /// <param name="config">The configuration instance used to retrieve the connection string.</param>
-        public ComparisonService(IConfiguration config)
+        public ComparisonService(IConfiguration config, ILogger<ComparisonService> logger = null)
         {
-            _connectionString = config.GetConnectionString("DefaultConnection");
+            _connectionString = config.GetConnectionString("DefaultConnection")
+                ?? throw new ArgumentNullException(nameof(config), "Connection string 'DefaultConnection' not found");
+            _logger = logger;
         }
 
         /// <summary>
@@ -31,29 +29,36 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>A list of dictionaries representing the query results.</returns>
         public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
         {
-            var results = new List<Dictionary<string, object>>();
+            if (string.IsNullOrWhiteSpace(query))
+                throw new ArgumentException("Query cannot be empty", nameof(query));
 
-            using (var connection = new SqlConnection(_connectionString))
+            try
             {
+                using var connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync();
-                using (var command = new SqlCommand(query, connection))
-                {
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            var row = new Dictionary<string, object>();
-                            for (int i = 0; i < reader.FieldCount; i++)
-                            {
-                                row[reader.GetName(i)] = reader.GetValue(i);
-                            }
-                            results.Add(row);
-                        }
-                    }
-                }
-            }
 
-            return results;
+                // Use Dapper to execute the query
+                var result = await connection.QueryAsync(query);
+
+                // Convert to list of dictionaries
+                var dictResults = new List<Dictionary<string, object>>();
+                foreach (var row in result)
+                {
+                    var dict = new Dictionary<string, object>();
+                    foreach (var prop in (IDictionary<string, object>)row)
+                    {
+                        dict[prop.Key] = prop.Value;
+                    }
+                    dictResults.Add(dict);
+                }
+
+                return dictResults;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error executing query: {Query}", query);
+                throw;
+            }
         }
 
         /// <summary>
@@ -64,53 +69,54 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>True if the datasets are identical; otherwise, false.</returns>
         public bool CompareDatasets(List<Dictionary<string, object>> dataset1, List<Dictionary<string, object>> dataset2)
         {
+            if (dataset1 == null) throw new ArgumentNullException(nameof(dataset1));
+            if (dataset2 == null) throw new ArgumentNullException(nameof(dataset2));
+
             if (dataset1.Count != dataset2.Count)
-            {
                 return false;
-            }
 
-            foreach (var row1 in dataset1)
+            try
             {
-                bool matchFound = false;
-                foreach (var row2 in dataset2)
-                {
-                    if (DictionariesEqual(row1, row2))
-                    {
-                        matchFound = true;
-                        break;
-                    }
-                }
-                if (!matchFound)
-                {
-                    return false;
-                }
-            }
+                // Convert each row to a string representation and compare the sets
+                var set1 = dataset1.Select(NormalizeRow).ToHashSet();
+                var set2 = dataset2.Select(NormalizeRow).ToHashSet();
 
-            return true;
+                return set1.SetEquals(set2);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error comparing datasets");
+                throw;
+            }
         }
 
         /// <summary>
-        /// Compares two dictionaries for equality.
+        /// Normalizes a row by creating a consistent string representation
         /// </summary>
-        /// <param name="dict1">The first dictionary to compare.</param>
-        /// <param name="dict2">The second dictionary to compare.</param>
-        /// <returns>True if the dictionaries are equal; otherwise, false.</returns>
-        private bool DictionariesEqual(Dictionary<string, object> dict1, Dictionary<string, object> dict2)
+        private string NormalizeRow(Dictionary<string, object> row)
         {
-            if (dict1.Count != dict2.Count)
-            {
-                return false;
-            }
+            return string.Join("|", row
+                .OrderBy(kvp => kvp.Key)
+                .Select(kvp => $"{kvp.Key}={FormatValue(kvp.Value)}"));
+        }
 
-            foreach (var kvp in dict1)
-            {
-                if (!dict2.TryGetValue(kvp.Key, out var value) || !Equals(kvp.Value, value))
-                {
-                    return false;
-                }
-            }
+        /// <summary>
+        /// Formats a value to ensure consistent string representation
+        /// </summary>
+        private string FormatValue(object value)
+        {
+            if (value == null)
+                return "NULL";
 
-            return true;
+            // Handle dates consistently
+            if (value is DateTime dateTime)
+                return dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
+
+            // Handle decimals consistently
+            if (value is decimal decimalValue)
+                return decimalValue.ToString("0.################");
+
+            return value.ToString();
         }
     }
 }

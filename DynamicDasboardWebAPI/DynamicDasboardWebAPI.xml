@@ -73,26 +73,6 @@
             <param name="columnId">The ID of the column to delete.</param>
             <returns>The ID of the deleted column.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Controllers.QueryController">
-            <summary>
-            API Controller for handling query execution requests.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.#ctor(DynamicDasboardWebAPI.Services.QueryService)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.QueryController"/> class.
-            </summary>
-            <param name="service">The query service to be used for executing queries.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ExecuteQuery(System.String,System.String,System.Nullable{System.Int32})">
-            <summary>
-            Executes a SQL query based on the provided query string and database type.
-            </summary>
-            <param name="query">The SQL query to be executed.</param>
-            <param name="databaseType">The type of database to execute the query against.</param>
-            <param name="executedBy">Optional user ID of the executor.</param>
-            <returns>The result of the executed query.</returns>
-        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.QueryGeneratorController">
             <summary>
             API Controller for handling query generation and Excel file processing.
@@ -265,92 +245,6 @@
             Represents a log entry for a batch processing job.
             </summary>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.ColumnRepository">
-            <summary>
-            Repository class for managing columns in the database.
-            Provides methods to fetch, add, update, and delete columns.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.#ctor(System.Data.IDbConnection)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.ColumnRepository"/> class.
-            </summary>
-            <param name="connection">The database connection to be used by the repository.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.GetColumnsByTableIdAsync(System.Int32)">
-            <summary>
-            Fetches columns for a specific table.
-            </summary>
-            <param name="tableId">The ID of the table whose columns are to be fetched.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains a collection of columns.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.AddColumnAsync(DynamicDashboardCommon.Models.Column)">
-            <summary>
-            Adds a new column to the database.
-            </summary>
-            <param name="column">The column to be added.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.UpdateColumnAsync(DynamicDashboardCommon.Models.Column)">
-            <summary>
-            Updates an existing column in the database.
-            </summary>
-            <param name="column">The column to be updated.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.DeleteColumnAsync(System.Int32)">
-            <summary>
-            Deletes a column from the database.
-            </summary>
-            <param name="columnId">The ID of the column to be deleted.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the number of rows affected.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.DatabaseRepository">
-            <summary>
-            Repository class for managing database connections and operations.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.#ctor(System.Data.IDbConnection,DynamicDasboardWebAPI.Utilities.DbConnectionFactory)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.DatabaseRepository"/> class.
-            </summary>
-            <param name="appDbConnection">The application database connection.</param>
-            <param name="dynamicDbConnectionFactory">The dynamic database connection factory.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetAllDatabasesAsync">
-            <summary>
-            Fetches all databases from the application database.
-            </summary>
-            <returns>A collection of <see cref="T:DynamicDashboardCommon.Models.Database"/> objects.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.AddDatabaseAsync(DynamicDashboardCommon.Models.Database)">
-            <summary>
-            Adds a new database connection.
-            </summary>
-            <param name="database">The database entity to add.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.UpdateDatabaseAsync(DynamicDashboardCommon.Models.Database)">
-            <summary>
-            Updates an existing database connection.
-            </summary>
-            <param name="database">The database entity to update.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.DeleteDatabaseAsync(System.Int32)">
-            <summary>
-            Deletes a database connection.
-            </summary>
-            <param name="databaseId">The ID of the database to delete.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
-            <summary>
-            Tests the connection to a dynamic database.
-            </summary>
-            <param name="database">The database entity to test the connection for.</param>
-            <returns><c>true</c> if the connection is successful; otherwise, <c>false</c>.</returns>
-        </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.GenericRepository`1">
             <summary>  
             A generic repository class that provides basic CRUD operations for entities.  
@@ -437,11 +331,12 @@
             Repository for logging events in the Logs table.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.#ctor(System.Data.IDbConnection)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.#ctor(System.Data.IDbConnection,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Repositories.LogsRepository})">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.LogsRepository"/> class.
             </summary>
             <param name="connection">Database connection instance.</param>
+            <param name="logger">Optional logger for capturing repository operations.</param>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.AddLogAsync(System.Nullable{System.Int32},System.String,System.String)">
             <summary>
@@ -451,11 +346,29 @@
             <param name="eventType">The type of the event.</param>
             <param name="eventDescription">The description of the event.</param>
             <returns>The number of rows affected.</returns>
-            <remarks>
-            This method logs an event in the database by inserting a new record into the Logs table.
-            The log entry includes the user ID (if available), the type of event, and a description of the event.
-            The current timestamp is automatically added to the log entry.
-            </remarks>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.GetRecentLogsAsync(System.Int32)">
+            <summary>
+            Gets recent log entries.
+            </summary>
+            <param name="limit">Maximum number of log entries to retrieve.</param>
+            <returns>A collection of recent log entries.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.GetLogsByEventTypeAsync(System.String,System.Int32)">
+            <summary>
+            Gets log entries by event type.
+            </summary>
+            <param name="eventType">Type of event to filter by.</param>
+            <param name="limit">Maximum number of log entries to retrieve.</param>
+            <returns>A collection of log entries of the specified type.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.GetLogsByUserIdAsync(System.Int32,System.Int32)">
+            <summary>
+            Gets log entries for a specific user.
+            </summary>
+            <param name="userId">User ID to filter by.</param>
+            <param name="limit">Maximum number of log entries to retrieve.</param>
+            <returns>A collection of log entries for the specified user.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.NlQueryRepository.ExecuteQueryAsync(System.String)">
             <summary>
@@ -475,11 +388,6 @@
             Repository for logging executed queries into the QueryLogs table.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.#ctor(System.Data.IDbConnection)">
-            <summary>
-            Repository for logging executed queries into the QueryLogs table.
-            </summary>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.LogQueryAsync(System.String,System.Nullable{System.Int32},System.String,System.String)">
             <summary>
             Logs an executed query into the QueryLogs table.
@@ -490,135 +398,50 @@
             <param name="result">Serialized result of the query (optional).</param>
             <returns>The number of rows affected.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.GetQueryHistoryAsync(System.Nullable{System.Int32},System.Int32)">
+            <summary>
+            Gets the history of executed queries.
+            </summary>
+            <param name="userId">Optional user ID to filter by.</param>
+            <param name="limit">Number of records to retrieve.</param>
+            <returns>List of query log entries.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.GetQueryByIdAsync(System.Int32)">
+            <summary>
+            Gets details of a specific query by ID.
+            </summary>
+            <param name="queryId">The ID of the query to retrieve.</param>
+            <returns>The query details.</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.QueryRepository">
             <summary>
             Repository for executing dynamic SQL queries.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.#ctor(System.Data.IDbConnection)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.QueryRepository"/> class.
-            </summary>
-            <param name="connection">The database connection to use.</param>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String)">
             <summary>
-            Executes a dynamic SQL query and returns the result.
+            Executes a dynamic SQL query using the default connection and returns the result.
             </summary>
             <param name="query">The SQL query to execute.</param>
             <returns>The query result as a dynamic object.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.RelationshipRepository">
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String,System.String)">
             <summary>
-            Repository class for managing relationships in the database.
-            Provides methods to fetch, add, update, and delete relationships.
+            Executes a dynamic SQL query on the specified database type and returns the result.
+            </summary>
+            <param name="query">The SQL query to execute.</param>
+            <param name="dbType">The database type to connect to.</param>
+            <returns>The query result as a dynamic object.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.Object)">
+            <summary>
+            Executes a dynamic SQL query with parameters and returns the result.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.#ctor(System.Data.IDbConnection)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.String,System.Object)">
             <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.RelationshipRepository"/> class.
+            Executes a dynamic SQL query with parameters on the specified database type.
             </summary>
-            <param name="connection">The database connection to be used by the repository.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.GetRelationshipsByTableIdAsync(System.Int32)">
-            <summary>
-            Fetches relationships for a specific table.
-            </summary>
-            <param name="tableId">The ID of the table for which to fetch relationships.</param>
-            <returns>A collection of relationships associated with the specified table.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.AddRelationshipAsync(DynamicDashboardCommon.Models.Relationship)">
-            <summary>
-            Adds a new relationship to the database.
-            </summary>
-            <param name="relationship">The relationship object to be added.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.UpdateRelationshipAsync(DynamicDashboardCommon.Models.Relationship)">
-            <summary>
-            Updates an existing relationship in the database.
-            </summary>
-            <param name="relationship">The relationship object with updated values.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.DeleteRelationshipAsync(System.Int32)">
-            <summary>
-            Deletes a relationship from the database.
-            </summary>
-            <param name="relationshipId">The ID of the relationship to be deleted.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.TableRepository">
-            <summary>
-            Repository class for managing table entities in the dynamic dashboard system.
-            This class provides methods to perform CRUD operations on the Tables table in the database.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.#ctor(System.Data.IDbConnection)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.TableRepository"/> class.
-            </summary>
-            <param name="connection">The database connection to be used by the repository.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.GetTablesByDatabaseIdAsync(System.Int32)">
-            <summary>
-            Fetches all tables for a specific database.
-            </summary>
-            <param name="databaseId">The ID of the database.</param>
-            <returns>A collection of tables associated with the specified database.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.AddTableAsync(DynamicDashboardCommon.Models.Table)">
-            <summary>
-            Adds a new table to the database.
-            </summary>
-            <param name="table">The table entity to be added.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.UpdateTableAsync(DynamicDashboardCommon.Models.Table)">
-            <summary>
-            Updates an existing table in the database.
-            </summary>
-            <param name="table">The table entity with updated values.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.DeleteTableAsync(System.Int32)">
-            <summary>
-            Deletes a table from the database.
-            </summary>
-            <param name="tableId">The ID of the table to be deleted.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.UserRepository">
-            <summary>
-            Repository class for managing user data in the database.
-            Provides methods to perform CRUD operations on the Users table.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.UserRepository.#ctor(System.Data.IDbConnection)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.UserRepository"/> class.
-            </summary>
-            <param name="connection">The database connection to be used by the repository.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.UserRepository.GetAllUsersAsync">
-            <summary>
-            Retrieves all users from the database.
-            </summary>
-            <returns>A collection of <see cref="T:DynamicDashboardCommon.Models.User"/> objects.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.UserRepository.AddUserAsync(DynamicDashboardCommon.Models.User)">
-            <summary>
-            Adds a new user to the database.
-            </summary>
-            <param name="user">The <see cref="T:DynamicDashboardCommon.Models.User"/> object to be added.</param>
-            <returns>The number of rows affected.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.UserRepository.GetUserByIDAsync(System.Int32)">
-            <summary>
-            Retrieves a user from the database by their ID.
-            </summary>
-            <param name="userId">The ID of the user to be retrieved.</param>
-            <returns>The <see cref="T:DynamicDashboardCommon.Models.User"/> object if found; otherwise, null.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
             <summary>
@@ -661,6 +484,72 @@
             </summary>
             <param name="columnId">The ID of the column to delete.</param>
             <returns>The number of affected rows.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DataAccessService">
+            <summary>
+            Implementation of IDataAccessService for generic database operations
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.QueryAsync``1(System.String,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.QueryFirstOrDefaultAsync``1(System.String,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.ExecuteAsync(System.String,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.ExecuteScalarAsync``1(System.String,System.String,System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DatabaseException">
+            <summary>
+            Custom exception for database operations
+            </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.IDataAccessService">
+            <summary>
+            Interface for generic database access operations
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.QueryAsync``1(System.String,System.String,System.Object)">
+            <summary>
+            Executes a query and returns a list of results
+            </summary>
+            <typeparam name="T">Type to map results to</typeparam>
+            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
+            <param name="query">SQL query to execute</param>
+            <param name="parameters">Optional parameters for the query</param>
+            <returns>List of results</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.QueryFirstOrDefaultAsync``1(System.String,System.String,System.Object)">
+            <summary>
+            Executes a query and returns a single result
+            </summary>
+            <typeparam name="T">Type to map the result to</typeparam>
+            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
+            <param name="query">SQL query to execute</param>
+            <param name="parameters">Optional parameters for the query</param>
+            <returns>Single result or default value</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.ExecuteAsync(System.String,System.String,System.Object)">
+            <summary>
+            Executes a command and returns the number of affected rows
+            </summary>
+            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
+            <param name="command">SQL command to execute</param>
+            <param name="parameters">Optional parameters for the command</param>
+            <returns>Number of affected rows</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.ExecuteScalarAsync``1(System.String,System.String,System.Object)">
+            <summary>
+            Executes a scalar query and returns a single value
+            </summary>
+            <typeparam name="T">Type of the scalar value</typeparam>
+            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
+            <param name="query">SQL query to execute</param>
+            <param name="parameters">Optional parameters for the query</param>
+            <returns>Scalar value</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDatabaseService.GetAllDatabasesAsync">
             <summary>
@@ -927,16 +816,35 @@
             <param name="exception">The exception that occurred.</param>
             <returns>A task that represents the completion of response writing.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Utilities.DbConnectionFactory">
+        <member name="T:DynamicDasboardWebAPI.Utilities.DatabaseHelper">
             <summary>
-            Factory class to create and manage database connections.
+            Helper class for standardized database operations using Dapper
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.QuerySafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
             <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Utilities.DbConnectionFactory"/> class.
+            Executes a query safely and maps the result to a list of entities
             </summary>
-            <param name="configuration">The configuration instance to retrieve connection strings.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteSafeAsync(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
+            <summary>
+            Executes a command safely and returns the number of affected rows
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.QueryFirstOrDefaultSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
+            <summary>
+            Executes a query safely and returns the first result or default value
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteScalarSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
+            <summary>
+            Executes a scalar query safely and returns the result
+            </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Utilities.DatabaseException">
+            <summary>
+            Custom exception for database operations
+            </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.CreateConnection(System.String)">
             <summary>
@@ -945,12 +853,19 @@
             <param name="dbType">Type of the database (e.g., SQLServer, MySQL, Oracle).</param>
             <returns>An <see cref="T:System.Data.IDbConnection"/> instance.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.OpenConnectionAsync(System.String)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.CreateOpenConnectionAsync(System.String)">
             <summary>
-            Opens a database connection asynchronously based on the specified database type.
+            Creates and opens a database connection asynchronously based on the specified database type.
             </summary>
             <param name="dbType">Type of the database (e.g., SQLServer, MySQL, Oracle).</param>
-            <returns>A task representing the asynchronous operation.</returns>
+            <returns>An opened <see cref="T:System.Data.IDbConnection"/> instance.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.TestConnectionAsync(System.String)">
+            <summary>
+            Tests a database connection asynchronously.
+            </summary>
+            <param name="dbType">Type of the database.</param>
+            <returns>True if connection successful; otherwise, false.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.GetConnectionString(System.String)">
             <summary>

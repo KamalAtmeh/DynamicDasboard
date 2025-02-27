@@ -5,23 +5,19 @@ using Microsoft.Data.SqlClient;
 using MySql.Data.MySqlClient;
 using Oracle.ManagedDataAccess.Client;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace DynamicDasboardWebAPI.Utilities
 {
-    /// <summary>
-    /// Factory class to create and manage database connections.
-    /// </summary>
     public class DbConnectionFactory
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<DbConnectionFactory> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DbConnectionFactory"/> class.
-        /// </summary>
-        /// <param name="configuration">The configuration instance to retrieve connection strings.</param>
-        public DbConnectionFactory(IConfiguration configuration)
+        public DbConnectionFactory(IConfiguration configuration, ILogger<DbConnectionFactory> logger = null)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         /// <summary>
@@ -42,44 +38,70 @@ namespace DynamicDasboardWebAPI.Utilities
         }
 
         /// <summary>
-        /// Opens a database connection asynchronously based on the specified database type.
+        /// Creates and opens a database connection asynchronously based on the specified database type.
         /// </summary>
         /// <param name="dbType">Type of the database (e.g., SQLServer, MySQL, Oracle).</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        public async Task OpenConnectionAsync(string dbType)
+        /// <returns>An opened <see cref="IDbConnection"/> instance.</returns>
+        public async Task<IDbConnection> CreateOpenConnectionAsync(string dbType)
         {
+            string connectionString = GetConnectionString(dbType);
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new ArgumentException("Connection string is missing or invalid.");
+
+            IDbConnection connection = null;
+
             try
             {
-                string connectionString = GetConnectionString(dbType);
-
-                if (string.IsNullOrWhiteSpace(connectionString))
-                    throw new ArgumentException("Connection string is missing or invalid.");
-
                 switch (dbType)
                 {
                     case "SQLServer":
                         var sqlConnection = new SqlConnection(connectionString);
                         await sqlConnection.OpenAsync();
+                        connection = sqlConnection;
                         break;
 
                     case "MySQL":
                         var mySqlConnection = new MySqlConnection(connectionString);
                         await mySqlConnection.OpenAsync();
+                        connection = mySqlConnection;
                         break;
 
                     case "Oracle":
                         var oracleConnection = new OracleConnection(connectionString);
                         await oracleConnection.OpenAsync();
+                        connection = oracleConnection;
                         break;
 
                     default:
                         throw new ArgumentException($"Unsupported database type: {dbType}");
                 }
+
+                return connection;
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "Failed to open connection for database type: {DbType}", dbType);
+                _logger?.LogError(ex, "Failed to open connection for database type: {DbType}", dbType);
+                connection?.Dispose();
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Tests a database connection asynchronously.
+        /// </summary>
+        /// <param name="dbType">Type of the database.</param>
+        /// <returns>True if connection successful; otherwise, false.</returns>
+        public async Task<bool> TestConnectionAsync(string dbType)
+        {
+            try
+            {
+                using var connection = await CreateOpenConnectionAsync(dbType);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
