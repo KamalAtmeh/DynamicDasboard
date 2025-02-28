@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
@@ -133,23 +134,6 @@ namespace DynamicDasboardWebAPI.Repositories
             }
         }
 
-        // Test the connection to a dynamic database
-        public async Task<bool> TestConnectionAsync(Database database)
-        {
-            try
-            {
-                if (database == null) throw new ArgumentNullException(nameof(database));
-
-                string dbType = GetDatabaseTypeName(database.TypeID);
-                return await _dynamicDbConnectionFactory.TestConnectionAsync(dbType);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error testing connection to database: {Name}", database?.Name);
-                return false;
-            }
-        }
-
         // Get database metadata as tables
         public async Task<IEnumerable<Table>> GetDatabaseMetadataAsync(int databaseId)
         {
@@ -272,24 +256,118 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <summary>
         /// Get all database types
         /// </summary>
-        public async Task<IEnumerable<(int TypeId, string TypeName)>> GetAllDatabaseTypesAsync()
+        public async Task<IEnumerable<DatabaseType>> GetAllDatabaseTypesAsync()
         {
             try
             {
                 const string query = "SELECT TypeID, TypeName FROM DatabaseTypes";
-                return await _appDbConnection.QueryAsync<(int, string)>(query);
+                return await _appDbConnection.QueryAsync<DatabaseType>(query);
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error retrieving database types");
 
                 // Fallback to hardcoded types
-                return new[]
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Tests the connection to a database
+        /// </summary>
+        public async Task<bool> TestConnectionAsync(int databaseId)
+        {
+            try
+            {
+                return await _dynamicDbConnectionFactory.TestConnectionAsync(databaseId.ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error testing connection to database with ID: {DatabaseId}", databaseId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tests the connection using connection details without saving to the database
+        /// </summary>
+        public async Task<bool> TestConnectionAsync(Database database)
+        {
+            try
+            {
+                return await _dynamicDbConnectionFactory.TestConnectionAsync(database);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error testing connection to database: {Name}", database?.Name);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Executes a SQL query against a specific database
+        /// </summary>
+        public async Task<IEnumerable<T>> ExecuteQueryAsync<T>(int databaseId, string query, object parameters = null)
+        {
+            try
+            {
+                using var connection = await _dynamicDbConnectionFactory.CreateOpenConnectionAsync(databaseId.ToString());
+                return await connection.QueryAsync<T>(query, parameters);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error executing query on database {DatabaseId}: {Query}", databaseId, query);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets a database type name by ID from the DatabaseTypes table
+        /// </summary>
+        public async Task<string> GetDatabaseTypeNameByIdAsync(int typeId)
+        {
+            try
+            {
+                const string query = "SELECT TypeName FROM DatabaseTypes WHERE TypeID = @TypeID";
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<string>(query, new { TypeID = typeId });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database type name for ID: {TypeId}", typeId);
+
+                // Fallback to hardcoded values if database lookup fails
+                return typeId switch
                 {
-                    (1, "SQLServer"),
-                    (2, "MySQL"),
-                    (3, "Oracle")
+                    1 => "SQLServer",
+                    2 => "MySQL",
+                    3 => "Oracle",
+                    4 => "SQLServer2",
+                    _ => $"Unknown_{typeId}"
                 };
+            }
+        }
+
+        /// <summary>
+        /// Updates the LastConnectionStatus and LastTransactionDate for a database
+        /// </summary>
+        public async Task UpdateConnectionStatusAsync(int databaseId, bool status)
+        {
+            try
+            {
+                const string query = @"
+                UPDATE Databases 
+                SET LastConnectionStatus = @Status, LastTransactionDate = GETDATE()
+                WHERE DatabaseID = @DatabaseID";
+
+                await _appDbConnection.ExecuteSafeAsync(query, new
+                {
+                    DatabaseID = databaseId,
+                    Status = status
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error updating connection status for database: {DatabaseId}", databaseId);
             }
         }
 

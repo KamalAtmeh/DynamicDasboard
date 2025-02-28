@@ -23,15 +23,16 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="databaseId">The ID of the database to retrieve metadata for.</param>
         /// <returns>A boolean indicating whether the metadata retrieval was successful.</returns>
-        bool GetDatabaseMetadataAsync(int databaseId);
 
         Task<Database> GetDatabaseByIdAsync(int databaseId);
 
         Task<int> UpdateDatabaseAsync(Database database);
         Task<int> DeleteDatabaseAsync(int databaseId);
-        Task<bool> TestConnectionAsync(Database database);
+        
+
+        Task<bool> TestConnectionAsync(int databaseId);
         Task<ConnectionTestResult> TestConnectionAsync(ConnectionTestRequest request);
-        List<string> GetSupportedDatabaseTypes();
-  
+        Task<List<DatabaseType>> GetSupportedDatabaseTypesAsync();
+
     }
 }

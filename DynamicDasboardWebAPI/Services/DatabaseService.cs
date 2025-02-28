@@ -1,92 +1,283 @@
-﻿using DynamicDashboardCommon.Models;
-using DynamicDasboardWebAPI.Repositories;
-using Microsoft.Data.SqlClient;
-using MySql.Data.MySqlClient;
-using Oracle.ManagedDataAccess.Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Data;
+using Dapper;
+using Microsoft.Extensions.Logging;
+using DynamicDashboardCommon.Models;
+using DynamicDasboardWebAPI.Repositories;
+using DynamicDasboardWebAPI.Utilities;
 
 namespace DynamicDasboardWebAPI.Services
 {
+    /// <summary>
+    /// Service for managing database operations including connections, metadata, and queries.
+    /// </summary>
     public class DatabaseService : IDatabaseService
     {
         private readonly DatabaseRepository _repository;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<DatabaseService> _logger;
+        private readonly ConcurrentDictionary<string, int> _typeIdCache = new();
 
-        public DatabaseService(DatabaseRepository repository)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DatabaseService"/> class.
+        /// </summary>
+        /// <param name="repository">The repository for database operations.</param>
+        /// <param name="connectionFactory">The factory for database connections.</param>
+        /// <param name="logger">The logger for service operations.</param>
+        public DatabaseService(
+            DatabaseRepository repository,
+            DbConnectionFactory connectionFactory,
+            ILogger<DatabaseService> logger = null)
         {
-            _repository = repository;
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            _logger = logger;
+
+            // Load all database types at startup
+            LoadDatabaseTypesAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-
-
-        public async Task<int> AddDatabaseAsync(Database database)
-        {
-            if (string.IsNullOrWhiteSpace(database.Name))
-                throw new ArgumentException("Database name cannot be empty.");
-
-            if (string.IsNullOrWhiteSpace(database.ConnectionString))
-                throw new ArgumentException("Connection string cannot be empty.");
-
-            if (!await _repository.TestConnectionAsync(database))
-                throw new ArgumentException("Invalid connection string.");
-
-            return await _repository.AddDatabaseAsync(database);
-        }
-
-        public async Task<int> UpdateDatabaseAsync(Database database)
-        {
-            if (string.IsNullOrWhiteSpace(database.Name))
-                throw new ArgumentException("Database name cannot be empty.");
-
-            if (string.IsNullOrWhiteSpace(database.ConnectionString))
-                throw new ArgumentException("Connection string cannot be empty.");
-
-            if (!await _repository.TestConnectionAsync(database))
-                throw new ArgumentException("Invalid connection string.");
-
-            return await _repository.UpdateDatabaseAsync(database);
-        }
-
-        public async Task<int> DeleteDatabaseAsync(int databaseId)
-        {
-            return await _repository.DeleteDatabaseAsync(databaseId);
-        }
-
-        public async Task<bool> TestConnectionAsync(Database database)
-        {
-            return await _repository.TestConnectionAsync(database);
-        }
-
-        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
-        {
-            if (databaseId <= 0)
-                throw new ArgumentException("Database ID must be greater than zero.");
-
-            return await _repository.GetDatabaseByIdAsync(databaseId);
-        }
-
-        public async Task<ConnectionTestResult> TestConnectionAsync(ConnectionTestRequest request)
+        /// <summary>
+        /// Retrieves all databases from the system.
+        /// </summary>
+        /// <returns>A collection of all databases.</returns>
+        public async Task<IEnumerable<Database>> GetAllDatabasesAsync()
         {
             try
             {
-                // Create a temporary Database object from the request
+                _logger?.LogInformation("Retrieving all databases");
+                var databases = await _repository.GetAllDatabasesAsync();
+
+                // Enrich with type names if needed
+                foreach (var db in databases)
+                {
+                    if (string.IsNullOrEmpty(db.DatabaseTypeName))
+                    {
+                        db.DatabaseTypeName = await GetDatabaseTypeNameAsync(db.TypeID);
+                    }
+                }
+
+                return databases;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving all databases");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Adds a new database to the system.
+        /// </summary>
+        /// <param name="database">The database to add.</param>
+        /// <returns>The ID of the newly added database.</returns>
+        public async Task<int> AddDatabaseAsync(Database database)
+        {
+            if (database == null)
+                throw new ArgumentNullException(nameof(database));
+
+            try
+            {
+                _logger?.LogInformation("Adding new database: {Name}", database.Name);
+
+                // Validate required fields
+                if (string.IsNullOrWhiteSpace(database.Name))
+                    throw new ArgumentException("Database name cannot be empty");
+
+                if (string.IsNullOrWhiteSpace(database.ServerAddress))
+                    throw new ArgumentException("Server address cannot be empty");
+
+                if (string.IsNullOrWhiteSpace(database.DatabaseName))
+                    throw new ArgumentException("Database name cannot be empty");
+
+                // Build connection string if not provided
+                if (string.IsNullOrWhiteSpace(database.ConnectionString))
+                {
+                    database.ConnectionString = _connectionFactory.BuildConnectionString(database);
+                }
+
+                // Test connection before adding
+                bool connectionSuccess = await _connectionFactory.TestConnectionAsync(database);
+                if (!connectionSuccess)
+                {
+                    throw new InvalidOperationException("Connection test failed. Please check connection details.");
+                }
+
+                // Set initial values for new database
+                database.CreatedAt = DateTime.UtcNow;
+                database.LastConnectionStatus = true;
+                database.LastTransactionDate = DateTime.UtcNow;
+                database.IsActive = true;
+
+                int databaseId = await _repository.AddDatabaseAsync(database);
+
+                // Invalidate cache after adding
+                _connectionFactory.ClearCache();
+
+                return databaseId;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error adding database: {Name}", database.Name);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing database in the system.
+        /// </summary>
+        /// <param name="database">The database to update.</param>
+        /// <returns>The number of affected rows.</returns>
+        public async Task<int> UpdateDatabaseAsync(Database database)
+        {
+            if (database == null)
+                throw new ArgumentNullException(nameof(database));
+
+            try
+            {
+                _logger?.LogInformation("Updating database: {DatabaseID} - {Name}", database.DatabaseID, database.Name);
+
+                // Validate required fields
+                if (string.IsNullOrWhiteSpace(database.Name))
+                    throw new ArgumentException("Database name cannot be empty");
+
+                if (string.IsNullOrWhiteSpace(database.ServerAddress))
+                    throw new ArgumentException("Server address cannot be empty");
+
+                if (string.IsNullOrWhiteSpace(database.DatabaseName))
+                    throw new ArgumentException("Database name cannot be empty");
+
+                // Build connection string if not provided
+                if (string.IsNullOrWhiteSpace(database.ConnectionString))
+                {
+                    database.ConnectionString = _connectionFactory.BuildConnectionString(database);
+                }
+
+                // Test connection before updating
+                bool connectionSuccess = await _connectionFactory.TestConnectionAsync(database);
+                database.LastConnectionStatus = connectionSuccess;
+                database.LastTransactionDate = DateTime.UtcNow;
+
+                int result = await _repository.UpdateDatabaseAsync(database);
+
+                // Invalidate cache after updating
+                _connectionFactory.ClearCache();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error updating database: {DatabaseID}", database.DatabaseID);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Deletes a database from the system.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database to delete.</param>
+        /// <returns>The number of affected rows.</returns>
+        public async Task<int> DeleteDatabaseAsync(int databaseId)
+        {
+            try
+            {
+                _logger?.LogInformation("Deleting database: {DatabaseID}", databaseId);
+
+                int result = await _repository.DeleteDatabaseAsync(databaseId);
+
+                // Invalidate cache after deleting
+                _connectionFactory.ClearCache();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error deleting database: {DatabaseID}", databaseId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Tests the connection to a database using stored connection details.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database to test.</param>
+        /// <returns>True if the connection was successful; otherwise, false.</returns>
+        public async Task<bool> TestConnectionAsync(int databaseId)
+        {
+            try
+            {
+                _logger?.LogInformation("Testing connection to database: {DatabaseID}", databaseId);
+
+                // Get database record
+                var database = await _repository.GetDatabaseByIdAsync(databaseId);
+                if (database == null)
+                {
+                    _logger?.LogWarning("Database not found: {DatabaseID}", databaseId);
+                    return false;
+                }
+
+                // Test connection
+                bool success = await _connectionFactory.TestConnectionAsync(databaseId.ToString());
+
+                // Update last connection status
+                await _repository.UpdateConnectionStatusAsync(databaseId, success);
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error testing connection to database: {DatabaseID}", databaseId);
+
+                // Update connection status to failed
+                await _repository.UpdateConnectionStatusAsync(databaseId, false);
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tests a database connection using the provided connection details.
+        /// </summary>
+        /// <param name="request">The connection test request.</param>
+        /// <returns>The connection test result.</returns>
+        public async Task<ConnectionTestResult> TestConnectionAsync(ConnectionTestRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            try
+            {
+                _logger?.LogInformation("Testing connection using request parameters: {Server}/{Database}",
+                    request.Server, request.Database);
+
+                // Convert request to a temporary database object
                 var database = new Database
                 {
-                    TypeID = GetDatabaseTypeId(request.DbType),
-                    ConnectionString = BuildConnectionString(request)
+                    TypeID = await GetDatabaseTypeIdAsync(request.DbType),
+                    ServerAddress = request.Server,
+                    DatabaseName = request.Database,
+                    Port = null, // Let the connection string builder use defaults
+                    Username = request.AuthType?.ToLowerInvariant() == "windows" ? null : request.Username,
+                    EncryptedCredentials = request.Password // Note: In production, this should be encrypted
                 };
 
-                var success = await _repository.TestConnectionAsync(database);
+                // Test connection
+                bool success = await _connectionFactory.TestConnectionAsync(database);
 
                 return new ConnectionTestResult
                 {
                     Success = success,
-                    Message = success ? "Connection successful!" : "Connection failed."
+                    Message = success ? "Connection successful!" : "Connection failed. Check your connection details."
                 };
             }
             catch (Exception ex)
             {
+                _logger?.LogError(ex, "Error testing connection with parameters: {Server}/{Database}",
+                    request.Server, request.Database);
+
                 return new ConnectionTestResult
                 {
                     Success = false,
@@ -96,131 +287,250 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public List<string> GetSupportedDatabaseTypes()
+        /// <summary>
+        /// Gets a list of supported database types.
+        /// </summary>
+        /// <returns>A list of supported database types.</returns>
+        public async Task<List<DatabaseType>> GetSupportedDatabaseTypesAsync()
         {
-            return new List<string> { "SQLServer", "MySQL", "Oracle" };
-        }
+            try
+            {
+                _logger?.LogInformation("Retrieving supported database types");
 
-        public bool GetDatabaseMetadataAsync(int databaseID)
-        {
-            return false;
+                // Get types from repository
+                var databaseTypes = await _repository.GetAllDatabaseTypesAsync();
+                return databaseTypes.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving supported database types");
+
+                // Fallback only if database query fails
+                return null;
+            }
         }
 
         /// <summary>
-        /// Get comprehensive database details by ID
+        /// Gets database metadata for the specified database.
         /// </summary>
-        public async Task<Database> GetDatabaseDetailsByIdAsync(int databaseId)
+        /// <param name="databaseId">The ID of the database.</param>
+        /// <returns>True if metadata was retrieved successfully; otherwise, false.</returns>
+        public async Task<bool> GetDatabaseMetadataAsync(int databaseId)
         {
-            if (databaseId <= 0)
-                throw new ArgumentException("Database ID must be greater than zero.");
+            try
+            {
+                _logger?.LogInformation("Retrieving metadata for database: {DatabaseID}", databaseId);
 
-            return await _repository.GetDatabaseDetailsByIdAsync(databaseId);
+                var tables = await _repository.GetDatabaseMetadataAsync(databaseId);
+                return tables != null && tables.Any();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving metadata for database: {DatabaseID}", databaseId);
+                return false;
+            }
         }
 
         /// <summary>
-        /// Get all databases with their type names
+        /// Gets a database by ID.
         /// </summary>
-        public async Task<IEnumerable<Database>> GetAllDatabasesWithTypesAsync()
+        /// <param name="databaseId">The ID of the database to retrieve.</param>
+        /// <returns>The database with the specified ID, or null if not found.</returns>
+        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
         {
-            return await _repository.GetAllDatabasesWithTypesAsync();
+            try
+            {
+                _logger?.LogInformation("Retrieving database by ID: {DatabaseID}", databaseId);
+
+                var database = await _repository.GetDatabaseByIdAsync(databaseId);
+
+                // Enrich with type name if needed
+                if (database != null && string.IsNullOrEmpty(database.DatabaseTypeName))
+                {
+                    database.DatabaseTypeName = await GetDatabaseTypeNameAsync(database.TypeID);
+                }
+
+                return database;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database by ID: {DatabaseID}", databaseId);
+                throw;
+            }
         }
 
-        // Modify existing GetAllDatabasesAsync to use the new method
-        public async Task<IEnumerable<Database>> GetAllDatabasesAsync()
+        /// <summary>
+        /// Gets all database types.
+        /// </summary>
+        /// <returns>A collection of database types.</returns>
+        public async Task<IEnumerable<DatabaseType>> GetAllDatabaseTypesAsync()
         {
-            return await GetAllDatabasesWithTypesAsync();
+            try
+            {
+                _logger?.LogInformation("Retrieving all database types");
+                return await _repository.GetAllDatabaseTypesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving database types");
+                throw;
+            }
         }
 
+        /// <summary>
+        /// Gets the database type name for the specified ID.
+        /// </summary>
+        /// <param name="typeId">The type ID.</param>
+        /// <returns>The database type name.</returns>
         public async Task<string> GetDatabaseTypeNameAsync(int typeId)
         {
-            return await _repository.GetDatabaseTypeNameAsync(typeId);
-        }
-
-        public async Task<IEnumerable<(int TypeId, string TypeName)>> GetAllDatabaseTypesAsync()
-        {
-            return await _repository.GetAllDatabaseTypesAsync();
-        }
-
-        private int GetDatabaseTypeId(string dbType)
-        {
-            //Temp implementation
-            return dbType.ToLower() switch
+            try
             {
-                "sqlserver" => 1,
-                "mysql" => 2,
-                "oracle" => 3,
-                "sqlserver2" => 4,
-                _ => throw new NotSupportedException($"Database type '{dbType}' is not supported.")
-            };
-        }
+                // Check cache first (inverted lookup)
+                foreach (var kvp in _typeIdCache)
+                {
+                    if (kvp.Value == typeId)
+                    {
+                        return kvp.Key;
+                    }
+                }
 
-        private string BuildConnectionString(ConnectionTestRequest request)
-        {
-            //Temp implementation
-            switch (request.DbType.ToLower())
+                // If not in cache, get from repository
+                string typeName = await _repository.GetDatabaseTypeNameByIdAsync(typeId);
+
+                // If found, add to cache
+                if (!string.IsNullOrEmpty(typeName))
+                {
+                    _typeIdCache.TryAdd(typeName.ToLowerInvariant(), typeId);
+                }
+
+                return typeName;
+            }
+            catch (Exception ex)
             {
-                case "sqlserver":
-                    return BuildSqlServerConnectionString(request);
-                case "mysql":
-                    return BuildMySqlConnectionString(request);
-                case "oracle":
-                    return BuildOracleConnectionString(request);
-                case "sqlserver2":
-                    return BuildSqlServerConnectionString(request);
-                default:
-                    throw new NotSupportedException($"Database type '{request.DbType}' is not supported.");
+                _logger?.LogError(ex, "Error retrieving database type name for ID: {TypeID}", typeId);
+
+                // Fallback
+                return string.Empty;
             }
         }
 
-        private string BuildSqlServerConnectionString(ConnectionTestRequest request)
+        /// <summary>
+        /// Executes a query on a specific database.
+        /// </summary>
+        /// <typeparam name="T">The type to map results to.</typeparam>
+        /// <param name="databaseId">The ID of the database to query.</param>
+        /// <param name="query">The SQL query to execute.</param>
+        /// <param name="parameters">The query parameters.</param>
+        /// <returns>The query results.</returns>
+        public async Task<IEnumerable<T>> ExecuteQueryAsync<T>(int databaseId, string query, object parameters = null)
         {
-            var builder = new SqlConnectionStringBuilder
+            try
             {
-                DataSource = request.Server,
-                InitialCatalog = request.Database
-            };
+                _logger?.LogInformation("Executing query on database {DatabaseID}: {Query}", databaseId, query);
 
-            if (request.AuthType.ToLower() == "windows")
-            {
-                builder.IntegratedSecurity = true;
+                var results = await _repository.ExecuteQueryAsync<T>(databaseId, query, parameters);
+
+                // Update last transaction date and connection status
+                await _repository.UpdateConnectionStatusAsync(databaseId, true);
+
+                return results;
             }
-            else
+            catch (Exception ex)
             {
-                builder.UserID = request.Username;
-                builder.Password = request.Password;
+                _logger?.LogError(ex, "Error executing query on database {DatabaseID}: {Query}", databaseId, query);
+
+                // Update connection status to failed
+                await _repository.UpdateConnectionStatusAsync(databaseId, false);
+
+                throw;
             }
-
-            // Add optional timeout
-            builder.ConnectTimeout = 30;
-
-            return builder.ConnectionString;
         }
 
-        private string BuildMySqlConnectionString(ConnectionTestRequest request)
+        /// <summary>
+        /// Gets the database type ID for the specified type name.
+        /// </summary>
+        /// <param name="dbType">The database type name.</param>
+        /// <returns>The type ID.</returns>
+        private async Task<int> GetDatabaseTypeIdAsync(string dbType)
         {
-            var builder = new MySqlConnectionStringBuilder
-            {
-                Server = request.Server,
-                Database = request.Database,
-                UserID = request.Username,
-                Password = request.Password,
-                ConnectionTimeout = 30
-            };
+            if (string.IsNullOrWhiteSpace(dbType))
+                throw new ArgumentException("Database type cannot be empty", nameof(dbType));
 
-            return builder.ConnectionString;
+            // Normalize type name
+            string normalizedType = dbType.ToLowerInvariant();
+
+            // Check cache first
+            if (_typeIdCache.TryGetValue(normalizedType, out int cachedId))
+                return cachedId;
+
+            try
+            {
+                // Get from repository
+                var types = await _repository.GetAllDatabaseTypesAsync();
+                var match = types.FirstOrDefault(t =>
+                    string.Equals(t.TypeName, dbType, StringComparison.OrdinalIgnoreCase));
+
+                if (match != null)
+                {
+                    // Add to cache and return
+                    _typeIdCache.TryAdd(normalizedType, match.TypeID);
+                    return match.TypeID;
+                }
+                return 0;
+
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting type ID for database type: {DbType}", dbType);
+                return 0;
+            }
         }
 
-        private string BuildOracleConnectionString(ConnectionTestRequest request)
-        {
-            var builder = new OracleConnectionStringBuilder
-            {
-                DataSource = request.Server,
-                UserID = request.Username,
-                Password = request.Password,
-                ConnectionTimeout = 30
-            };
+        ///// <summary>
+        ///// Gets the fallback type ID for the specified type name.
+        ///// </summary>
+        ///// <param name="normalizedType">The normalized type name.</param>
+        ///// <returns>The type ID.</returns>
+        //private int GetFallbackTypeId(string normalizedType)
+        //{
+        //    return normalizedType switch
+        //    {
+        //        "sqlserver" => 1,
+        //        "mysql" => 2,
+        //        "oracle" => 3,
+        //        "sqlserver2" => 4,
+        //        _ => throw new ArgumentException($"Unsupported database type: {normalizedType}")
+        //    };
+        //}
 
-            return builder.ConnectionString;
+        /// <summary>
+        /// Loads all database types into the cache.
+        /// </summary>
+        private async Task LoadDatabaseTypesAsync()
+        {
+            try
+            {
+                _logger?.LogInformation("Loading database types into cache");
+
+                var types = await _repository.GetAllDatabaseTypesAsync();
+
+                foreach (var type in types)
+                {
+                    _typeIdCache.TryAdd(type.TypeName.ToLowerInvariant(), type.TypeID);
+                }
+
+                _logger?.LogInformation("Loaded {Count} database types into cache", _typeIdCache.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to load database types into cache");
+
+                // Add fallback types to cache
+                _typeIdCache.TryAdd("sqlserver", 1);
+                _typeIdCache.TryAdd("mysql", 2);
+                _typeIdCache.TryAdd("oracle", 3);
+            }
         }
     }
 }

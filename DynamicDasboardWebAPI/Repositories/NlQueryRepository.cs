@@ -73,7 +73,7 @@ namespace DynamicDasboardWebAPI.Repositories
             }
 
             // Get database type name
-            string dbTypeName = GetDatabaseTypeName(database.DatabaseID);
+            string dbTypeName = GetDatabaseTypeName(4);
 
             // Use the connection factory to create a connection for this specific database
             using var connection = _connectionFactory.CreateConnection(dbTypeName);

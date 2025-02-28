@@ -1,6 +1,7 @@
 using DynamicDasboardWebAPI.Repositories;
 using DynamicDasboardWebAPI.Services;
 using DynamicDasboardWebAPI.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,10 +18,14 @@ builder.Services.AddScoped<IDbConnection>(provider =>
 });
 
 // Register the dynamic database connection factory
+// Register the dynamic database connection factory
+// Register the dynamic database connection factory
 builder.Services.AddScoped<DbConnectionFactory>(provider =>
 {
+    var appDbConnection = provider.GetRequiredService<IDbConnection>();
     var configuration = provider.GetRequiredService<IConfiguration>();
-    return new DbConnectionFactory(configuration);
+    var logger = provider.GetService<ILogger<DbConnectionFactory>>();
+    return new DbConnectionFactory(appDbConnection, configuration, logger);
 });
 
 // Configure CORS to allow requests from the Blazor app
