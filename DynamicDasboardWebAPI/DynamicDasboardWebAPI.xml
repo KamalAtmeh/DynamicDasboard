@@ -767,6 +767,24 @@
             <param name="eventDescription">The description of the event.</param>
             <returns>A task that represents the asynchronous operation.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.NlQueryService.DetermineDataViewingType(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.String)">
+            <summary>
+            Determines the most appropriate viewing type for the query results
+            </summary>
+            <param name="results">The query results</param>
+            <param name="query">The original SQL query</param>
+            <returns>Recommended viewing type ID and name</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.NlQueryService.IsAggregateQuery(System.String)">
+            <summary>
+            Checks if the query is an aggregate query
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.NlQueryService.FormatNumber(System.Object)">
+            <summary>
+            Formats numbers with appropriate culture and precision
+            </summary>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.QueryGeneratorService">
             <summary>
             Service to generate SQL queries based on provided schema and questions, and process Excel files to insert generated queries.
@@ -1039,11 +1057,6 @@
             Executes a function with a database connection
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.TestConnectionAsync(System.Data.IDbConnection)">
-            <summary>
-            Tests if a connection is valid by attempting to connect
-            </summary>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseSchemaAsync(System.Data.IDbConnection)">
             <summary>
             Gets database schema information that works across different database types
@@ -1062,11 +1075,6 @@
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetRelationshipsByTableIdAsync(System.Data.IDbConnection,System.Int32)">
             <summary>
             Gets relationships for a table by ID
-            </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Utilities.DatabaseException">
-            <summary>
-            Custom exception for database operations
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Utilities.QueryBuilder">

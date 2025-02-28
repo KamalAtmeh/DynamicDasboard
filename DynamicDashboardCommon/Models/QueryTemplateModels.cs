@@ -37,15 +37,31 @@ namespace DynamicDashboardCommon.Models
         public string ErrorMessage { get; set; }
         public List<string> SuggestedQuestions { get; set; }
         public TemplateMatchInfo TemplateInfo { get; set; }
+
+        /// <summary>
+        /// The recommended viewing type for the results
+        /// </summary>
+        public int? RecommendedDataViewingTypeID { get; set; }
+
+        /// <summary>
+        /// The name of the recommended viewing type
+        /// </summary>
+        public string RecommendedDataViewingTypeName { get; set; }
+
+        /// <summary>
+        /// Formatted result for label-type viewing
+        /// </summary>
+        public string FormattedResult { get; set; }
     }
 
-    //public class NlQueryRequest
-    //{
-    //    public int DatabaseId { get; set; }
-    //    public string Question { get; set; }
+    public class NlQueryRequest
+    {
+        public int DatabaseId { get; set; }
+        public string Question { get; set; }
+        public string ConnectionString { get; set; } // Added this to fix CS0177
 
-    //    public string DatabaseType { get; set; } // Changed from DatabaseType to DbType
-    //}
+        public string DatabaseType { get; set; } // Changed from DatabaseType to DbType
+    }
 
     public class TemplateMatchInfo
     {

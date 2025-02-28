@@ -140,6 +140,31 @@
             Custom exception for database operations
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.DataViewingType">
+            <summary>
+            Represents the different ways data can be viewed in the system
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DataViewingType.DataViewingTypeID">
+            <summary>
+            Unique identifier for the data viewing type
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DataViewingType.Name">
+            <summary>
+            Name of the viewing type (e.g., Table, Label, Number, Chart)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DataViewingType.Description">
+            <summary>
+            Optional description of the viewing type
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DataViewingTypeEnum">
+            <summary>
+            Enum representing predefined data viewing types
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.ExceptionDetails">
             <summary>
             Represents the details of an exception that occurs within the application.
@@ -268,6 +293,21 @@
         <member name="P:DynamicDashboardCommon.Models.QueryRequest.Question">
             <summary>
             Gets or sets the question to be asked against the schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.NlQueryResponse.RecommendedDataViewingTypeID">
+            <summary>
+            The recommended viewing type for the results
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.NlQueryResponse.RecommendedDataViewingTypeName">
+            <summary>
+            The name of the recommended viewing type
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.NlQueryResponse.FormattedResult">
+            <summary>
+            Formatted result for label-type viewing
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.Relationship">

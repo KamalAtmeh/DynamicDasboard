@@ -63,15 +63,15 @@
 			<ul class="nav nav-tabs mb-4">
 				<li class="nav-item">
 					<a class="nav-link @(activeTab == "nl" ? "active" : "")"
-					@onclick="@(() => SetActiveTab("nl"))">Natural Language</a>
+					   @onclick="@(() => SetActiveTab("nl"))">Natural Language</a>
 				</li>
 				<li class="nav-item">
 					<a class="nav-link @(activeTab == "sql" ? "active" : "")"
-					@onclick="@(() => SetActiveTab("sql"))">Direct SQL</a>
+					   @onclick="@(() => SetActiveTab("sql"))">Direct SQL</a>
 				</li>
 				<li class="nav-item">
 					<a class="nav-link @(activeTab == "batch" ? "active" : "")"
-					@onclick="@(() => SetActiveTab("batch"))">Batch Process</a>
+					   @onclick="@(() => SetActiveTab("batch"))">Batch Process</a>
 				</li>
 			</ul>
 
@@ -82,7 +82,7 @@
 					<label class="form-label fw-bold mb-2">Ask a Question</label>
 					<div class="input-group">
 						<input type="text" class="form-control p-3" placeholder="e.g., Show me top 10 customers by total order value"
-						@bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
+							   @bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
 						<button class="btn btn-primary px-4" @onclick="ProcessQuestion" disabled="@isLoading">
 							@if (isLoading)
 							{
@@ -105,7 +105,7 @@
 								@foreach (var example in examples)
 								{
 									<span class="badge rounded-pill bg-light text-dark p-2 clickable-badge"
-									@onclick="() => UseExample(example)">
+										  @onclick="() => UseExample(example)">
 										@example
 									</span>
 								}
@@ -120,8 +120,8 @@
 				<div class="form-group mb-4">
 					<label class="form-label fw-bold mb-2">Enter SQL Query</label>
 					<textarea class="form-control p-3" rows="5"
-					placeholder="SELECT * FROM Customers"
-					@bind="directSqlQuery"></textarea>
+							  placeholder="SELECT * FROM Customers"
+							  @bind="directSqlQuery"></textarea>
 					<div class="d-flex justify-content-end mt-2">
 						<button class="btn btn-primary px-4" @onclick="ExecuteDirectSql" disabled="@isLoading">
 							@if (isLoading)
@@ -208,30 +208,41 @@
 
 							@if (queryResponse.TemplateInfo.Parameters.Count > 0)
 							{
-								<div class="mt-3">
-									<p><strong>Parameters:</strong></p>
-									<div class="table-responsive">
-										<table class="table table-sm table-bordered">
-											<thead class="table-light">
-												<tr>
-													<th>Name</th>
-													<th>Value</th>
-													<th>Type</th>
-												</tr>
-											</thead>
-											<tbody>
-												@foreach (var param in queryResponse.TemplateInfo.Parameters)
-												{
+								@if (queryResponse.RecommendedDataViewingTypeID != (int)DataViewingTypeEnum.Table)
+								{
+									@RenderResultBasedOnViewingType()
+								}
+
+								// Existing table rendering code remains the same
+								@if (queryResponse.Results != null && queryResponse.Results.Count > 0 &&
+													(queryResponse.RecommendedDataViewingTypeID == null ||
+													queryResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Table))
+								{
+									<div class="mt-3">
+										<p><strong>Parameters:</strong></p>
+										<div class="table-responsive">
+											<table class="table table-sm table-bordered">
+												<thead class="table-light">
 													<tr>
-														<td>@param.Name</td>
-														<td>@param.Value</td>
-														<td>@param.EntityType</td>
+														<th>Name</th>
+														<th>Value</th>
+														<th>Type</th>
 													</tr>
-												}
-											</tbody>
-										</table>
+												</thead>
+												<tbody>
+													@foreach (var param in queryResponse.TemplateInfo.Parameters)
+													{
+														<tr>
+															<td>@param.Name</td>
+															<td>@param.Value</td>
+															<td>@param.EntityType</td>
+														</tr>
+													}
+												</tbody>
+											</table>
+										</div>
 									</div>
-								</div>
+								}
 							}
 						</div>
 					</div>
@@ -359,7 +370,7 @@
 									@foreach (var suggestion in queryResponse.SuggestedQuestions)
 									{
 										<span class="badge bg-light text-dark p-2 clickable-badge"
-										@onclick="() => UseExample(suggestion)">
+											  @onclick="() => UseExample(suggestion)">
 											@suggestion
 										</span>
 									}
@@ -458,6 +469,32 @@
 		}
 	}
 
+	private RenderFragment RenderResultBasedOnViewingType()
+	{
+		if (queryResponse == null)
+			return null;
+		return queryResponse.RecommendedDataViewingTypeID switch
+		{
+			(int)DataViewingTypeEnum.Number => builder =>
+			{
+				builder.OpenElement(0, "div");
+				builder.AddAttribute(1, "class", "display-4 text-primary");
+				builder.AddContent(2, queryResponse.FormattedResult);
+				builder.CloseElement();
+			}
+			,
+			(int)DataViewingTypeEnum.Label => builder =>
+			{
+				builder.OpenElement(0, "div");
+				builder.AddAttribute(1, "class", "alert alert-info");
+				builder.AddContent(2, queryResponse.FormattedResult);
+				builder.CloseElement();
+			}
+			,
+			_ => null // Default to existing table rendering
+		};
+	}
+
 	private async Task TestDatabaseConnection()
 	{
 		try
@@ -507,6 +544,7 @@
 		finally
 		{
 			isLoading = false;
+			StateHasChanged();
 		}
 	}
 
@@ -640,6 +678,7 @@
 		finally
 		{
 			isLoading = false;
+			StateHasChanged();
 		}
 	}
 
@@ -693,6 +732,7 @@
 		finally
 		{
 			isLoading = false;
+			StateHasChanged();
 		}
 	}
 

@@ -217,7 +217,7 @@ namespace DynamicDasboardWebAPI.Services
 
                 //// 7. Save the template match for reference
                 //await _nlQueryRepository.SaveTemplateMatchAsync(templateMatch, logId);
-
+                var (viewingTypeId, viewingTypeName, formattedResult) = DetermineDataViewingType(results, sql);
                 return new NlQueryResponse
                 {
                     FormattedQuestion = FormatQuestion(templateMatch),
@@ -225,7 +225,10 @@ namespace DynamicDasboardWebAPI.Services
                     Results = results,
                     Explanation = explanation,
                     Success = true,
-                    TemplateInfo = templateMatch
+                    TemplateInfo = templateMatch,
+                    RecommendedDataViewingTypeID = viewingTypeId,
+                    RecommendedDataViewingTypeName = viewingTypeName,
+                    FormattedResult = formattedResult
                 };
             }
             catch (Exception ex)
@@ -459,8 +462,8 @@ Number of rows returned: {results.Count}";
                     new { role = "system", content = systemMessage },
                     new { role = "user", content = userMessage }
                 },
-                temperature = 0.7,
-                max_tokens = 150
+                temperature = 0,
+                max_tokens = 500
             };
 
             _httpClient.DefaultRequestHeaders.Authorization =
@@ -508,5 +511,110 @@ Number of rows returned: {results.Count}";
 
         private string _apiKey => _config["DeepSeek:ApiKey"];
         private string _endpoint => _config["DeepSeek:Endpoint"];
+
+        /// <summary>
+        /// Determines the most appropriate viewing type for the query results
+        /// </summary>
+        /// <param name="results">The query results</param>
+        /// <param name="query">The original SQL query</param>
+        /// <returns>Recommended viewing type ID and name</returns>
+        private (int ViewingTypeId, string ViewingTypeName, string FormattedResult) DetermineDataViewingType(
+            List<Dictionary<string, object>> results,
+            string query)
+        {
+            // If no results, default to table
+            if (results == null || results.Count == 0)
+            {
+                return ((int)DataViewingTypeEnum.Table, "Table", null);
+            }
+
+            // Single result with single column might be a label or number
+            if (results.Count == 1 && results[0].Count == 1)
+            {
+                var singleValue = results[0].Values.First();
+
+                // Check for numeric types
+                if (singleValue is int intVal)
+                {
+                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(intVal));
+                }
+                else if (singleValue is decimal decVal)
+                {
+                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(decVal));
+                }
+                else if (singleValue is double doubleVal)
+                {
+                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(doubleVal));
+                }
+                else if (singleValue is float floatVal)
+                {
+                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(floatVal));
+                }
+                else if (singleValue is long longVal)
+                {
+                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(longVal));
+                }
+                else
+                {
+                    // For other single values, use label
+                    return ((int)DataViewingTypeEnum.Label, "Label", singleValue?.ToString());
+                }
+            }
+
+            // Aggregate queries might need special handling
+            if (IsAggregateQuery(query))
+            {
+                // Check if aggregate result is numeric
+                var sampleValue = results[0].Values.First();
+                if (sampleValue is int || sampleValue is decimal ||
+                    sampleValue is double || sampleValue is float ||
+                    sampleValue is long)
+                {
+                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(Convert.ToDecimal(sampleValue)));
+                }
+            }
+
+            // Default to table for complex or multi-column results
+            return ((int)DataViewingTypeEnum.Table, "Table", null);
+        }
+
+        /// <summary>
+        /// Checks if the query is an aggregate query
+        /// </summary>
+        private bool IsAggregateQuery(string query)
+        {
+            query = query.ToLowerInvariant();
+            return query.Contains("count(") ||
+                   query.Contains("sum(") ||
+                   query.Contains("avg(") ||
+                   query.Contains("max(") ||
+                   query.Contains("min(");
+        }
+
+        /// <summary>
+        /// Formats numbers with appropriate culture and precision
+        /// </summary>
+        private string FormatNumber(object numberValue)
+        {
+            try
+            {
+                // Convert to decimal using Convert.ToDecimal which handles multiple numeric types
+                decimal number = Convert.ToDecimal(numberValue);
+
+                // Use culture-specific formatting with two decimal places
+                return number.ToString("N2", System.Globalization.CultureInfo.CurrentCulture);
+            }
+            catch (FormatException)
+            {
+                // If conversion fails, return the original value as string
+                return numberValue?.ToString() ?? string.Empty;
+            }
+            catch (InvalidCastException)
+            {
+                // If conversion is not possible, return the original value as string
+                return numberValue?.ToString() ?? string.Empty;
+            }
+        }
+
     }
 }
