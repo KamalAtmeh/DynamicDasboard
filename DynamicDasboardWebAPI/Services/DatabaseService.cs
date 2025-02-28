@@ -245,6 +245,8 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>The connection test result.</returns>
         public async Task<ConnectionTestResult> TestConnectionAsync(ConnectionTestRequest request)
         {
+
+            var database = new Database();
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
@@ -252,18 +254,24 @@ namespace DynamicDasboardWebAPI.Services
             {
                 _logger?.LogInformation("Testing connection using request parameters: {Server}/{Database}",
                     request.Server, request.Database);
-
-                // Convert request to a temporary database object
-                var database = new Database
+                if (request.DatabaseId != 0)
                 {
-                    TypeID = await GetDatabaseTypeIdAsync(request.DbType),
-                    ServerAddress = request.Server,
-                    DatabaseName = request.Database,
-                    Port = null, // Let the connection string builder use defaults
-                    Username = request.AuthType?.ToLowerInvariant() == "windows" ? null : request.Username,
-                    EncryptedCredentials = request.Password // Note: In production, this should be encrypted
-                };
+                    database = await GetDatabaseByIdAsync(request.DatabaseId);
+                }
+                else
+                {
+                    // Convert request to a temporary database object
+                    database = new Database
+                    {
 
+                        DatabaseID = request.DatabaseId,
+                        ServerAddress = request.Server,
+                        DatabaseName = request.Database,
+                        Port = null, // Let the connection string builder use defaults
+                        Username = request.AuthType?.ToLowerInvariant() == "windows" ? null : request.Username,
+                        EncryptedCredentials = request.Password // Note: In production, this should be encrypted
+                    };
+                }
                 // Test connection
                 bool success = await _connectionFactory.TestConnectionAsync(database);
 

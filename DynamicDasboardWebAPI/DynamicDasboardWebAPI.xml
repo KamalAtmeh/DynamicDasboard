@@ -415,27 +415,6 @@
             <param name="limit">Maximum number of log entries to retrieve.</param>
             <returns>A collection of log entries for the specified user.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.NlQueryRepository.ExecuteQueryAsync(System.String)">
-            <summary>
-            Executes a SQL query and returns the results as a list of dictionaries.
-            </summary>
-            <param name="query">The SQL query to execute.</param>
-            <returns>A list of dictionaries, where each dictionary represents a row of data.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.NlQueryRepository.ExecuteQueryOnDatabaseAsync(System.String,System.Int32)">
-            <summary>
-            Executes a query on a specific database using its ID
-            </summary>
-            <param name="query">SQL query to execute</param>
-            <param name="databaseId">ID of the database in the system</param>
-            <returns>Query results as a list of dictionaries</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.NlQueryRepository.GetDatabaseMetadataAsync(System.Int32)">
-            <summary>
-            Retrieves metadata for a database including tables and columns.
-            </summary>
-            <returns>A dictionary containing database metadata.</returns>
-        </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.QueryLogsRepository">
             <summary>
             Repository for logging executed queries into the QueryLogs table.
@@ -980,7 +959,8 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Utilities.DatabaseHelper">
             <summary>
-            Helper class for standardized database operations using Dapper
+            Helper class for standardized database operations using Dapper and ADO.NET
+            Provides extension methods for IDbConnection and other database utilities
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.QuerySafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
@@ -993,19 +973,95 @@
             Executes a command safely and returns the number of affected rows
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteQueryOnDatabaseAsync(DbConnectionFactory,System.String,System.String,System.String)">
-            <summary>
-            Executes a query on a specific database and maps the results to a dictionary
-            </summary>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.QueryFirstOrDefaultSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
             <summary>
             Executes a query safely and returns the first result or default value
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.QuerySingleOrDefaultSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
+            <summary>
+            Executes a query safely and returns a single result
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteScalarSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
             <summary>
             Executes a scalar query safely and returns the result
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteQueryAsDictionariesAsync(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Int32)">
+            <summary>
+            Executes a query and returns the results as a list of dictionaries
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ConvertToDictionaries(System.Collections.Generic.IEnumerable{System.Object})">
+            <summary>
+            Converts dynamic query results to a list of dictionaries
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseIdByNameAsync(System.Data.IDbConnection,System.String)">
+            <summary>
+            Gets a database ID by its name from the application database
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.DatabaseExistsAsync(System.Data.IDbConnection,System.Int32)">
+            <summary>
+            Checks if a database exists by its ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseByIdAsync(System.Data.IDbConnection,System.Int32)">
+            <summary>
+            Gets a database by its ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseByNameAsync(System.Data.IDbConnection,System.String)">
+            <summary>
+            Gets a database by its name
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteInTransactionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbTransaction,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes multiple operations within a transaction
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteInTransactionAsync(System.Data.IDbConnection,System.Func{System.Data.IDbTransaction,System.Threading.Tasks.Task})">
+            <summary>
+            Executes multiple operations within a transaction with no return value
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.BulkInsertAsync``1(System.Data.IDbConnection,System.String,System.Collections.Generic.IEnumerable{``0},System.Data.IDbTransaction,System.Int32)">
+            <summary>
+            Bulk inserts data into a table
+            Note: Implementation is database-specific and will use the most efficient approach for each DB type
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteWithConnectionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes a function with a database connection
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.TestConnectionAsync(System.Data.IDbConnection)">
+            <summary>
+            Tests if a connection is valid by attempting to connect
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseSchemaAsync(System.Data.IDbConnection)">
+            <summary>
+            Gets database schema information that works across different database types
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetTablesByDatabaseIdAsync(System.Data.IDbConnection,System.Int32)">
+            <summary>
+            Gets tables for a database by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetColumnsByTableIdAsync(System.Data.IDbConnection,System.Int32)">
+            <summary>
+            Gets columns for a table by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetRelationshipsByTableIdAsync(System.Data.IDbConnection,System.Int32)">
+            <summary>
+            Gets relationships for a table by ID
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Utilities.DatabaseException">
@@ -1028,6 +1084,27 @@
             </summary>
             <param name="input">Input string containing a SQL query with markdown code block syntax</param>
             <returns>The clean SQL query without markdown delimiters</returns>
+        </member>
+        <member name="M:NlQueryRepository.ExecuteQueryAsync(System.String)">
+            <summary>
+            Executes a SQL query and returns the results as a list of dictionaries.
+            </summary>
+            <param name="query">The SQL query to execute.</param>
+            <returns>A list of dictionaries, where each dictionary represents a row of data.</returns>
+        </member>
+        <member name="M:NlQueryRepository.ExecuteQueryOnDatabaseAsync(System.String,System.Int32)">
+            <summary>
+            Executes a query on a specific database using its ID
+            </summary>
+            <param name="query">SQL query to execute</param>
+            <param name="databaseId">ID of the database in the system</param>
+            <returns>Query results as a list of dictionaries</returns>
+        </member>
+        <member name="M:NlQueryRepository.GetDatabaseMetadataAsync(System.Int32)">
+            <summary>
+            Retrieves metadata for a database including tables and columns.
+            </summary>
+            <returns>A dictionary containing database metadata.</returns>
         </member>
         <member name="M:DbConnectionFactory.CreateConnection(System.String)">
             <summary>

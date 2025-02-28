@@ -135,6 +135,11 @@
             Type name of the database (not a database column, but useful for display)
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.DatabaseException">
+            <summary>
+            Custom exception for database operations
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.ExceptionDetails">
             <summary>
             Represents the details of an exception that occurs within the application.

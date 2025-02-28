@@ -175,6 +175,24 @@ public class DbConnectionFactory
         };
     }
 
+     public async Task<T> ExecuteWithConnectionAsync<T>(string databaseIdOrType, Func<IDbConnection, Task<T>> operation)
+    {
+        using var connection = await CreateOpenConnectionAsync(databaseIdOrType);
+        return await operation(connection);
+    }
+    
+    public async Task<IEnumerable<T>> QueryAsync<T>(string databaseIdOrType, string sql, object parameters = null)
+    {
+        return await ExecuteWithConnectionAsync(databaseIdOrType, async (connection) => 
+            await connection.QuerySafeAsync<T>(sql, parameters));
+    }
+    
+    public async Task<T> QueryFirstOrDefaultAsync<T>(string databaseIdOrType, string sql, object parameters = null)
+    {
+        return await ExecuteWithConnectionAsync(databaseIdOrType, async (connection) => 
+            await connection.QueryFirstOrDefaultSafeAsync<T>(sql, parameters));
+    }
+
     /// <summary>
     /// Gets the connection string for a database by ID or type.
     /// If numeric, treats as database ID and fetches from DB.
@@ -368,6 +386,8 @@ public class DbConnectionFactory
 
         return builder.ConnectionString;
     }
+
+
 
     private string DecryptCredentials(string encryptedCredentials)
     {

@@ -8,6 +8,7 @@ namespace DynamicDashboardCommon.Models
 {
     public class ConnectionTestRequest
     {
+        public int DatabaseId { get; set; }
         public string Server { get; set; }
         public string Database { get; set; }
         public string DbType { get; set; }

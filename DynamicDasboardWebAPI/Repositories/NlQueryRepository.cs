@@ -1,138 +1,117 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Threading.Tasks;
-using DynamicDasboardWebAPI.Utilities;
+﻿using DynamicDasboardWebAPI.Utilities;
 using DynamicDashboardCommon.Models;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.Data.SqlClient;
+using System.Data;
 
-namespace DynamicDasboardWebAPI.Repositories
+public class NlQueryRepository
 {
-    public class NlQueryRepository
+    private readonly IDbConnection _appDbConnection;
+    private readonly DbConnectionFactory _connectionFactory;
+    private readonly ILogger<NlQueryRepository> _logger;
+
+    public NlQueryRepository(
+        IDbConnection appDbConnection,
+        DbConnectionFactory connectionFactory,
+        ILogger<NlQueryRepository> logger)
     {
-        private readonly IDbConnection _connection;
-        private readonly DbConnectionFactory _connectionFactory;
-        private readonly DatabaseRepository _databaseRepository;
+        _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
-        public NlQueryRepository(
-            IDbConnection connection,
-            DbConnectionFactory connectionFactory,
-            DatabaseRepository databaseRepository)
+    /// <summary>
+    /// Executes a SQL query and returns the results as a list of dictionaries.
+    /// </summary>
+    /// <param name="query">The SQL query to execute.</param>
+    /// <returns>A list of dictionaries, where each dictionary represents a row of data.</returns>
+    public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
+    {
+        try
         {
-            _connection = connection;
-            _connectionFactory = connectionFactory;
-            _databaseRepository = databaseRepository;
+            _logger.LogInformation("Executing query on application database");
+
+            // Use the enhanced DatabaseHelper to execute and convert results
+            var data = await _appDbConnection.QuerySafeAsync<dynamic>(query);
+            return DatabaseHelper.ConvertToDictionaries(data);
         }
-
-        /// <summary>
-        /// Executes a SQL query and returns the results as a list of dictionaries.
-        /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <returns>A list of dictionaries, where each dictionary represents a row of data.</returns>
-        public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
+        catch (Exception ex)
         {
-            var result = new List<Dictionary<string, object>>();
-
-            try
-            {
-                // Option 1: Use Dapper with the project's extension methods
-                var data = await _connection.QuerySafeAsync<dynamic>(query);
-                foreach (var item in data)
-                {
-                    var row = new Dictionary<string, object>();
-                    foreach (var prop in ((IDictionary<string, object>)item))
-                    {
-                        row[prop.Key] = prop.Value;
-                    }
-                    result.Add(row);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log the exception - use the logging pattern found elsewhere in the project
-                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
-            }
-
-            return result;
+            _logger.LogError(ex, "Error executing query on application database: {Query}", query);
+            throw;
         }
+    }
 
-        /// <summary>
-        /// Executes a query on a specific database using its ID
-        /// </summary>
-        /// <param name="query">SQL query to execute</param>
-        /// <param name="databaseId">ID of the database in the system</param>
-        /// <returns>Query results as a list of dictionaries</returns>
-        public async Task<List<Dictionary<string, object>>> ExecuteQueryOnDatabaseAsync(string query, int databaseId)
+    /// <summary>
+    /// Executes a query on a specific database using its ID
+    /// </summary>
+    /// <param name="query">SQL query to execute</param>
+    /// <param name="databaseId">ID of the database in the system</param>
+    /// <returns>Query results as a list of dictionaries</returns>
+    public async Task<List<Dictionary<string, object>>> ExecuteQueryOnDatabaseAsync(string query, int databaseId)
+    {
+        try
         {
-            // Get the database information
-            var database = await _databaseRepository.GetDatabaseByIdAsync(databaseId);
+            _logger.LogInformation("Executing query on database ID {DatabaseId}: {Query}", databaseId, query);
+
+            // Get database details
+            var database = await _appDbConnection.GetDatabaseByIdAsync(databaseId);
             if (database == null)
             {
                 throw new ArgumentException($"Database with ID {databaseId} not found");
             }
 
-            // Get database type name
-            string dbTypeName = GetDatabaseTypeName(4);
+            // Create connection and execute query using the enhanced helper
+            using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId.ToString());
+            return await connection.ExecuteQueryAsDictionariesAsync(query);
+        }
+        catch (DatabaseException ex)
+        {
+            _logger.LogError(ex, "Database error executing query on database ID {DatabaseId}: {Query}", databaseId, query);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing query on database ID {DatabaseId}: {Query}", databaseId, query);
+            throw new DatabaseException($"Error executing query on database {databaseId}: {ex.Message}", ex);
+        }
+    }
 
-            // Use the connection factory to create a connection for this specific database
-            using var connection = _connectionFactory.CreateConnection(dbTypeName);
-            connection.ConnectionString = database.ConnectionString;
+    /// <summary>
+    /// Retrieves metadata for a database including tables and columns.
+    /// </summary>
+    /// <returns>A dictionary containing database metadata.</returns>
+    public async Task<Dictionary<string, object>> GetDatabaseMetadataAsync(int databaseId)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving metadata for database ID {DatabaseId}", databaseId);
 
-            try
+            var metadata = new Dictionary<string, object>();
+
+            // Get tables
+            var tables = await _appDbConnection.GetTablesByDatabaseIdAsync(databaseId);
+            var tablesList = new List<object>();
+
+            // For each table, get columns and relationships
+            foreach (var table in tables)
             {
-                connection.Open();
+                var columns = await _appDbConnection.GetColumnsByTableIdAsync(table.TableID);
+                var relationships = await _appDbConnection.GetRelationshipsByTableIdAsync(table.TableID);
 
-                var result = new List<Dictionary<string, object>>();
-                using (var command = connection.CreateCommand())
+                tablesList.Add(new
                 {
-                    command.CommandText = query;
-                    command.CommandTimeout = 30;
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var row = new Dictionary<string, object>();
-                            for (var i = 0; i < reader.FieldCount; i++)
-                            {
-                                var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                                row[reader.GetName(i)] = value;
-                            }
-                            result.Add(row);
-                        }
-                    }
-                }
-
-                return result;
+                    table,
+                    columns,
+                    relationships
+                });
             }
-            catch (Exception ex)
-            {
-                throw new DatabaseException($"Error executing query on {database.Name}: {ex.Message}", ex);
-            }
-        }
 
-        private string GetDatabaseTypeName(int typeId)
-        {
-            return typeId switch
-            {
-                1 => "SQLServer",
-                2 => "MySQL",
-                3 => "Oracle",
-                4 => "SQLServer2",
-                _ => throw new ArgumentException($"Unsupported database type ID: {typeId}")
-            };
+            metadata["tables"] = tablesList;
+            return metadata;
         }
-
-        /// <summary>
-        /// Retrieves metadata for a database including tables and columns.
-        /// </summary>
-        /// <returns>A dictionary containing database metadata.</returns>
-        public async Task<Dictionary<string, object>> GetDatabaseMetadataAsync(int databaseId)
+        catch (Exception ex)
         {
-            // This would be implemented to retrieve database metadata from your application's database
-            // For now, we'll return an empty dictionary
-            return new Dictionary<string, object>();
+            _logger.LogError(ex, "Error retrieving metadata for database ID {DatabaseId}", databaseId);
+            throw new DatabaseException($"Error retrieving metadata for database {databaseId}: {ex.Message}", ex);
         }
     }
 }
