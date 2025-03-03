@@ -12,11 +12,16 @@ namespace DynamicDasboardWebAPI.Repositories
     public class UserRepository
     {
         private readonly IDbConnection _connection;
-        private readonly ILogger<UserRepository> _logger;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<QueryRepository> _logger;
 
-        public UserRepository(IDbConnection connection, ILogger<UserRepository> logger = null)
+        public UserRepository(
+                   IDbConnection connection,
+                   DbConnectionFactory connectionFactory,
+                   ILogger<QueryRepository> logger = null)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger;
         }
 
@@ -38,7 +43,7 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             try
             {
-                if (user == null) throw new ArgumentNullException(nameof(user));
+
 
                 const string query = @"
                     INSERT INTO Users 
@@ -88,8 +93,6 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             try
             {
-                if (user == null) throw new ArgumentNullException(nameof(user));
-
                 const string query = @"
                     UPDATE Users 
                     SET Username = @Username, 

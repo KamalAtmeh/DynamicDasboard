@@ -12,7 +12,7 @@ namespace DynamicDashboardCommon.Models
         public string SqlQuery { get; set; }
         public string DbType { get; set; }
         public int? UserId { get; set; }
-        public int? DatabaseId { get; set; }
+        public int DatabaseId { get; set; }
 
     }
 }

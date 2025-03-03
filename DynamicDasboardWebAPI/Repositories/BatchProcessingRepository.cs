@@ -4,16 +4,24 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models;
+using DynamicDasboardWebAPI.Utilities;
 
 namespace DynamicDasboardWebAPI.Repositories
 {
     public class BatchProcessingRepository
     {
-        private readonly IDbConnection _connection;
+        private readonly IDbConnection _appDbConnection;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<DatabaseRepository> _logger;
 
-        public BatchProcessingRepository(IDbConnection connection)
+        public BatchProcessingRepository(
+                IDbConnection appDbConnection,
+                DbConnectionFactory connectionFactory,
+                ILogger<DatabaseRepository> logger = null)
         {
-            _connection = connection;
+            _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            _logger = logger;
         }
 
         /// <summary>
@@ -26,20 +34,27 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <returns>The ID of the inserted log.</returns>
         public async Task<int> LogBatchJobAsync(string fileName, int totalQuestions, int successCount, int? userId)
         {
-            string query = @"
-                INSERT INTO BatchProcessingLogs (FileName, TotalQuestions, SuccessCount, UserId, ProcessedAt)
-                VALUES (@FileName, @TotalQuestions, @SuccessCount, @UserId, GETDATE());
-                SELECT SCOPE_IDENTITY();";
-
-            var parameters = new
+            try
             {
-                FileName = fileName,
-                TotalQuestions = totalQuestions,
-                SuccessCount = successCount,
-                UserId = userId
-            };
+                string query = @"
+                    INSERT INTO BatchProcessingLogs (FileName, TotalQuestions, SuccessCount, UserId, ProcessedAt)
+                    VALUES (@FileName, @TotalQuestions, @SuccessCount, @UserId, GETDATE());
+                    SELECT SCOPE_IDENTITY();";
 
-            return await _connection.ExecuteScalarAsync<int>(query, parameters);
+                var parameters = new
+                {
+                    FileName = fileName,
+                    TotalQuestions = totalQuestions,
+                    SuccessCount = successCount,
+                    UserId = userId
+                };
+
+                return await _appDbConnection.ExecuteScalarSafeAsync<int>(query, parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>
@@ -53,21 +68,28 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <returns>The ID of the inserted log detail.</returns>
         public async Task<int> LogBatchDetailAsync(int batchId, string question, string generatedSql, bool success, string errorMessage = null)
         {
-            string query = @"
-                INSERT INTO BatchProcessingDetails (BatchId, Question, GeneratedSql, Success, ErrorMessage)
-                VALUES (@BatchId, @Question, @GeneratedSql, @Success, @ErrorMessage);
-                SELECT SCOPE_IDENTITY();";
-
-            var parameters = new
+            try
             {
-                BatchId = batchId,
-                Question = question,
-                GeneratedSql = generatedSql,
-                Success = success,
-                ErrorMessage = errorMessage
-            };
+                string query = @"
+                    INSERT INTO BatchProcessingDetails (BatchId, Question, GeneratedSql, Success, ErrorMessage)
+                    VALUES (@BatchId, @Question, @GeneratedSql, @Success, @ErrorMessage);
+                    SELECT SCOPE_IDENTITY();";
 
-            return await _connection.ExecuteScalarAsync<int>(query, parameters);
+                var parameters = new
+                {
+                    BatchId = batchId,
+                    Question = question,
+                    GeneratedSql = generatedSql,
+                    Success = success,
+                    ErrorMessage = errorMessage
+                };
+
+                return await _appDbConnection.ExecuteScalarSafeAsync<int>(query, parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>
@@ -78,30 +100,24 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <returns>A list of recent batch processing jobs.</returns>
         public async Task<IEnumerable<BatchProcessingLog>> GetRecentBatchJobsAsync(int? userId = null, int limit = 10)
         {
-            string query = userId.HasValue
-                ? @"SELECT TOP (@Limit) * FROM BatchProcessingLogs WHERE UserId = @UserId ORDER BY ProcessedAt DESC"
-                : @"SELECT TOP (@Limit) * FROM BatchProcessingLogs ORDER BY ProcessedAt DESC";
-
-            var parameters = new
+            try
             {
-                UserId = userId,
-                Limit = limit
-            };
+                string query = userId.HasValue
+                    ? @"SELECT TOP (@Limit) * FROM BatchProcessingLogs WHERE UserId = @UserId ORDER BY ProcessedAt DESC"
+                    : @"SELECT TOP (@Limit) * FROM BatchProcessingLogs ORDER BY ProcessedAt DESC";
 
-            return await _connection.QueryAsync<BatchProcessingLog>(query, parameters);
+                var parameters = new
+                {
+                    UserId = userId,
+                    Limit = limit
+                };
+
+                return await _appDbConnection.QuerySafeAsync<BatchProcessingLog>(query, parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
-    }
-
-    /// <summary>
-    /// Represents a log entry for a batch processing job.
-    /// </summary>
-    public class BatchProcessingLog
-    {
-        public int BatchId { get; set; }
-        public string FileName { get; set; }
-        public int TotalQuestions { get; set; }
-        public int SuccessCount { get; set; }
-        public int? UserId { get; set; }
-        public DateTime ProcessedAt { get; set; }
     }
 }

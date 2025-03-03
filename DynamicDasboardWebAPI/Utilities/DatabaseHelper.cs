@@ -15,9 +15,6 @@ namespace DynamicDasboardWebAPI.Utilities
     /// </summary>
     public static class DatabaseHelper
     {
-
-
-
         #region Safe Query Execution Methods
 
         /// <summary>
@@ -26,13 +23,16 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<IEnumerable<T>> QuerySafeAsync<T>(this IDbConnection connection, string sql, object param = null,
             IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+
             try
             {
                 return await connection.QueryAsync<T>(sql, param, transaction, commandTimeout, commandType);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException("Error executing query", ex);
+                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
             }
         }
 
@@ -42,13 +42,16 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<int> ExecuteSafeAsync(this IDbConnection connection, string sql, object param = null,
             IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL command cannot be empty", nameof(sql));
+
             try
             {
                 return await connection.ExecuteAsync(sql, param, transaction, commandTimeout, commandType);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException("Error executing command", ex);
+                throw new DatabaseException($"Error executing command: {ex.Message}", ex);
             }
         }
 
@@ -58,13 +61,16 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<T> QueryFirstOrDefaultSafeAsync<T>(this IDbConnection connection, string sql, object param = null,
             IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+
             try
             {
                 return await connection.QueryFirstOrDefaultAsync<T>(sql, param, transaction, commandTimeout, commandType);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException("Error executing query", ex);
+                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
             }
         }
 
@@ -74,13 +80,16 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<T> QuerySingleOrDefaultSafeAsync<T>(this IDbConnection connection, string sql, object param = null,
             IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+
             try
             {
                 return await connection.QuerySingleOrDefaultAsync<T>(sql, param, transaction, commandTimeout, commandType);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException("Error executing query", ex);
+                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
             }
         }
 
@@ -90,13 +99,16 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<T> ExecuteScalarSafeAsync<T>(this IDbConnection connection, string sql, object param = null,
             IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+
             try
             {
                 return await connection.ExecuteScalarAsync<T>(sql, param, transaction, commandTimeout, commandType);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException("Error executing scalar query", ex);
+                throw new DatabaseException($"Error executing scalar query: {ex.Message}", ex);
             }
         }
 
@@ -110,6 +122,9 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<List<Dictionary<string, object>>> ExecuteQueryAsDictionariesAsync(this IDbConnection connection,
             string sql, object parameters = null, IDbTransaction transaction = null, int commandTimeout = 30)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+
             try
             {
                 var result = new List<Dictionary<string, object>>();
@@ -179,15 +194,30 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public static List<Dictionary<string, object>> ConvertToDictionaries(IEnumerable<dynamic> results)
         {
+            if (results == null) throw new ArgumentNullException(nameof(results));
+
             var dictResults = new List<Dictionary<string, object>>();
 
             foreach (var item in results)
             {
                 var dict = new Dictionary<string, object>();
-                foreach (var prop in (IDictionary<string, object>)item)
+
+                if (item is IDictionary<string, object> dynamicItem)
                 {
-                    dict[prop.Key] = prop.Value;
+                    foreach (var prop in dynamicItem)
+                    {
+                        dict[prop.Key] = prop.Value;
+                    }
                 }
+                else
+                {
+                    // Handle non-dynamic objects using reflection
+                    foreach (var prop in item.GetType().GetProperties())
+                    {
+                        dict[prop.Name] = prop.GetValue(item);
+                    }
+                }
+
                 dictResults.Add(dict);
             }
 
@@ -196,13 +226,91 @@ namespace DynamicDasboardWebAPI.Utilities
 
         #endregion
 
-        #region Dynamic Database Helpers
+        #region Transaction Helpers
+
+        /// <summary>
+        /// Executes multiple operations within a transaction
+        /// </summary>
+        public static async Task<TResult> ExecuteInTransactionAsync<TResult>(
+            this IDbConnection connection, Func<IDbTransaction, Task<TResult>> action)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (action == null) throw new ArgumentNullException(nameof(action));
+
+            bool wasOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!wasOpen)
+                    connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+                try
+                {
+                    var result = await action(transaction);
+                    transaction.Commit();
+                    return result;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            finally
+            {
+                if (!wasOpen && connection.State == ConnectionState.Open)
+                    connection.Close();
+            }
+        }
+
+        /// <summary>
+        /// Executes multiple operations within a transaction with no return value
+        /// </summary>
+        public static async Task ExecuteInTransactionAsync(
+            this IDbConnection connection, Func<IDbTransaction, Task> action)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (action == null) throw new ArgumentNullException(nameof(action));
+
+            bool wasOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!wasOpen)
+                    connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+                try
+                {
+                    await action(transaction);
+                    transaction.Commit();
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            finally
+            {
+                if (!wasOpen && connection.State == ConnectionState.Open)
+                    connection.Close();
+            }
+        }
+
+        #endregion
+
+        #region Application DB Helper Methods
 
         /// <summary>
         /// Gets a database ID by its name from the application database
         /// </summary>
         public static async Task<int> GetDatabaseIdByNameAsync(this IDbConnection connection, string databaseName)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(databaseName)) throw new ArgumentException("Database name cannot be empty", nameof(databaseName));
+
             try
             {
                 const string sql = "SELECT DatabaseID FROM Databases WHERE Name = @Name AND IsActive = 1";
@@ -220,6 +328,9 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public static async Task<bool> DatabaseExistsAsync(this IDbConnection connection, int databaseId)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
+
             try
             {
                 const string sql = "SELECT COUNT(1) FROM Databases WHERE DatabaseID = @DatabaseID AND IsActive = 1";
@@ -233,10 +344,13 @@ namespace DynamicDasboardWebAPI.Utilities
         }
 
         /// <summary>
-        /// Gets a database by its ID
+        /// Gets a database by its ID from the application database
         /// </summary>
-        public static async Task<DynamicDashboardCommon.Models.Database> GetDatabaseByIdAsync(this IDbConnection connection, int databaseId)
+        public static async Task<Database> GetDatabaseByIdAsync(this IDbConnection connection, int databaseId)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
+
             try
             {
                 const string sql = @"
@@ -247,7 +361,7 @@ namespace DynamicDasboardWebAPI.Utilities
                     LEFT JOIN DatabaseTypes dt ON d.TypeID = dt.TypeID
                     WHERE d.DatabaseID = @DatabaseID";
 
-                return await connection.QueryFirstOrDefaultSafeAsync<DynamicDashboardCommon.Models.Database>(
+                return await connection.QueryFirstOrDefaultSafeAsync<Database>(
                     sql, new { DatabaseID = databaseId });
             }
             catch (Exception ex)
@@ -256,11 +370,39 @@ namespace DynamicDasboardWebAPI.Utilities
             }
         }
 
+
+
         /// <summary>
-        /// Gets a database by its name
+        /// Gets all databases with their type names from the application database
         /// </summary>
-        public static async Task<DynamicDashboardCommon.Models.Database> GetDatabaseByNameAsync(this IDbConnection connection, string databaseName)
+        public static async Task<IEnumerable<Database>> GetAllDatabasesAsync(this IDbConnection connection)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+
+            try
+            {
+                const string sql = @"
+            SELECT 
+                d.*, 
+                dt.TypeName as DatabaseTypeName
+            FROM Databases d
+            LEFT JOIN DatabaseTypes dt ON d.TypeID = dt.TypeID";
+
+                return await connection.QuerySafeAsync<Database>(sql);
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error retrieving all databases: {ex.Message}", ex);
+            }
+        }
+        /// <summary>
+        /// Gets a database by its name from the application database
+        /// </summary>
+        public static async Task<Database> GetDatabaseByNameAsync(this IDbConnection connection, string databaseName)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(databaseName)) throw new ArgumentException("Database name cannot be empty", nameof(databaseName));
+
             try
             {
                 const string sql = @"
@@ -271,7 +413,7 @@ namespace DynamicDasboardWebAPI.Utilities
                     LEFT JOIN DatabaseTypes dt ON d.TypeID = dt.TypeID
                     WHERE d.Name = @Name";
 
-                return await connection.QueryFirstOrDefaultSafeAsync<DynamicDashboardCommon.Models.Database>(
+                return await connection.QueryFirstOrDefaultSafeAsync<Database>(
                     sql, new { Name = databaseName });
             }
             catch (Exception ex)
@@ -280,56 +422,72 @@ namespace DynamicDasboardWebAPI.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets database type name by its ID from the application database
+        /// </summary>
+     
+
         #endregion
 
-        #region Transaction Helpers
+        #region Metadata Helpers
 
         /// <summary>
-        /// Executes multiple operations within a transaction
+        /// Gets tables for a database by ID
         /// </summary>
-        public static async Task<TResult> ExecuteInTransactionAsync<TResult>(
-            this IDbConnection connection, Func<IDbTransaction, Task<TResult>> action)
+        public static async Task<IEnumerable<Table>> GetTablesByDatabaseIdAsync(
+            this IDbConnection connection, int databaseId)
         {
-            if (connection.State != ConnectionState.Open)
-            {
-                connection.Open();
-            }
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
 
-            using var transaction = connection.BeginTransaction();
             try
             {
-                var result = await action(transaction);
-                transaction.Commit();
-                return result;
+                const string sql = "SELECT * FROM Tables WHERE DatabaseID = @DatabaseID";
+                return await connection.QuerySafeAsync<Table>(sql, new { DatabaseID = databaseId });
             }
-            catch
+            catch (Exception ex)
             {
-                transaction.Rollback();
-                throw;
+                throw new DatabaseException($"Error retrieving tables for database: {databaseId}", ex);
             }
         }
 
         /// <summary>
-        /// Executes multiple operations within a transaction with no return value
+        /// Gets columns for a table by ID
         /// </summary>
-        public static async Task ExecuteInTransactionAsync(
-            this IDbConnection connection, Func<IDbTransaction, Task> action)
+        public static async Task<IEnumerable<Column>> GetColumnsByTableIdAsync(
+            this IDbConnection connection, int tableId)
         {
-            if (connection.State != ConnectionState.Open)
-            {
-                connection.Open();
-            }
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (tableId <= 0) throw new ArgumentException("Invalid table ID", nameof(tableId));
 
-            using var transaction = connection.BeginTransaction();
             try
             {
-                await action(transaction);
-                transaction.Commit();
+                const string sql = "SELECT * FROM Columns WHERE TableID = @TableID";
+                return await connection.QuerySafeAsync<Column>(sql, new { TableID = tableId });
             }
-            catch
+            catch (Exception ex)
             {
-                transaction.Rollback();
-                throw;
+                throw new DatabaseException($"Error retrieving columns for table: {tableId}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Gets relationships for a table by ID
+        /// </summary>
+        public static async Task<IEnumerable<Relationship>> GetRelationshipsByTableIdAsync(
+            this IDbConnection connection, int tableId)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (tableId <= 0) throw new ArgumentException("Invalid table ID", nameof(tableId));
+
+            try
+            {
+                const string sql = "SELECT * FROM Relationships WHERE TableID = @TableID OR RelatedTableID = @TableID";
+                return await connection.QuerySafeAsync<Relationship>(sql, new { TableID = tableId });
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error retrieving relationships for table: {tableId}", ex);
             }
         }
 
@@ -339,15 +497,14 @@ namespace DynamicDasboardWebAPI.Utilities
 
         /// <summary>
         /// Bulk inserts data into a table
-        /// Note: Implementation is database-specific and will use the most efficient approach for each DB type
         /// </summary>
         public static async Task<int> BulkInsertAsync<T>(
             this IDbConnection connection, string tableName, IEnumerable<T> data,
             IDbTransaction transaction = null, int batchSize = 1000)
         {
-            // This is a simplified implementation
-            // In a real-world scenario, this would use SqlBulkCopy for SQL Server, 
-            // MySqlBulkLoader for MySQL, etc.
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Table name cannot be empty", nameof(tableName));
+            if (data == null) throw new ArgumentNullException(nameof(data));
 
             int totalInserted = 0;
             var dataList = data as List<T> ?? new List<T>(data);
@@ -355,49 +512,56 @@ namespace DynamicDasboardWebAPI.Utilities
             if (dataList.Count == 0)
                 return 0;
 
-            // Get property names from first item
-            var properties = typeof(T).GetProperties();
-            var columnNames = properties.Select(p => p.Name).ToList();
-
-            // Create batches
-            var batches = new List<List<T>>();
-            for (int i = 0; i < dataList.Count; i += batchSize)
+            try
             {
-                batches.Add(dataList.Skip(i).Take(batchSize).ToList());
-            }
+                // Get property names from first item
+                var properties = typeof(T).GetProperties();
+                var columnNames = properties.Select(p => p.Name).ToList();
 
-            foreach (var batch in batches)
-            {
-                // Create bulk insert SQL
-                var valuePlaceholders = new List<string>();
-                var parameters = new DynamicParameters();
-                int itemIndex = 0;
-
-                foreach (var item in batch)
+                // Create batches
+                var batches = new List<List<T>>();
+                for (int i = 0; i < dataList.Count; i += batchSize)
                 {
-                    var valueClause = new List<string>();
-
-                    foreach (var prop in properties)
-                    {
-                        string paramName = $"@p{itemIndex}_{prop.Name}";
-                        valueClause.Add(paramName);
-                        parameters.Add(paramName, prop.GetValue(item));
-                    }
-
-                    valuePlaceholders.Add($"({string.Join(", ", valueClause)})");
-                    itemIndex++;
+                    batches.Add(dataList.Skip(i).Take(batchSize).ToList());
                 }
 
-                string sql = $@"
-                    INSERT INTO {tableName} 
-                    ({string.Join(", ", columnNames)})
-                    VALUES 
-                    {string.Join(",\n", valuePlaceholders)}";
+                foreach (var batch in batches)
+                {
+                    // Create bulk insert SQL
+                    var valuePlaceholders = new List<string>();
+                    var parameters = new DynamicParameters();
+                    int itemIndex = 0;
 
-                totalInserted += await connection.ExecuteAsync(sql, parameters, transaction);
+                    foreach (var item in batch)
+                    {
+                        var valueClause = new List<string>();
+
+                        foreach (var prop in properties)
+                        {
+                            string paramName = $"@p{itemIndex}_{prop.Name}";
+                            valueClause.Add(paramName);
+                            parameters.Add(paramName, prop.GetValue(item));
+                        }
+
+                        valuePlaceholders.Add($"({string.Join(", ", valueClause)})");
+                        itemIndex++;
+                    }
+
+                    string sql = $@"
+                        INSERT INTO {tableName} 
+                        ({string.Join(", ", columnNames)})
+                        VALUES 
+                        {string.Join(",\n", valuePlaceholders)}";
+
+                    totalInserted += await connection.ExecuteAsync(sql, parameters, transaction);
+                }
+
+                return totalInserted;
             }
-
-            return totalInserted;
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error performing bulk insert into {tableName}: {ex.Message}", ex);
+            }
         }
 
         #endregion
@@ -410,6 +574,9 @@ namespace DynamicDasboardWebAPI.Utilities
         public static async Task<TResult> ExecuteWithConnectionAsync<TResult>(
             this IDbConnection connection, Func<IDbConnection, Task<TResult>> action)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (action == null) throw new ArgumentNullException(nameof(action));
+
             bool wasOpen = connection.State == ConnectionState.Open;
 
             try
@@ -431,6 +598,8 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public static async Task<IEnumerable<dynamic>> GetDatabaseSchemaAsync(this IDbConnection connection)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+
             try
             {
                 string sql;
@@ -518,59 +687,45 @@ namespace DynamicDasboardWebAPI.Utilities
             }
         }
 
-        #endregion
-
-        #region Metadata Helpers
-
         /// <summary>
-        /// Gets tables for a database by ID
+        /// Updates the LastConnectionStatus and LastTransactionDate for a database
         /// </summary>
-        public static async Task<IEnumerable<DynamicDashboardCommon.Models.Table>> GetTablesByDatabaseIdAsync(
-            this IDbConnection connection, int databaseId)
+        public static async Task UpdateConnectionStatusAsync(this IDbConnection connection, int databaseId, bool status)
         {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
+
             try
             {
-                const string sql = "SELECT * FROM Tables WHERE DatabaseID = @DatabaseID";
-                return await connection.QuerySafeAsync<DynamicDashboardCommon.Models.Table>(sql, new { DatabaseID = databaseId });
+                const string query = @"
+                    UPDATE Databases 
+                    SET LastConnectionStatus = @Status, LastTransactionDate = GETDATE()
+                    WHERE DatabaseID = @DatabaseID";
+
+                await connection.ExecuteSafeAsync(query, new
+                {
+                    DatabaseID = databaseId,
+                    Status = status
+                });
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving tables for database: {databaseId}", ex);
+                // Log but don't throw as this is a non-critical operation
+                // If we have a logger, we could log here
+                // _logger?.LogError(ex, "Error updating connection status for database: {DatabaseId}", databaseId);
             }
         }
 
         /// <summary>
-        /// Gets columns for a table by ID
+        /// Sanitizes a SQL identifier to help prevent SQL injection
         /// </summary>
-        public static async Task<IEnumerable<DynamicDashboardCommon.Models.Column>> GetColumnsByTableIdAsync(
-            this IDbConnection connection, int tableId)
+        public static string SanitizeSqlIdentifier(string identifier)
         {
-            try
-            {
-                const string sql = "SELECT * FROM Columns WHERE TableID = @TableID";
-                return await connection.QuerySafeAsync<DynamicDashboardCommon.Models.Column>(sql, new { TableID = tableId });
-            }
-            catch (Exception ex)
-            {
-                throw new DatabaseException($"Error retrieving columns for table: {tableId}", ex);
-            }
-        }
+            if (string.IsNullOrWhiteSpace(identifier))
+                return string.Empty;
 
-        /// <summary>
-        /// Gets relationships for a table by ID
-        /// </summary>
-        public static async Task<IEnumerable<DynamicDashboardCommon.Models.Relationship>> GetRelationshipsByTableIdAsync(
-            this IDbConnection connection, int tableId)
-        {
-            try
-            {
-                const string sql = "SELECT * FROM Relationships WHERE TableID = @TableID OR RelatedTableID = @TableID";
-                return await connection.QuerySafeAsync<DynamicDashboardCommon.Models.Relationship>(sql, new { TableID = tableId });
-            }
-            catch (Exception ex)
-            {
-                throw new DatabaseException($"Error retrieving relationships for table: {tableId}", ex);
-            }
+            // Replace any non-alphanumeric characters except underscores with empty string
+            return System.Text.RegularExpressions.Regex.Replace(identifier, "[^a-zA-Z0-9_]", "");
         }
 
         #endregion

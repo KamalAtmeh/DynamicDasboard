@@ -3,7 +3,7 @@
 @inject NavigationManager NavigationManager
 @using DynamicDashboardCommon.Models
 
-<ExceptionHandler ErrorMessage="@errorMessage" />
+<ExceptionHandler outputMessage="@outputMessage" />
 
 <!--
     This page is responsible for managing databases.
@@ -108,7 +108,7 @@ else
     private bool showAddForm = false;
     private Database selectedDatabase = null;
     private Database databaseForm = new Database();
-    private string errorMessage;
+    private string outputMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,7 +118,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred: {ex.Message}";
+            outputMessage = $"An error occurred: {ex.Message}";
         }
     }
 
@@ -130,7 +130,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to load databases: {ex.Message}";
+            outputMessage = $"Failed to load databases: {ex.Message}";
         }
     }
 
@@ -143,7 +143,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred: {ex.Message}";
+            outputMessage = $"An error occurred: {ex.Message}";
         }
     }
 
@@ -166,7 +166,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred: {ex.Message}";
+            outputMessage = $"An error occurred: {ex.Message}";
         }
     }
 
@@ -196,7 +196,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred: {ex.Message}";
+            outputMessage = $"An error occurred: {ex.Message}";
         }
     }
 
@@ -209,7 +209,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to delete database: {ex.Message}";
+            outputMessage = $"Failed to delete database: {ex.Message}";
         }
     }
 
@@ -225,16 +225,16 @@ else
             var response = await Http.PostAsJsonAsync("api/databases/test-connection", databaseForm);
             if (response.IsSuccessStatusCode)
             {
-                errorMessage = "Connection successful!";
+                outputMessage = "Connection successful!";
             }
             else
             {
-                errorMessage = "Connection failed. Please check the connection details.";
+                outputMessage = "Connection failed. Please check the connection details.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred: {ex.Message}";
+            outputMessage = $"An error occurred: {ex.Message}";
         }
     }
 

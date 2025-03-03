@@ -43,35 +43,30 @@ public class NlQueryRepository
     /// <summary>
     /// Executes a query on a specific database using its ID
     /// </summary>
-    /// <param name="query">SQL query to execute</param>
-    /// <param name="databaseId">ID of the database in the system</param>
-    /// <returns>Query results as a list of dictionaries</returns>
     public async Task<List<Dictionary<string, object>>> ExecuteQueryOnDatabaseAsync(string query, int databaseId)
-    {
+    { 
+
         try
         {
-            _logger.LogInformation("Executing query on database ID {DatabaseId}: {Query}", databaseId, query);
-
-            // Get database details
-            var database = await _appDbConnection.GetDatabaseByIdAsync(databaseId);
-            if (database == null)
+            if (!string.IsNullOrEmpty(query) && databaseId != 0)
             {
-                throw new ArgumentException($"Database with ID {databaseId} not found");
-            }
+                _logger.LogInformation("Executing query on database ID {DatabaseId}: {Query}", databaseId, query);
 
-            // Create connection and execute query using the enhanced helper
-            using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId.ToString());
-            return await connection.ExecuteQueryAsDictionariesAsync(query);
+                // Create connection and execute query using the enhanced helper
+                using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId);
+
+                return await connection.ExecuteQueryAsDictionariesAsync(query);
+            }
+            else
+            {
+                return new List<Dictionary<string, object>>();
+            }
         }
-        catch (DatabaseException ex)
-        {
-            _logger.LogError(ex, "Database error executing query on database ID {DatabaseId}: {Query}", databaseId, query);
-            throw;
-        }
+
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing query on database ID {DatabaseId}: {Query}", databaseId, query);
-            throw new DatabaseException($"Error executing query on database {databaseId}: {ex.Message}", ex);
+            throw;
         }
     }
 
@@ -111,7 +106,7 @@ public class NlQueryRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving metadata for database ID {DatabaseId}", databaseId);
-            throw new DatabaseException($"Error retrieving metadata for database {databaseId}: {ex.Message}", ex);
+            throw;
         }
     }
 }

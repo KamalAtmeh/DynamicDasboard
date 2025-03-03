@@ -240,56 +240,6 @@
             <param name="limit">Maximum number of jobs to return.</param>
             <returns>A list of recent batch processing jobs.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.BatchProcessingLog">
-            <summary>
-            Represents a log entry for a batch processing job.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseDetailsByIdAsync(System.Int32)">
-            <summary>
-            Get a comprehensive database details by ID
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetAllDatabasesWithTypesAsync">
-            <summary>
-            Get all databases with their type names
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseTypeNameAsync(System.Int32)">
-            <summary>
-            Get database type name by ID
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetAllDatabaseTypesAsync">
-            <summary>
-            Get all database types
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.TestConnectionAsync(System.Int32)">
-            <summary>
-            Tests the connection to a database
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
-            <summary>
-            Tests the connection using connection details without saving to the database
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.ExecuteQueryAsync``1(System.Int32,System.String,System.Object)">
-            <summary>
-            Executes a SQL query against a specific database
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseTypeNameByIdAsync(System.Int32)">
-            <summary>
-            Gets a database type name by ID from the DatabaseTypes table
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.UpdateConnectionStatusAsync(System.Int32,System.Boolean)">
-            <summary>
-            Updates the LastConnectionStatus and LastTransactionDate for a database
-            </summary>
-        </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.GenericRepository`1">
             <summary>  
             A generic repository class that provides basic CRUD operations for entities.  
@@ -376,7 +326,7 @@
             Repository for logging events in the Logs table.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.#ctor(System.Data.IDbConnection,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Repositories.LogsRepository})">
+        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.#ctor(System.Data.IDbConnection,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DatabaseRepository})">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.LogsRepository"/> class.
             </summary>
@@ -420,7 +370,7 @@
             Repository for logging executed queries into the QueryLogs table.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.LogQueryAsync(System.String,System.Nullable{System.Int32},System.String,System.String)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.LogQueryAsync(System.String,System.Nullable{System.Int32},System.Int32,System.String)">
             <summary>
             Logs an executed query into the QueryLogs table.
             </summary>
@@ -454,25 +404,20 @@
             <summary>
             Executes a dynamic SQL query using the default connection and returns the result.
             </summary>
-            <param name="query">The SQL query to execute.</param>
-            <returns>The query result as a dynamic object.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String,System.String)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String,System.Int32)">
             <summary>
-            Executes a dynamic SQL query on the specified database type and returns the result.
+            Executes a dynamic SQL query on the specified database and returns the result.
             </summary>
-            <param name="query">The SQL query to execute.</param>
-            <param name="dbType">The database type to connect to.</param>
-            <returns>The query result as a dynamic object.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.Object)">
             <summary>
             Executes a dynamic SQL query with parameters and returns the result.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.String,System.Object)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.Int32,System.Object)">
             <summary>
-            Executes a dynamic SQL query with parameters on the specified database type.
+            Executes a dynamic SQL query with parameters on the specified database.
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
@@ -517,39 +462,16 @@
             <param name="columnId">The ID of the column to delete.</param>
             <returns>The number of affected rows.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Services.DataAccessService">
-            <summary>
-            Implementation of IDataAccessService for generic database operations
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.QueryAsync``1(System.String,System.String,System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.QueryFirstOrDefaultAsync``1(System.String,System.String,System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.ExecuteAsync(System.String,System.String,System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DataAccessService.ExecuteScalarAsync``1(System.String,System.String,System.Object)">
-            <inheritdoc/>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.DatabaseException">
-            <summary>
-            Custom exception for database operations
-            </summary>
-        </member>
         <member name="T:DynamicDasboardWebAPI.Services.DatabaseService">
             <summary>
             Service for managing database operations including connections, metadata, and queries.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DynamicDasboardWebAPI.Repositories.DatabaseRepository,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DatabaseRepository,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DatabaseService"/> class.
             </summary>
             <param name="repository">The repository for database operations.</param>
-            <param name="connectionFactory">The factory for database connections.</param>
             <param name="logger">The logger for service operations.</param>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetAllDatabasesAsync">
@@ -579,14 +501,12 @@
             <param name="databaseId">The ID of the database to delete.</param>
             <returns>The number of affected rows.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.TestConnectionAsync(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
             <summary>
             Tests the connection to a database using stored connection details.
             </summary>
             <param name="databaseId">The ID of the database to test.</param>
             <returns>True if the connection was successful; otherwise, false.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.TestConnectionAsync(DynamicDashboardCommon.Models.ConnectionTestRequest)">
             <summary>
             Tests a database connection using the provided connection details.
             </summary>
@@ -625,72 +545,6 @@
             </summary>
             <param name="typeId">The type ID.</param>
             <returns>The database type name.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.ExecuteQueryAsync``1(System.Int32,System.String,System.Object)">
-            <summary>
-            Executes a query on a specific database.
-            </summary>
-            <typeparam name="T">The type to map results to.</typeparam>
-            <param name="databaseId">The ID of the database to query.</param>
-            <param name="query">The SQL query to execute.</param>
-            <param name="parameters">The query parameters.</param>
-            <returns>The query results.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetDatabaseTypeIdAsync(System.String)">
-            <summary>
-            Gets the database type ID for the specified type name.
-            </summary>
-            <param name="dbType">The database type name.</param>
-            <returns>The type ID.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.LoadDatabaseTypesAsync">
-            <summary>
-            Loads all database types into the cache.
-            </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.IDataAccessService">
-            <summary>
-            Interface for generic database access operations
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.QueryAsync``1(System.String,System.String,System.Object)">
-            <summary>
-            Executes a query and returns a list of results
-            </summary>
-            <typeparam name="T">Type to map results to</typeparam>
-            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
-            <param name="query">SQL query to execute</param>
-            <param name="parameters">Optional parameters for the query</param>
-            <returns>List of results</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.QueryFirstOrDefaultAsync``1(System.String,System.String,System.Object)">
-            <summary>
-            Executes a query and returns a single result
-            </summary>
-            <typeparam name="T">Type to map the result to</typeparam>
-            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
-            <param name="query">SQL query to execute</param>
-            <param name="parameters">Optional parameters for the query</param>
-            <returns>Single result or default value</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.ExecuteAsync(System.String,System.String,System.Object)">
-            <summary>
-            Executes a command and returns the number of affected rows
-            </summary>
-            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
-            <param name="command">SQL command to execute</param>
-            <param name="parameters">Optional parameters for the command</param>
-            <returns>Number of affected rows</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IDataAccessService.ExecuteScalarAsync``1(System.String,System.String,System.Object)">
-            <summary>
-            Executes a scalar query and returns a single value
-            </summary>
-            <typeparam name="T">Type of the scalar value</typeparam>
-            <param name="dbType">Database type (SQLServer, MySQL, Oracle)</param>
-            <param name="query">SQL query to execute</param>
-            <param name="parameters">Optional parameters for the query</param>
-            <returns>Scalar value</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDatabaseService.GetAllDatabasesAsync">
             <summary>
@@ -1016,6 +870,16 @@
             Converts dynamic query results to a list of dictionaries
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteInTransactionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbTransaction,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes multiple operations within a transaction
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteInTransactionAsync(System.Data.IDbConnection,System.Func{System.Data.IDbTransaction,System.Threading.Tasks.Task})">
+            <summary>
+            Executes multiple operations within a transaction with no return value
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseIdByNameAsync(System.Data.IDbConnection,System.String)">
             <summary>
             Gets a database ID by its name from the application database
@@ -1028,38 +892,17 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseByIdAsync(System.Data.IDbConnection,System.Int32)">
             <summary>
-            Gets a database by its ID
+            Gets a database by its ID from the application database
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetAllDatabasesAsync(System.Data.IDbConnection)">
+            <summary>
+            Gets all databases with their type names from the application database
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseByNameAsync(System.Data.IDbConnection,System.String)">
             <summary>
-            Gets a database by its name
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteInTransactionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbTransaction,System.Threading.Tasks.Task{``0}})">
-            <summary>
-            Executes multiple operations within a transaction
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteInTransactionAsync(System.Data.IDbConnection,System.Func{System.Data.IDbTransaction,System.Threading.Tasks.Task})">
-            <summary>
-            Executes multiple operations within a transaction with no return value
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.BulkInsertAsync``1(System.Data.IDbConnection,System.String,System.Collections.Generic.IEnumerable{``0},System.Data.IDbTransaction,System.Int32)">
-            <summary>
-            Bulk inserts data into a table
-            Note: Implementation is database-specific and will use the most efficient approach for each DB type
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteWithConnectionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
-            <summary>
-            Executes a function with a database connection
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseSchemaAsync(System.Data.IDbConnection)">
-            <summary>
-            Gets database schema information that works across different database types
+            Gets a database by its name from the application database
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetTablesByDatabaseIdAsync(System.Data.IDbConnection,System.Int32)">
@@ -1075,6 +918,31 @@
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetRelationshipsByTableIdAsync(System.Data.IDbConnection,System.Int32)">
             <summary>
             Gets relationships for a table by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.BulkInsertAsync``1(System.Data.IDbConnection,System.String,System.Collections.Generic.IEnumerable{``0},System.Data.IDbTransaction,System.Int32)">
+            <summary>
+            Bulk inserts data into a table
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteWithConnectionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes a function with a database connection
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseSchemaAsync(System.Data.IDbConnection)">
+            <summary>
+            Gets database schema information that works across different database types
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.UpdateConnectionStatusAsync(System.Data.IDbConnection,System.Int32,System.Boolean)">
+            <summary>
+            Updates the LastConnectionStatus and LastTransactionDate for a database
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.SanitizeSqlIdentifier(System.String)">
+            <summary>
+            Sanitizes a SQL identifier to help prevent SQL injection
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Utilities.QueryBuilder">
@@ -1104,9 +972,6 @@
             <summary>
             Executes a query on a specific database using its ID
             </summary>
-            <param name="query">SQL query to execute</param>
-            <param name="databaseId">ID of the database in the system</param>
-            <returns>Query results as a list of dictionaries</returns>
         </member>
         <member name="M:NlQueryRepository.GetDatabaseMetadataAsync(System.Int32)">
             <summary>
@@ -1114,55 +979,42 @@
             </summary>
             <returns>A dictionary containing database metadata.</returns>
         </member>
-        <member name="M:DbConnectionFactory.CreateConnection(System.String)">
+        <member name="M:DbConnectionFactory.CreateConnection(System.Int32)">
             <summary>
-            Creates a database connection based on the database ID or database type.
+            Creates a database connection based on the database ID.
             </summary>
-            <param name="databaseIdOrType">Database ID (numeric) or database type name</param>
-            <returns>An IDbConnection instance.</returns>
         </member>
-        <member name="M:DbConnectionFactory.CreateOpenConnectionAsync(System.String)">
+        <member name="M:DbConnectionFactory.CreateOpenConnectionAsync(System.Int32)">
             <summary>
-            Creates and opens a database connection asynchronously based on database ID or type.
+            Creates and opens a database connection asynchronously.
             </summary>
-            <param name="databaseIdOrType">Database ID (numeric) or database type name</param>
-            <returns>An opened IDbConnection instance.</returns>
         </member>
-        <member name="M:DbConnectionFactory.TestConnectionAsync(System.String)">
+        <member name="M:DbConnectionFactory.TestConnectionAsync(System.Int32)">
             <summary>
             Tests a database connection asynchronously.
             </summary>
-            <param name="databaseIdOrType">Database ID or type name.</param>
-            <returns>True if connection successful; otherwise, false.</returns>
         </member>
-        <member name="M:DbConnectionFactory.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
+        <member name="M:DbConnectionFactory.TestConnectionAsync(DynamicDashboardCommon.Models.Database,System.String)">
             <summary>
             Tests a database connection using explicit connection parameters.
             </summary>
-            <param name="database">Database object with connection details</param>
-            <returns>True if connection successful; otherwise, false.</returns>
         </member>
         <member name="M:DbConnectionFactory.BuildConnectionString(DynamicDashboardCommon.Models.Database)">
             <summary>
             Builds a connection string from a Database object
             </summary>
         </member>
-        <member name="M:DbConnectionFactory.GetConnectionString(System.String)">
-            <summary>
-            Gets the connection string for a database by ID or type.
-            If numeric, treats as database ID and fetches from DB.
-            If string, treats as type name and uses cached value or fetches from DB.
-            </summary>
-        </member>
-        <member name="M:DbConnectionFactory.GetDatabaseType(System.String)">
-            <summary>
-            Gets the database type for a database by ID or type
-            </summary>
-        </member>
         <member name="M:DbConnectionFactory.ClearCache">
             <summary>
             Clears the connection string cache
             </summary>
+        </member>
+        <member name="M:DbConnectionFactory.GetConnectionInfo(System.Int32)">
+            <summary>
+            Gets connection information for a database by ID
+            </summary>
+            <param name="databaseId">The database ID</param>
+            <returns>A tuple containing connection string and database type ID</returns>
         </member>
     </members>
 </doc>

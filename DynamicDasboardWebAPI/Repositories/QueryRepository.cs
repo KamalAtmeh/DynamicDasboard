@@ -4,6 +4,7 @@ using System.Data;
 using System.Threading.Tasks;
 using Dapper;
 using DynamicDasboardWebAPI.Utilities;
+using DynamicDashboardCommon.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DynamicDasboardWebAPI.Repositories
@@ -30,8 +31,6 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <summary>
         /// Executes a dynamic SQL query using the default connection and returns the result.
         /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <returns>The query result as a dynamic object.</returns>
         public async Task<dynamic> ExecuteQueryAsync(string query)
         {
             try
@@ -46,35 +45,31 @@ namespace DynamicDasboardWebAPI.Repositories
         }
 
         /// <summary>
-        /// Executes a dynamic SQL query on the specified database type and returns the result.
+        /// Executes a dynamic SQL query on the specified database and returns the result.
         /// </summary>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <param name="dbType">The database type to connect to.</param>
-        /// <returns>The query result as a dynamic object.</returns>
-        public async Task<dynamic> ExecuteQueryAsync(string query, string dbType)
+        public async Task<dynamic> ExecuteQueryAsync(string query, int databaseId)
         {
-            if (string.IsNullOrWhiteSpace(dbType))
-                throw new ArgumentException("Database type cannot be empty", nameof(dbType));
+
 
             try
             {
-                using var connection = await _connectionFactory.CreateOpenConnectionAsync(dbType);
+                using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId);
                 return await connection.QuerySafeAsync<dynamic>(query);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error executing query on {DbType}: {Query}", dbType, query);
+                _logger?.LogError(ex, "Error executing query on database {DatabaseId}: {Query}", databaseId, query);
                 throw;
             }
         }
-
-        // Other methods remain unchanged...
 
         /// <summary>
         /// Executes a dynamic SQL query with parameters and returns the result.
         /// </summary>
         public async Task<dynamic> ExecuteQueryWithParamsAsync(string query, object parameters)
         {
+
+
             try
             {
                 return await _connection.QuerySafeAsync<dynamic>(query, parameters);
@@ -87,21 +82,18 @@ namespace DynamicDasboardWebAPI.Repositories
         }
 
         /// <summary>
-        /// Executes a dynamic SQL query with parameters on the specified database type.
+        /// Executes a dynamic SQL query with parameters on the specified database.
         /// </summary>
-        public async Task<dynamic> ExecuteQueryWithParamsAsync(string query, string dbType, object parameters)
+        public async Task<dynamic> ExecuteQueryWithParamsAsync(string query, int databaseId, object parameters)
         {
-            if (string.IsNullOrWhiteSpace(dbType))
-                throw new ArgumentException("Database type cannot be empty", nameof(dbType));
-
             try
             {
-                using var connection = await _connectionFactory.CreateOpenConnectionAsync(dbType);
+                using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId);
                 return await connection.QuerySafeAsync<dynamic>(query, parameters);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error executing parameterized query on {DbType}: {Query}", dbType, query);
+                _logger?.LogError(ex, "Error executing parameterized query on database {DatabaseId}: {Query}", databaseId, query);
                 throw;
             }
         }

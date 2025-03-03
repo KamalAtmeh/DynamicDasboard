@@ -56,7 +56,6 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error executing query: {Query}", query);
                 throw;
             }
         }

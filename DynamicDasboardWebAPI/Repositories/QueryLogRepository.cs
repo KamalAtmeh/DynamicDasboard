@@ -14,13 +14,18 @@ namespace DynamicDasboardWebAPI.Repositories
     /// </summary>
     public class QueryLogsRepository
     {
-        private readonly IDbConnection _connection;
-        private readonly ILogger<QueryLogsRepository> _logger;
+        private readonly IDbConnection _appDbConnection;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<NlQueryRepository> _logger;
 
-        public QueryLogsRepository(IDbConnection connection, ILogger<QueryLogsRepository> logger = null)
+        public QueryLogsRepository(
+            IDbConnection appDbConnection,
+            DbConnectionFactory connectionFactory,
+            ILogger<NlQueryRepository> logger)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _logger = logger;
+            _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -31,25 +36,22 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="databaseType">The type of database used.</param>
         /// <param name="result">Serialized result of the query (optional).</param>
         /// <returns>The number of rows affected.</returns>
-        public async Task<int> LogQueryAsync(string queryText, int? executedBy, string databaseType, string result)
+        public async Task<int> LogQueryAsync(string queryText, int? executedBy, int databaseID, string result)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(queryText))
                     throw new ArgumentException("Query text cannot be empty", nameof(queryText));
 
-                if (string.IsNullOrWhiteSpace(databaseType))
-                    throw new ArgumentException("Database type cannot be empty", nameof(databaseType));
-
                 const string sql = @"
                     INSERT INTO QueryLogs (QueryText, ExecutedAt, ExecutedBy, DatabaseType, Result)
                     VALUES (@QueryText, GETDATE(), @ExecutedBy, @DatabaseType, @Result)";
 
-                return await _connection.ExecuteSafeAsync(sql, new
+                return await _appDbConnection.ExecuteSafeAsync(sql, new
                 {
                     QueryText = queryText,
                     ExecutedBy = executedBy,
-                    DatabaseType = databaseType,
+                    DatabaseType = databaseID,
                     Result = result
                 });
             }
@@ -84,7 +86,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     parameters = new { Limit = limit };
                 }
 
-                return await _connection.QuerySafeAsync<Query>(sql, parameters);
+                return await _appDbConnection.QuerySafeAsync<Query>(sql, parameters);
             }
             catch (Exception ex)
             {
@@ -103,7 +105,7 @@ namespace DynamicDasboardWebAPI.Repositories
             try
             {
                 const string sql = "SELECT * FROM QueryLogs WHERE QueryID = @QueryID";
-                return await _connection.QueryFirstOrDefaultSafeAsync<Query>(sql, new { QueryID = queryId });
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<Query>(sql, new { QueryID = queryId });
             }
             catch (Exception ex)
             {

@@ -12,11 +12,16 @@ namespace DynamicDasboardWebAPI.Repositories
     public class TableRepository
     {
         private readonly IDbConnection _connection;
-        private readonly ILogger<TableRepository> _logger;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<QueryRepository> _logger;
 
-        public TableRepository(IDbConnection connection, ILogger<TableRepository> logger = null)
+        public TableRepository(
+                   IDbConnection connection,
+                   DbConnectionFactory connectionFactory,
+                   ILogger<QueryRepository> logger = null)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger;
         }
 
@@ -55,7 +60,7 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             try
             {
-                if (table == null) throw new ArgumentNullException(nameof(table));
+               
 
                 const string query = @"
                     INSERT INTO Tables (DatabaseID, DBTableName, AdminTableName, AdminDescription)
@@ -76,7 +81,7 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             try
             {
-                if (table == null) throw new ArgumentNullException(nameof(table));
+                
 
                 const string query = @"
                     UPDATE Tables

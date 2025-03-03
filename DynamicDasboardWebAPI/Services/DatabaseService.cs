@@ -14,7 +14,7 @@ namespace DynamicDasboardWebAPI.Services
     /// <summary>
     /// Service for managing database operations including connections, metadata, and queries.
     /// </summary>
-    public class DatabaseService : IDatabaseService
+    public class DatabaseService
     {
         private readonly DatabaseRepository _repository;
         private readonly DbConnectionFactory _connectionFactory;
@@ -25,19 +25,17 @@ namespace DynamicDasboardWebAPI.Services
         /// Initializes a new instance of the <see cref="DatabaseService"/> class.
         /// </summary>
         /// <param name="repository">The repository for database operations.</param>
-        /// <param name="connectionFactory">The factory for database connections.</param>
+ 
         /// <param name="logger">The logger for service operations.</param>
         public DatabaseService(
             DatabaseRepository repository,
-            DbConnectionFactory connectionFactory,
             ILogger<DatabaseService> logger = null)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger;
 
-            // Load all database types at startup
-            LoadDatabaseTypesAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            //// Load all database types at startup
+            //LoadDatabaseTypesAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -77,47 +75,28 @@ namespace DynamicDasboardWebAPI.Services
         public async Task<int> AddDatabaseAsync(Database database)
         {
             if (database == null)
-                throw new ArgumentNullException(nameof(database));
+                return 0;
 
             try
             {
-                _logger?.LogInformation("Adding new database: {Name}", database.Name);
 
                 // Validate required fields
-                if (string.IsNullOrWhiteSpace(database.Name))
-                    throw new ArgumentException("Database name cannot be empty");
-
-                if (string.IsNullOrWhiteSpace(database.ServerAddress))
-                    throw new ArgumentException("Server address cannot be empty");
-
-                if (string.IsNullOrWhiteSpace(database.DatabaseName))
-                    throw new ArgumentException("Database name cannot be empty");
-
-                // Build connection string if not provided
-                if (string.IsNullOrWhiteSpace(database.ConnectionString))
+                if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
                 {
-                    database.ConnectionString = _connectionFactory.BuildConnectionString(database);
-                }
 
-                // Test connection before adding
-                bool connectionSuccess = await _connectionFactory.TestConnectionAsync(database);
-                if (!connectionSuccess)
+
+                    // Set initial values for new database
+                    database.CreatedAt = DateTime.UtcNow;
+                    database.IsActive = true;
+
+                    int databaseId = await _repository.AddDatabaseAsync(database);
+
+                    return databaseId;
+                }
+                else
                 {
-                    throw new InvalidOperationException("Connection test failed. Please check connection details.");
+                    return 0;
                 }
-
-                // Set initial values for new database
-                database.CreatedAt = DateTime.UtcNow;
-                database.LastConnectionStatus = true;
-                database.LastTransactionDate = DateTime.UtcNow;
-                database.IsActive = true;
-
-                int databaseId = await _repository.AddDatabaseAsync(database);
-
-                // Invalidate cache after adding
-                _connectionFactory.ClearCache();
-
-                return databaseId;
             }
             catch (Exception ex)
             {
@@ -134,39 +113,23 @@ namespace DynamicDasboardWebAPI.Services
         public async Task<int> UpdateDatabaseAsync(Database database)
         {
             if (database == null)
-                throw new ArgumentNullException(nameof(database));
+                return 0;
 
             try
             {
-                _logger?.LogInformation("Updating database: {DatabaseID} - {Name}", database.DatabaseID, database.Name);
 
-                // Validate required fields
-                if (string.IsNullOrWhiteSpace(database.Name))
-                    throw new ArgumentException("Database name cannot be empty");
+                if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
+                {     // Validate required fields
 
-                if (string.IsNullOrWhiteSpace(database.ServerAddress))
-                    throw new ArgumentException("Server address cannot be empty");
 
-                if (string.IsNullOrWhiteSpace(database.DatabaseName))
-                    throw new ArgumentException("Database name cannot be empty");
+                    int result = await _repository.UpdateDatabaseAsync(database);
 
-                // Build connection string if not provided
-                if (string.IsNullOrWhiteSpace(database.ConnectionString))
-                {
-                    database.ConnectionString = _connectionFactory.BuildConnectionString(database);
+                    return result;
                 }
-
-                // Test connection before updating
-                bool connectionSuccess = await _connectionFactory.TestConnectionAsync(database);
-                database.LastConnectionStatus = connectionSuccess;
-                database.LastTransactionDate = DateTime.UtcNow;
-
-                int result = await _repository.UpdateDatabaseAsync(database);
-
-                // Invalidate cache after updating
-                _connectionFactory.ClearCache();
-
-                return result;
+                else
+                {
+                    return 0;
+                }
             }
             catch (Exception ex)
             {
@@ -184,12 +147,11 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                _logger?.LogInformation("Deleting database: {DatabaseID}", databaseId);
+               
 
                 int result = await _repository.DeleteDatabaseAsync(databaseId);
 
-                // Invalidate cache after deleting
-                _connectionFactory.ClearCache();
+
 
                 return result;
             }
@@ -205,58 +167,27 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="databaseId">The ID of the database to test.</param>
         /// <returns>True if the connection was successful; otherwise, false.</returns>
-        public async Task<bool> TestConnectionAsync(int databaseId)
-        {
-            try
-            {
-                _logger?.LogInformation("Testing connection to database: {DatabaseID}", databaseId);
-
-                // Get database record
-                var database = await _repository.GetDatabaseByIdAsync(databaseId);
-                if (database == null)
-                {
-                    _logger?.LogWarning("Database not found: {DatabaseID}", databaseId);
-                    return false;
-                }
-
-                // Test connection
-                bool success = await _connectionFactory.TestConnectionAsync(databaseId.ToString());
-
-                // Update last connection status
-                await _repository.UpdateConnectionStatusAsync(databaseId, success);
-
-                return success;
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error testing connection to database: {DatabaseID}", databaseId);
-
-                // Update connection status to failed
-                await _repository.UpdateConnectionStatusAsync(databaseId, false);
-
-                return false;
-            }
-        }
 
         /// <summary>
         /// Tests a database connection using the provided connection details.
         /// </summary>
         /// <param name="request">The connection test request.</param>
         /// <returns>The connection test result.</returns>
-        public async Task<ConnectionTestResult> TestConnectionAsync(ConnectionTestRequest request)
+        public async Task<bool> TestConnectionAsync(Database database)
         {
 
-            var database = new Database();
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
+            if(database == null)
+            {
+                return false;
+            }
 
             try
             {
-                _logger?.LogInformation("Testing connection using request parameters: {Server}/{Database}",
-                    request.Server, request.Database);
-                if (request.DatabaseId != 0)
+
+
+                if (database.DatabaseID != 0)
                 {
-                    database = await GetDatabaseByIdAsync(request.DatabaseId);
+                    database = await GetDatabaseByIdAsync(database.DatabaseID);
                 }
                 else
                 {
@@ -264,34 +195,24 @@ namespace DynamicDasboardWebAPI.Services
                     database = new Database
                     {
 
-                        DatabaseID = request.DatabaseId,
-                        ServerAddress = request.Server,
-                        DatabaseName = request.Database,
-                        Port = null, // Let the connection string builder use defaults
-                        Username = request.AuthType?.ToLowerInvariant() == "windows" ? null : request.Username,
-                        EncryptedCredentials = request.Password // Note: In production, this should be encrypted
+                        DatabaseID = database.DatabaseID,
+                        ServerAddress = database.ServerAddress,
+                        DatabaseName = database.DatabaseName,
+                        TypeID = database.TypeID,
+                        Port = database.Port,
+                        Username = database.Username,
+                        EncryptedCredentials = database.EncryptedCredentials // Note: In production, this should be encrypted //temp
                     };
                 }
                 // Test connection
-                bool success = await _connectionFactory.TestConnectionAsync(database);
-
-                return new ConnectionTestResult
-                {
-                    Success = success,
-                    Message = success ? "Connection successful!" : "Connection failed. Check your connection details."
-                };
+                bool isSuccess = await _repository.TestConnectionAsync(database);
+                return isSuccess;
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error testing connection with parameters: {Server}/{Database}",
-                    request.Server, request.Database);
-
-                return new ConnectionTestResult
-                {
-                    Success = false,
-                    Message = $"Connection failed: {ex.Message}",
-                    ErrorDetails = ex.ToString()
-                };
+                    database.ServerAddress, database.DatabaseName);
+                throw;
             }
         }
 
@@ -306,15 +227,14 @@ namespace DynamicDasboardWebAPI.Services
                 _logger?.LogInformation("Retrieving supported database types");
 
                 // Get types from repository
-                var databaseTypes = await _repository.GetAllDatabaseTypesAsync();
-                return databaseTypes.ToList();
+                return await _repository.GetSupportedDatabaseTypesAsync();
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error retrieving supported database types");
 
                 // Fallback only if database query fails
-                return null;
+                throw;
             }
         }
 
@@ -329,13 +249,13 @@ namespace DynamicDasboardWebAPI.Services
             {
                 _logger?.LogInformation("Retrieving metadata for database: {DatabaseID}", databaseId);
 
-                var tables = await _repository.GetDatabaseMetadataAsync(databaseId);
-                return tables != null && tables.Any();
+                return true; //temp
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error retrieving metadata for database: {DatabaseID}", databaseId);
-                return false;
+                throw;
+                
             }
         }
 
@@ -348,15 +268,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                _logger?.LogInformation("Retrieving database by ID: {DatabaseID}", databaseId);
-
                 var database = await _repository.GetDatabaseByIdAsync(databaseId);
-
-                // Enrich with type name if needed
-                if (database != null && string.IsNullOrEmpty(database.DatabaseTypeName))
-                {
-                    database.DatabaseTypeName = await GetDatabaseTypeNameAsync(database.TypeID);
-                }
 
                 return database;
             }
@@ -376,7 +288,7 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
                 _logger?.LogInformation("Retrieving all database types");
-                return await _repository.GetAllDatabaseTypesAsync();
+                return await _repository.GetSupportedDatabaseTypesAsync();
             }
             catch (Exception ex)
             {
@@ -404,7 +316,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // If not in cache, get from repository
-                string typeName = await _repository.GetDatabaseTypeNameByIdAsync(typeId);
+                string typeName = await _repository.GetDatabaseTypeNameAsync(typeId);
 
                 // If found, add to cache
                 if (!string.IsNullOrEmpty(typeName))
@@ -423,122 +335,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        /// <summary>
-        /// Executes a query on a specific database.
-        /// </summary>
-        /// <typeparam name="T">The type to map results to.</typeparam>
-        /// <param name="databaseId">The ID of the database to query.</param>
-        /// <param name="query">The SQL query to execute.</param>
-        /// <param name="parameters">The query parameters.</param>
-        /// <returns>The query results.</returns>
-        public async Task<IEnumerable<T>> ExecuteQueryAsync<T>(int databaseId, string query, object parameters = null)
-        {
-            try
-            {
-                _logger?.LogInformation("Executing query on database {DatabaseID}: {Query}", databaseId, query);
 
-                var results = await _repository.ExecuteQueryAsync<T>(databaseId, query, parameters);
-
-                // Update last transaction date and connection status
-                await _repository.UpdateConnectionStatusAsync(databaseId, true);
-
-                return results;
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error executing query on database {DatabaseID}: {Query}", databaseId, query);
-
-                // Update connection status to failed
-                await _repository.UpdateConnectionStatusAsync(databaseId, false);
-
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Gets the database type ID for the specified type name.
-        /// </summary>
-        /// <param name="dbType">The database type name.</param>
-        /// <returns>The type ID.</returns>
-        private async Task<int> GetDatabaseTypeIdAsync(string dbType)
-        {
-            if (string.IsNullOrWhiteSpace(dbType))
-                throw new ArgumentException("Database type cannot be empty", nameof(dbType));
-
-            // Normalize type name
-            string normalizedType = dbType.ToLowerInvariant();
-
-            // Check cache first
-            if (_typeIdCache.TryGetValue(normalizedType, out int cachedId))
-                return cachedId;
-
-            try
-            {
-                // Get from repository
-                var types = await _repository.GetAllDatabaseTypesAsync();
-                var match = types.FirstOrDefault(t =>
-                    string.Equals(t.TypeName, dbType, StringComparison.OrdinalIgnoreCase));
-
-                if (match != null)
-                {
-                    // Add to cache and return
-                    _typeIdCache.TryAdd(normalizedType, match.TypeID);
-                    return match.TypeID;
-                }
-                return 0;
-
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error getting type ID for database type: {DbType}", dbType);
-                return 0;
-            }
-        }
-
-        ///// <summary>
-        ///// Gets the fallback type ID for the specified type name.
-        ///// </summary>
-        ///// <param name="normalizedType">The normalized type name.</param>
-        ///// <returns>The type ID.</returns>
-        //private int GetFallbackTypeId(string normalizedType)
-        //{
-        //    return normalizedType switch
-        //    {
-        //        "sqlserver" => 1,
-        //        "mysql" => 2,
-        //        "oracle" => 3,
-        //        "sqlserver2" => 4,
-        //        _ => throw new ArgumentException($"Unsupported database type: {normalizedType}")
-        //    };
-        //}
-
-        /// <summary>
-        /// Loads all database types into the cache.
-        /// </summary>
-        private async Task LoadDatabaseTypesAsync()
-        {
-            try
-            {
-                _logger?.LogInformation("Loading database types into cache");
-
-                var types = await _repository.GetAllDatabaseTypesAsync();
-
-                foreach (var type in types)
-                {
-                    _typeIdCache.TryAdd(type.TypeName.ToLowerInvariant(), type.TypeID);
-                }
-
-                _logger?.LogInformation("Loaded {Count} database types into cache", _typeIdCache.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to load database types into cache");
-
-                // Add fallback types to cache
-                _typeIdCache.TryAdd("sqlserver", 1);
-                _typeIdCache.TryAdd("mysql", 2);
-                _typeIdCache.TryAdd("oracle", 3);
-            }
-        }
+     
     }
 }

@@ -29,9 +29,7 @@ namespace DynamicDasboardWebAPI.Services
         Task<int> UpdateDatabaseAsync(Database database);
         Task<int> DeleteDatabaseAsync(int databaseId);
         
-
-        Task<bool> TestConnectionAsync(int databaseId);
-        Task<ConnectionTestResult> TestConnectionAsync(ConnectionTestRequest request);
+        Task<bool> TestConnectionAsync(Database database);
         Task<List<DatabaseType>> GetSupportedDatabaseTypesAsync();
 
     }

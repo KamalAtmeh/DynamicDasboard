@@ -24,165 +24,192 @@ namespace DynamicDasboardWebAPI.Services
 
         public async Task<byte[]> ProcessQuestionsFile(Stream fileStream, string dbType, int? userId = null)
         {
-            using var package = new ExcelPackage(fileStream);
-            var worksheet = package.Workbook.Worksheets[0];
-
-            // Define column indexes
-            const int questionCol = 1;  // Column A
-            const int sqlCol = 2;       // Column B
-            const int statusCol = 3;    // Column C
-            const int errorCol = 4;     // Column D
-
-            // Find the last row with data
-            int rowCount = worksheet.Dimension?.Rows ?? 0;
-
-            // Log batch job
-            int totalQuestions = 0;
-            int successCount = 0;
-            string fileName = "BatchProcessing_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
-
-            int batchId = await _batchProcessingRepository.LogBatchJobAsync(
-                fileName,
-                totalQuestions, // Will update later
-                successCount,   // Will update later
-                userId
-            );
-
-            // Process each row
-            for (int row = 2; row <= rowCount; row++) // Assuming row 1 is header
+            try
             {
-                string question = worksheet.Cells[row, questionCol].Text;
+                using var package = new ExcelPackage(fileStream);
+                var worksheet = package.Workbook.Worksheets[0];
 
-                if (string.IsNullOrWhiteSpace(question))
-                    continue;
+                // Define column indexes
+                const int questionCol = 1;  // Column A
+                const int sqlCol = 2;       // Column B
+                const int statusCol = 3;    // Column C
+                const int errorCol = 4;     // Column D
 
-                totalQuestions++;
+                // Find the last row with data
+                int rowCount = worksheet.Dimension?.Rows ?? 0;
 
-                try
+                // Log batch job
+                int totalQuestions = 0;
+                int successCount = 0;
+                string fileName = "BatchProcessing_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
+
+                int batchId = await _batchProcessingRepository.LogBatchJobAsync(
+                    fileName,
+                    totalQuestions, // Will update later
+                    successCount,   // Will update later
+                    userId
+                );
+
+                // Process each row
+                for (int row = 2; row <= rowCount; row++) // Assuming row 1 is header
                 {
-                    // Process the question
-                    var request = new NlQueryRequest
+                    string question = worksheet.Cells[row, questionCol].Text;
+
+                    if (string.IsNullOrWhiteSpace(question))
+                        continue;
+
+                    totalQuestions++;
+
+                    try
                     {
-                        Question = question,
-                        DatabaseType = dbType // Use database type instead of connection string
-                    };
+                        // Process the question
+                        var request = new NlQueryRequest
+                        {
+                            Question = question,
+                            DatabaseType = dbType // Use database type instead of connection string
+                        };
 
-                    var response = await _nlQueryService.ProcessNaturalLanguageQueryAsync(request);
+                        var response = await _nlQueryService.ProcessNaturalLanguageQueryAsync(request);
 
-                    // Write results back to Excel
-                    worksheet.Cells[row, sqlCol].Value = response.GeneratedSql;
-                    worksheet.Cells[row, statusCol].Value = response.Success ? "Success" : "Error";
+                        // Write results back to Excel
+                        worksheet.Cells[row, sqlCol].Value = response.GeneratedSql;
+                        worksheet.Cells[row, statusCol].Value = response.Success ? "Success" : "Error";
 
-                    if (response.Success)
-                    {
-                        successCount++;
+                        if (response.Success)
+                        {
+                            successCount++;
+                        }
+
+                        if (!response.Success && !string.IsNullOrEmpty(response.ErrorMessage))
+                        {
+                            worksheet.Cells[row, errorCol].Value = response.ErrorMessage;
+                        }
+
+                        // Log batch detail
+                        await _batchProcessingRepository.LogBatchDetailAsync(
+                            batchId,
+                            question,
+                            response.GeneratedSql,
+                            response.Success,
+                            response.Success ? null : response.ErrorMessage
+                        );
                     }
-
-                    if (!response.Success && !string.IsNullOrEmpty(response.ErrorMessage))
+                    catch (Exception ex)
                     {
-                        worksheet.Cells[row, errorCol].Value = response.ErrorMessage;
+                        worksheet.Cells[row, statusCol].Value = "Error";
+                        worksheet.Cells[row, errorCol].Value = ex.Message;
+
+                        // Log error
+                        await _batchProcessingRepository.LogBatchDetailAsync(
+                            batchId,
+                            question,
+                            null,
+                            false,
+                            ex.Message
+                        );
                     }
-
-                    // Log batch detail
-                    await _batchProcessingRepository.LogBatchDetailAsync(
-                        batchId,
-                        question,
-                        response.GeneratedSql,
-                        response.Success,
-                        response.Success ? null : response.ErrorMessage
-                    );
                 }
-                catch (Exception ex)
-                {
-                    worksheet.Cells[row, statusCol].Value = "Error";
-                    worksheet.Cells[row, errorCol].Value = ex.Message;
 
-                    // Log error
-                    await _batchProcessingRepository.LogBatchDetailAsync(
-                        batchId,
-                        question,
-                        null,
-                        false,
-                        ex.Message
-                    );
-                }
+                // Update batch job with final counts
+                // In a real implementation, we'd update the database record
+
+                // Return the modified Excel file
+                return package.GetAsByteArray();
             }
-
-            // Update batch job with final counts
-            // In a real implementation, we'd update the database record
-
-            // Return the modified Excel file
-            return package.GetAsByteArray();
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public byte[] GenerateTemplateFile()
         {
-            using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add("Questions");
-
-            // Add headers
-            worksheet.Cells[1, 1].Value = "Question";
-            worksheet.Cells[1, 2].Value = "Generated SQL";
-            worksheet.Cells[1, 3].Value = "Status";
-            worksheet.Cells[1, 4].Value = "Error Message";
-
-            // Format headers
-            using (var range = worksheet.Cells[1, 1, 1, 4])
+            try
             {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                using var package = new ExcelPackage();
+                var worksheet = package.Workbook.Worksheets.Add("Questions");
+
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Question";
+                worksheet.Cells[1, 2].Value = "Generated SQL";
+                worksheet.Cells[1, 3].Value = "Status";
+                worksheet.Cells[1, 4].Value = "Error Message";
+
+                // Format headers
+                using (var range = worksheet.Cells[1, 1, 1, 4])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
+
+                // Set column widths
+                worksheet.Column(1).Width = 50;  // Question
+                worksheet.Column(2).Width = 70;  // SQL
+                worksheet.Column(3).Width = 15;  // Status
+                worksheet.Column(4).Width = 30;  // Error
+
+                return package.GetAsByteArray();
+            }
+            catch (Exception)
+            {
+
+                throw;
             }
 
-            // Set column widths
-            worksheet.Column(1).Width = 50;  // Question
-            worksheet.Column(2).Width = 70;  // SQL
-            worksheet.Column(3).Width = 15;  // Status
-            worksheet.Column(4).Width = 30;  // Error
-
-            return package.GetAsByteArray();
         }
 
         public byte[] Generate50TestQuestionsFile()
         {
-            using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add("Test Questions");
-
-            // Add headers
-            worksheet.Cells[1, 1].Value = "Question";
-            worksheet.Cells[1, 2].Value = "Generated SQL";
-            worksheet.Cells[1, 3].Value = "Status";
-            worksheet.Cells[1, 4].Value = "Error Message";
-
-            // Format headers
-            using (var range = worksheet.Cells[1, 1, 1, 4])
+            try
             {
-                range.Style.Font.Bold = true;
-                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-            }
+                using var package = new ExcelPackage();
+                var worksheet = package.Workbook.Worksheets.Add("Test Questions");
 
-            // Add the 50 test questions
-            string[] questions = Get50TestQuestions();
-            for (int i = 0; i < questions.Length; i++)
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Question";
+                worksheet.Cells[1, 2].Value = "Generated SQL";
+                worksheet.Cells[1, 3].Value = "Status";
+                worksheet.Cells[1, 4].Value = "Error Message";
+
+                // Format headers
+                using (var range = worksheet.Cells[1, 1, 1, 4])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
+
+                // Add the 50 test questions
+                string[] questions = Get50TestQuestions();
+                for (int i = 0; i < questions.Length; i++)
+                {
+                    worksheet.Cells[i + 2, 1].Value = questions[i];
+                }
+
+                // Set column widths
+                worksheet.Column(1).Width = 50;  // Question
+                worksheet.Column(2).Width = 70;  // SQL
+                worksheet.Column(3).Width = 15;  // Status
+                worksheet.Column(4).Width = 30;  // Error
+
+                return package.GetAsByteArray();
+            }
+            catch (Exception)
             {
-                worksheet.Cells[i + 2, 1].Value = questions[i];
+
+                throw;
             }
-
-            // Set column widths
-            worksheet.Column(1).Width = 50;  // Question
-            worksheet.Column(2).Width = 70;  // SQL
-            worksheet.Column(3).Width = 15;  // Status
-            worksheet.Column(4).Width = 30;  // Error
-
-            return package.GetAsByteArray();
+            
         }
 
         private string[] Get50TestQuestions()
         {
-            // Return the list of 50 test questions
-            return new string[]
+            try
             {
+                // Return the list of 50 test questions
+                return new string[]
+                {
                 "Show me the top 10 customers by total order value in the last 6 months",
                 "Which products have less than 10 items in stock and need to be reordered?",
                 "Calculate the average order value grouped by customer country",
@@ -233,7 +260,13 @@ namespace DynamicDasboardWebAPI.Services
                 "Identify employees whose sales performance has consistently improved quarter over quarter",
                 "Which shipping carriers have the lowest rate of delivery delays?",
                 "Find customers who have spent more than the average in each product category they've purchased from"
-            };
+                };
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Gets or sets the name of the admin column.
         /// </summary>
-        public string AdmincnName { get; set; }
+        public string AdminName { get; set; }
 
         /// <summary>
         /// Gets or sets the data type of the column.

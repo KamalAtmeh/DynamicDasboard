@@ -4,6 +4,16 @@
         <name>DynamicDashboardCommon</name>
     </assembly>
     <members>
+        <member name="T:DynamicDashboardCommon.Enums.DatabaseTypeEnum">
+            <summary>
+            Enum representing the supported database types in the application.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.BatchProcessingLog">
+            <summary>
+            Represents a log entry for a batch processing job.
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.Column">
             <summary>
             Represents a column in a database table.
@@ -426,7 +436,7 @@
             Gets or sets the name of the database column.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdmincnName">
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdminName">
             <summary>
             Gets or sets the name of the admin column.
             </summary>

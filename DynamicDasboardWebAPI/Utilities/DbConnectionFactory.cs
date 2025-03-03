@@ -1,76 +1,70 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Data;
-using System.Data.Common;
-using System.Threading.Tasks;
-using Dapper;
+﻿using DynamicDashboardCommon.Models;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Oracle.ManagedDataAccess.Client;
-using DynamicDashboardCommon.Models;
-using DynamicDasboardWebAPI.Utilities;
+using System.Collections.Concurrent;
+using System.Data.Common;
+using System.Data;
+using DynamicDashboardCommon.Enums;
+using Dapper;
+using System.Collections.Generic;
 
 public class DbConnectionFactory
 {
     private readonly IDbConnection _appDbConnection;
     private readonly IConfiguration _configuration;
     private readonly ILogger<DbConnectionFactory> _logger;
-    private readonly ConcurrentDictionary<string, string> _connectionCache;
+    private readonly ConcurrentDictionary<int, string> _connectionStringCache;
+    private readonly ConcurrentDictionary<int, string> _databaseTypeCache;
 
     public DbConnectionFactory(
         IDbConnection appDbConnection,
         IConfiguration configuration,
         ILogger<DbConnectionFactory> logger = null)
     {
-        _appDbConnection = appDbConnection;
-        _configuration = configuration;
+        _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger;
-        _connectionCache = new ConcurrentDictionary<string, string>();
+        _connectionStringCache = new ConcurrentDictionary<int, string>();
+        _databaseTypeCache = new ConcurrentDictionary<int, string>();
     }
 
     /// <summary>
-    /// Creates a database connection based on the database ID or database type.
+    /// Creates a database connection based on the database ID.
     /// </summary>
-    /// <param name="databaseIdOrType">Database ID (numeric) or database type name</param>
-    /// <returns>An IDbConnection instance.</returns>
-    public IDbConnection CreateConnection(string databaseIdOrType)
+    public IDbConnection CreateConnection(int databaseId)
     {
-        string connectionString = GetConnectionString(databaseIdOrType);
-        string dbType = GetDatabaseType(databaseIdOrType);
+        var (connectionString, databaseType) = GetConnectionInfo(databaseId);
 
-        return dbType.ToLowerInvariant() switch
+        return databaseType switch
         {
-            "sqlserver" => new SqlConnection(connectionString),
-            "mysql" => new MySqlConnection(connectionString),
-            "oracle" => new OracleConnection(connectionString),
-            _ => throw new ArgumentException($"Unsupported database type: {dbType}")
+            (int)(DatabaseTypeEnum.SQLServer) => new SqlConnection(connectionString),
+            (int)(DatabaseTypeEnum.MySQL) => new MySqlConnection(connectionString),
+            (int)(DatabaseTypeEnum.Oracle) => new OracleConnection(connectionString),
+            _ => throw new ArgumentException($"Unsupported database type: {databaseType}")
         };
     }
 
     /// <summary>
-    /// Creates and opens a database connection asynchronously based on database ID or type.
+    /// Creates and opens a database connection asynchronously.
     /// </summary>
-    /// <param name="databaseIdOrType">Database ID (numeric) or database type name</param>
-    /// <returns>An opened IDbConnection instance.</returns>
-    public async Task<IDbConnection> CreateOpenConnectionAsync(string databaseIdOrType)
+    public async Task<IDbConnection> CreateOpenConnectionAsync(int databaseId)
     {
-        string connectionString = GetConnectionString(databaseIdOrType);
+        var (connectionString, databaseType) = GetConnectionInfo(databaseId);
+
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new ArgumentException("Connection string is missing or invalid.");
 
-        string dbType = GetDatabaseType(databaseIdOrType);
         IDbConnection connection = null;
 
         try
         {
-            connection = dbType.ToLowerInvariant() switch
+             connection = databaseType switch
             {
-                "sqlserver" => new SqlConnection(connectionString),
-                "mysql" => new MySqlConnection(connectionString),
-                "oracle" => new OracleConnection(connectionString),
-                _ => throw new ArgumentException($"Unsupported database type: {dbType}")
+                (int)(DatabaseTypeEnum.SQLServer) => new SqlConnection(connectionString),
+                (int)(DatabaseTypeEnum.MySQL) => new MySqlConnection(connectionString),
+                (int)(DatabaseTypeEnum.Oracle) => new OracleConnection(connectionString),
+                _ => throw new ArgumentException($"Unsupported database type: {databaseType}")
             };
 
             if (connection is DbConnection dbConnection)
@@ -86,7 +80,7 @@ public class DbConnectionFactory
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Failed to open connection for database: {DatabaseIdOrType}", databaseIdOrType);
+            _logger?.LogError(ex, "Failed to open connection for database ID: {DatabaseId}", databaseId);
             connection?.Dispose();
             throw;
         }
@@ -95,18 +89,16 @@ public class DbConnectionFactory
     /// <summary>
     /// Tests a database connection asynchronously.
     /// </summary>
-    /// <param name="databaseIdOrType">Database ID or type name.</param>
-    /// <returns>True if connection successful; otherwise, false.</returns>
-    public async Task<bool> TestConnectionAsync(string databaseIdOrType)
+    public async Task<bool> TestConnectionAsync(int databaseId)
     {
         try
         {
-            using var connection = await CreateOpenConnectionAsync(databaseIdOrType);
+            using var connection = await CreateOpenConnectionAsync(databaseId);
             return true;
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Connection test failed for {DatabaseIdOrType}", databaseIdOrType);
+            _logger?.LogWarning(ex, "Connection test failed for database ID: {DatabaseId}", databaseId);
             return false;
         }
     }
@@ -114,37 +106,42 @@ public class DbConnectionFactory
     /// <summary>
     /// Tests a database connection using explicit connection parameters.
     /// </summary>
-    /// <param name="database">Database object with connection details</param>
-    /// <returns>True if connection successful; otherwise, false.</returns>
-    public async Task<bool> TestConnectionAsync(Database database)
+
+    public async Task<bool> TestConnectionAsync(Database database, string connectionString)
     {
         if (database == null)
-            throw new ArgumentNullException(nameof(database));
-
+            return false;
+        int DBType = database.TypeID;
         try
         {
-            string connectionString = BuildConnectionString(database);
-            string dbType = GetDatabaseTypeNameFromId(database.TypeID);
-
-            using IDbConnection connection = dbType.ToLowerInvariant() switch
+            if (string.IsNullOrEmpty(connectionString))
             {
-                "sqlserver" => new SqlConnection(connectionString),
-                "mysql" => new MySqlConnection(connectionString),
-                "oracle" => new OracleConnection(connectionString),
-                _ => throw new ArgumentException($"Unsupported database type: {dbType}")
+               connectionString = BuildConnectionString(database);
+            }
+
+            using IDbConnection connection = database.TypeID switch
+            {
+                (int)(DatabaseTypeEnum.SQLServer) => new SqlConnection(connectionString),
+                (int)(DatabaseTypeEnum.MySQL) => new MySqlConnection(connectionString),
+                (int)(DatabaseTypeEnum.Oracle) => new OracleConnection(connectionString),
+                _ => throw new ArgumentException($"Unsupported database type: {database.TypeID}")
             };
 
-            if (connection is DbConnection dbConnection)
+            // Check if connection is closed before opening it
+            if (connection.State != ConnectionState.Open)
             {
-                await dbConnection.OpenAsync();
-            }
-            else
-            {
-                connection.Open();
+                if (connection is DbConnection dbConnection)
+                {
+                    await dbConnection.OpenAsync();
+                }
+                else
+                {
+                    connection.Open();
+                }
             }
 
             return true;
-        }
+    }
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Connection test failed for database: {Name}", database.Name);
@@ -156,265 +153,205 @@ public class DbConnectionFactory
     /// Builds a connection string from a Database object
     /// </summary>
     public string BuildConnectionString(Database database)
-    {
+{
         if (database == null)
-            throw new ArgumentNullException(nameof(database));
+            return string.Empty;
 
-        // Use existing connection string if provided
-        if (!string.IsNullOrWhiteSpace(database.ConnectionString))
-            return database.ConnectionString;
+    // Use existing connection string if provided
+    if (!string.IsNullOrWhiteSpace(database.ConnectionString))
+        return database.ConnectionString;
 
-        string dbType = GetDatabaseTypeNameFromId(database.TypeID).ToLowerInvariant();
-
-        return dbType switch
-        {
-            "sqlserver" => BuildSqlServerConnectionString(database),
-            "mysql" => BuildMySqlConnectionString(database),
-            "oracle" => BuildOracleConnectionString(database),
-            _ => throw new ArgumentException($"Unsupported database type: {dbType}")
-        };
-    }
-
-     public async Task<T> ExecuteWithConnectionAsync<T>(string databaseIdOrType, Func<IDbConnection, Task<T>> operation)
-    {
-        using var connection = await CreateOpenConnectionAsync(databaseIdOrType);
-        return await operation(connection);
-    }
+    // Get the database type name and use it to build the connection string
     
-    public async Task<IEnumerable<T>> QueryAsync<T>(string databaseIdOrType, string sql, object parameters = null)
-    {
-        return await ExecuteWithConnectionAsync(databaseIdOrType, async (connection) => 
-            await connection.QuerySafeAsync<T>(sql, parameters));
-    }
-    
-    public async Task<T> QueryFirstOrDefaultAsync<T>(string databaseIdOrType, string sql, object parameters = null)
-    {
-        return await ExecuteWithConnectionAsync(databaseIdOrType, async (connection) => 
-            await connection.QueryFirstOrDefaultSafeAsync<T>(sql, parameters));
-    }
 
+    return database.TypeID switch
+    {
+        (int)DatabaseTypeEnum.SQLServer => BuildSqlServerConnectionString(database),
+        (int)DatabaseTypeEnum.MySQL => BuildMySqlConnectionString(database),
+        (int)DatabaseTypeEnum.Oracle => BuildOracleConnectionString(database)
+    };
+}
+
+/// <summary>
+/// Clears the connection string cache
+/// </summary>
+public void ClearCache()
+{
+    _connectionStringCache.Clear();
+    _databaseTypeCache.Clear();
+}
+
+    // Private helper methods for getting connection info and building connection strings
     /// <summary>
-    /// Gets the connection string for a database by ID or type.
-    /// If numeric, treats as database ID and fetches from DB.
-    /// If string, treats as type name and uses cached value or fetches from DB.
+    /// Gets connection information for a database by ID
     /// </summary>
-    private string GetConnectionString(string databaseIdOrType)
+    /// <param name="databaseId">The database ID</param>
+    /// <returns>A tuple containing connection string and database type ID</returns>
+    private (string ConnectionString, int DatabaseTypeId) GetConnectionInfo(int databaseId)
     {
-        // Check if value is in cache
-        if (_connectionCache.TryGetValue(databaseIdOrType, out string cachedConnectionString))
-        {
-            return cachedConnectionString;
-        }
+        if (databaseId <= 0)
+            throw new ArgumentException("Invalid database ID", nameof(databaseId));
 
-        // If it's the app database, use configuration
-        if (databaseIdOrType == "AppDatabase")
-        {
-            string appConnectionString = _configuration.GetConnectionString("DefaultConnection");
-            _connectionCache.TryAdd(databaseIdOrType, appConnectionString);
-            return appConnectionString;
-        }
+        string connectionString = null;
+        int databaseTypeId = 0;
 
         try
         {
-            // Try to parse as database ID
-            if (int.TryParse(databaseIdOrType, out int databaseId))
+            // Check if connection string is in cache
+            bool connectionStringCached = _connectionStringCache.TryGetValue(databaseId, out connectionString);
+            bool databaseTypeCached = _databaseTypeCache.TryGetValue(databaseId, out string databaseTypeStr);
+
+            // If both are cached, return them
+            if (connectionStringCached && databaseTypeCached && int.TryParse(databaseTypeStr, out databaseTypeId))
             {
-                // Fetch by ID - implement using Dapper on _appDbConnection
-                string query = "SELECT * FROM Databases WHERE DatabaseID = @DatabaseID AND IsActive = 1";
-                var database = _appDbConnection.QueryFirstOrDefault<Database>(query, new { DatabaseID = databaseId });
+                return (connectionString, databaseTypeId);
+            }
 
-                if (database == null)
-                    throw new ArgumentException($"Database with ID {databaseId} not found or inactive");
+            // At least one value is not cached, fetch database info
+            string query = @"
+            SELECT d.*, dt.TypeName as DatabaseTypeName 
+            FROM Databases d 
+            LEFT JOIN DatabaseTypes dt ON d.TypeID = dt.TypeID 
+            WHERE d.DatabaseID = @DatabaseID AND d.IsActive = 1";
 
-                string connectionString = database.ConnectionString ?? BuildConnectionString(database);
-                _connectionCache.TryAdd(databaseIdOrType, connectionString);
-                return connectionString;
+            var database = _appDbConnection.QueryFirstOrDefault<Database>(query, new { DatabaseID = databaseId });
+
+            if (database == null)
+                throw new ArgumentException($"Database with ID {databaseId} not found or inactive");
+
+            // Update connection string if not cached
+            if (!connectionStringCached)
+            {
+                connectionString = database.ConnectionString ?? BuildConnectionString(database);
+                _connectionStringCache.TryAdd(databaseId, connectionString);
+            }
+
+            // Update database type if not cached
+            if (!databaseTypeCached)
+            {
+                databaseTypeId = database.TypeID;
+                _databaseTypeCache.TryAdd(databaseId, databaseTypeId.ToString());
+            }
+            else if (!int.TryParse(databaseTypeStr, out databaseTypeId))
+            {
+                // If cached value exists but couldn't be parsed as int
+                databaseTypeId = database.TypeID;
+                _databaseTypeCache.TryAdd(databaseId, databaseTypeId.ToString()); // Override with correct value
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error retrieving connection info for database ID {DatabaseId}", databaseId);
+
+            // Rethrow as a more specific exception
+            if (ex is ArgumentException)
+            {
+                throw; // Keep original exception
             }
             else
             {
-                // Treat as database type name
-                string query = "SELECT * FROM Databases d JOIN DatabaseTypes t ON d.TypeID = t.TypeID WHERE t.TypeName = @TypeName AND d.IsActive = 1";
-                var database = _appDbConnection.QueryFirstOrDefault<Database>(query, new { TypeName = databaseIdOrType });
-
-                if (database == null)
-                    throw new ArgumentException($"No active database found for type {databaseIdOrType}");
-
-                string connectionString = database.ConnectionString ?? BuildConnectionString(database);
-                _connectionCache.TryAdd(databaseIdOrType, connectionString);
-                return connectionString;
+                throw new DatabaseException($"Failed to get connection information for database ID {databaseId}", ex);
             }
         }
-        catch (Exception ex)
+
+        // Final validation
+        if (string.IsNullOrEmpty(connectionString))
         {
-            _logger?.LogError(ex, "Error retrieving connection string for {DatabaseIdOrType}", databaseIdOrType);
-            throw;
+            throw new DatabaseException($"Could not determine connection string for database ID {databaseId}");
         }
+
+        if (databaseTypeId <= 0)
+        {
+            throw new DatabaseException($"Could not determine database type for database ID {databaseId}");
+        }
+
+        return (connectionString, databaseTypeId);
     }
 
-    /// <summary>
-    /// Gets the database type for a database by ID or type
-    /// </summary>
-    private string GetDatabaseType(string databaseIdOrType)
+// Connection string builder methods
+private string BuildSqlServerConnectionString(Database database)
+{
+    var builder = new SqlConnectionStringBuilder
     {
-        try
-        {
-            // If it's a type name, return directly
-            if (!int.TryParse(databaseIdOrType, out int databaseId))
-            {
-                return databaseIdOrType;
-            }
+        DataSource = database.ServerAddress,
+        InitialCatalog = database.DatabaseName,
+        ConnectTimeout = 30
+    };
 
-            // Query for database type
-            string query = @"
-                SELECT t.TypeName 
-                FROM Databases d 
-                JOIN DatabaseTypes t ON d.TypeID = t.TypeID 
-                WHERE d.DatabaseID = @DatabaseID";
+    // If credentials are encrypted, decrypt them
+    string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
 
-            return _appDbConnection.QueryFirstOrDefault<string>(query, new { DatabaseID = databaseId })
-                ?? throw new ArgumentException($"Database type not found for ID {databaseId}");
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Error retrieving database type for {DatabaseIdOrType}", databaseIdOrType);
-            throw;
-        }
-    }
-
-    private string GetDatabaseTypeNameFromId(int typeId)
+    if (database.Username == null)
     {
-        try
-        {
-            string query = "SELECT TypeName FROM DatabaseTypes WHERE TypeID = @TypeID";
-            string typeName = _appDbConnection.QueryFirstOrDefault<string>(query, new { TypeID = typeId });
-
-            if (string.IsNullOrEmpty(typeName))
-            {
-                // Fallback mapping if database query fails
-                typeName = typeId switch
-                {
-                    1 => "SQLServer",
-                    2 => "MySQL",
-                    3 => "Oracle",
-                    _ => $"Unknown_{typeId}"
-                };
-
-                _logger?.LogWarning("Using fallback type name {TypeName} for type ID {TypeID}", typeName, typeId);
-            }
-
-            return typeName;
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Error retrieving database type name for ID {TypeID}", typeId);
-
-            // Fallback mapping if exception occurs
-            return typeId switch
-            {
-                1 => "SQLServer",
-                2 => "MySQL",
-                3 => "Oracle",
-                _ => $"Unknown_{typeId}"
-            };
-        }
+        builder.IntegratedSecurity = true;
     }
-
-    // Helper methods for building connection strings
-    private string BuildSqlServerConnectionString(Database database)
+    else
     {
-        var builder = new SqlConnectionStringBuilder
-        {
-            DataSource = database.ServerAddress,
-            InitialCatalog = database.DatabaseName,
-            ConnectTimeout = 30
-        };
-
-        // If credentials are encrypted, decrypt them
-        string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
-
-        if (database.Username == null)
-        {
-            builder.IntegratedSecurity = true;
-        }
-        else
-        {
-            builder.UserID = database.Username;
-            builder.Password = decryptedPassword;
-        }
-
-        return builder.ConnectionString;
+        builder.UserID = database.Username;
+        builder.Password = decryptedPassword;
     }
 
-    private string BuildMySqlConnectionString(Database database)
+    return builder.ConnectionString;
+}
+
+private string BuildMySqlConnectionString(Database database)
+{
+    var builder = new MySqlConnectionStringBuilder
     {
-        var builder = new MySqlConnectionStringBuilder
-        {
-            Server = database.ServerAddress,
-            Database = database.DatabaseName,
-            Port = database.Port.HasValue ? (uint)database.Port.Value : 3306u,
-            ConnectionTimeout = 30
-        };
+        Server = database.ServerAddress,
+        Database = database.DatabaseName,
+        Port = database.Port.HasValue ? (uint)database.Port.Value : 3306u,
+        ConnectionTimeout = 30
+    };
 
-        // If credentials are encrypted, decrypt them
-        string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
+    // If credentials are encrypted, decrypt them
+    string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
 
-        if (database.Username != null)
-        {
-            builder.UserID = database.Username;
-            builder.Password = decryptedPassword;
-        }
-
-        return builder.ConnectionString;
-    }
-
-    private string BuildOracleConnectionString(Database database)
+    if (database.Username != null)
     {
-        var builder = new OracleConnectionStringBuilder
-        {
-            DataSource = database.ServerAddress,
-            ConnectionTimeout = 30
-        };
-
-        // If credentials are encrypted, decrypt them
-        string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
-
-        if (database.Username != null)
-        {
-            builder.UserID = database.Username;
-            builder.Password = decryptedPassword;
-        }
-
-        return builder.ConnectionString;
+        builder.UserID = database.Username;
+        builder.Password = decryptedPassword;
     }
 
+    return builder.ConnectionString;
+}
 
-
-    private string DecryptCredentials(string encryptedCredentials)
+private string BuildOracleConnectionString(Database database)
+{
+    var builder = new OracleConnectionStringBuilder
     {
-        if (string.IsNullOrEmpty(encryptedCredentials))
-            return string.Empty;
+        DataSource = database.ServerAddress,
+        ConnectionTimeout = 30
+    };
 
-        try
-        {
-            // Implement your decryption logic here
-            // For now, we'll just return the encrypted value as a placeholder
-            return encryptedCredentials;
+    // If credentials are encrypted, decrypt them
+    string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
 
-            // TODO: Implement proper decryption
-            // Example: return _cryptoService.Decrypt(encryptedCredentials);
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Error decrypting credentials");
-            return string.Empty;
-        }
-    }
-
-    /// <summary>
-    /// Clears the connection string cache
-    /// </summary>
-    public void ClearCache()
+    if (database.Username != null)
     {
-        _connectionCache.Clear();
+        builder.UserID = database.Username;
+        builder.Password = decryptedPassword;
     }
+
+    return builder.ConnectionString;
+}
+
+private string DecryptCredentials(string encryptedCredentials)
+{
+    if (string.IsNullOrEmpty(encryptedCredentials))
+        return string.Empty;
+
+    try
+    {
+        // TODO: Implement actual decryption logic
+        // In production, you should use a secure decryption method
+        // For example: return _cryptoService.Decrypt(encryptedCredentials);
+        return encryptedCredentials; // Placeholder for now
+    }
+    catch (Exception ex)
+    {
+        _logger?.LogError(ex, "Error decrypting credentials");
+        return string.Empty;
+    }
+}
 }

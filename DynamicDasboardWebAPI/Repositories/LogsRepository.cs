@@ -13,17 +13,22 @@ namespace DynamicDasboardWebAPI.Repositories
     /// </summary>
     public class LogsRepository
     {
-        private readonly IDbConnection _connection;
-        private readonly ILogger<LogsRepository> _logger;
+        private readonly IDbConnection _appDbConnection;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<DatabaseRepository> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LogsRepository"/> class.
         /// </summary>
         /// <param name="connection">Database connection instance.</param>
         /// <param name="logger">Optional logger for capturing repository operations.</param>
-        public LogsRepository(IDbConnection connection, ILogger<LogsRepository> logger = null)
+        public LogsRepository(
+            IDbConnection appDbConnection,
+            DbConnectionFactory connectionFactory,
+            ILogger<DatabaseRepository> logger = null)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger;
         }
 
@@ -48,7 +53,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     INSERT INTO Logs (UserID, EventType, EventDescription, Timestamp)
                     VALUES (@UserID, @EventType, @EventDescription, GETDATE())";
 
-                return await _connection.ExecuteSafeAsync(query, new
+                return await _appDbConnection.ExecuteSafeAsync(query, new
                 {
                     UserID = userId,
                     EventType = eventType,
@@ -76,7 +81,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     FROM Logs
                     ORDER BY Timestamp DESC";
 
-                return await _connection.QuerySafeAsync<dynamic>(query, new { Limit = limit });
+                return await _appDbConnection.QuerySafeAsync<dynamic>(query, new { Limit = limit });
             }
             catch (Exception ex)
             {
@@ -104,7 +109,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     WHERE EventType = @EventType
                     ORDER BY Timestamp DESC";
 
-                return await _connection.QuerySafeAsync<dynamic>(query, new { EventType = eventType, Limit = limit });
+                return await _appDbConnection.QuerySafeAsync<dynamic>(query, new { EventType = eventType, Limit = limit });
             }
             catch (Exception ex)
             {
@@ -129,7 +134,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     WHERE UserID = @UserID
                     ORDER BY Timestamp DESC";
 
-                return await _connection.QuerySafeAsync<dynamic>(query, new { UserID = userId, Limit = limit });
+                return await _appDbConnection.QuerySafeAsync<dynamic>(query, new { UserID = userId, Limit = limit });
             }
             catch (Exception ex)
             {

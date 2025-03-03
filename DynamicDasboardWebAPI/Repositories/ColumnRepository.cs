@@ -11,12 +11,17 @@ namespace DynamicDasboardWebAPI.Repositories
 {
     public class ColumnRepository
     {
-        private readonly IDbConnection _connection;
-        private readonly ILogger<ColumnRepository> _logger;
+        private readonly IDbConnection _appDbConnection;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<DatabaseRepository> _logger;
 
-        public ColumnRepository(IDbConnection connection, ILogger<ColumnRepository> logger = null)
+        public ColumnRepository(
+                        IDbConnection appDbConnection,
+                        DbConnectionFactory connectionFactory,
+                        ILogger<DatabaseRepository> logger = null)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _appDbConnection = appDbConnection ?? throw new ArgumentNullException(nameof(appDbConnection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger;
         }
 
@@ -26,7 +31,7 @@ namespace DynamicDasboardWebAPI.Repositories
             try
             {
                 const string query = "SELECT * FROM Columns WHERE TableID = @TableID";
-                return await _connection.QuerySafeAsync<Column>(query, new { TableID = tableId });
+                return await _appDbConnection.QuerySafeAsync<Column>(query, new { TableID = tableId });
             }
             catch (Exception ex)
             {
@@ -41,7 +46,7 @@ namespace DynamicDasboardWebAPI.Repositories
             try
             {
                 const string query = "SELECT * FROM Columns WHERE ColumnID = @ColumnID";
-                return await _connection.QueryFirstOrDefaultSafeAsync<Column>(query, new { ColumnID = columnId });
+                return await _appDbConnection.QueryFirstOrDefaultSafeAsync<Column>(query, new { ColumnID = columnId });
             }
             catch (Exception ex)
             {
@@ -62,7 +67,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     VALUES (@TableID, @DBColumnName, @AdminColumnName, @DataType, @IsNullable, @AdminDescription);
                     SELECT CAST(SCOPE_IDENTITY() as int)";
 
-                return await _connection.ExecuteScalarSafeAsync<int>(query, column);
+                return await _appDbConnection.ExecuteScalarSafeAsync<int>(query, column);
             }
             catch (Exception ex)
             {
@@ -87,7 +92,7 @@ namespace DynamicDasboardWebAPI.Repositories
                         AdminDescription = @AdminDescription
                     WHERE ColumnID = @ColumnID";
 
-                return await _connection.ExecuteSafeAsync(query, column);
+                return await _appDbConnection.ExecuteSafeAsync(query, column);
             }
             catch (Exception ex)
             {
@@ -102,7 +107,7 @@ namespace DynamicDasboardWebAPI.Repositories
             try
             {
                 const string query = "DELETE FROM Columns WHERE ColumnID = @ColumnID";
-                return await _connection.ExecuteSafeAsync(query, new { ColumnID = columnId });
+                return await _appDbConnection.ExecuteSafeAsync(query, new { ColumnID = columnId });
             }
             catch (Exception ex)
             {

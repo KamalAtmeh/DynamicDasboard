@@ -9,7 +9,7 @@ namespace DynamicDashboardCommon.Models
     public class DirectSqlResult
     {
 
-        public List<Dictionary<string, object>> Data { get; set; }
+        public List<object> Data { get; set; }
         public bool Success { get; set; }
         public string ErrorMessage { get; set; }
     }

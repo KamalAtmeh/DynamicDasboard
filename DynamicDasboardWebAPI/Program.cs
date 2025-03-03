@@ -65,8 +65,10 @@ builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<NlQueryService>();
 // Register the batch processing service
 builder.Services.AddScoped<BatchProcessingService>();
-builder.Services.AddScoped<IDataAccessService, DataAccessService>();
-builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+//builder.Services.AddScoped<IDataAccessService, DataAccessService>();
+//builder.Services.AddScoped<IDatabaseService, >();
+builder.Services.AddScoped<DatabaseService>();
+
 
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });

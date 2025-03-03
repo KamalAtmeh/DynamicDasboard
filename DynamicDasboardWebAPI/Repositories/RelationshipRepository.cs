@@ -12,11 +12,16 @@ namespace DynamicDasboardWebAPI.Repositories
     public class RelationshipRepository
     {
         private readonly IDbConnection _connection;
-        private readonly ILogger<RelationshipRepository> _logger;
+        private readonly DbConnectionFactory _connectionFactory;
+        private readonly ILogger<QueryRepository> _logger;
 
-        public RelationshipRepository(IDbConnection connection, ILogger<RelationshipRepository> logger = null)
+        public RelationshipRepository(
+                   IDbConnection connection,
+                   DbConnectionFactory connectionFactory,
+                   ILogger<QueryRepository> logger = null)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger;
         }
 
@@ -55,8 +60,6 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             try
             {
-                if (relationship == null) throw new ArgumentNullException(nameof(relationship));
-
                 const string query = @"
                     INSERT INTO Relationships (TableID, ColumnID, RelatedTableID, RelatedColumnID, 
                                           RelationshipType, Description, IsEnforced, CreatedBy)
@@ -79,7 +82,7 @@ namespace DynamicDasboardWebAPI.Repositories
         {
             try
             {
-                if (relationship == null) throw new ArgumentNullException(nameof(relationship));
+              
 
                 const string query = @"
                     UPDATE Relationships

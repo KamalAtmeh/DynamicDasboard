@@ -53,27 +53,21 @@ namespace DynamicDasboardWebAPI.Controllers
         }
 
         [HttpPost("test-connection")]
-        public async Task<ActionResult<ConnectionTestResult>> TestConnection([FromBody] ConnectionTestRequest request)
+        public async Task<ActionResult<bool>> TestConnection([FromBody] Database database)
         {
-            if (request == null)
+            if (database == null)
             {
                 return BadRequest("Connection details are required.");
             }
-
             try
             {
-                var result = await _service.TestConnectionAsync(request);
+                var result = await _service.TestConnectionAsync(database);
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error testing database connection.");
-                return StatusCode(500, new ConnectionTestResult
-                {
-                    Success = false,
-                    Message = $"Error: {ex.Message}",
-                    ErrorDetails = ex.ToString()
-                });
+                return false;
             }
         }
 
@@ -103,7 +97,7 @@ namespace DynamicDasboardWebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error retrieving database type name for ID {typeId}");
-                return StatusCode(500, "An error occurred while retrieving database type name.");
+                return StatusCode(500, ex.Message + " An error occurred while retrieving database type name.");
             }
         }
 
