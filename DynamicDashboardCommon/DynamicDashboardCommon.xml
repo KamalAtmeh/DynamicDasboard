@@ -65,7 +65,7 @@
             Unique identifier for the database connection
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.Database.Name">
+        <member name="P:DynamicDashboardCommon.Models.Database.DataBaseViewingName">
             <summary>
             Name of the database connection
             </summary>
@@ -198,6 +198,268 @@
         <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Timestamp">
             <summary>
             Gets or sets the timestamp of when the error occurred.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.LLM.ExplanationResponse">
+            <summary>
+            Represents a response from the LLM containing an explanation of how it understood a natural language query,
+            along with any detected ambiguities or adjustable parameters.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.Explanation">
+            <summary>
+            A user-friendly explanation of how the system understood the question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.HasAmbiguities">
+            <summary>
+            Flag indicating whether the system detected any ambiguities
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.DetectedAmbiguities">
+            <summary>
+            Dictionary of detected ambiguities with possible interpretations
+            Key = ambiguous term, Value = list of possible interpretations
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.AdjustableParameters">
+            <summary>
+            Dictionary of adjustable parameters with default values and possible alternatives
+            Key = parameter name, Value = parameter details
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.ConfidenceScore">
+            <summary>
+            System's confidence in its understanding (0.0 to 1.0)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.PreviewSql">
+            <summary>
+            The SQL query that would be generated (preview only, not for execution)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.TermMapping">
+            <summary>
+            Dictionary mapping technical terms to admin-friendly terms for reference
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.LLM.ParameterOptions">
+            <summary>
+            Represents options for an adjustable parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.DefaultValue">
+            <summary>
+            The current/default value of the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.Description">
+            <summary>
+            User-friendly description of the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.Alternatives">
+            <summary>
+            List of alternative values for the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.ParameterType">
+            <summary>
+            The type of the parameter (date, number, category, etc.)
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse">
+            <summary>
+            Response from analyzing a natural language question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.Question">
+            <summary>
+            The original question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.Explanation">
+            <summary>
+            A user-friendly explanation of how the system understood the question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.HasAmbiguities">
+            <summary>
+            Flag indicating whether the system detected any ambiguities
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.DetectedAmbiguities">
+            <summary>
+            Dictionary of detected ambiguities with possible interpretations
+            Key = ambiguous term, Value = list of possible interpretations
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.AdjustableParameters">
+            <summary>
+            Dictionary of adjustable parameters with default values and possible alternatives
+            Key = parameter name, Value = parameter details
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.PreviewSql">
+            <summary>
+            Preview of the SQL that would be generated (for reference only)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.ConfidenceScore">
+            <summary>
+            System's confidence in its understanding (0.0 to 1.0)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.Success">
+            <summary>
+            Flag indicating whether the analysis was successful
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.AnalysisResponse.ErrorMessage">
+            <summary>
+            Error message if analysis failed
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest">
+            <summary>
+            Request to confirm understanding and generate SQL
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest.OriginalQuestion">
+            <summary>
+            The original natural language question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest.ConfirmedUnderstanding">
+            <summary>
+            The confirmed explanation of understanding
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest.ResolvedAmbiguities">
+            <summary>
+            Dictionary of resolved ambiguities
+            Key = ambiguous term, Value = chosen interpretation
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest.AdjustedParameters">
+            <summary>
+            Dictionary of adjusted parameters
+            Key = parameter name, Value = chosen value
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlGenerationResponse">
+            <summary>
+            Response from SQL generation
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlGenerationResponse.OriginalQuestion">
+            <summary>
+            The original question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlGenerationResponse.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlGenerationResponse.GeneratedSql">
+            <summary>
+            The generated SQL query
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlGenerationResponse.Success">
+            <summary>
+            Flag indicating whether SQL generation was successful
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlGenerationResponse.ErrorMessage">
+            <summary>
+            Error message if SQL generation failed
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest">
+            <summary>
+            Request to execute a SQL query
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest.OriginalQuestion">
+            <summary>
+            The original natural language question (optional)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest.Sql">
+            <summary>
+            The SQL query to execute
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse">
+            <summary>
+            Response from query execution
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.OriginalQuestion">
+            <summary>
+            The original question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.Sql">
+            <summary>
+            The executed SQL query
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.Results">
+            <summary>
+            The query results
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.ResultExplanation">
+            <summary>
+            A user-friendly explanation of the results
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.RecommendedDataViewingTypeID">
+            <summary>
+            The recommended data viewing type ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.RecommendedDataViewingTypeName">
+            <summary>
+            The recommended data viewing type name
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.FormattedResult">
+            <summary>
+            Formatted result for label-type viewing
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.Success">
+            <summary>
+            Flag indicating whether query execution was successful
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.QueryExecutionResponse.ErrorMessage">
+            <summary>
+            Error message if query execution failed
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.Query">

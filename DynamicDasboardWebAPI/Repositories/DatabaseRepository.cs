@@ -74,7 +74,7 @@ public class DatabaseRepository
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error adding database: {Name}", database?.Name);
+            _logger?.LogError(ex, "Error adding database: {Name}", database?.DataBaseViewingName);
             throw;
         }
     }

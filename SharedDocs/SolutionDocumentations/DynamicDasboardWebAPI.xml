@@ -73,6 +73,56 @@
             <param name="columnId">The ID of the column to delete.</param>
             <returns>The ID of the deleted column.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController">
+            <summary>
+            Enhanced controller for processing natural language queries with a multi-step workflow:
+            1. Analyze question and provide explanation
+            2. Generate SQL from confirmed understanding
+            3. Execute query and return results
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.#ctor(DynamicDasboardWebAPI.Services.EnhancedNlQueryService,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController"/> class.
+            </summary>
+            <param name="nlQueryService">The natural language query service.</param>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.AnalyzeQuestion(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Step 1: Analyzes a natural language question and returns an explanation.
+            </summary>
+            <param name="request">The natural language query request.</param>
+            <returns>An explanation of how the system understands the question.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.GenerateSql(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
+            <summary>
+            Step 2: Generates SQL from a confirmed understanding.
+            </summary>
+            <param name="request">The confirmation request with resolved ambiguities.</param>
+            <returns>The generated SQL query.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.ExecuteQuery(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
+            <summary>
+            Step 3: Executes a SQL query and returns the results.
+            </summary>
+            <param name="request">The execution request with the SQL query.</param>
+            <returns>The query results with explanation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.ProcessQuery(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Unified endpoint for backward compatibility: processes a natural language query in one step.
+            </summary>
+            <param name="request">The natural language query request.</param>
+            <returns>The query response including SQL and results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.GetExampleQuestions(System.Int32)">
+            <summary>
+            Gets example questions for a specific database.
+            </summary>
+            <param name="databaseId">The database ID.</param>
+            <returns>A list of example questions.</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.QueryGeneratorController">
             <summary>
             API Controller for handling query generation and Excel file processing.
@@ -546,6 +596,39 @@
             <param name="typeId">The type ID.</param>
             <returns>The database type name.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Services.EnhancedNlQueryService">
+            <summary>
+            Enhanced service for processing natural language queries with a two-step confirmation process
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.AnalyzeQuestionAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Step 1: Analyze a natural language question and generate an explanation
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>An explanation of how the system understands the question</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
+            <summary>
+            Step 2: Generate SQL based on confirmed understanding
+            </summary>
+            <param name="request">The confirmation request with resolved ambiguities</param>
+            <returns>Generated SQL query</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
+            <summary>
+            Step 3: Execute the generated SQL and explain the results
+            </summary>
+            <param name="request">The execution request with the SQL query</param>
+            <returns>Query results with explanation</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.ProcessNaturalLanguageQueryAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Combined method for backward compatibility: Analyze, generate SQL, and execute in one step
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>Complete query response</returns>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDatabaseService.GetAllDatabasesAsync">
             <summary>
             Asynchronously retrieves all databases.
@@ -599,6 +682,79 @@
             </summary>
             <param name="userId">The ID of the user to retrieve.</param>
             <returns>A task that represents the asynchronous operation. The task result contains the user with the specified ID.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService">
+            <summary>
+            Implementation of ILlmService using Anthropic's Claude API
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
+            <summary>
+            Implementation of ILlmService using DeepSeek API
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.ILLMService">
+            <summary>
+            Interface for Language Model services that support natural language processing capabilities.
+            This abstraction allows switching between different LLM providers (DeepSeek, Claude, etc.)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Analyzes a natural language question and generates an explanation of its understanding.
+            </summary>
+            <param name="question">The natural language question</param>
+            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
+            <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
+            <returns>An explanation response including understanding explanation and identified ambiguities</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Generates SQL from a natural language question after confirmation of understanding.
+            </summary>
+            <param name="question">The original natural language question</param>
+            <param name="confirmedUnderstanding">The confirmed explanation of the question's meaning</param>
+            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
+            <param name="resolvedAmbiguities">Dictionary of ambiguities and their resolutions</param>
+            <returns>A generated SQL query</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Generates an explanation for SQL query results.
+            </summary>
+            <param name="question">The original natural language question</param>
+            <param name="sql">The SQL query that was executed</param>
+            <param name="results">The query results</param>
+            <returns>A user-friendly explanation of the results</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
+            <summary>
+            Factory for creating LLM service instances based on configuration
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory.CreateLlmService">
+            <summary>
+            Creates an LLM service based on the configuration
+            </summary>
+            <returns>An implementation of ILlmService</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LogsService">
             <summary>

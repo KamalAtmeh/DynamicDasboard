@@ -1,0 +1,1629 @@
+﻿@page "/enhancednlquery"
+@using DynamicDashboardCommon.Models
+@using System.Text.Json
+@using DynamicDashboardCommon.Models.DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid py-4">
+	<div class="card shadow-lg border-0 mb-4">
+		<div class="card-header bg-gradient-primary text-white py-3">
+			<h3 class="m-0 font-weight-bold">Enhanced Smart Database Query</h3>
+			<p class="m-0 text-white-50">Ask natural language questions about your data with step-by-step confirmation</p>
+		</div>
+		<div class="card-body p-4">
+			<!-- Database Connection Configuration -->
+			<div class="card shadow-sm border-0 mb-4">
+				<div class="card-header bg-light py-3">
+					<h5 class="m-0 font-weight-bold">Database Connection</h5>
+				</div>
+				<div class="card-body">
+					<div class="row g-3">
+						<div class="col-md-6">
+							<label class="form-label">Server</label>
+							<input type="text" class="form-control" @bind="dbServer" placeholder="(LocalDB)\MSSQLLocalDB" />
+						</div>
+						<div class="col-md-6">
+							<label class="form-label">Database</label>
+							<input type="text" class="form-control" @bind="dbName" placeholder="ECommerceDB" />
+						</div>
+						<div class="col-md-6">
+							<label class="form-label">Authentication</label>
+							<select class="form-select" @bind="dbAuthType">
+								<option value="windows">Windows Authentication</option>
+								<option value="sql">SQL Server Authentication</option>
+							</select>
+						</div>
+						@if (dbAuthType == "sql")
+						{
+							<div class="col-md-6">
+								<label class="form-label">Username</label>
+								<input type="text" class="form-control" @bind="dbUsername" />
+							</div>
+							<div class="col-md-6">
+								<label class="form-label">Password</label>
+								<input type="password" class="form-control" @bind="dbPassword" />
+							</div>
+						}
+						<div class="col-12">
+							<button class="btn btn-primary" @onclick="TestDatabaseConnection">
+								<i class="fas fa-plug me-2"></i>Test Connection
+							</button>
+							@if (!string.IsNullOrEmpty(connectionStatus))
+							{
+								<span class="ms-3 @(connectionSuccessful ? "text-success" : "text-danger")">
+									@connectionStatus
+								</span>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Mode Switcher -->
+			<div class="mb-4">
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" id="enhancedModeSwitch" @bind="useEnhancedMode">
+					<label class="form-check-label" for="enhancedModeSwitch">
+						@(useEnhancedMode ? "Step-by-Step Mode (Enhanced)" : "Direct Mode (Classic)")
+					</label>
+				</div>
+				<small class="text-muted">
+					@(useEnhancedMode 
+						? "Enhanced mode provides step-by-step confirmation and parameter adjustments." 
+						: "Classic mode executes queries directly without confirmations.")
+				</small>
+			</div>
+
+			@if (useEnhancedMode)
+			{
+				<!-- ENHANCED MODE: Question Input -->
+				<div class="form-group mb-4">
+					<label class="form-label fw-bold mb-2">Ask a Question</label>
+					<div class="input-group">
+						<input type="text" class="form-control p-3"
+							placeholder="e.g., Show me top 10 customers by total order value"
+							@bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
+						<button class="btn btn-primary px-4" @onclick="AnalyzeQuestion" disabled="@(isLoading || string.IsNullOrWhiteSpace(userQuestion))">
+							@if (isLoading && currentStep == QueryStep.Analysis)
+							{
+								<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+								<span>Analyzing...</span>
+							}
+							else
+							{
+								<i class="fas fa-lightbulb me-2"></i>
+								<span>Understand</span>
+							}
+						</button>
+					</div>
+
+					@if (!isExamplesLoading && examples.Count > 0)
+					{
+						<div class="mt-3">
+							<small class="text-muted d-block mb-2">Try asking:</small>
+							<div class="d-flex flex-wrap gap-2">
+								@foreach (var example in examples)
+								{
+									<span class="badge rounded-pill bg-light text-dark p-2 clickable-badge"
+										@onclick="() => UseExample(example)">
+										@example
+									</span>
+								}
+							</div>
+						</div>
+					}
+				</div>
+
+				<!-- Step 1: Explanation and Confirmation -->
+				@if (analysisResponse != null && currentStep == QueryStep.Confirmation)
+				{
+					<div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+							<h5 class="m-0 font-weight-bold">Understanding Your Question</h5>
+							<div>
+								<span class="badge bg-info">Step 1 of 3: Confirmation</span>
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="mb-4">
+								<h6 class="fw-bold">Here's how I understand your question:</h6>
+								<div class="p-3 border rounded bg-light">
+									@analysisResponse.Explanation
+								</div>
+							</div>
+
+							<!-- Ambiguity Resolution -->
+							@if (analysisResponse.HasAmbiguities && analysisResponse.DetectedAmbiguities?.Count > 0)
+							{
+								<div class="mb-4">
+									<h6 class="fw-bold">I found some ambiguities that need clarification:</h6>
+									@foreach (var ambiguity in analysisResponse.DetectedAmbiguities)
+									{
+										<div class="mb-3">
+											<label class="form-label">@ambiguity.Key</label>
+											<select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
+												@foreach (var option in ambiguity.Value)
+												{
+													<option value="@option">@option</option>
+												}
+											</select>
+										</div>
+									}
+								</div>
+							}
+
+							<!-- Adjustable Parameters -->
+							@if (analysisResponse.AdjustableParameters?.Count > 0)
+							{
+								<div class="mb-4">
+									<h6 class="fw-bold">Parameters you can adjust:</h6>
+									@foreach (var parameter in analysisResponse.AdjustableParameters)
+									{
+										<div class="mb-3">
+											<label class="form-label">@parameter.Key: @parameter.Value.Description</label>
+											<select class="form-select" @bind="adjustedParameters[parameter.Key]">
+												<option value="@parameter.Value.DefaultValue">@parameter.Value.DefaultValue (Default)</option>
+												@foreach (var option in parameter.Value.Alternatives)
+												{
+													<option value="@option">@option</option>
+												}
+											</select>
+										</div>
+									}
+								</div>
+							}
+
+							<div class="d-flex justify-content-between">
+								<button class="btn btn-outline-secondary" @onclick="ResetWorkflow">
+									<i class="fas fa-times me-1"></i> Start Over
+								</button>
+								<button class="btn btn-primary" @onclick="ConfirmUnderstanding">
+									<i class="fas fa-check me-1"></i> Yes, That's What I Mean
+								</button>
+							</div>
+						</div>
+					</div>
+				}
+
+				<!-- Step 2: SQL Generation -->
+				@if (sqlResponse != null && currentStep == QueryStep.SqlGeneration)
+				{
+					<div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+							<h5 class="m-0 font-weight-bold">SQL Query Ready</h5>
+							<div>
+								<span class="badge bg-info">Step 2 of 3: SQL Generation</span>
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="mb-4">
+								<h6 class="fw-bold">Generated SQL Query:</h6>
+								<div class="p-3 border rounded bg-light">
+									<pre class="m-0"><code>@sqlResponse.GeneratedSql</code></pre>
+								</div>
+							</div>
+
+							<div class="d-flex justify-content-between">
+								<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Confirmation">
+									<i class="fas fa-arrow-left me-1"></i> Back
+								</button>
+								<button class="btn btn-primary" @onclick="ExecuteQuery">
+									@if (isLoading && currentStep == QueryStep.SqlGeneration)
+									{
+										<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+										<span>Executing...</span>
+									}
+									else
+									{
+										<i class="fas fa-play me-1">Execute Query</i>
+									}
+								</button>
+							</div>
+						</div>
+					</div>
+				}
+
+				<!-- Step 3: Results Display (Enhanced) -->
+				@if (executionResponse != null && currentStep == QueryStep.Results)
+				{
+					<div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+							<h5 class="m-0 font-weight-bold">Query Results</h5>
+							<div>
+								<span class="badge bg-success">Step 3 of 3: Results</span>
+							</div>
+						</div>
+						<div class="card-body">
+							@if (!string.IsNullOrEmpty(executionResponse.ResultExplanation))
+							{
+								<div class="alert alert-info mb-4">
+									<i class="fas fa-info-circle me-2"></i>
+									@executionResponse.ResultExplanation
+								</div>
+							}
+
+							@if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Number)
+							{
+								<div class="text-center my-5">
+									<h2 class="display-1 text-primary mb-3">@executionResponse.FormattedResult</h2>
+									<p class="text-muted">Single numeric result</p>
+								</div>
+							}
+							else if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Label)
+							{
+								<div class="alert alert-success text-center p-4">
+									<h4>@executionResponse.FormattedResult</h4>
+								</div>
+							}
+							else if (executionResponse.Results?.Count > 0)
+							{
+								<div class="table-responsive">
+									<table class="table table-striped table-hover">
+										<thead>
+											<tr>
+												@foreach (var column in GetResultColumns(executionResponse.Results))
+												{
+													<th>@FormatColumnName(column)</th>
+												}
+											</tr>
+										</thead>
+										<tbody>
+											@{
+												var pagedResults = GetPagedResults(executionResponse.Results);
+											}
+											@foreach (var row in pagedResults)
+											{
+												<tr>
+													@foreach (var column in GetResultColumns(executionResponse.Results))
+													{
+														<td>@FormatValue(row[column])</td>
+													}
+												</tr>
+											}
+										</tbody>
+									</table>
+								</div>
+
+								<!-- Pagination -->
+								@if (executionResponse.Results.Count > pageSize)
+								{
+									<div class="d-flex justify-content-between align-items-center mt-3">
+										<div>
+											<span class="text-muted">
+												Showing @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, executionResponse.Results.Count))
+												of @executionResponse.Results.Count results
+											</span>
+										</div>
+										<nav>
+											<ul class="pagination mb-0">
+												<li class="page-item @(currentPage == 1 ? "disabled" : "")">
+													<a class="page-link" href="javascript:void(0)" @onclick="PreviousPage">Previous</a>
+												</li>
+
+												@for (int i = startPage; i <= endPage; i++)
+												{
+													var pageNumber = i;
+													<li class="page-item @(currentPage == pageNumber ? "active" : "")">
+														<a class="page-link" href="javascript:void(0)" @onclick="() => GoToPage(pageNumber)">@pageNumber</a>
+													</li>
+												}
+
+												<li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+													<a class="page-link" href="javascript:void(0)" @onclick="NextPage">Next</a>
+												</li>
+											</ul>
+										</nav>
+									</div>
+								}
+							}
+							else
+							{
+								<div class="alert alert-warning">
+									<i class="fas fa-exclamation-triangle me-2"></i>
+									No results found for this query.
+								</div>
+							}
+
+							<div class="d-flex justify-content-between mt-4">
+								<button class="btn btn-outline-secondary" @onclick="ResetWorkflow">
+									<i class="fas fa-redo me-1"></i> Start New Query
+								</button>
+								<button class="btn btn-success" @onclick="ExportToExcel">
+									<i class="fas fa-file-excel me-1"></i> Export to Excel
+								</button>
+							</div>
+						</div>
+					</div>
+				}
+			}
+			else
+			{
+				<!-- CLASSIC MODE UI -->
+				<!-- Query Mode Tabs from original UI -->
+				<ul class="nav nav-tabs mb-4">
+					<li class="nav-item">
+						<a class="nav-link @(activeTab == "nl" ? "active" : "")"
+						@onclick="@(() => SetActiveTab("nl"))">Natural Language</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link @(activeTab == "sql" ? "active" : "")"
+						@onclick="@(() => SetActiveTab("sql"))">Direct SQL</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link @(activeTab == "batch" ? "active" : "")"
+						@onclick="@(() => SetActiveTab("batch"))">Batch Process</a>
+					</li>
+				</ul>
+
+				@if (activeTab == "nl")
+				{
+					<!-- Natural Language Query Input -->
+					<div class="form-group mb-4">
+						<label class="form-label fw-bold mb-2">Ask a Question</label>
+						<div class="input-group">
+							<input type="text" class="form-control p-3" placeholder="e.g., Show me top 10 customers by total order value"
+							@bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
+							<button class="btn btn-primary px-4" @onclick="ProcessQuestion" disabled="@isLoading">
+								@if (isLoading)
+								{
+									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+									<span>Processing...</span>
+								}
+								else
+								{
+									<i class="fas fa-search me-2"></i>
+									<span>Ask</span>
+								}
+							</button>
+						</div>
+
+						@if (!isExamplesLoading && examples.Count > 0)
+						{
+							<div class="mt-3">
+								<small class="text-muted d-block mb-2">Try asking:</small>
+								<div class="d-flex flex-wrap gap-2">
+									@foreach (var example in examples)
+									{
+										<span class="badge rounded-pill bg-light text-dark p-2 clickable-badge"
+										@onclick="() => UseExample(example)">
+											@example
+										</span>
+									}
+								</div>
+							</div>
+						}
+					</div>
+				}
+				else if (activeTab == "sql")
+				{
+					<!-- Direct SQL Query Input -->
+					<div class="form-group mb-4">
+						<label class="form-label fw-bold mb-2">Enter SQL Query</label>
+						<textarea class="form-control p-3" rows="5"
+						placeholder="SELECT * FROM Customers"
+						@bind="directSqlQuery"></textarea>
+						<div class="d-flex justify-content-end mt-2">
+							<button class="btn btn-primary px-4" @onclick="ExecuteDirectSql" disabled="@isLoading">
+								@if (isLoading)
+								{
+									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+									<span>Running...</span>
+								}
+								else
+								{
+									<i class="fas fa-play me-2"></i>
+									<span>Execute</span>
+								}
+							</button>
+						</div>
+					</div>
+				}
+				else if (activeTab == "batch")
+				{
+					<!-- Batch Processing with Excel -->
+					<div class="form-group mb-4">
+						<label class="form-label fw-bold mb-2">Upload Excel file with questions</label>
+						<div class="input-group mb-3">
+							<InputFile OnChange="OnFileSelected" class="form-control" accept=".xlsx,.xls" />
+							<button class="btn btn-primary" @onclick="ProcessExcelFile" disabled="@(isLoading || selectedFile == null)">
+								@if (isLoading)
+								{
+									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+									<span>Processing...</span>
+								}
+								else
+								{
+									<i class="fas fa-upload me-2"></i>
+									<span>Process File</span>
+								}
+							</button>
+						</div>
+						<div class="alert alert-info">
+							<i class="fas fa-info-circle me-2"></i>
+							Upload an Excel file with questions in column A. The generated SQL will be added to column B.
+						</div>
+						<div class="d-flex justify-content-between align-items-center">
+							<button class="btn btn-outline-secondary" @onclick="DownloadSampleTemplate">
+								<i class="fas fa-download me-2"></i>Download Template
+							</button>
+							<button class="btn btn-outline-primary" @onclick="Download50TestQuestions">
+								<i class="fas fa-download me-2"></i>Download 50 Test Questions
+							</button>
+						</div>
+					</div>
+				}
+
+				<!-- Original mode: Display query results -->
+				@if (queryResponse != null && activeTab != "batch")
+				{
+					<!-- Template Match Information -->
+					@if (queryResponse.TemplateInfo != null && activeTab == "nl")
+					{
+						<div class="card bg-light border-0 mb-4">
+							<div class="card-body">
+								<h5 class="card-title">Query Understanding</h5>
+								<div class="row">
+									<div class="col-md-6">
+										<p><strong>Intent:</strong> @queryResponse.TemplateInfo.Intent</p>
+										<p><strong>Confidence:</strong> @(queryResponse.TemplateInfo.ConfidenceScore * 100)%</p>
+									</div>
+									<div class="col-md-6">
+										<p><strong>Operations:</strong></p>
+										<div class="d-flex flex-wrap gap-1">
+											@foreach (var operation in queryResponse.TemplateInfo.Operations)
+											{
+												<span class="badge bg-secondary">@operation</span>
+											}
+										</div>
+									</div>
+								</div>
+
+								@if (queryResponse.TemplateInfo.Parameters.Count > 0)
+								{
+									@if (queryResponse.RecommendedDataViewingTypeID != null &&
+																																							queryResponse.RecommendedDataViewingTypeID != (int)DataViewingTypeEnum.Table)
+									{
+										@RenderResultBasedOnViewingType()
+									}
+
+									@if (queryResponse.Results != null && queryResponse.Results.Count > 0 &&
+																																							(queryResponse.RecommendedDataViewingTypeID == null ||
+																																							queryResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Table))
+									{
+										<div class="mt-3">
+											<p><strong>Parameters:</strong></p>
+											<div class="table-responsive">
+												<table class="table table-sm table-bordered">
+													<thead class="table-light">
+														<tr>
+															<th>Name</th>
+															<th>Value</th>
+															<th>Type</th>
+														</tr>
+													</thead>
+													<tbody>
+														@foreach (var param in queryResponse.TemplateInfo.Parameters)
+														{
+															<tr>
+																<td>@param.Name</td>
+																<td>@param.Value</td>
+																<td>@param.EntityType</td>
+															</tr>
+														}
+													</tbody>
+												</table>
+											</div>
+										</div>
+									}
+								}
+							</div>
+						</div>
+					}
+
+					<!-- Generated SQL -->
+					@if (!string.IsNullOrEmpty(queryResponse.GeneratedSql))
+					{
+						<div class="card shadow-sm border-0 mb-4">
+							<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+								<h5 class="m-0 font-weight-bold">SQL Query</h5>
+								<button class="btn btn-sm btn-outline-primary" @onclick="CopySqlToClipboard">
+									<i class="fas fa-copy me-1"></i> Copy
+								</button>
+							</div>
+							<div class="card-body p-0">
+								<pre class="language-sql m-0 p-3"><code>@queryResponse.GeneratedSql</code></pre>
+							</div>
+						</div>
+					}
+
+					<!-- Query Results -->
+					@if (queryResponse.Results != null && queryResponse.Results.Count > 0)
+					{
+						<div class="card shadow-sm border-0 mb-4">
+							<div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+								<h5 class="m-0 font-weight-bold">
+									Query Results (@queryResponse.Results.Count rows)
+								</h5>
+								<div>
+									<button class="btn btn-sm btn-outline-success" @onclick="ExportToExcel">
+										<i class="fas fa-file-excel me-1"></i> Export
+									</button>
+								</div>
+							</div>
+							<div class="card-body p-0">
+								<!-- Table View -->
+								<div class="table-responsive">
+									<table class="table table-striped table-hover mb-0">
+										<thead class="table-light">
+											<tr>
+												@foreach (var column in GetResultColumns(queryResponse.Results))
+												{
+													<th>@FormatColumnName(column)</th>
+												}
+											</tr>
+										</thead>
+										<tbody>
+											@{
+												var pagedResults = GetPagedResults(queryResponse.Results);
+											}
+											@foreach (var row in pagedResults)
+											{
+												<tr>
+													@foreach (var column in GetResultColumns(queryResponse.Results))
+													{
+														<td>@FormatValue(row[column])</td>
+													}
+												</tr>
+											}
+										</tbody>
+									</table>
+								</div>
+
+								<!-- Pagination -->
+								@if (queryResponse.Results.Count > pageSize)
+								{
+									<div class="d-flex justify-content-between align-items-center p-3 border-top">
+										<div>
+											<span class="text-muted">
+												Showing @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, queryResponse.Results.Count))
+												of @queryResponse.Results.Count results
+											</span>
+										</div>
+										<nav>
+											<ul class="pagination mb-0">
+												<li class="page-item @(currentPage == 1 ? "disabled" : "")">
+													<a class="page-link" href="javascript:void(0)" @onclick="PreviousPage">Previous</a>
+												</li>
+
+												@for (int i = startPage; i <= endPage; i++)
+												{
+													var pageNumber = i;
+													<li class="page-item @(currentPage == pageNumber ? "active" : "")">
+														<a class="page-link" href="javascript:void(0)" @onclick="() => GoToPage(pageNumber)">@pageNumber</a>
+													</li>
+												}
+
+												<li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+													<a class="page-link" href="javascript:void(0)" @onclick="NextPage">Next</a>
+												</li>
+											</ul>
+										</nav>
+									</div>
+								}
+							</div>
+						</div>
+
+						<!-- Query Explanation -->
+						@if (!string.IsNullOrEmpty(queryResponse.Explanation) && activeTab == "nl")
+						{
+							<div class="card shadow-sm border-0 mb-4">
+								<div class="card-header bg-light py-3">
+									<h5 class="m-0 font-weight-bold">Explanation</h5>
+								</div>
+								<div class="card-body">
+									<p class="lead mb-0">@queryResponse.Explanation</p>
+								</div>
+							</div>
+						}
+					}
+
+					<!-- Error Message -->
+					@if (!queryResponse.Success)
+					{
+						<div class="alert alert-danger mt-4">
+							<h5><i class="fas fa-exclamation-triangle me-2"></i> Error</h5>
+							<p>@queryResponse.ErrorMessage</p>
+
+							@if (queryResponse.SuggestedQuestions != null && queryResponse.SuggestedQuestions.Count > 0)
+							{
+								<div class="mt-3">
+									<p>Try these questions instead:</p>
+									<div class="d-flex flex-wrap gap-2">
+										@foreach (var suggestion in queryResponse.SuggestedQuestions)
+										{
+											<span class="badge bg-light text-dark p-2 clickable-badge"
+											@onclick="() => UseExample(suggestion)">
+												@suggestion
+											</span>
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
+				}
+				else if (batchProcessingComplete)
+				{
+					<!-- Batch Processing Results -->
+					<div class="alert alert-success">
+						<h5><i class="fas fa-check-circle me-2"></i> Batch Processing Complete</h5>
+						<p>Successfully processed @batchQuestionsCount questions.</p>
+						<button class="btn btn-success" @onclick="DownloadProcessedExcel">
+							<i class="fas fa-download me-2"></i>Download Results
+						</button>
+					</div>
+				}
+			}
+
+			@if (isLoading && ((!useEnhancedMode) || (useEnhancedMode && currentStep == QueryStep.Input)))
+			{
+				<div class="text-center my-5">
+					<div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+					<p class="mt-3">@loadingMessage</p>
+				</div>
+			}
+
+			@if (errorMessage != null)
+			{
+				<div class="alert alert-danger animate__animated animate__fadeIn">
+					<h5><i class="fas fa-exclamation-triangle me-2"></i> Error</h5>
+					<p>@errorMessage</p>
+					<button class="btn btn-outline-danger" @onclick="() => HandleErrorDismiss()">
+						<i class="fas fa-redo me-1"></i> Try Again
+					</button>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+
+@code {
+	// Enum to track the current step in the enhanced workflow
+	private enum QueryStep
+	{
+		Input,
+		Analysis,
+		Confirmation,
+		SqlGeneration,
+		Execution,
+		Results
+	}
+
+	// Mode selection
+	private bool useEnhancedMode = false;
+
+	// State management for both modes
+	private string activeTab = "nl";
+	private string userQuestion = "";
+	private string directSqlQuery = "";
+	private bool isLoading = false;
+	private bool isExamplesLoading = false;
+	private string loadingMessage = "Processing your request...";
+	private List<string> examples = new List<string>();
+	private string errorMessage;
+
+	// Original mode - query response
+	private NlQueryResponse queryResponse;
+
+	// Enhanced mode - Analysis step
+	private QueryStep currentStep = QueryStep.Input;
+	private AnalysisResponse analysisResponse;
+	private Dictionary<string, string> resolvedAmbiguities = new Dictionary<string, string>();
+	private Dictionary<string, string> adjustedParameters = new Dictionary<string, string>();
+
+	// Enhanced mode - SQL generation step
+	private SqlGenerationResponse sqlResponse;
+
+	// Enhanced mode - Execution step
+	private QueryExecutionResponse executionResponse;
+
+	// Pagination for both modes
+	private int currentPage = 1;
+	private int pageSize = 10;
+	private int totalPages => 
+		useEnhancedMode 
+			? (executionResponse?.Results?.Count > 0 ? (int)Math.Ceiling((double)executionResponse.Results.Count / pageSize) : 1)
+			: (queryResponse?.Results?.Count > 0 ? (int)Math.Ceiling((double)queryResponse.Results.Count / pageSize) : 1);
+	private int startPage => Math.Max(1, currentPage - 2);
+	private int endPage => Math.Min(totalPages, startPage + 4);
+
+	// Database connection for both modes
+	private string dbServer = "(LocalDB)\\MSSQLLocalDB";
+	private string dbName = "ECommerceDB";
+	private string dbAuthType = "windows";
+	private string dbUsername = "";
+	private string dbPassword = "";
+	private string connectionStatus = "";
+	private bool connectionSuccessful = false;
+	private int databaseId = 5; // Temporary hardcoded database ID
+
+	// Batch processing for original mode
+	private IBrowserFile selectedFile;
+	private bool batchProcessingComplete = false;
+	private int batchQuestionsCount = 0;
+	private byte[] processedExcelBytes;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadExampleQuestions();
+	}
+
+	private void SetActiveTab(string tab)
+	{
+		activeTab = tab;
+		// Reset pagination when changing tabs
+		currentPage = 1;
+	}
+
+	private void HandleErrorDismiss()
+	{
+		if (useEnhancedMode)
+		{
+			ResetWorkflow();
+		}
+		else
+		{
+			errorMessage = null;
+		}
+	}
+
+	private async Task LoadExampleQuestions()
+	{
+		try
+		{
+			isExamplesLoading = true;
+
+			// For enhanced mode, try to get examples from the enhanced endpoint
+			if (useEnhancedMode)
+			{
+				try
+				{
+					var response = await Http.GetFromJsonAsync<List<string>>($"api/enhanced/examples/{databaseId}");
+					if (response != null && response.Count > 0)
+					{
+						examples = response;
+						isExamplesLoading = false;
+						return;
+					}
+				}
+				catch
+				{
+					// Fall back to default examples
+				}
+			}
+
+			// Default examples for both modes
+			examples = new List<string>
+   		{
+   			"Show me the top 10 customers by total order value",
+   			"What is the average order value by product category?",
+   			"How many orders were placed last month?",
+   			"List all products with less than 10 items in stock",
+   			"Which customers made at least 3 purchases in the last 6 months?"
+   		};
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error loading examples: {ex.Message}");
+		}
+		finally
+		{
+			isExamplesLoading = false;
+		}
+	}
+
+	private RenderFragment RenderResultBasedOnViewingType()
+	{
+		if (queryResponse == null)
+			return null;
+
+		return queryResponse.RecommendedDataViewingTypeID switch
+		{
+			(int)DataViewingTypeEnum.Number => builder =>
+			{
+				builder.OpenElement(0, "div");
+				builder.AddAttribute(1, "class", "card shadow-sm border-0 mb-4");
+				builder.OpenElement(2, "div");
+				builder.AddAttribute(3, "class", "card-header bg-light py-3");
+				builder.OpenElement(4, "h5");
+				builder.AddAttribute(5, "class", "m-0 font-weight-bold");
+				builder.AddContent(6, "Result");
+				builder.CloseElement(); // Close h5
+				builder.CloseElement(); // Close card-header
+
+				builder.OpenElement(7, "div");
+				builder.AddAttribute(8, "class", "card-body text-center");
+				builder.OpenElement(9, "h1");
+				builder.AddAttribute(10, "class", "display-4 text-primary");
+				builder.AddContent(11, queryResponse.FormattedResult);
+				builder.CloseElement(); // Close h1
+				builder.CloseElement(); // Close card-body
+
+				builder.CloseElement(); // Close card
+			}
+			,
+			(int)DataViewingTypeEnum.Label => builder =>
+			{
+				builder.OpenElement(0, "div");
+				builder.AddAttribute(1, "class", "alert alert-info");
+				builder.AddContent(2, queryResponse.FormattedResult);
+				builder.CloseElement();
+			}
+			,
+			_ => null
+		};
+	}
+
+	#region Common Functionality (Used by Both Modes)
+
+	private async Task TestDatabaseConnection()
+	{
+		try
+		{
+			isLoading = true;
+			loadingMessage = "Testing database connection...";
+
+			var database = new Database
+				{
+					ServerAddress = dbServer,
+					DataBaseViewingName = dbName,
+					DatabaseName = dbName,
+					TypeID = 1,   // temp Default to SQL Server
+					Username = dbUsername,
+					EncryptedCredentials = dbPassword,
+					DatabaseID = 5,
+					Description = string.Empty,
+					ConnectionString = string.Empty,
+					CreatedAt = DateTime.Now,
+					CreatedBy = 1,
+					DatabaseTypeName = "SQL",
+					DBCreationScript = " string.empy" // 0 indicates a new connection test
+				};
+
+			var response = await Http.PostAsJsonAsync("api/databases/test-connection", database);
+
+			if (response.IsSuccessStatusCode)
+			{
+				connectionStatus = "Connection successful";
+				connectionSuccessful = true;
+
+				// In a real implementation, get the database ID from the response
+				databaseId = 5; // Temporary hardcoded value
+			}
+			else
+			{
+				connectionStatus = "Connection failed";
+				connectionSuccessful = false;
+			}
+		}
+		catch (Exception ex)
+		{
+			connectionStatus = $"Connection failed: {ex.Message}";
+			connectionSuccessful = false;
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
+
+	private string FormatColumnName(string column)
+	{
+		// Convert snake_case or camelCase to Title Case
+		if (string.IsNullOrEmpty(column)) return column;
+
+		// Replace underscores with spaces
+		var result = column.Replace("_", " ");
+
+		// Insert spaces before capital letters
+		result = System.Text.RegularExpressions.Regex.Replace(result, "([a-z])([A-Z])", "$1 $2");
+
+		// Capitalize the first letter of each word
+		var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+		return textInfo.ToTitleCase(result.ToLower());
+	}
+
+	private string FormatValue(object value)
+	{
+		if (value == null) return "";
+
+		if (value is DateTime dateTime)
+		{
+			return dateTime.ToString("yyyy-MM-dd");
+		}
+
+		if (value is decimal decimalValue)
+		{
+			return decimalValue.ToString("0.00");
+		}
+
+		return value.ToString();
+	}
+
+	private List<string> GetResultColumns(List<Dictionary<string, object>> results)
+	{
+		if (results == null || results.Count == 0)
+		{
+			return new List<string>();
+		}
+
+		return results[0].Keys.ToList();
+	}
+
+	private List<Dictionary<string, object>> GetPagedResults(List<Dictionary<string, object>> results)
+	{
+		if (results == null || results.Count == 0)
+		{
+			return new List<Dictionary<string, object>>();
+		}
+
+		return results
+			.Skip((currentPage - 1) * pageSize)
+			.Take(pageSize)
+			.ToList();
+	}
+
+	private void PreviousPage()
+	{
+		if (currentPage > 1)
+		{
+			currentPage--;
+		}
+	}
+
+	private void NextPage()
+	{
+		if (currentPage < totalPages)
+		{
+			currentPage++;
+		}
+	}
+
+	private void GoToPage(int page)
+	{
+		if (page >= 1 && page <= totalPages)
+		{
+			currentPage = page;
+		}
+	}
+
+	private async Task ExportToExcel()
+	{
+		var dataToExport = useEnhancedMode && executionResponse?.Results != null
+			? executionResponse.Results
+			: queryResponse?.Results;
+
+		if (dataToExport == null || dataToExport.Count == 0) return;
+
+		try
+		{
+			var request = new ExportRequest
+				{
+					Data = dataToExport,
+					FileName = "QueryResults.xlsx"
+				};
+
+			var response = await Http.PostAsJsonAsync("api/export/excel", request);
+
+			if (response.IsSuccessStatusCode)
+			{
+				var fileBytes = await response.Content.ReadAsByteArrayAsync();
+				var base64 = Convert.ToBase64String(fileBytes);
+				await JSRuntime.InvokeVoidAsync("saveAsFile", "QueryResults.xlsx", base64);
+			}
+			else
+			{
+				errorMessage = "Error exporting to Excel";
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"Error exporting to Excel: {ex.Message}";
+		}
+	}
+
+	private async Task OnKeyPress(KeyboardEventArgs e)
+	{
+		if (e.Key == "Enter")
+		{
+			if (useEnhancedMode && currentStep == QueryStep.Input)
+			{
+				await AnalyzeQuestion();
+			}
+			else
+			{
+				await ProcessQuestion();
+			}
+		}
+	}
+
+	private void UseExample(string example)
+	{
+		userQuestion = example;
+
+		if (useEnhancedMode)
+		{
+			AnalyzeQuestion();
+		}
+		else
+		{
+			ProcessQuestion();
+		}
+	}
+
+	#endregion
+
+	#region Original Mode Functionality
+
+	private async Task ProcessQuestion()
+	{
+		if (string.IsNullOrWhiteSpace(userQuestion))
+		{
+			return;
+		}
+
+		// Check if connection is established
+		if (!connectionSuccessful)
+		{
+			await TestDatabaseConnection();
+			if (!connectionSuccessful) return;
+		}
+
+		isLoading = true;
+		loadingMessage = "Analyzing your question and generating a query...";
+		queryResponse = null;
+		currentPage = 1;
+
+		try
+		{
+			// Create the request using the database connection info and question
+			var request = new NlQueryRequest
+				{
+					Question = userQuestion,
+					DatabaseId = databaseId
+				};
+
+			var response = await Http.PostAsJsonAsync("api/NlQuery/process", request);
+
+			if (response.IsSuccessStatusCode)
+			{
+				queryResponse = await response.Content.ReadFromJsonAsync<NlQueryResponse>();
+				Console.WriteLine($"Query Response: {JsonSerializer.Serialize(queryResponse)}");
+
+				if (queryResponse.Results == null || queryResponse.Results.Count == 0)
+				{
+					Console.WriteLine("No results found in the response.");
+				}
+			}
+			else
+			{
+				queryResponse = new NlQueryResponse
+					{
+						Success = false,
+						ErrorMessage = $"Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}"
+					};
+				Console.WriteLine($"API Error: {queryResponse.ErrorMessage}");
+			}
+		}
+		catch (Exception ex)
+		{
+			queryResponse = new NlQueryResponse
+				{
+					Success = false,
+					ErrorMessage = $"An unexpected error occurred: {ex.Message}"
+				};
+			Console.WriteLine($"Exception: {ex.Message}");
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged(); // Force UI update
+		}
+	}
+
+	private async Task ExecuteDirectSql()
+	{
+		if (string.IsNullOrWhiteSpace(directSqlQuery))
+		{
+			return;
+		}
+
+		// Check if connection is established
+		if (!connectionSuccessful)
+		{
+			await TestDatabaseConnection();
+			if (!connectionSuccessful) return;
+		}
+
+		isLoading = true;
+		loadingMessage = "Executing SQL query...";
+		queryResponse = null;
+		currentPage = 1;
+
+		try
+		{
+			// Create a direct SQL execution request
+			var request = new DirectSqlRequest
+				{
+					SqlQuery = directSqlQuery,
+					DbType = "SQLServer",  // Based on the selected connection type
+					DatabaseId = databaseId
+				};
+
+			var response = await Http.PostAsJsonAsync("api/query/execute", request);
+
+			if (response.IsSuccessStatusCode)
+			{
+				var result = await response.Content.ReadFromJsonAsync<DirectSqlResult>();
+
+				// Create an NlQueryResponse from the direct SQL result
+				queryResponse = new NlQueryResponse
+					{
+						GeneratedSql = directSqlQuery,
+						Results = result.Data,
+						Success = true
+					};
+			}
+			else
+			{
+				queryResponse = new NlQueryResponse
+					{
+						Success = false,
+						ErrorMessage = $"Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}"
+					};
+			}
+		}
+		catch (Exception ex)
+		{
+			queryResponse = new NlQueryResponse
+				{
+					Success = false,
+					ErrorMessage = $"An unexpected error occurred: {ex.Message}"
+				};
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
+
+	private void OnFileSelected(InputFileChangeEventArgs args)
+	{
+		selectedFile = args.File;
+		batchProcessingComplete = false;
+	}
+
+	private async Task ProcessExcelFile()
+	{
+		if (selectedFile == null)
+		{
+			return;
+		}
+
+		// Check if connection is established
+		if (!connectionSuccessful)
+		{
+			await TestDatabaseConnection();
+			if (!connectionSuccessful) return;
+		}
+
+		isLoading = true;
+		loadingMessage = "Processing Excel file...";
+		batchProcessingComplete = false;
+
+		try
+		{
+			var content = new MultipartFormDataContent();
+			content.Add(new StreamContent(selectedFile.OpenReadStream()), "file", selectedFile.Name);
+			content.Add(new StringContent("SQLServer"), "dbType");
+
+			var response = await Http.PostAsync("api/batchprocessing/process", content);
+
+			if (response.IsSuccessStatusCode)
+			{
+				processedExcelBytes = await response.Content.ReadAsByteArrayAsync();
+				batchQuestionsCount = new Random().Next(10, 30); // Simulated count
+				batchProcessingComplete = true;
+			}
+			else
+			{
+				await JSRuntime.InvokeVoidAsync("alert", $"Error processing file: {await response.Content.ReadAsStringAsync()}");
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error processing file: {ex.Message}");
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
+
+	private async Task DownloadSampleTemplate()
+	{
+		try
+		{
+			var response = await Http.GetAsync("api/batchprocessing/template");
+
+			if (response.IsSuccessStatusCode)
+			{
+				var fileBytes = await response.Content.ReadAsByteArrayAsync();
+				var base64 = Convert.ToBase64String(fileBytes);
+				await JSRuntime.InvokeVoidAsync("saveAsFile", "Questions_Template.xlsx", base64);
+			}
+			else
+			{
+				await JSRuntime.InvokeVoidAsync("alert", "Error downloading template");
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+		}
+	}
+
+	private async Task Download50TestQuestions()
+	{
+		try
+		{
+			var response = await Http.GetAsync("api/batchprocessing/test-questions");
+
+			if (response.IsSuccessStatusCode)
+			{
+				var fileBytes = await response.Content.ReadAsByteArrayAsync();
+				var base64 = Convert.ToBase64String(fileBytes);
+				await JSRuntime.InvokeVoidAsync("saveAsFile", "50_Test_Questions.xlsx", base64);
+			}
+			else
+			{
+				await JSRuntime.InvokeVoidAsync("alert", "Error downloading test questions");
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+		}
+	}
+
+	private async Task DownloadProcessedExcel()
+	{
+		if (processedExcelBytes == null || processedExcelBytes.Length == 0)
+		{
+			return;
+		}
+
+		try
+		{
+			var base64 = Convert.ToBase64String(processedExcelBytes);
+			await JSRuntime.InvokeVoidAsync("saveAsFile", "Processed_Questions.xlsx", base64);
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error downloading file: {ex.Message}");
+		}
+	}
+
+	private async Task CopySqlToClipboard()
+	{
+		var sql = useEnhancedMode ? sqlResponse?.GeneratedSql : queryResponse?.GeneratedSql;
+		if (string.IsNullOrEmpty(sql)) return;
+
+		await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sql);
+		await JSRuntime.InvokeVoidAsync("alert", "SQL copied to clipboard!");
+	}
+
+	#endregion
+
+	#region Enhanced Mode Functionality
+
+	private async Task AnalyzeQuestion()
+	{
+		if (string.IsNullOrWhiteSpace(userQuestion))
+			return;
+
+		// Check if connection is established
+		if (!connectionSuccessful)
+		{
+			await TestDatabaseConnection();
+			if (!connectionSuccessful) return;
+		}
+
+		// Reset state
+		errorMessage = null;
+		analysisResponse = null;
+		sqlResponse = null;
+		executionResponse = null;
+		resolvedAmbiguities.Clear();
+		adjustedParameters.Clear();
+
+		try
+		{
+			currentStep = QueryStep.Analysis;
+			isLoading = true;
+			loadingMessage = "Analyzing your question...";
+
+			var request = new NlQueryRequest
+				{
+					Question = userQuestion,
+					DatabaseId = databaseId
+				};
+
+			var response = await Http.PostAsJsonAsync("api/enhancednlquery/analyze", request);
+
+			if (response.IsSuccessStatusCode)
+			{
+				analysisResponse = await response.Content.ReadFromJsonAsync<AnalysisResponse>();
+
+				// Initialize resolved ambiguities with default values
+				if (analysisResponse.HasAmbiguities && analysisResponse.DetectedAmbiguities != null)
+				{
+					foreach (var ambiguity in analysisResponse.DetectedAmbiguities)
+					{
+						if (ambiguity.Value.Count > 0)
+						{
+							resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
+						}
+					}
+				}
+
+				// Initialize adjusted parameters with default values
+				if (analysisResponse.AdjustableParameters != null)
+				{
+					foreach (var param in analysisResponse.AdjustableParameters)
+					{
+						adjustedParameters[param.Key] = param.Value.DefaultValue;
+					}
+				}
+
+				currentStep = QueryStep.Confirmation;
+			}
+			else
+			{
+				var errorContent = await response.Content.ReadAsStringAsync();
+				errorMessage = $"Error: {response.StatusCode} - {errorContent}";
+				currentStep = QueryStep.Input;
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"An unexpected error occurred: {ex.Message}";
+			currentStep = QueryStep.Input;
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private async Task ConfirmUnderstanding()
+	{
+		if (analysisResponse == null)
+			return;
+
+		try
+		{
+			currentStep = QueryStep.SqlGeneration;
+			isLoading = true;
+			loadingMessage = "Generating SQL query...";
+			errorMessage = null;
+
+			var request = new NlQueryConfirmationRequest
+				{
+					OriginalQuestion = userQuestion,
+					DatabaseId = databaseId,
+					ConfirmedUnderstanding = analysisResponse.Explanation,
+					ResolvedAmbiguities = resolvedAmbiguities,
+					AdjustedParameters = adjustedParameters
+				};
+
+			var response = await Http.PostAsJsonAsync("api/enhancednlquery/generate", request);
+
+			if (response.IsSuccessStatusCode)
+			{
+				sqlResponse = await response.Content.ReadFromJsonAsync<SqlGenerationResponse>();
+			}
+			else
+			{
+				var errorContent = await response.Content.ReadAsStringAsync();
+				errorMessage = $"Error generating SQL: {response.StatusCode} - {errorContent}";
+				currentStep = QueryStep.Confirmation;
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"An unexpected error occurred: {ex.Message}";
+			currentStep = QueryStep.Confirmation;
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private async Task ExecuteQuery()
+	{
+		if (sqlResponse == null || string.IsNullOrWhiteSpace(sqlResponse.GeneratedSql))
+			return;
+
+		try
+		{
+			currentStep = QueryStep.Execution;
+			isLoading = true;
+			loadingMessage = "Executing query...";
+			errorMessage = null;
+
+			var request = new SqlExecutionRequest
+				{
+					OriginalQuestion = userQuestion,
+					DatabaseId = databaseId,
+					Sql = sqlResponse.GeneratedSql
+				};
+
+			var response = await Http.PostAsJsonAsync("api/enhancednlquery/execute", request);
+
+			if (response.IsSuccessStatusCode)
+			{
+				executionResponse = await response.Content.ReadFromJsonAsync<QueryExecutionResponse>();
+				currentStep = QueryStep.Results;
+				currentPage = 1; // Reset pagination
+			}
+			else
+			{
+				var errorContent = await response.Content.ReadAsStringAsync();
+				errorMessage = $"Error executing query: {response.StatusCode} - {errorContent}";
+				currentStep = QueryStep.SqlGeneration;
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"An unexpected error occurred: {ex.Message}";
+			currentStep = QueryStep.SqlGeneration;
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private void ResetWorkflow()
+	{
+		currentStep = QueryStep.Input;
+		userQuestion = "";
+		errorMessage = null;
+		analysisResponse = null;
+		sqlResponse = null;
+		executionResponse = null;
+		resolvedAmbiguities.Clear();
+		adjustedParameters.Clear();
+	}
+
+	#endregion
+
+	#region Supporting Classes
+
+	// Original mode classes
+	private class DirectSqlRequest
+	{
+		public string SqlQuery { get; set; }
+		public string DbType { get; set; }
+		public int DatabaseId { get; set; }
+	}
+
+	private class DirectSqlResult
+	{
+		public List<Dictionary<string, object>> Data { get; set; }
+		public bool Success { get; set; }
+		public string ErrorMessage { get; set; }
+	}
+
+	// Enhanced mode classes
+	private class NlQueryConfirmationRequest
+	{
+		public string OriginalQuestion { get; set; }
+		public int DatabaseId { get; set; }
+		public string ConfirmedUnderstanding { get; set; }
+		public Dictionary<string, string> ResolvedAmbiguities { get; set; }
+		public Dictionary<string, string> AdjustedParameters { get; set; }
+	}
+
+	private class SqlExecutionRequest
+	{
+		public string OriginalQuestion { get; set; }
+		public int DatabaseId { get; set; }
+		public string Sql { get; set; }
+	}
+
+	// Shared classes
+	private class ExportRequest
+	{
+		public List<Dictionary<string, object>> Data { get; set; }
+		public string FileName { get; set; }
+	}
+
+	#endregion
+}
+
+<style>
+	.clickable-badge {
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+		.clickable-badge:hover {
+			background-color: #6c757d !important;
+			color: white !important;
+		}
+
+	pre {
+		background-color: #f8f9fa;
+		border-radius: 0.25rem;
+		padding: 1rem;
+		font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		overflow-x: auto;
+	}
+
+	.card {
+		transition: all 0.3s;
+	}
+
+	.bg-gradient-primary {
+		background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+	}
+
+	.form-control, .form-select {
+		box-shadow: none;
+		border: 1px solid #d1d3e2;
+	}
+
+		.form-control:focus, .form-select:focus {
+			border-color: #bac8f3;
+			box-shadow: 0 0 0 0.2rem rgb(78 115 223 / 25%);
+		}
+
+	.nav-tabs .nav-link {
+		color: #4e73df;
+		cursor: pointer;
+	}
+
+		.nav-tabs .nav-link.active {
+			color: #224abe;
+			font-weight: bold;
+			border-bottom: 2px solid #224abe;
+		}
+
+	/* Add animate.css animations */
+	.animate__animated {
+		animation-duration: 0.5s;
+	}
+
+	.animate__fadeIn {
+		animation-name: fadeIn;
+	}
+
+	@@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+</style>

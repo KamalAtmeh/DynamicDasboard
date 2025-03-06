@@ -10,11 +10,11 @@ namespace DynamicDasboardWebAPI.Services
 {
     public class BatchProcessingService
     {
-        private readonly NlQueryService _nlQueryService;
+        private readonly EnhancedNlQueryService _nlQueryService;
         private readonly BatchProcessingRepository _batchProcessingRepository;
 
         public BatchProcessingService(
-            NlQueryService nlQueryService,
+            EnhancedNlQueryService nlQueryService,
             BatchProcessingRepository batchProcessingRepository)
         {
             _nlQueryService = nlQueryService;

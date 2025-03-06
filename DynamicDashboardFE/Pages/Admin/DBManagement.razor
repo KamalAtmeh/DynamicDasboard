@@ -37,7 +37,7 @@ else
             @foreach (var db in databases)
             {
                 <tr>
-                    <td>@db.Name</td>
+                    <td>@db.DataBaseViewingName</td>
                     <td>@GetDatabaseTypeName(db.TypeID)</td>
                     <td>@db.ConnectionString</td>
                     <td>@db.Description</td>
@@ -68,7 +68,7 @@ else
                     <EditForm Model="@databaseForm" OnValidSubmit="SaveDatabase">
                         <div class="form-group">
                             <label for="databaseName">Database Name</label>
-                            <InputText id="databaseName" @bind-Value="databaseForm.Name" placeholder="Database Name" class="form-control mb-2" />
+                            <InputText id="databaseName" @bind-Value="databaseForm.DataBaseViewingName" placeholder="Database Name" class="form-control mb-2" />
                         </div>
                         <div class="form-group">
                             <label for="databaseType">Database Type</label>
@@ -155,7 +155,7 @@ else
             databaseForm = new Database
             {
                 DatabaseID = db.DatabaseID,
-                Name = db.Name,
+                DataBaseViewingName = db.DataBaseViewingName,
                 TypeID = db.TypeID,
                 ConnectionString = db.ConnectionString,
                 Description = db.Description,
@@ -174,7 +174,7 @@ else
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(databaseForm.Name))
+            if (string.IsNullOrWhiteSpace(databaseForm.DataBaseViewingName))
                 throw new ArgumentException("Database name cannot be empty.");
 
             if (string.IsNullOrWhiteSpace(databaseForm.ConnectionString))

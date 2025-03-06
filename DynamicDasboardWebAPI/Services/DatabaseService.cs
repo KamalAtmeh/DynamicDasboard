@@ -81,7 +81,7 @@ namespace DynamicDasboardWebAPI.Services
             {
 
                 // Validate required fields
-                if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
+                if (!string.IsNullOrWhiteSpace(database.DataBaseViewingName) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
                 {
 
 
@@ -100,7 +100,7 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error adding database: {Name}", database.Name);
+                _logger?.LogError(ex, "Error adding database: {Name}", database.DataBaseViewingName);
                 throw;
             }
         }
@@ -118,7 +118,7 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
 
-                if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
+                if (!string.IsNullOrWhiteSpace(database.DataBaseViewingName) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
                 {     // Validate required fields
 
 

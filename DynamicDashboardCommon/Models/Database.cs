@@ -15,7 +15,7 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Name of the database connection
         /// </summary>
-        public string Name { get; set; }
+        public string DataBaseViewingName { get; set; }
 
         /// <summary>
         /// Type ID of the database (Foreign key to DatabaseTypes)

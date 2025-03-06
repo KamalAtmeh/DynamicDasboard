@@ -1,5 +1,6 @@
 using DynamicDasboardWebAPI.Repositories;
 using DynamicDasboardWebAPI.Services;
+using DynamicDasboardWebAPI.Services.LLM;
 using DynamicDasboardWebAPI.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
@@ -17,8 +18,6 @@ builder.Services.AddScoped<IDbConnection>(provider =>
     return new Microsoft.Data.SqlClient.SqlConnection(connectionString);
 });
 
-// Register the dynamic database connection factory
-// Register the dynamic database connection factory
 // Register the dynamic database connection factory
 builder.Services.AddScoped<DbConnectionFactory>(provider =>
 {
@@ -51,7 +50,6 @@ builder.Services.AddScoped<NlQueryRepository>();
 builder.Services.AddScoped<BatchProcessingRepository>();
 builder.Services.AddHttpClient<QueryGeneratorService>();
 builder.Services.AddScoped<QueryLogsRepository>();
-//builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<DatabaseRepository>();
@@ -60,15 +58,14 @@ builder.Services.AddScoped<TableService>();
 builder.Services.AddScoped<ColumnService>();
 builder.Services.AddScoped<RelationshipService>();
 builder.Services.AddScoped<QueryService>();
+// Register LLM services
+builder.Services.AddHttpClient<ILLMService>(); // HttpClient for LLM services
+builder.Services.AddScoped<LLMServiceFactory>();
+builder.Services.AddScoped<EnhancedNlQueryService>();
 
-// Add NlQueryService
-builder.Services.AddScoped<NlQueryService>();
 // Register the batch processing service
 builder.Services.AddScoped<BatchProcessingService>();
-//builder.Services.AddScoped<IDataAccessService, DataAccessService>();
-//builder.Services.AddScoped<IDatabaseService, >();
 builder.Services.AddScoped<DatabaseService>();
-
 
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });

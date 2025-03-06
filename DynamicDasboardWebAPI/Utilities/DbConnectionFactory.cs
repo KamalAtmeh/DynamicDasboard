@@ -144,7 +144,7 @@ public class DbConnectionFactory
     }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Connection test failed for database: {Name}", database.Name);
+            _logger?.LogWarning(ex, "Connection test failed for database: {Name}", database.DataBaseViewingName);
             return false;
         }
     }
