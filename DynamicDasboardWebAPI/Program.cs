@@ -61,6 +61,7 @@ builder.Services.AddScoped<QueryService>();
 // Register LLM services
 builder.Services.AddHttpClient<ILLMService>(); // HttpClient for LLM services
 builder.Services.AddScoped<LLMServiceFactory>();
+builder.Services.AddScoped<NlQueryService>();
 builder.Services.AddScoped<EnhancedNlQueryService>();
 
 // Register the batch processing service

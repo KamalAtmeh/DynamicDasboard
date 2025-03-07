@@ -1,5 +1,7 @@
-﻿using DynamicDashboardCommon.Models;
+﻿
+using DynamicDashboardCommon.Models;
 using DynamicDashboardCommon.Models.LLM;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -70,10 +72,10 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
         /// <inheritdoc/>
         public async Task<string> GenerateSqlAsync(
-            string question,
-            string confirmedUnderstanding,
-            string databaseSchema,
-            Dictionary<string, string> resolvedAmbiguities = null)
+     string question,
+     string confirmedUnderstanding,
+     string databaseSchema,
+     Dictionary<string, string> resolvedAmbiguities = null)
         {
             try
             {
@@ -87,16 +89,22 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 userPrompt.AppendLine($"Original question: {question}");
                 userPrompt.AppendLine($"Confirmed understanding: {confirmedUnderstanding}");
 
+                // Add null check and safe enumeration for resolvedAmbiguities
                 if (resolvedAmbiguities != null && resolvedAmbiguities.Count > 0)
                 {
                     userPrompt.AppendLine("\nResolved ambiguities:");
-                    foreach (var ambiguity in resolvedAmbiguities)
+
+                    // Use a safer approach to iterate through dictionary entries
+                    foreach (var entry in resolvedAmbiguities)
                     {
-                        userPrompt.AppendLine($"- {ambiguity.Key}: {ambiguity.Value}");
+                        if (entry.Key != null && entry.Value != null)
+                        {
+                            userPrompt.AppendLine($"- {entry.Key}: {entry.Value}");
+                        }
                     }
                 }
 
-                userPrompt.AppendLine("\nGenerate a SQL query that answers this question. Return ONLY the SQL without any explanation or formatting.");
+                userPrompt.AppendLine("\nGenerate a SQL query that answers this question. Return ONLY the SQL with no explanations.");
 
                 // Call Claude API
                 var response = await CallClaudeApiAsync(systemPrompt, userPrompt.ToString());
@@ -157,24 +165,19 @@ namespace DynamicDasboardWebAPI.Services.LLM
         private string BuildExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)
         {
             var prompt = new StringBuilder();
-
             prompt.AppendLine("You are an AI assistant that helps users understand database queries. " +
                 "Your task is to explain natural language questions in terms of how they will be interpreted as database queries. " +
                 "Use admin-friendly terminology instead of technical database terms whenever possible.");
-
             prompt.AppendLine("\nWhen explaining queries:");
             prompt.AppendLine("1. Use natural, conversational language focused on business meaning");
             prompt.AppendLine("2. Explain what data will be retrieved and any filters or conditions");
             prompt.AppendLine("3. Identify any ambiguous terms that could have multiple interpretations");
             prompt.AppendLine("4. Highlight adjustable parameters (dates, thresholds, categories)");
             prompt.AppendLine("5. Use admin-defined descriptions instead of technical database terms");
-
             prompt.AppendLine("\nFor ambiguities, list each ambiguous term and the possible interpretations.");
             prompt.AppendLine("For adjustable parameters, provide the default value and reasonable alternatives.");
-
             prompt.AppendLine("\nDatabase schema:");
             prompt.AppendLine(databaseSchema);
-
             if (adminDescriptions != null && adminDescriptions.Count > 0)
             {
                 prompt.AppendLine("\nAdmin descriptions (use these terms instead of technical names):");
@@ -183,7 +186,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     prompt.AppendLine($"- {description.Key}: {description.Value}");
                 }
             }
-
             prompt.AppendLine("\nYour response should be structured as JSON with the following fields:");
             prompt.AppendLine("- explanation: A user-friendly explanation of the query's meaning");
             prompt.AppendLine("- hasAmbiguities: Boolean indicating if any ambiguities were detected");
@@ -192,6 +194,49 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("- confidenceScore: Number between 0 and 1 indicating confidence in understanding");
             prompt.AppendLine("- previewSql: A preview of the SQL that would be generated (for reference only)");
             prompt.AppendLine("- termMapping: Dictionary mapping technical terms to admin-friendly terms used");
+
+            // Add specific instructions about JSON format and arrays
+            prompt.AppendLine("\nIMPORTANT FORMAT REQUIREMENTS:");
+            prompt.AppendLine("1. The 'alternatives' property inside 'adjustableParameters' MUST be an array of strings, even if there's only one alternative.");
+            prompt.AppendLine("2. Use the format: \"alternatives\": [\"option1\", \"option2\"] NOT \"alternatives\": \"Some text\"");
+            prompt.AppendLine("3. All arrays should be properly formatted with square brackets, even for single items.");
+
+            // Add a complete example
+            prompt.AppendLine("\nHere's a complete example of the expected JSON format:");
+            prompt.AppendLine("```json");
+            prompt.AppendLine("{");
+            prompt.AppendLine("  \"explanation\": \"This query will show the top 10 customers who have spent the most money on orders.\",");
+            prompt.AppendLine("  \"hasAmbiguities\": true,");
+            prompt.AppendLine("  \"detectedAmbiguities\": {");
+            prompt.AppendLine("    \"top customers\": [");
+            prompt.AppendLine("      \"Customers with highest total spending\",");
+            prompt.AppendLine("      \"Customers with most frequent orders\"");
+            prompt.AppendLine("    ],");
+            prompt.AppendLine("    \"time period\": [");
+            prompt.AppendLine("      \"All time\",");
+            prompt.AppendLine("      \"Current year\",");
+            prompt.AppendLine("      \"Last 12 months\"");
+            prompt.AppendLine("    ]");
+            prompt.AppendLine("  },");
+            prompt.AppendLine("  \"adjustableParameters\": {");
+            prompt.AppendLine("    \"number of customers\": {");
+            prompt.AppendLine("      \"default\": 10,");
+            prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"50\", \"100\"]");
+            prompt.AppendLine("    },");
+            prompt.AppendLine("    \"sort order\": {");
+            prompt.AppendLine("      \"default\": \"Descending (highest first)\",");
+            prompt.AppendLine("      \"alternatives\": [\"Ascending (lowest first)\"]");
+            prompt.AppendLine("    }");
+            prompt.AppendLine("  },");
+            prompt.AppendLine("  \"confidenceScore\": 0.9,");
+            prompt.AppendLine("  \"previewSql\": \"SELECT c.CustomerName, SUM(o.Total) AS TotalSpent FROM Customers c JOIN Orders o ON c.CustomerID = o.CustomerID GROUP BY c.CustomerID, c.CustomerName ORDER BY TotalSpent DESC LIMIT 10;\",");
+            prompt.AppendLine("  \"termMapping\": {");
+            prompt.AppendLine("    \"Customers\": \"Client accounts\",");
+            prompt.AppendLine("    \"Orders\": \"Purchase transactions\",");
+            prompt.AppendLine("    \"Total\": \"Purchase amount\"");
+            prompt.AppendLine("  }");
+            prompt.AppendLine("}");
+            prompt.AppendLine("```");
 
             return prompt.ToString();
         }
@@ -226,15 +271,16 @@ namespace DynamicDasboardWebAPI.Services.LLM
         private async Task<string> CallClaudeApiAsync(string systemPrompt, string userPrompt)
         {
             // Prepare request
+            // Prepare request
             var requestBody = new
             {
                 model = _model,
+                system = systemPrompt, // System prompt as a top-level parameter
                 messages = new[]
                 {
-                    new { role = "system", content = systemPrompt },
-                    new { role = "user", content = userPrompt }
+        new { role = "user", content = userPrompt }
                 },
-                temperature = 0.2,
+                temperature = 1,
                 max_tokens = 2000
             };
 
@@ -243,10 +289,19 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 Encoding.UTF8,
                 "application/json");
 
+            //var reqcontent = "{""model"": "'claude-3-opus-20240229'", ""max_tokens"": 1024, ""messages"": [ {""role"": ""user", "content"": ""Hello, world""}";
+
+            if (!_httpClient.DefaultRequestHeaders.Contains("x-api-key"))
+            {
+                _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+            }
             // Set headers
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+            if (!_httpClient.DefaultRequestHeaders.Contains("anthropic-version"))
+            {
+                _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+            }
+            // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
+
 
             // Send request
             var response = await _httpClient.PostAsync(_apiEndpoint, content);
@@ -256,7 +311,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Claude API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                throw new ApplicationException($"Claude API error: {response.StatusCode}");
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -308,7 +362,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             {
                 _logger.LogError(ex, "Error parsing explanation response: {Response}", jsonResponse);
                 return new ExplanationResponse();
-                
+
                 // Return a basic response when parsing fails
                 //return new ExplanationResponse
                 //{

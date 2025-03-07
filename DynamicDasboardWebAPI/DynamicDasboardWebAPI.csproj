@@ -15,7 +15,7 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="Anthropic.SDK" Version="4.7.1" />
+    <PackageReference Include="Anthropic" Version="3.4.0" />
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="EPPlus" Version="7.5.3" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />

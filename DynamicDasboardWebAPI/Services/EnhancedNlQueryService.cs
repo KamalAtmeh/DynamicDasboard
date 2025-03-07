@@ -294,15 +294,27 @@ namespace DynamicDasboardWebAPI.Services
 
         private string FormatSchemaForLlm(Dictionary<string, object> metadata)
         {
+            //to be fixed
             var schema = new StringBuilder();
 
-            // Extract tables from metadata
-            if (metadata.TryGetValue("tables", out var tablesObj) && tablesObj is List<Table> tables)
+            // Check if tables exist in the metadata
+            if (metadata.TryGetValue("tables", out var tablesObj) &&
+                tablesObj is List<object> tablesList &&
+                tablesList.Any())
             {
                 schema.AppendLine("Tables:");
 
-                foreach (var table in tables)
+                foreach (var tableObj in tablesList)
                 {
+                    // Use dynamic to safely access nested properties
+                    dynamic tableDynamic = tableObj;
+                    var table = tableDynamic.tables as Table;
+                    var columns = tableDynamic.columns as IEnumerable<Column>;
+                    var relationships = tableDynamic.relationships as IEnumerable<Relationship>;
+
+                    if (table == null) continue;
+
+                    // Format table name with admin name if available
                     var tableName = !string.IsNullOrEmpty(table.AdminTableName) ?
                         $"{table.DBTableName} (Admin: \"{table.AdminTableName}\")" :
                         table.DBTableName;
@@ -313,16 +325,12 @@ namespace DynamicDasboardWebAPI.Services
                     {
                         schema.Append($" - {table.AdminDescription}");
                     }
-
                     schema.AppendLine();
 
-                    // Append columns if available
-                    if (metadata.TryGetValue("allColumns", out var columnsObj) &&
-                        columnsObj is List<Column> allColumns)
+                    // Add columns
+                    if (columns != null && columns.Any())
                     {
-                        var tableColumns = allColumns.FindAll(c => c.TableID == table.TableID);
-
-                        foreach (var column in tableColumns)
+                        foreach (var column in columns)
                         {
                             var columnName = !string.IsNullOrEmpty(column.AdminColumnName) ?
                                 $"{column.DBColumnName} (Admin: \"{column.AdminColumnName}\")" :
@@ -334,32 +342,55 @@ namespace DynamicDasboardWebAPI.Services
                             {
                                 schema.Append($" - {column.AdminDescription}");
                             }
-
                             schema.AppendLine();
                         }
                     }
 
-                    schema.AppendLine();
+                    // Add relationships for this table
+                    if (relationships != null && relationships.Any())
+                    {
+                        schema.AppendLine("  Relationships:");
+                        foreach (var relationship in relationships)
+                        {
+                            // You might want to use the table and column names directly from the relationship
+                            schema.AppendLine($"    - {relationship.RelationshipType}: " +
+                                $"{relationship.TableID}.{relationship.ColumnID} -> " +
+                                $"{relationship.RelatedTableID}.{relationship.RelatedColumnID}");
+                        }
+                    }
+
+                    schema.AppendLine(); // Extra line between tables
                 }
             }
-
-            // Add relationships
-            if (metadata.TryGetValue("allRelationships", out var relationshipsObj) &&
-                relationshipsObj is List<Relationship> relationships &&
-                relationships.Count > 0)
+            else
             {
-                schema.AppendLine("Relationships:");
-
-                foreach (var relationship in relationships)
-                {
-                    // Simplified relationship format for LLM
-                    schema.AppendLine($"- {relationship.TableID}.{relationship.ColumnID} -> " +
-                        $"{relationship.RelatedTableID}.{relationship.RelatedColumnID}" +
-                        $" ({relationship.RelationshipType})");
-                }
+                schema.AppendLine("No tables found in metadata.");
             }
 
             return schema.ToString();
+        }
+
+        // Helper method to get table name
+        // Helper method to get table name
+        private string GetTableName(Dictionary<string, object> metadata, int tableId)
+        {
+            if (metadata.TryGetValue("tables", out var tablesObj) &&
+                tablesObj is IEnumerable<Table> tables)
+            {
+                return tables.FirstOrDefault(t => t.TableID == tableId)?.DBTableName ?? $"Table_{tableId}";
+            }
+            return $"Table_{tableId}";
+        }
+
+        // Helper method to get column name
+        private string GetColumnName(Dictionary<string, object> metadata, int tableId, int columnId)
+        {
+            if (metadata.TryGetValue("columns", out var columnsObj) &&
+                columnsObj is IEnumerable<Column> columns)
+            {
+                return columns.FirstOrDefault(c => c.TableID == tableId && c.ColumnID == columnId)?.DBColumnName ?? $"Column_{columnId}";
+            }
+            return $"Column_{columnId}";
         }
 
         private Dictionary<string, string> ExtractAdminDescriptions(Dictionary<string, object> metadata)
@@ -367,8 +398,10 @@ namespace DynamicDasboardWebAPI.Services
             var descriptions = new Dictionary<string, string>();
 
             // Extract table descriptions
-            if (metadata.TryGetValue("tables", out var tablesObj) && tablesObj is List<Table> tables)
+            if (metadata.TryGetValue("tables", out var tablesObj))
             {
+
+                IEnumerable<Table> tables = (IEnumerable<Table>)tablesObj;
                 foreach (var table in tables)
                 {
                     if (!string.IsNullOrEmpty(table.AdminTableName))
@@ -384,8 +417,9 @@ namespace DynamicDasboardWebAPI.Services
             }
 
             // Extract column descriptions
-            if (metadata.TryGetValue("allColumns", out var columnsObj) && columnsObj is List<Column> columns)
+            if (metadata.TryGetValue("columns", out var columnsObj))
             {
+                IEnumerable<Column> columns = (IEnumerable < Column >)columnsObj;
                 foreach (var column in columns)
                 {
                     if (!string.IsNullOrEmpty(column.AdminColumnName))

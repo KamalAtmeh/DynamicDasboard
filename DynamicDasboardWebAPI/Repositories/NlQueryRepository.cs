@@ -94,7 +94,7 @@ public class NlQueryRepository
 
                 tablesList.Add(new
                 {
-                    table,
+                    tables,
                     columns,
                     relationships
                 });

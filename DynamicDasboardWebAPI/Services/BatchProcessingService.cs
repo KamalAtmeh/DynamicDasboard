@@ -66,7 +66,7 @@ namespace DynamicDasboardWebAPI.Services
                         var request = new NlQueryRequest
                         {
                             Question = question,
-                            DatabaseType = dbType // Use database type instead of connection string
+                          
                         };
 
                         var response = await _nlQueryService.ProcessNaturalLanguageQueryAsync(request);

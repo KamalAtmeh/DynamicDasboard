@@ -1097,7 +1097,7 @@
 					DatabaseId = databaseId
 				};
 
-			var response = await Http.PostAsJsonAsync("api/NlQuery/process", request);
+			var response = await Http.PostAsJsonAsync("api/EnhancedNlQuery/process", request);
 
 			if (response.IsSuccessStatusCode)
 			{
