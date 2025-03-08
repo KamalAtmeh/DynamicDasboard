@@ -11,6 +11,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace DynamicDasboardWebAPI.Services.LLM
 {
@@ -25,6 +26,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         private readonly string _apiKey;
         private readonly string _model;
         private readonly string _apiEndpoint;
+        private readonly int timeOutSeconds;
 
         public ClaudeLLMService(HttpClient httpClient, IConfiguration configuration, ILogger<ClaudeLLMService> logger)
         {
@@ -38,6 +40,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
             _model = _configuration["Claude:Model"] ?? "claude-3-sonnet-20240229";
             _apiEndpoint = _configuration["Claude:Endpoint"] ?? "https://api.anthropic.com/v1/messages";
+            timeOutSeconds = _configuration.GetValue<int>("LlmService: Timeout", 150);
         }
 
         /// <inheritdoc/>
@@ -167,20 +170,20 @@ namespace DynamicDasboardWebAPI.Services.LLM
             var prompt = new StringBuilder();
             prompt.AppendLine("You are an AI assistant that helps users understand database queries. " +
                 "Your task is to explain natural language questions in terms of how they will be interpreted as database queries. " +
-                "Use admin-friendly terminology instead of technical database terms whenever possible.");
+                "Use friendly terminology from provided descriptions instead of technical database terms whenever possible.");
             prompt.AppendLine("\nWhen explaining queries:");
             prompt.AppendLine("1. Use natural, conversational language focused on business meaning");
             prompt.AppendLine("2. Explain what data will be retrieved and any filters or conditions");
             prompt.AppendLine("3. Identify any ambiguous terms that could have multiple interpretations");
             prompt.AppendLine("4. Highlight adjustable parameters (dates, thresholds, categories)");
-            prompt.AppendLine("5. Use admin-defined descriptions instead of technical database terms");
+            prompt.AppendLine("5. Use defined descriptions instead of technical database terms");
             prompt.AppendLine("\nFor ambiguities, list each ambiguous term and the possible interpretations.");
             prompt.AppendLine("For adjustable parameters, provide the default value and reasonable alternatives.");
             prompt.AppendLine("\nDatabase schema:");
             prompt.AppendLine(databaseSchema);
             if (adminDescriptions != null && adminDescriptions.Count > 0)
             {
-                prompt.AppendLine("\nAdmin descriptions (use these terms instead of technical names):");
+                prompt.AppendLine("\ndescriptions (use these terms instead of technical names):");
                 foreach (var description in adminDescriptions)
                 {
                     prompt.AppendLine($"- {description.Key}: {description.Value}");
@@ -193,7 +196,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("- adjustableParameters: Dictionary of parameters that could be adjusted");
             prompt.AppendLine("- confidenceScore: Number between 0 and 1 indicating confidence in understanding");
             prompt.AppendLine("- previewSql: A preview of the SQL that would be generated (for reference only)");
-            prompt.AppendLine("- termMapping: Dictionary mapping technical terms to admin-friendly terms used");
+            prompt.AppendLine("- termMapping: Dictionary mapping technical terms to friendly terms (from descriptions) used");
 
             // Add specific instructions about JSON format and arrays
             prompt.AppendLine("\nIMPORTANT FORMAT REQUIREMENTS:");
@@ -229,7 +232,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("    }");
             prompt.AppendLine("  },");
             prompt.AppendLine("  \"confidenceScore\": 0.9,");
-            prompt.AppendLine("  \"previewSql\": \"SELECT c.CustomerName, SUM(o.Total) AS TotalSpent FROM Customers c JOIN Orders o ON c.CustomerID = o.CustomerID GROUP BY c.CustomerID, c.CustomerName ORDER BY TotalSpent DESC LIMIT 10;\",");
+            prompt.AppendLine("  \"previewSql\": \"SELECT c.FirstName + ' ' + c.LastName AS CustomerName, SUM(o.TotalAmount) AS TotalSpent FROM Customers c JOIN Orders o ON c.CustomerID = o.CustomerID GROUP BY c.CustomerID, c.FirstName, c.LastName ORDER BY TotalSpent DESC LIMIT 10;\",");
             prompt.AppendLine("  \"termMapping\": {");
             prompt.AppendLine("    \"Customers\": \"Client accounts\",");
             prompt.AppendLine("    \"Orders\": \"Purchase transactions\",");
@@ -255,10 +258,11 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
             prompt.AppendLine("\nGenerate a SQL query that:");
             prompt.AppendLine("1. Is syntactically correct for SQL Server");
-            prompt.AppendLine("2. Uses proper table and column names from the schema");
-            prompt.AppendLine("3. Includes appropriate JOINs when needed");
-            prompt.AppendLine("4. Applies any filters specified in the question");
-            prompt.AppendLine("5. Returns only the requested data");
+            prompt.AppendLine("2. it is important to make sure Usage of only table and column names from the provided schema structure");
+            prompt.AppendLine("3. If you found complexity in the query , take your time and take it step by step . accuracy is more important than performance");
+            //prompt.AppendLine("3. Includes appropriate JOINs when needed");
+            //prompt.AppendLine("4. Applies any filters specified in the question");
+            prompt.AppendLine("3. Returns only the requested data");
 
             prompt.AppendLine("\nDatabase schema:");
             prompt.AppendLine(databaseSchema);
@@ -275,10 +279,23 @@ namespace DynamicDasboardWebAPI.Services.LLM
             var requestBody = new
             {
                 model = _model,
-                system = systemPrompt, // System prompt as a top-level parameter
+                //system = systemPrompt, // System prompt as a top-level parameter
+                system = new[]
+    {
+        new
+        {
+            type = "text",
+            text = systemPrompt,
+            cache_control = new
+            {
+                type = "ephemeral"
+            }
+        }
+    },
                 messages = new[]
                 {
-        new { role = "user", content = userPrompt }
+                new { role = "user", content = userPrompt
+}
                 },
                 temperature = 1,
                 max_tokens = 2000
@@ -300,7 +317,12 @@ namespace DynamicDasboardWebAPI.Services.LLM
             {
                 _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
             }
-            // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
+            // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");    
+            if (_httpClient.Timeout == TimeSpan.Zero)
+            {
+                _httpClient.Timeout = TimeSpan.FromSeconds(timeOutSeconds);
+            }
+
 
 
             // Send request

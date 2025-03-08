@@ -1016,6 +1016,16 @@
             Executes a scalar query safely and returns the result
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.WithConnectionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes an operation with proper connection management
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.WithConnectionAsync(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task})">
+            <summary>
+            Executes an operation with proper connection management (no return value)
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteQueryAsDictionariesAsync(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Int32)">
             <summary>
             Executes a query and returns the results as a list of dictionaries
@@ -1076,14 +1086,27 @@
             Gets relationships for a table by ID
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetColumnsForTablesAsync(System.Data.IDbConnection,System.Collections.Generic.IEnumerable{System.Int32})">
+            <summary>
+            Gets all columns for multiple tables in a single query
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetRelationshipsForTablesAsync(System.Data.IDbConnection,System.Collections.Generic.IEnumerable{System.Int32})">
+            <summary>
+            Gets all relationships for multiple tables in a single query
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetCompleteDatabaseMetadataAsync(System.Data.IDbConnection,System.Int32,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Gets complete database metadata in a minimal number of database calls
+            </summary>
+            <summary>
+            Gets complete database metadata in a minimal number of database calls
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.BulkInsertAsync``1(System.Data.IDbConnection,System.String,System.Collections.Generic.IEnumerable{``0},System.Data.IDbTransaction,System.Int32)">
             <summary>
             Bulk inserts data into a table
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteWithConnectionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
-            <summary>
-            Executes a function with a database connection
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseSchemaAsync(System.Data.IDbConnection)">
@@ -1171,6 +1194,31 @@
             </summary>
             <param name="databaseId">The database ID</param>
             <returns>A tuple containing connection string and database type ID</returns>
+        </member>
+        <member name="M:DbConnectionFactory.ExecuteWithConnectionAsync``1(System.Int32,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32,System.Int32)">
+            <summary>
+            Executes an operation with proper connection management for a specific database
+            </summary>
+        </member>
+        <member name="M:DbConnectionFactory.ExecuteWithConnectionAsync(System.Int32,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task},System.Int32,System.Int32)">
+            <summary>
+            Executes an operation with proper connection management for a specific database (void return)
+            </summary>
+        </member>
+        <member name="M:DbConnectionFactory.ExecuteWithAppConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes an operation with proper connection management using the application database connection
+            </summary>
+        </member>
+        <member name="M:DbConnectionFactory.ExecuteWithAppConnectionAsync(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task})">
+            <summary>
+            Executes an operation with proper connection management using the application database connection (void return)
+            </summary>
+        </member>
+        <member name="M:DbConnectionFactory.UpdateConnectionStatusAsync(System.Int32,System.Boolean)">
+            <summary>
+            Updates the connection status for a database
+            </summary>
         </member>
     </members>
 </doc>

@@ -74,39 +74,35 @@ public class NlQueryRepository
     /// Retrieves metadata for a database including tables and columns.
     /// </summary>
     /// <returns>A dictionary containing database metadata.</returns>
-    public async Task<Dictionary<string, object>> GetDatabaseMetadataAsync(int databaseId)
+    public async Task<DatabaseMetadataDto> GetDatabaseMetadataAsync(int databaseId)
     {
         try
         {
             _logger.LogInformation("Retrieving metadata for database ID {DatabaseId}", databaseId);
 
-            var metadata = new Dictionary<string, object>();
-
-            // Get tables
-            var tables = await _appDbConnection.GetTablesByDatabaseIdAsync(databaseId);
-            var tablesList = new List<object>();
-
-            // For each table, get columns and relationships
-            foreach (var table in tables)
+            return await _connectionFactory.ExecuteWithAppConnectionAsync(async conn =>
             {
-                var columns = await _appDbConnection.GetColumnsByTableIdAsync(table.TableID);
-                var relationships = await _appDbConnection.GetRelationshipsByTableIdAsync(table.TableID);
-
-                tablesList.Add(new
-                {
-                    tables,
-                    columns,
-                    relationships
-                });
-            }
-
-            metadata["tables"] = tablesList;
-            return metadata;
+                return await DatabaseHelper.GetCompleteDatabaseMetadataAsync(conn, databaseId, _logger);
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving metadata for database ID {DatabaseId}", databaseId);
             throw;
         }
+    }
+
+    // DTO to represent database metadata
+    public class DatabaseMetadataDto
+    {
+        public int DatabaseId { get; set; }
+        public List<TableMetadataDto> Tables { get; set; }
+    }
+
+    public class TableMetadataDto
+    {
+        public Table Table { get; set; }
+        public IEnumerable<Column> Columns { get; set; }
+        public IEnumerable<Relationship> Relationships { get; set; }
     }
 }

@@ -10,6 +10,7 @@ using DynamicDasboardWebAPI.Repositories;
 using DynamicDasboardWebAPI.Utilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System.Net.WebSockets;
 
 namespace DynamicDasboardWebAPI.Services
 {
@@ -158,78 +159,79 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                // 1. Get database schema
-                var database = await _databaseService.GetDatabaseByIdAsync(request.DatabaseId);
-                if (database == null)
-                {
-                    return new NlQueryResponse
-                    {
-                        Success = false,
-                        ErrorMessage = "Database not found"
-                    };
-                }
+                //// 1. Get database schema
+                //var database = await _databaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                //if (database == null)
+                //{
+                //    return new NlQueryResponse
+                //    {
+                //        Success = false,
+                //        ErrorMessage = "Database not found"
+                //    };
+                //}
 
-                var schemaData = await _nlQueryRepository.GetDatabaseMetadataAsync(request.DatabaseId);
-                var schema = FormatSchemaFromMetadata(schemaData);
+                //var schemaData = await _nlQueryRepository.GetDatabaseMetadataAsync(request.DatabaseId);
+                //var schema = FormatSchemaFromMetadata(schemaData.Tables);
+                
+                //// 2. Call LLM to analyze the question and match templates
+                //var templateMatch = await MatchTemplatesAsync(request.Question, schema);
 
-                // 2. Call LLM to analyze the question and match templates
-                var templateMatch = await MatchTemplatesAsync(request.Question, schema);
+                //if (templateMatch == null || string.IsNullOrEmpty(templateMatch.Intent))
+                //{
+                //    return new NlQueryResponse
+                //    {
+                //        Success = false,
+                //        ErrorMessage = "Could not understand the question",
+                //        SuggestedQuestions = GenerateSuggestedQuestions(schema)
+                //    };
+                //}
 
-                if (templateMatch == null || string.IsNullOrEmpty(templateMatch.Intent))
-                {
-                    return new NlQueryResponse
-                    {
-                        Success = false,
-                        ErrorMessage = "Could not understand the question",
-                        SuggestedQuestions = GenerateSuggestedQuestions(schema)
-                    };
-                }
+                //// 3. Generate SQL from the template match
+                //var sql = await GenerateSqlAsync(templateMatch, schema);
 
-                // 3. Generate SQL from the template match
-                var sql = await GenerateSqlAsync(templateMatch, schema);
+                //if (string.IsNullOrEmpty(sql))
+                //{
+                //    return new NlQueryResponse
+                //    {
+                //        Success = false,
+                //        ErrorMessage = "Failed to generate SQL query",
+                //        TemplateInfo = templateMatch
+                //    };
+                //}
 
-                if (string.IsNullOrEmpty(sql))
-                {
-                    return new NlQueryResponse
-                    {
-                        Success = false,
-                        ErrorMessage = "Failed to generate SQL query",
-                        TemplateInfo = templateMatch
-                    };
-                }
+                //// 4. Execute the query
+                //// In ProcessNaturalLanguageQueryAsync method:
 
-                // 4. Execute the query
-                // In ProcessNaturalLanguageQueryAsync method:
+                //// Execute the query on the requested database
+                //var results = await _nlQueryRepository.ExecuteQueryOnDatabaseAsync(sql, request.DatabaseId);
 
-                // Execute the query on the requested database
-                var results = await _nlQueryRepository.ExecuteQueryOnDatabaseAsync(sql, request.DatabaseId);
+                //// 5. Generate explanation
+                //var explanation = await GenerateExplanationAsync(request.Question, sql, results);
 
-                // 5. Generate explanation
-                var explanation = await GenerateExplanationAsync(request.Question, sql, results);
+                ////// 6. Log the query for auditing
+                ////int logId = await _nlQueryRepository.LogNlQueryAsync(
+                ////    request.Question,
+                ////    sql,
+                ////    null, // UserId (we could get this from the controller if available)
+                ////    request.DatabaseId
+                ////);
 
-                //// 6. Log the query for auditing
-                //int logId = await _nlQueryRepository.LogNlQueryAsync(
-                //    request.Question,
-                //    sql,
-                //    null, // UserId (we could get this from the controller if available)
-                //    request.DatabaseId
-                //);
-
-                //// 7. Save the template match for reference
-                //await _nlQueryRepository.SaveTemplateMatchAsync(templateMatch, logId);
-                var (viewingTypeId, viewingTypeName, formattedResult) = DetermineDataViewingType(results, sql);
-                return new NlQueryResponse
-                {
-                    FormattedQuestion = FormatQuestion(templateMatch),
-                    GeneratedSql = sql,
-                    Results = results,
-                    Explanation = explanation,
-                    Success = true,
-                    TemplateInfo = templateMatch,
-                    RecommendedDataViewingTypeID = viewingTypeId,
-                    RecommendedDataViewingTypeName = viewingTypeName,
-                    FormattedResult = formattedResult
-                };
+                ////// 7. Save the template match for reference
+                ////await _nlQueryRepository.SaveTemplateMatchAsync(templateMatch, logId);
+                //var (viewingTypeId, viewingTypeName, formattedResult) = DetermineDataViewingType(results, sql);
+                //return new NlQueryResponse
+                //{
+                //    FormattedQuestion = FormatQuestion(templateMatch),
+                //    GeneratedSql = sql,
+                //    Results = results,
+                //    Explanation = explanation,
+                //    Success = true,
+                //    TemplateInfo = templateMatch,
+                //    RecommendedDataViewingTypeID = viewingTypeId,
+                //    RecommendedDataViewingTypeName = viewingTypeName,
+                //    FormattedResult = formattedResult
+                //};
+                return new NlQueryResponse();
             }
             catch (Exception ex)
             {
@@ -245,54 +247,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             // In a real implementation, this would format the metadata into a string representation
             // For now, we'll use the simplified schema
-
-            return @"
-Tables:
-- Customers(CustomerID, FirstName, LastName, Email, Phone, Address, City, State, ZipCode, Country, RegistrationDate, LoyaltyPoints, CustomerRating, IsActive)
-- ProductCategories(CategoryID, CategoryName, ParentCategoryID, Description, ImageURL)
-- Products(ProductID, ProductName, SKU, CategoryID, Description, UnitPrice, DiscountPercentage, StockQuantity, ReorderLevel, Weight, Dimensions, ImageURL, IsActive, DateAdded, ManufacturerID)
-- ProductAttributes(AttributeID, ProductID, AttributeName, AttributeValue)
-- Manufacturers(ManufacturerID, ManufacturerName, ContactName, ContactEmail, ContactPhone, Address, Website)
-- Suppliers(SupplierID, SupplierName, ContactName, ContactEmail, ContactPhone, Address, PaymentTerms, LeadTimeDays, IsActive, Rating)
-- ProductSuppliers(ProductID, SupplierID, SupplierPrice, MinOrderQuantity)
-- Warehouses(WarehouseID, WarehouseName, Address, City, State, ZipCode, Country, ManagerID, Capacity)
-- Inventory(InventoryID, ProductID, WarehouseID, Quantity, LastUpdated, ShelfLocation)
-- Employees(EmployeeID, FirstName, LastName, Email, Phone, HireDate, Position, DepartmentID, ManagerID, Salary, Address, IsActive)
-- Departments(DepartmentID, DepartmentName, Description, ManagerID, Location, Budget)
-- Orders(OrderID, CustomerID, OrderDate, ShippingMethod, ShippingAddress, ShippingCity, ShippingState, ShippingZipCode, ShippingCountry, OrderStatus, PaymentStatus, TrackingNumber, TotalAmount, DiscountAmount, TaxAmount, ShippingAmount, EmployeeID, Notes)
-- OrderItems(OrderItemID, OrderID, ProductID, Quantity, UnitPrice, Discount)
-- Payments(PaymentID, OrderID, PaymentDate, PaymentMethod, Amount, TransactionID, Status)
-- Shipping(ShippingID, OrderID, ShippingDate, Carrier, TrackingNumber, EstimatedDelivery, ActualDelivery, ShippingCost, Status)
-- Returns(ReturnID, OrderID, ProductID, Quantity, ReturnDate, Reason, Status, RefundAmount)
-- ProductReviews(ReviewID, ProductID, CustomerID, Rating, ReviewText, ReviewDate, IsVerifiedPurchase, Helpful)
-- MarketingCampaigns(CampaignID, CampaignName, Description, StartDate, EndDate, Budget, ActualCost, TargetAudience, Goals, ROI, Status)
-- Promotions(PromotionID, PromotionName, Description, DiscountType, DiscountValue, StartDate, EndDate, MinOrderAmount, MaxUsages, CurrentUsages, PromoCode, IsActive)
-- UserActivityLogs(LogID, UserID, UserType, ActivityType, ActivityDescription, IPAddress, UserAgent, ActivityTimestamp, RelatedEntityID, RelatedEntityType)
-
-Relationships:
-- Customers.CustomerID -> Orders.CustomerID
-- Products.CategoryID -> ProductCategories.CategoryID
-- Products.ManufacturerID -> Manufacturers.ManufacturerID
-- ProductAttributes.ProductID -> Products.ProductID
-- ProductSuppliers.ProductID -> Products.ProductID
-- ProductSuppliers.SupplierID -> Suppliers.SupplierID
-- Warehouses.ManagerID -> Employees.EmployeeID
-- Inventory.ProductID -> Products.ProductID
-- Inventory.WarehouseID -> Warehouses.WarehouseID
-- Employees.DepartmentID -> Departments.DepartmentID
-- Employees.ManagerID -> Employees.EmployeeID
-- Departments.ManagerID -> Employees.EmployeeID
-- Orders.CustomerID -> Customers.CustomerID
-- Orders.EmployeeID -> Employees.EmployeeID
-- OrderItems.OrderID -> Orders.OrderID
-- OrderItems.ProductID -> Products.ProductID
-- Payments.OrderID -> Orders.OrderID
-- Shipping.OrderID -> Orders.OrderID
-- Returns.OrderID -> Orders.OrderID
-- Returns.ProductID -> Products.ProductID
-- ProductReviews.ProductID -> Products.ProductID
-- ProductReviews.CustomerID -> Customers.CustomerID
-";
+            return string.Empty;
         }
 
         private async Task<TemplateMatchInfo> MatchTemplatesAsync(string question, string schema)

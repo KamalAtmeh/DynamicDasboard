@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Extensions.Logging;
 using DynamicDashboardCommon.Models;
+using Microsoft.Data.SqlClient;
+using static NlQueryRepository;
 
 namespace DynamicDasboardWebAPI.Utilities
 {
@@ -20,19 +22,26 @@ namespace DynamicDasboardWebAPI.Utilities
         /// <summary>
         /// Executes a query safely and maps the result to a list of entities
         /// </summary>
-        public static async Task<IEnumerable<T>> QuerySafeAsync<T>(this IDbConnection connection, string sql, object param = null,
+        public static async Task<IEnumerable<T>> QuerySafeAsync<T>(this IDbConnection connectionTemplate, string sql, object param = null,
             IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
         {
-            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (connectionTemplate == null) throw new ArgumentNullException(nameof(connectionTemplate));
             if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
 
-            try
+            // Create a new connection with the same connection string
+            //temp to be dynamic through dbconnectionfactory
+            using (var connection = new SqlConnection(connectionTemplate.ConnectionString))
             {
-                return await connection.QueryAsync<T>(sql, param, transaction, commandTimeout, commandType);
-            }
-            catch (Exception ex)
-            {
-                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
+                try
+                {
+                    await connection.OpenAsync();
+                    var result = (await connection.QueryAsync<T>(sql, param, transaction, commandTimeout, commandType)).ToList();
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    throw new DatabaseException($"Error executing query: {ex.Message}", ex);
+                }
             }
         }
 
@@ -109,6 +118,55 @@ namespace DynamicDasboardWebAPI.Utilities
             catch (Exception ex)
             {
                 throw new DatabaseException($"Error executing scalar query: {ex.Message}", ex);
+            }
+        }
+
+        // Add to DatabaseHelper.cs
+        /// <summary>
+        /// Executes an operation with proper connection management
+        /// </summary>
+        public static async Task<T> WithConnectionAsync<T>(this IDbConnection connection, Func<IDbConnection, Task<T>> operation)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (operation == null) throw new ArgumentNullException(nameof(operation));
+
+            bool wasOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!wasOpen)
+                    connection.Open();
+
+                return await operation(connection);
+            }
+            finally
+            {
+                if (!wasOpen && connection.State == ConnectionState.Open)
+                    connection.Close();
+            }
+        }
+
+        /// <summary>
+        /// Executes an operation with proper connection management (no return value)
+        /// </summary>
+        public static async Task WithConnectionAsync(this IDbConnection connection, Func<IDbConnection, Task> operation)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (operation == null) throw new ArgumentNullException(nameof(operation));
+
+            bool wasOpen = connection.State == ConnectionState.Open;
+
+            try
+            {
+                if (!wasOpen)
+                    connection.Open();
+
+                await operation(connection);
+            }
+            finally
+            {
+                if (!wasOpen && connection.State == ConnectionState.Open)
+                    connection.Close();
             }
         }
 
@@ -491,6 +549,189 @@ namespace DynamicDasboardWebAPI.Utilities
             }
         }
 
+        // Add to DatabaseHelper.cs
+        /// <summary>
+        /// Gets all columns for multiple tables in a single query
+        /// </summary>
+        public static async Task<Dictionary<int, List<Column>>> GetColumnsForTablesAsync(
+            this IDbConnection connection, IEnumerable<int> tableIds)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (tableIds == null || !tableIds.Any())
+                return new Dictionary<int, List<Column>>();
+
+            try
+            {
+                // Use table-valued parameter or IN clause depending on DB type
+                string sql;
+                object parameters;
+
+                if (connection is SqlConnection)
+                {
+                    // SQL Server can handle larger sets with a direct IN clause 
+                    sql = "SELECT * FROM Columns WHERE TableID IN @TableIDs";
+                    parameters = new { TableIDs = tableIds };
+                }
+                else
+                {
+                    // For other DBs, build a parameter list dynamically
+                    var paramNames = string.Join(",", tableIds.Select((_, i) => $"@p{i}"));
+                    sql = $"SELECT * FROM Columns WHERE TableID IN ({paramNames})";
+
+                    var dynamicParams = new DynamicParameters();
+                    int i = 0;
+                    foreach (var id in tableIds)
+                    {
+                        dynamicParams.Add($"p{i}", id);
+                        i++;
+                    }
+                    parameters = dynamicParams;
+                }
+
+                var allColumns = await connection.QuerySafeAsync<Column>(sql, parameters);
+
+                // Group columns by TableID
+                return allColumns.GroupBy(c => c.TableID)
+                                 .ToDictionary(g => g.Key, g => g.ToList());
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error retrieving columns for multiple tables: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Gets all relationships for multiple tables in a single query
+        /// </summary>
+        public static async Task<Dictionary<int, List<Relationship>>> GetRelationshipsForTablesAsync(
+            this IDbConnection connection, IEnumerable<int> tableIds)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (tableIds == null || !tableIds.Any())
+                return new Dictionary<int, List<Relationship>>();
+
+            try
+            {
+                // Use table-valued parameter or IN clause depending on DB type
+                string sql;
+                object parameters;
+
+                if (connection is SqlConnection)
+                {
+                    // SQL Server approach
+                    sql = "SELECT * FROM Relationships WHERE TableID IN @TableIDs OR RelatedTableID IN @TableIDs";
+                    parameters = new { TableIDs = tableIds };
+                }
+                else
+                {
+                    // For other DBs, build a parameter list dynamically
+                    var paramNames = string.Join(",", tableIds.Select((_, i) => $"@p{i}"));
+                    sql = $"SELECT * FROM Relationships WHERE TableID IN ({paramNames}) OR RelatedTableID IN ({paramNames})";
+
+                    var dynamicParams = new DynamicParameters();
+                    int i = 0;
+                    foreach (var id in tableIds)
+                    {
+                        dynamicParams.Add($"p{i}", id);
+                        i++;
+                    }
+                    parameters = dynamicParams;
+                }
+
+                var allRelationships = await connection.QuerySafeAsync<Relationship>(sql, parameters);
+
+                // Create a mapping where each relationship appears in both tables' lists
+                var resultMap = new Dictionary<int, List<Relationship>>();
+
+                foreach (var relationship in allRelationships)
+                {
+                    // Add to source table
+                    if (!resultMap.ContainsKey(relationship.TableID))
+                        resultMap[relationship.TableID] = new List<Relationship>();
+                    resultMap[relationship.TableID].Add(relationship);
+
+                    // Add to related table (if different)
+                    if (relationship.TableID != relationship.RelatedTableID)
+                    {
+                        if (!resultMap.ContainsKey(relationship.RelatedTableID))
+                            resultMap[relationship.RelatedTableID] = new List<Relationship>();
+                        resultMap[relationship.RelatedTableID].Add(relationship);
+                    }
+                }
+
+                return resultMap;
+            }
+            catch (Exception ex)
+            {
+                throw new DatabaseException($"Error retrieving relationships for multiple tables: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Gets complete database metadata in a minimal number of database calls
+        /// </summary>
+        /// <summary>
+        /// Gets complete database metadata in a minimal number of database calls
+        /// </summary>
+        public static async Task<DatabaseMetadataDto> GetCompleteDatabaseMetadataAsync(
+            this IDbConnection connection, int databaseId, ILogger logger = null)
+        {
+            if (connection == null) throw new ArgumentNullException(nameof(connection));
+            if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
+
+            try
+            {
+                // Use WithConnectionAsync to ensure proper connection management
+                return await connection.WithConnectionAsync(async conn =>
+                {
+                    // 1. Get all tables
+                    logger?.LogInformation("Retrieving tables for database ID {DatabaseId}", databaseId);
+                    var tables = await conn.GetTablesByDatabaseIdAsync(databaseId);
+                    var tablesList = tables.ToList();
+
+                    if (tablesList.Count == 0)
+                        return new DatabaseMetadataDto { DatabaseId = databaseId, Tables = new List<TableMetadataDto>() };
+
+                    // 2. Get all table IDs
+                    var tableIds = tablesList.Select(t => t.TableID).ToList();
+
+                    // 3. Get all columns and relationships in just two queries
+                    logger?.LogInformation("Retrieving columns and relationships for {TableCount} tables", tableIds.Count);
+                    var columnsTask = conn.GetColumnsForTablesAsync(tableIds);
+                    var relationshipsTask = conn.GetRelationshipsForTablesAsync(tableIds);
+
+                    // Wait for both tasks to complete
+                    await Task.WhenAll(columnsTask, relationshipsTask);
+
+                    var allColumns = await columnsTask;
+                    var allRelationships = await relationshipsTask;
+
+                    // 4. Assemble the result
+                    var tableMetadata = new List<TableMetadataDto>();
+                    foreach (var table in tablesList)
+                    {
+                        tableMetadata.Add(new TableMetadataDto
+                        {
+                            Table = table,
+                            Columns = allColumns.TryGetValue(table.TableID, out var columns) ? columns : new List<Column>(),
+                            Relationships = allRelationships.TryGetValue(table.TableID, out var relationships) ? relationships : new List<Relationship>()
+                        });
+                    }
+
+                    return new DatabaseMetadataDto
+                    {
+                        DatabaseId = databaseId,
+                        Tables = tableMetadata
+                    };
+                });
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "Error retrieving complete metadata for database ID {DatabaseId}", databaseId);
+                throw new DatabaseException($"Error retrieving metadata for database {databaseId}: {ex.Message}", ex);
+            }
+        }
+
         #endregion
 
         #region Bulk Operations
@@ -568,30 +809,6 @@ namespace DynamicDasboardWebAPI.Utilities
 
         #region Utility Methods
 
-        /// <summary>
-        /// Executes a function with a database connection
-        /// </summary>
-        public static async Task<TResult> ExecuteWithConnectionAsync<TResult>(
-            this IDbConnection connection, Func<IDbConnection, Task<TResult>> action)
-        {
-            if (connection == null) throw new ArgumentNullException(nameof(connection));
-            if (action == null) throw new ArgumentNullException(nameof(action));
-
-            bool wasOpen = connection.State == ConnectionState.Open;
-
-            try
-            {
-                if (!wasOpen)
-                    connection.Open();
-
-                return await action(connection);
-            }
-            finally
-            {
-                if (!wasOpen && connection.State == ConnectionState.Open)
-                    connection.Close();
-            }
-        }
 
         /// <summary>
         /// Gets database schema information that works across different database types
@@ -600,8 +817,14 @@ namespace DynamicDasboardWebAPI.Utilities
         {
             if (connection == null) throw new ArgumentNullException(nameof(connection));
 
+            bool wasOpen = connection.State == ConnectionState.Open;
+
             try
             {
+                // Ensure the connection is open
+                if (!wasOpen)
+                    connection.Open();
+
                 string sql;
 
                 if (connection.GetType().Name.Contains("SqlConnection"))
@@ -684,6 +907,12 @@ namespace DynamicDasboardWebAPI.Utilities
             catch (Exception ex)
             {
                 throw new DatabaseException($"Error retrieving database schema: {ex.Message}", ex);
+            }
+            finally
+            {
+                // Only close the connection if we opened it
+                if (!wasOpen && connection.State == ConnectionState.Open)
+                    connection.Close();
             }
         }
 

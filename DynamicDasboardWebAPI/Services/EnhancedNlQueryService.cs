@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models.LLM;
 using DynamicDashboardCommon.Models.DynamicDashboardCommon.Models;
+using static NlQueryRepository;
 
 namespace DynamicDasboardWebAPI.Services
 {
@@ -55,15 +56,23 @@ namespace DynamicDasboardWebAPI.Services
             {
                 _logger.LogInformation("Analyzing question: {Question} for database ID: {DatabaseId}",
                     request.Question, request.DatabaseId);
-
+                var adminDescriptions = new Dictionary<string, string>();
+                var schemaText = string.Empty;
                 // Get database metadata
-                var metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
+                DatabaseMetadataDto metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
 
                 // Format schema for LLM
-                var schemaText = FormatSchemaForLlm(metadata);
+                if (metadata != null)
+                {
+                    schemaText = FormatSchemaForLlm(metadata);
+                }
 
+                if (metadata != null && metadata.Tables != null && metadata.Tables.Count > 0)
+                {
+                    adminDescriptions = ExtractAdminDescriptions(metadata.Tables);
+                }
                 // Extract admin descriptions
-                var adminDescriptions = ExtractAdminDescriptions(metadata);
+
 
                 // Generate explanation using LLM
                 var explanation = await _llmService.GenerateExplanationAsync(
@@ -233,14 +242,21 @@ namespace DynamicDasboardWebAPI.Services
 
             try
             {
+                var adminDescriptions = new Dictionary<string, string>();
+                var schemaText = string.Empty;
                 // Get database metadata
-                var metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
+                DatabaseMetadataDto metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
 
                 // Format schema for LLM
-                var schemaText = FormatSchemaForLlm(metadata);
+                if (metadata != null)
+                {
+                    schemaText = FormatSchemaForLlm(metadata);
+                }
 
-                // Extract admin descriptions
-                var adminDescriptions = ExtractAdminDescriptions(metadata);
+                if (metadata != null && metadata.Tables != null && metadata.Tables.Count > 0)
+                {
+                    adminDescriptions = ExtractAdminDescriptions(metadata.Tables);
+                }
 
                 // Generate explanation using LLM
                 var explanation = await _llmService.GenerateExplanationAsync(
@@ -292,83 +308,152 @@ namespace DynamicDasboardWebAPI.Services
 
         #region Helper Methods
 
-        private string FormatSchemaForLlm(Dictionary<string, object> metadata)
+        //private string FormatSchemaForLlm(Dictionary<string, object> metadata)
+        //{
+        //    //to be fixed
+        //    var schema = new StringBuilder();
+
+        //    // Check if tables exist in the metadata
+        //    if (metadata.TryGetValue("tables", out var tablesObj) &&
+        //        tablesObj is List<object> tablesList &&
+        //        tablesList.Any())
+        //    {
+        //        schema.AppendLine("Tables:");
+
+        //        foreach (var tableObj in tablesList)
+        //        {
+        //            // Use dynamic to safely access nested properties
+        //            dynamic tableDynamic = tableObj;
+        //            var table = tableDynamic.tables as Table;
+        //            var columns = tableDynamic.columns as IEnumerable<Column>;
+        //            var relationships = tableDynamic.relationships as IEnumerable<Relationship>;
+
+        //            if (table == null) continue;
+
+        //            // Format table name with admin name if available
+        //            var tableName = !string.IsNullOrEmpty(table.AdminTableName) ?
+        //                $"{table.DBTableName} (Admin: \"{table.AdminTableName}\")" :
+        //                table.DBTableName;
+
+        //            schema.Append($"- {tableName}");
+
+        //            if (!string.IsNullOrEmpty(table.AdminDescription))
+        //            {
+        //                schema.Append($" - {table.AdminDescription}");
+        //            }
+        //            schema.AppendLine();
+
+        //            // Add columns
+        //            if (columns != null && columns.Any())
+        //            {
+        //                foreach (var column in columns)
+        //                {
+        //                    var columnName = !string.IsNullOrEmpty(column.AdminColumnName) ?
+        //                        $"{column.DBColumnName} (Admin: \"{column.AdminColumnName}\")" :
+        //                        column.DBColumnName;
+
+        //                    schema.Append($"  - {columnName}: {column.DataType}");
+
+        //                    if (!string.IsNullOrEmpty(column.AdminDescription))
+        //                    {
+        //                        schema.Append($" - {column.AdminDescription}");
+        //                    }
+        //                    schema.AppendLine();
+        //                }
+        //            }
+
+        //            // Add relationships for this table
+        //            if (relationships != null && relationships.Any())
+        //            {
+        //                schema.AppendLine("  Relationships:");
+        //                foreach (var relationship in relationships)
+        //                {
+        //                    // You might want to use the table and column names directly from the relationship
+        //                    schema.AppendLine($"    - {relationship.RelationshipType}: " +
+        //                        $"{relationship.TableID}.{relationship.ColumnID} -> " +
+        //                        $"{relationship.RelatedTableID}.{relationship.RelatedColumnID}");
+        //                }
+        //            }
+
+        //            schema.AppendLine(); // Extra line between tables
+        //        }
+        //    }
+        //    else
+        //    {
+        //        schema.AppendLine("No tables found in metadata.");
+        //    }
+
+        //    return schema.ToString();
+        //}
+
+        private string FormatSchemaForLlm(DatabaseMetadataDto metadata)
         {
-            //to be fixed
-            var schema = new StringBuilder();
-
-            // Check if tables exist in the metadata
-            if (metadata.TryGetValue("tables", out var tablesObj) &&
-                tablesObj is List<object> tablesList &&
-                tablesList.Any())
+            if (metadata?.Tables == null || !metadata.Tables.Any())
             {
-                schema.AppendLine("Tables:");
+                return "No tables found in metadata.";
+            }
 
-                foreach (var tableObj in tablesList)
+            var schemaBuilder = new StringBuilder();
+            schemaBuilder.AppendLine("Database Schema:");
+
+            foreach (var tableMetadata in metadata.Tables)
+            {
+                var table = tableMetadata.Table;
+                // Table header
+                schemaBuilder.Append($"- {table.DBTableName}");
+                if (!string.IsNullOrWhiteSpace(table.AdminTableName))
                 {
-                    // Use dynamic to safely access nested properties
-                    dynamic tableDynamic = tableObj;
-                    var table = tableDynamic.tables as Table;
-                    var columns = tableDynamic.columns as IEnumerable<Column>;
-                    var relationships = tableDynamic.relationships as IEnumerable<Relationship>;
-
-                    if (table == null) continue;
-
-                    // Format table name with admin name if available
-                    var tableName = !string.IsNullOrEmpty(table.AdminTableName) ?
-                        $"{table.DBTableName} (Admin: \"{table.AdminTableName}\")" :
-                        table.DBTableName;
-
-                    schema.Append($"- {tableName}");
-
-                    if (!string.IsNullOrEmpty(table.AdminDescription))
-                    {
-                        schema.Append($" - {table.AdminDescription}");
-                    }
-                    schema.AppendLine();
-
-                    // Add columns
-                    if (columns != null && columns.Any())
-                    {
-                        foreach (var column in columns)
-                        {
-                            var columnName = !string.IsNullOrEmpty(column.AdminColumnName) ?
-                                $"{column.DBColumnName} (Admin: \"{column.AdminColumnName}\")" :
-                                column.DBColumnName;
-
-                            schema.Append($"  - {columnName}: {column.DataType}");
-
-                            if (!string.IsNullOrEmpty(column.AdminDescription))
-                            {
-                                schema.Append($" - {column.AdminDescription}");
-                            }
-                            schema.AppendLine();
-                        }
-                    }
-
-                    // Add relationships for this table
-                    if (relationships != null && relationships.Any())
-                    {
-                        schema.AppendLine("  Relationships:");
-                        foreach (var relationship in relationships)
-                        {
-                            // You might want to use the table and column names directly from the relationship
-                            schema.AppendLine($"    - {relationship.RelationshipType}: " +
-                                $"{relationship.TableID}.{relationship.ColumnID} -> " +
-                                $"{relationship.RelatedTableID}.{relationship.RelatedColumnID}");
-                        }
-                    }
-
-                    schema.AppendLine(); // Extra line between tables
+                    schemaBuilder.Append($" (Admin Name: {table.AdminTableName})");
                 }
-            }
-            else
-            {
-                schema.AppendLine("No tables found in metadata.");
+                if (!string.IsNullOrWhiteSpace(table.AdminDescription))
+                {
+                    schemaBuilder.Append($" - {table.AdminDescription}");
+                }
+                schemaBuilder.AppendLine();
+
+                // Columns
+                if (tableMetadata.Columns != null)
+                {
+                    schemaBuilder.AppendLine("  Columns:");
+                    foreach (var column in tableMetadata.Columns)
+                    {
+                        schemaBuilder.Append($"    - {column.DBColumnName} ({column.DataType})");
+
+                        if (!string.IsNullOrWhiteSpace(column.AdminColumnName))
+                        {
+                            schemaBuilder.Append($" (Admin Name: {column.AdminColumnName})");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(column.AdminDescription))
+                        {
+                            schemaBuilder.Append($" - {column.AdminDescription}");
+                        }
+
+                        schemaBuilder.AppendLine();
+                    }
+                }
+
+                // Relationships
+                if (tableMetadata.Relationships != null && tableMetadata.Relationships.Any())
+                {
+                    schemaBuilder.AppendLine("  Relationships:");
+                    foreach (var relationship in tableMetadata.Relationships)
+                    {
+                        schemaBuilder.AppendLine(
+                            $"    - {relationship.RelationshipType}: " +
+                            $"Table {relationship.TableID}, Column {relationship.ColumnID} " +
+                            $"-> Related Table {relationship.RelatedTableID}, Column {relationship.RelatedColumnID}"
+                        );
+                    }
+                }
+
+                schemaBuilder.AppendLine(); // Separator between tables
             }
 
-            return schema.ToString();
+            return schemaBuilder.ToString();
         }
+
+
 
         // Helper method to get table name
         // Helper method to get table name
@@ -393,16 +478,20 @@ namespace DynamicDasboardWebAPI.Services
             return $"Column_{columnId}";
         }
 
-        private Dictionary<string, string> ExtractAdminDescriptions(Dictionary<string, object> metadata)
+        private Dictionary<string, string> ExtractAdminDescriptions(List<TableMetadataDto> tableMetadataDtos)
         {
             var descriptions = new Dictionary<string, string>();
 
-            // Extract table descriptions
-            if (metadata.TryGetValue("tables", out var tablesObj))
+            if (tableMetadataDtos == null || !tableMetadataDtos.Any())
             {
+                return descriptions;
+            }
 
-                IEnumerable<Table> tables = (IEnumerable<Table>)tablesObj;
-                foreach (var table in tables)
+            // Extract table descriptions
+            foreach (var tableMetadata in tableMetadataDtos)
+            {
+                var table = tableMetadata.Table;
+                if (table != null && !string.IsNullOrEmpty(table.DBTableName))
                 {
                     if (!string.IsNullOrEmpty(table.AdminTableName))
                     {
@@ -414,22 +503,24 @@ namespace DynamicDasboardWebAPI.Services
                         descriptions[$"{table.DBTableName} description"] = table.AdminDescription;
                     }
                 }
-            }
 
-            // Extract column descriptions
-            if (metadata.TryGetValue("columns", out var columnsObj))
-            {
-                IEnumerable<Column> columns = (IEnumerable < Column >)columnsObj;
-                foreach (var column in columns)
+                // Extract column descriptions for this table
+                if (tableMetadata.Columns != null)
                 {
-                    if (!string.IsNullOrEmpty(column.AdminColumnName))
+                    foreach (var column in tableMetadata.Columns)
                     {
-                        descriptions[column.DBColumnName] = column.AdminColumnName;
-                    }
+                        if (column != null && !string.IsNullOrEmpty(column.DBColumnName))
+                        {
+                            if (!string.IsNullOrEmpty(column.AdminColumnName))
+                            {
+                                descriptions[column.DBColumnName] = column.AdminColumnName;
+                            }
 
-                    if (!string.IsNullOrEmpty(column.AdminDescription))
-                    {
-                        descriptions[$"{column.DBColumnName} description"] = column.AdminDescription;
+                            if (!string.IsNullOrEmpty(column.AdminDescription))
+                            {
+                                descriptions[$"{column.DBColumnName} description"] = column.AdminDescription;
+                            }
+                        }
                     }
                 }
             }

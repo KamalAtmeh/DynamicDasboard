@@ -71,6 +71,40 @@ builder.Services.AddScoped<DatabaseService>();
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });
 
+builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
+{
+    return (clientName) =>
+    {
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+
+        // Read timeout dynamically from configuration
+        var timeoutSeconds = configuration.GetValue<int>("LlmService:Timeout");
+        if (timeoutSeconds <= 0) timeoutSeconds = 100; // Default timeout of 100 seconds
+
+        var client = new HttpClient();
+        client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+        // Apply client-specific configuration
+        if (clientName == "ClaudeApi")
+        {
+            var apiEndpoint = configuration["LlmService:ClaudeEndpoint"];
+            if (!string.IsNullOrEmpty(apiEndpoint))
+                client.BaseAddress = new Uri(apiEndpoint);
+
+            // Add Claude-specific headers
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+        }
+        else if (clientName == "DeepSeekApi")
+        {
+            var apiEndpoint = configuration["LlmService:DeepSeekEndpoint"];
+            if (!string.IsNullOrEmpty(apiEndpoint))
+                client.BaseAddress = new Uri(apiEndpoint);
+        }
+
+        return client;
+    };
+});
+
 // Register Swagger for API documentation
 builder.Services.AddSwaggerGen();
 

@@ -36,13 +36,25 @@ public class DbConnectionFactory
     {
         var (connectionString, databaseType) = GetConnectionInfo(databaseId);
 
-        return databaseType switch
+        if (databaseType == (int)(DatabaseTypeEnum.SQLServer))
         {
-            (int)(DatabaseTypeEnum.SQLServer) => new SqlConnection(connectionString),
-            (int)(DatabaseTypeEnum.MySQL) => new MySqlConnection(connectionString),
-            (int)(DatabaseTypeEnum.Oracle) => new OracleConnection(connectionString),
-            _ => throw new ArgumentException($"Unsupported database type: {databaseType}")
-        };
+            // Enable MARS for SQL Server connections
+            var builder = new SqlConnectionStringBuilder(connectionString);
+           // builder.MultipleActiveResultSets = true; // Enable MARS
+            return new SqlConnection(builder.ConnectionString);
+        }
+        else if (databaseType == (int)(DatabaseTypeEnum.MySQL))
+        {
+            return new MySqlConnection(connectionString);
+        }
+        else if (databaseType == (int)(DatabaseTypeEnum.Oracle))
+        {
+            return new OracleConnection(connectionString);
+        }
+        else
+        {
+            throw new ArgumentException($"Unsupported database type: {databaseType}");
+        }
     }
 
     /// <summary>
@@ -59,7 +71,7 @@ public class DbConnectionFactory
 
         try
         {
-             connection = databaseType switch
+            connection = databaseType switch
             {
                 (int)(DatabaseTypeEnum.SQLServer) => new SqlConnection(connectionString),
                 (int)(DatabaseTypeEnum.MySQL) => new MySqlConnection(connectionString),
@@ -116,7 +128,7 @@ public class DbConnectionFactory
         {
             if (string.IsNullOrEmpty(connectionString))
             {
-               connectionString = BuildConnectionString(database);
+                connectionString = BuildConnectionString(database);
             }
 
             using IDbConnection connection = database.TypeID switch
@@ -141,7 +153,7 @@ public class DbConnectionFactory
             }
 
             return true;
-    }
+        }
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Connection test failed for database: {Name}", database.DataBaseViewingName);
@@ -153,33 +165,33 @@ public class DbConnectionFactory
     /// Builds a connection string from a Database object
     /// </summary>
     public string BuildConnectionString(Database database)
-{
+    {
         if (database == null)
             return string.Empty;
 
-    // Use existing connection string if provided
-    if (!string.IsNullOrWhiteSpace(database.ConnectionString))
-        return database.ConnectionString;
+        // Use existing connection string if provided
+        if (!string.IsNullOrWhiteSpace(database.ConnectionString))
+            return database.ConnectionString;
 
-    // Get the database type name and use it to build the connection string
-    
+        // Get the database type name and use it to build the connection string
 
-    return database.TypeID switch
+
+        return database.TypeID switch
+        {
+            (int)DatabaseTypeEnum.SQLServer => BuildSqlServerConnectionString(database),
+            (int)DatabaseTypeEnum.MySQL => BuildMySqlConnectionString(database),
+            (int)DatabaseTypeEnum.Oracle => BuildOracleConnectionString(database)
+        };
+    }
+
+    /// <summary>
+    /// Clears the connection string cache
+    /// </summary>
+    public void ClearCache()
     {
-        (int)DatabaseTypeEnum.SQLServer => BuildSqlServerConnectionString(database),
-        (int)DatabaseTypeEnum.MySQL => BuildMySqlConnectionString(database),
-        (int)DatabaseTypeEnum.Oracle => BuildOracleConnectionString(database)
-    };
-}
-
-/// <summary>
-/// Clears the connection string cache
-/// </summary>
-public void ClearCache()
-{
-    _connectionStringCache.Clear();
-    _databaseTypeCache.Clear();
-}
+        _connectionStringCache.Clear();
+        _databaseTypeCache.Clear();
+    }
 
     // Private helper methods for getting connection info and building connection strings
     /// <summary>
@@ -268,90 +280,255 @@ public void ClearCache()
         return (connectionString, databaseTypeId);
     }
 
-// Connection string builder methods
-private string BuildSqlServerConnectionString(Database database)
-{
-    var builder = new SqlConnectionStringBuilder
+    // Connection string builder methods
+    private string BuildSqlServerConnectionString(Database database)
     {
-        DataSource = database.ServerAddress,
-        InitialCatalog = database.DatabaseName,
-        ConnectTimeout = 30
-    };
+        var builder = new SqlConnectionStringBuilder
+        {
+            DataSource = database.ServerAddress,
+            InitialCatalog = database.DatabaseName,
+            ConnectTimeout = 30,
+           // MultipleActiveResultSets = true
+        };
 
-    // If credentials are encrypted, decrypt them
-    string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
+        // If credentials are encrypted, decrypt them
+        string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
 
-    if (database.Username == null)
-    {
-        builder.IntegratedSecurity = true;
-    }
-    else
-    {
-        builder.UserID = database.Username;
-        builder.Password = decryptedPassword;
-    }
+        if (database.Username == null)
+        {
+            builder.IntegratedSecurity = true;
+        }
+        else
+        {
+            builder.UserID = database.Username;
+            builder.Password = decryptedPassword;
+        }
 
-    return builder.ConnectionString;
-}
-
-private string BuildMySqlConnectionString(Database database)
-{
-    var builder = new MySqlConnectionStringBuilder
-    {
-        Server = database.ServerAddress,
-        Database = database.DatabaseName,
-        Port = database.Port.HasValue ? (uint)database.Port.Value : 3306u,
-        ConnectionTimeout = 30
-    };
-
-    // If credentials are encrypted, decrypt them
-    string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
-
-    if (database.Username != null)
-    {
-        builder.UserID = database.Username;
-        builder.Password = decryptedPassword;
+        return builder.ConnectionString;
     }
 
-    return builder.ConnectionString;
-}
-
-private string BuildOracleConnectionString(Database database)
-{
-    var builder = new OracleConnectionStringBuilder
+    private string BuildMySqlConnectionString(Database database)
     {
-        DataSource = database.ServerAddress,
-        ConnectionTimeout = 30
-    };
+        var builder = new MySqlConnectionStringBuilder
+        {
+            Server = database.ServerAddress,
+            Database = database.DatabaseName,
+            Port = database.Port.HasValue ? (uint)database.Port.Value : 3306u,
+            ConnectionTimeout = 30
+        };
 
-    // If credentials are encrypted, decrypt them
-    string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
+        // If credentials are encrypted, decrypt them
+        string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
 
-    if (database.Username != null)
-    {
-        builder.UserID = database.Username;
-        builder.Password = decryptedPassword;
+        if (database.Username != null)
+        {
+            builder.UserID = database.Username;
+            builder.Password = decryptedPassword;
+        }
+
+        return builder.ConnectionString;
     }
 
-    return builder.ConnectionString;
-}
-
-private string DecryptCredentials(string encryptedCredentials)
-{
-    if (string.IsNullOrEmpty(encryptedCredentials))
-        return string.Empty;
-
-    try
+    private string BuildOracleConnectionString(Database database)
     {
-        // TODO: Implement actual decryption logic
-        // In production, you should use a secure decryption method
-        // For example: return _cryptoService.Decrypt(encryptedCredentials);
-        return encryptedCredentials; // Placeholder for now
+        var builder = new OracleConnectionStringBuilder
+        {
+            DataSource = database.ServerAddress,
+            ConnectionTimeout = 30
+        };
+
+        // If credentials are encrypted, decrypt them
+        string decryptedPassword = DecryptCredentials(database.EncryptedCredentials);
+
+        if (database.Username != null)
+        {
+            builder.UserID = database.Username;
+            builder.Password = decryptedPassword;
+        }
+
+        return builder.ConnectionString;
     }
-    catch (Exception ex)
+
+    private string DecryptCredentials(string encryptedCredentials)
     {
-        _logger?.LogError(ex, "Error decrypting credentials");
-        return string.Empty;
+        if (string.IsNullOrEmpty(encryptedCredentials))
+            return string.Empty;
+
+        try
+        {
+            // TODO: Implement actual decryption logic
+            // In production, you should use a secure decryption method
+            // For example: return _cryptoService.Decrypt(encryptedCredentials);
+            return encryptedCredentials; // Placeholder for now
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error decrypting credentials");
+            return string.Empty;
+        }
     }
-}
+
+    /// <summary>
+    /// Executes an operation with proper connection management for a specific database
+    /// </summary>
+    public async Task<T> ExecuteWithConnectionAsync<T>(
+        int databaseId,
+        Func<IDbConnection, Task<T>> operation,
+        int retryCount = 3,
+        int initialDelayMs = 1000)
+    {
+        if (operation == null) throw new ArgumentNullException(nameof(operation));
+        if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
+
+        Exception lastException = null;
+        int delay = initialDelayMs;
+
+        for (int i = 0; i < retryCount; i++)
+        {
+            IDbConnection connection = null;
+
+            try
+            {
+                // Create and open connection
+                connection = await CreateOpenConnectionAsync(databaseId);
+
+                // Execute the operation
+                var result = await operation(connection);
+
+                // Update connection status to successful
+                try
+                {
+                    await UpdateConnectionStatusAsync(databaseId, true);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to update connection status for database {DatabaseId}", databaseId);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                _logger?.LogWarning(ex, "Connection attempt {Attempt} failed for database {DatabaseId}", i + 1, databaseId);
+
+                if (i < retryCount - 1)
+                {
+                    await Task.Delay(delay);
+                    delay *= 2; // Exponential backoff
+                }
+            }
+            finally
+            {
+                // Clean up the connection if we created it
+                if (connection != null && connection.State != ConnectionState.Closed)
+                {
+                    try
+                    {
+                        connection.Close();
+                        (connection as IDisposable)?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Error closing database connection for database {DatabaseId}", databaseId);
+                    }
+                }
+            }
+        }
+
+        // Update connection status to failed
+        try
+        {
+            await UpdateConnectionStatusAsync(databaseId, false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to update connection status for database {DatabaseId}", databaseId);
+        }
+
+        _logger?.LogError(lastException, "Failed to execute operation on database {DatabaseId} after {RetryCount} attempts", databaseId, retryCount);
+        throw new DatabaseException($"Failed to execute operation on database {databaseId} after {retryCount} attempts", lastException);
+    }
+
+    /// <summary>
+    /// Executes an operation with proper connection management for a specific database (void return)
+    /// </summary>
+    public async Task ExecuteWithConnectionAsync(
+        int databaseId,
+        Func<IDbConnection, Task> operation,
+        int retryCount = 3,
+        int initialDelayMs = 1000)
+    {
+        await ExecuteWithConnectionAsync<object>(
+            databaseId,
+            async (conn) =>
+            {
+                await operation(conn);
+                return null;
+            },
+            retryCount,
+            initialDelayMs);
+    }
+
+    /// <summary>
+    /// Executes an operation with proper connection management using the application database connection
+    /// </summary>
+    public async Task<T> ExecuteWithAppConnectionAsync<T>(Func<IDbConnection, Task<T>> operation)
+    {
+        if (operation == null) throw new ArgumentNullException(nameof(operation));
+
+        bool wasOpen = _appDbConnection.State == ConnectionState.Open;
+
+        try
+        {
+            if (!wasOpen)
+                _appDbConnection.Open();
+
+            return await operation(_appDbConnection);
+        }
+        finally
+        {
+            if (!wasOpen && _appDbConnection.State == ConnectionState.Open)
+                _appDbConnection.Close();
+        }
+    }
+
+    /// <summary>
+    /// Executes an operation with proper connection management using the application database connection (void return)
+    /// </summary>
+    public async Task ExecuteWithAppConnectionAsync(Func<IDbConnection, Task> operation)
+    {
+        if (operation == null) throw new ArgumentNullException(nameof(operation));
+
+        bool wasOpen = _appDbConnection.State == ConnectionState.Open;
+
+        try
+        {
+            if (!wasOpen)
+                _appDbConnection.Open();
+
+            await operation(_appDbConnection);
+        }
+        finally
+        {
+            if (!wasOpen && _appDbConnection.State == ConnectionState.Open)
+                _appDbConnection.Close();
+        }
+    }
+
+    /// <summary>
+    /// Updates the connection status for a database
+    /// </summary>
+    private async Task UpdateConnectionStatusAsync(int databaseId, bool status)
+    {
+        await ExecuteWithAppConnectionAsync(async conn =>
+        {
+            await conn.ExecuteAsync(@"
+                UPDATE Databases 
+                SET LastConnectionStatus = @Status, 
+                    LastTransactionDate = GETDATE()
+                WHERE DatabaseID = @DatabaseID",
+                new { Status = status, DatabaseID = databaseId });
+        });
+    }
 }

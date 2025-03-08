@@ -6,6 +6,8 @@ using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using System.IO;
 using System.Threading.Tasks;
+using DynamicDasboardWebAPI.Services.LLM;
+using System.Configuration;
 
 namespace DynamicDasboardWebAPI.Services
 {
@@ -92,6 +94,7 @@ namespace DynamicDasboardWebAPI.Services
                 // Generate the SQL query or validate the question
                 var apiKey = _config["DeepSeek:ApiKey"];
                 var endpoint = _config["DeepSeek:Endpoint"];
+                int timeoutSeconds = _config.GetValue<int>("LlmService: Timeout", 150); 
 
                 var systemMessage = $@"
     You are a SQL expert. Given the following database schema:
@@ -127,6 +130,7 @@ namespace DynamicDasboardWebAPI.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+                _httpClient.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 
                 var response = await _httpClient.PostAsync(
                     endpoint,
