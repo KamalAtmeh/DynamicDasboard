@@ -4,6 +4,7 @@ using DynamicDashboardCommon.Models.LLM;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MySqlX.XDevAPI;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -274,24 +275,24 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
         private async Task<string> CallClaudeApiAsync(string systemPrompt, string userPrompt)
         {
+
+            var objSystemPrompt = new List<object>
+                {
+
+                    new
+                    {
+                        type = "text",
+                        text = systemPrompt,
+                        cache_control = new { type = "ephemeral" }
+                    }
+                };
             // Prepare request
             // Prepare request
             var requestBody = new
             {
                 model = _model,
+                system = objSystemPrompt,
                 //system = systemPrompt, // System prompt as a top-level parameter
-                system = new[]
-    {
-        new
-        {
-            type = "text",
-            text = systemPrompt,
-            cache_control = new
-            {
-                type = "ephemeral"
-            }
-        }
-    },
                 messages = new[]
                 {
                 new { role = "user", content = userPrompt
@@ -334,6 +335,8 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Claude API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
             }
+            
+
 
             var responseContent = await response.Content.ReadAsStringAsync();
             var jsonResponse = JsonDocument.Parse(responseContent);
@@ -345,6 +348,13 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 .First()
                 .GetProperty("text")
                 .GetString();
+
+            var usage = jsonResponse.RootElement
+                .GetProperty("usage");
+
+            //var state = result.Usage.CacheCreationInputTokens;
+            //                result.Usage.CacheReadInputTokens,
+            //                result.Usage.InputTokens);
 
             return messageContent;
         }
