@@ -55,6 +55,12 @@
             Gets or sets the description provided by the admin for the column.
             </summary>
         </member>
+        <member name="P:DynamicDashboardCommon.Models.Column.IsLookupColumn">
+            <summary>
+            Gets or sets a value indicating whether this column is a lookup column
+            that references data in another table or represents a key concept.
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.Database">
             <summary>
             Represents a database connection in the system with comprehensive details
@@ -173,6 +179,221 @@
         <member name="T:DynamicDashboardCommon.Models.DataViewingTypeEnum">
             <summary>
             Enum representing predefined data viewing types
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisResult">
+            <summary>
+            Represents the result of a schema analysis operation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.Success">
+            <summary>
+            Gets or sets a value indicating whether the analysis was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.ErrorMessage">
+            <summary>
+            Gets or sets the error message if the analysis failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.RawLLMResponse">
+            <summary>
+            Gets or sets the raw LLM response for debugging.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.AnalysisData">
+            <summary>
+            Gets or sets the analysis data.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisData">
+            <summary>
+            Contains the data from a schema analysis operation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.TableDescriptions">
+            <summary>
+            Gets or sets the suggested descriptions for tables.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.ColumnDescriptions">
+            <summary>
+            Gets or sets the suggested descriptions for columns.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.PotentialConflicts">
+            <summary>
+            Gets or sets the potential conflicts detected in the schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.SuggestedRelationships">
+            <summary>
+            Gets or sets the suggested relationships between tables.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.UnclearElements">
+            <summary>
+            Gets or sets the unclear elements detected in the schema.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TableDescription">
+            <summary>
+            Represents a suggested description for a table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableDescription.TableName">
+            <summary>
+            Gets or sets the name of the table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableDescription.SuggestedName">
+            <summary>
+            Gets or sets the suggested user-friendly name for the table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableDescription.SuggestedDescription">
+            <summary>
+            Gets or sets the suggested description for the table.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ColumnDescription">
+            <summary>
+            Represents a suggested description for a column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnDescription.TableName">
+            <summary>
+            Gets or sets the name of the table containing the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnDescription.ColumnName">
+            <summary>
+            Gets or sets the name of the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnDescription.SuggestedName">
+            <summary>
+            Gets or sets the suggested user-friendly name for the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnDescription.SuggestedDescription">
+            <summary>
+            Gets or sets the suggested description for the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnDescription.IsLookupColumn">
+            <summary>
+            Gets or sets a value indicating whether the column is a lookup column.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.PotentialConflict">
+            <summary>
+            Represents a potential conflict in the schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.PotentialConflict.Type">
+            <summary>
+            Gets or sets the type of the conflict ("Table" or "Column").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.PotentialConflict.Items">
+            <summary>
+            Gets or sets the items involved in the conflict.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.PotentialConflict.ConflictDescription">
+            <summary>
+            Gets or sets the description of the conflict.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ConflictItem">
+            <summary>
+            Represents an item involved in a conflict.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConflictItem.Name">
+            <summary>
+            Gets or sets the name of the item.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConflictItem.TableName">
+            <summary>
+            Gets or sets the name of the table (for columns).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConflictItem.SuggestedResolution">
+            <summary>
+            Gets or sets the suggested resolution for the conflict.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SuggestedRelationship">
+            <summary>
+            Represents a suggested relationship between tables.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.SourceTable">
+            <summary>
+            Gets or sets the name of the source table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.SourceColumn">
+            <summary>
+            Gets or sets the name of the source column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.TargetTable">
+            <summary>
+            Gets or sets the name of the target table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.TargetColumn">
+            <summary>
+            Gets or sets the name of the target column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.RelationshipType">
+            <summary>
+            Gets or sets the type of the relationship.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.Confidence">
+            <summary>
+            Gets or sets the confidence score of the suggested relationship.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedRelationship.Reasoning">
+            <summary>
+            Gets or sets the reasoning behind the suggested relationship.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.UnclearElement">
+            <summary>
+            Represents an unclear element in the schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UnclearElement.Type">
+            <summary>
+            Gets or sets the type of the element ("Table" or "Column").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UnclearElement.Name">
+            <summary>
+            Gets or sets the name of the element.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UnclearElement.TableName">
+            <summary>
+            Gets or sets the name of the table (for columns).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UnclearElement.Issue">
+            <summary>
+            Gets or sets the issue with the element.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UnclearElement.Suggestion">
+            <summary>
+            Gets or sets the suggested improvement for the element.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.ExceptionDetails">

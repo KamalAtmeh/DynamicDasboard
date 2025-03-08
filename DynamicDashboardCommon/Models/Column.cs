@@ -46,5 +46,11 @@ namespace DynamicDashboardCommon.Models
         /// Gets or sets the description provided by the admin for the column.
         /// </summary>
         public string AdminDescription { get; set; } // Description provided by the admin
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this column is a lookup column
+        /// that references data in another table or represents a key concept.
+        /// </summary>
+        public bool IsLookupColumn { get; set; }
     }
 }

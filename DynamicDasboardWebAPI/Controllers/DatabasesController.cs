@@ -28,6 +28,13 @@ namespace DynamicDasboardWebAPI.Controllers
             return Ok(databases);
         }
 
+        [HttpGet("{databaseID}")]
+        public async Task<ActionResult<IEnumerable<Database>>> GetDataBaseByID(int databaseID)
+        {
+            var databases = await _service.GetDatabaseByIdAsync(databaseID);
+            return Ok(databases);
+        }
+
         [HttpPost]
         public async Task<ActionResult<int>> AddDatabase([FromBody] Database database)
         {

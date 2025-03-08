@@ -1,0 +1,283 @@
+﻿@using DynamicDashboardCommon.Models
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Schema Visualization</h5>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ZoomIn"><i class="fas fa-search-plus"></i></button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ZoomOut"><i class="fas fa-search-minus"></i></button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetView"><i class="fas fa-redo"></i></button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="schema-visualization" style="height: 600px; width: 100%;">
+            @if (isLoading)
+            {
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="ms-2">Loading schema visualization...</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool isCytoscapeLoaded = false;
+    private bool needsRender = true;
+    private DotNetObjectReference<SchemaVisualization> objRef;
+    private IJSObjectReference? jsModule;
+
+    [Parameter]
+    public List<Table> Tables { get; set; } = new List<Table>();
+
+    [Parameter]
+    public List<Column> Columns { get; set; } = new List<Column>();
+
+    [Parameter]
+    public List<Relationship> Relationships { get; set; } = new List<Relationship>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await InitializeJs();
+        }
+
+        if (isCytoscapeLoaded && needsRender && Tables.Any() && Columns.Any())
+        {
+            needsRender = false;
+            await RenderSchema();
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task InitializeJs()
+    {
+        try
+        {
+            // Load Cytoscape and initialize visualization
+            await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./components/schemaVisualization.razor.js");
+
+            var isLoaded = await JSRuntime.InvokeAsync<bool>("schemaVisualization.isCytoscapeLoaded");
+            if (!isLoaded)
+            {
+                await JSRuntime.InvokeVoidAsync("schemaVisualization.loadCytoscape");
+            }
+
+            await JSRuntime.InvokeVoidAsync("schemaVisualization.initialize", objRef, "#schema-visualization");
+            isCytoscapeLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing JS: {ex.Message}");
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Tables.Count > 0 || Columns.Count > 0 || Relationships.Count > 0)
+        {
+            needsRender = true;
+        }
+    }
+
+    public async Task ZoomIn() => await JSRuntime.InvokeVoidAsync("schemaVisualization.zoomIn");
+    public async Task ZoomOut() => await JSRuntime.InvokeVoidAsync("schemaVisualization.zoomOut");
+    public async Task ResetView() => await JSRuntime.InvokeVoidAsync("schemaVisualization.resetView");
+
+    private async Task RenderSchema()
+    {
+        try
+        {
+            var elements = new List<object>();
+
+            // Generate nodes
+            foreach (var table in Tables)
+            {
+                elements.Add(new
+                {
+                    group = "nodes",
+                    data = new
+                    {
+                        id = $"table_{table.TableID}",
+                        label = string.IsNullOrEmpty(table.AdminTableName) ? table.DBTableName : table.AdminTableName,
+                        type = "table",
+                        parent = ""
+                    }
+                });
+
+                foreach (var column in Columns.Where(c => c.TableID == table.TableID))
+                {
+                    elements.Add(new
+                    {
+                        group = "nodes",
+                        data = new
+                        {
+                            id = $"column_{column.ColumnID}",
+                            label = string.IsNullOrEmpty(column.AdminColumnName) ? column.DBColumnName : column.AdminColumnName,
+                            type = "column",
+                            dataType = column.DataType,
+                            isLookup = column.IsLookupColumn,
+                            parent = $"table_{table.TableID}"
+                        }
+                    });
+                }
+            }
+
+            // Generate edges
+            foreach (var rel in Relationships)
+            {
+                if (Columns.Any(c => c.ColumnID == rel.ColumnID) && Columns.Any(c => c.ColumnID == rel.RelatedColumnID))
+                {
+                    elements.Add(new
+                    {
+                        group = "edges",
+                        data = new
+                        {
+                            id = $"rel_{rel.RelationshipID}",
+                            source = $"column_{rel.ColumnID}",
+                            target = $"column_{rel.RelatedColumnID}",
+                            label = rel.RelationshipType
+                        }
+                    });
+                }
+            }
+
+            await JSRuntime.InvokeVoidAsync("schemaVisualization.render", elements);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error rendering schema: {ex.Message}");
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void HandleNodeClick(string nodeId, string nodeType)
+    {
+        // Handle node click events from JavaScript
+        Console.WriteLine($"Node clicked: {nodeId} ({nodeType})");
+    }
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
+        jsModule?.DisposeAsync().AsTask();
+    }
+}
+
+<script suppress-error="BL9992">
+    window.schemaVisualization = {
+        cy: null,
+        dotNetHelper: null,
+
+        isCytoscapeLoaded: () => typeof cytoscape !== 'undefined',
+
+        loadCytoscape: async () => {
+            return new Promise((resolve, reject) => {
+                if (typeof cytoscape !== 'undefined') return resolve(true);
+
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js';
+                script.integrity = 'sha512-H1fK+v/+qZX0cW0VC0hNUJdZDDo9lANPQW06iZZqJt3zn1QTYm4XQ4yWLwz+cbQJa+G9GqgXDGUb5ejtnEGmA==';
+                script.crossOrigin = 'anonymous';
+                script.onload = () => resolve(true);
+                script.onerror = () => reject(new Error('Failed to load Cytoscape.js'));
+                document.head.appendChild(script);
+            });
+        },
+
+        initialize: (dotNetHelper, container) => {
+            window.schemaVisualization.dotNetHelper = dotNetHelper;
+            window.schemaVisualization.container = container;
+        },
+
+        render: (elements) => {
+            if (window.schemaVisualization.cy) {
+                window.schemaVisualization.cy.destroy();
+            }
+
+            window.schemaVisualization.cy = cytoscape({
+                container: document.querySelector(window.schemaVisualization.container),
+                elements: elements,
+                layout: {
+                    name: 'cose',
+                    nodeDimensionsIncludeLabels: true,
+                    idealEdgeLength: 100,
+                    nodeOverlap: 20,
+                    padding: 30
+                },
+                style: [
+                    {
+                        selector: 'node[type="table"]',
+                        style: {
+                            'shape': 'roundrectangle',
+                            'background-color': '#4e73df',
+                            'label': 'data(label)',
+                            'color': 'white',
+                            'padding': '15px',
+                            'text-valign': 'top',
+                            'text-margin-y': 8
+                        }
+                    },
+                    {
+                        selector: 'node[type="column"]',
+                        style: {
+                            'shape': 'roundrectangle',
+                            'background-color': '#f8f9fa',
+                            'border-color': '#d1d3e2',
+                            'border-width': 1,
+                            'label': 'data(label)',
+                            'color': '#3a3b45',
+                            'padding': '5px'
+                        }
+                    },
+                    {
+                        selector: 'node[isLookup="true"]',
+                        style: {
+                            'background-color': '#36b9cc',
+                            'color': 'white'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#dddfeb',
+                            'target-arrow-color': '#dddfeb',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier'
+                        }
+                    }
+                ]
+            });
+
+            // Event handlers
+            window.schemaVisualization.cy.on('tap', 'node', (evt) => {
+                const node = evt.target;
+                window.schemaVisualization.dotNetHelper.invokeMethodAsync(
+                    'HandleNodeClick',
+                    node.id(),
+                    node.data('type')
+                );
+            });
+
+            window.schemaVisualization.cy.fit();
+        },
+
+        zoomIn: () => window.schemaVisualization.cy?.zoom(window.schemaVisualization.cy.zoom() * 1.2),
+        zoomOut: () => window.schemaVisualization.cy?.zoom(window.schemaVisualization.cy.zoom() / 1.2),
+        resetView: () => window.schemaVisualization.cy?.fit()
+    };
+</script>
