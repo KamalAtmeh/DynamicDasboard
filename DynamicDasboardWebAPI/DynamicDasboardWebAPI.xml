@@ -517,11 +517,14 @@
             Service for managing database operations including connections, metadata, and queries.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DatabaseRepository,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DatabaseRepository,DynamicDasboardWebAPI.Repositories.TableRepository,DynamicDasboardWebAPI.Repositories.ColumnRepository,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DatabaseService"/> class.
             </summary>
             <param name="repository">The repository for database operations.</param>
+            <param name="tableRepository">The repository for table operations.</param>
+            <param name="columnRepository">The repository for column operations.</param>
+            <param name="connectionFactory">The factory for creating database connections.</param>
             <param name="logger">The logger for service operations.</param>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetAllDatabasesAsync">
@@ -553,15 +556,10 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
             <summary>
-            Tests the connection to a database using stored connection details.
-            </summary>
-            <param name="databaseId">The ID of the database to test.</param>
-            <returns>True if the connection was successful; otherwise, false.</returns>
-            <summary>
             Tests a database connection using the provided connection details.
             </summary>
-            <param name="request">The connection test request.</param>
-            <returns>The connection test result.</returns>
+            <param name="database">The database connection to test.</param>
+            <returns>True if the connection was successful; otherwise, false.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetSupportedDatabaseTypesAsync">
             <summary>
@@ -595,6 +593,35 @@
             </summary>
             <param name="typeId">The type ID.</param>
             <returns>The database type name.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.RetrieveDatabaseSchemaAsync(System.Int32)">
+            <summary>
+            Retrieves the database schema from a user's database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <returns>A collection of tables and columns from the schema.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetSavedSchemaAsync(System.Int32)">
+            <summary>
+            Retrieves schema information that has been saved in the application database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <returns>A collection of tables and columns from the saved schema.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.ConvertSchemaToDto(System.Collections.Generic.IEnumerable{System.Object})">
+            <summary>
+            Converts raw schema data to DTOs.
+            </summary>
+            <param name="schemaData">Raw schema data from the database.</param>
+            <returns>A collection of table DTOs.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.SaveDatabaseSchemaAsync(System.Int32,System.Collections.Generic.IEnumerable{DynamicDashboardCommon.Models.SchemaTableDto})">
+            <summary>
+            Saves database schema to the application database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <param name="schema">The schema to save.</param>
+            <returns>A task representing the asynchronous operation.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.EnhancedNlQueryService">
             <summary>

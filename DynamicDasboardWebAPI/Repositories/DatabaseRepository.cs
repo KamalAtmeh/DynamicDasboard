@@ -61,7 +61,7 @@ public class DatabaseRepository
                 SELECT CAST(SCOPE_IDENTITY() as int)";
 
             // Ensure necessary fields are set
-            database.IsActive = database.IsActive ?? true;
+            database.IsActive = database.IsActive;
             database.CreatedAt = DateTime.UtcNow;
 
             // Build connection string if not provided
@@ -87,14 +87,13 @@ public class DatabaseRepository
 
             const string query = @"
                     UPDATE Databases 
-                    SET Name = @Name, 
+                    SET DatabaseName = @DatabaseName, 
                         TypeID = @TypeID, 
                         ConnectionString = @ConnectionString,
                         Description = @Description,
                         DBCreationScript = @DBCreationScript,
                         IsActive = @IsActive,
                         ServerAddress = @ServerAddress, 
-                        DatabaseName = @DatabaseName, 
                         Port = @Port, 
                         Username = @Username, 
                         EncryptedCredentials = @EncryptedCredentials

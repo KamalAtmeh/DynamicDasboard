@@ -15,7 +15,7 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Name of the database connection
         /// </summary>
-        public string DataBaseViewingName { get; set; }
+        public string DataBaseViewingName { get; set; } = string.Empty;
 
         /// <summary>
         /// Type ID of the database (Foreign key to DatabaseTypes)
@@ -25,27 +25,27 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Server address for the database connection
         /// </summary>
-        public string ServerAddress { get; set; }
+        public string ServerAddress { get; set; } = string.Empty;
 
         /// <summary>
         /// Actual name of the database
         /// </summary>
-        public string DatabaseName { get; set; }
+        public string DatabaseName { get; set; } = string.Empty;
 
         /// <summary>
         /// Port number for the database connection
         /// </summary>
-        public int? Port { get; set; }
+        public int Port { get; set; } = 0;
 
         /// <summary>
         /// Username for database authentication
         /// </summary>
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
 
         /// <summary>
         /// Encrypted credentials for secure storage
         /// </summary>
-        public string EncryptedCredentials { get; set; }
+        public string EncryptedCredentials { get; set; } = string.Empty;
 
         /// <summary>
         /// Timestamp of database connection creation
@@ -55,17 +55,17 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// User ID of the creator
         /// </summary>
-        public int CreatedBy { get; set; }
+        public int CreatedBy { get; set; } = 0;
 
         /// <summary>
         /// Description of the database connection
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         /// <summary>
         /// Indicates if the database connection is active
         /// </summary>
-        public bool? IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
 
         /// <summary>
         /// Timestamp of the last transaction
@@ -80,16 +80,16 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Database creation script
         /// </summary>
-        public string DBCreationScript { get; set; }
+        public string DBCreationScript { get; set; } = string.Empty;
 
         /// <summary>
         /// Connection string for the database
         /// </summary>
-        public string ConnectionString { get; set; }
+        public string ConnectionString { get; set; } = string.Empty;
 
         /// <summary>
         /// Type name of the database (not a database column, but useful for display)
         /// </summary>
-        public string DatabaseTypeName { get; set; }
+        public string DatabaseTypeName { get; set; } = string.Empty;
     }
 }

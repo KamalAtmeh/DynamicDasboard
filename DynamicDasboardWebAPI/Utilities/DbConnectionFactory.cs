@@ -313,7 +313,7 @@ public class DbConnectionFactory
         {
             Server = database.ServerAddress,
             Database = database.DatabaseName,
-            Port = database.Port.HasValue ? (uint)database.Port.Value : 3306u,
+            Port = (uint)database.Port,
             ConnectionTimeout = 30
         };
 

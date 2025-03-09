@@ -173,7 +173,7 @@
 
     private bool IsActiveBool
     {
-        get => databaseModel.IsActive ?? false;
+        get => databaseModel.IsActive;
         set => databaseModel.IsActive = value;
     }
 
@@ -205,9 +205,9 @@
         databaseModel = new Database
             {
                 IsActive = true,
-                TypeID = 1, // Default to SQL Server
-                CreatedBy = 1, // Default to current user (would be dynamic in real implementation)
-                Port = null
+                TypeID = 1, // Default to SQL Server //temp
+                CreatedBy = 1, // Default to current user (would be dynamic in real implementation) //temp
+                Port = 0
             };
         isEditMode = false;
         showDatabaseForm = true;
@@ -225,7 +225,7 @@
                 Username = db.Username,
                 EncryptedCredentials = db.EncryptedCredentials,
                 Description = db.Description,
-                IsActive = db.IsActive ?? true,
+                IsActive = db.IsActive,
                 CreatedBy = db.CreatedBy,
                 DBCreationScript = db.DBCreationScript,
                 ConnectionString = db.ConnectionString
@@ -326,6 +326,7 @@
 
     private void NavigateToMetadataManager(int databaseId)
     {
-        NavigationManager.NavigateTo($"/admin/database-metadata/{databaseId}");
+//        NavigationManager.NavigateTo($"/admin/database-metadata/{databaseId}");
+        NavigationManager.NavigateTo($"/admin/dbmetadata/{databaseId}");
     }
 }

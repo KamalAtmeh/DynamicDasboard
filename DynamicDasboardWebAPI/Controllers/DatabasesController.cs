@@ -108,5 +108,36 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
+        // Add to existing DatabasesController class
+        [HttpGet("{id}/schema")]
+        public async Task<ActionResult<IEnumerable<SchemaTableDto>>> GetDatabaseSchema(int id)
+        {
+            try
+            {
+                var schema = await _service.RetrieveDatabaseSchemaAsync(id);
+                return Ok(schema);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving schema for database ID {DatabaseId}", id);
+                return StatusCode(500, "An error occurred while retrieving the database schema.");
+            }
+        }
+
+        [HttpPost("{id}/schema")]
+        public async Task<ActionResult> SaveDatabaseSchema(int id, [FromBody] IEnumerable<SchemaTableDto> schema)
+        {
+            try
+            {
+                await _service.SaveDatabaseSchemaAsync(id, schema);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving schema for database ID {DatabaseId}", id);
+                return StatusCode(500, "An error occurred while saving the database schema.");
+            }
+        }
+
     }
 }

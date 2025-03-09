@@ -82,7 +82,7 @@ builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 
         // Read timeout dynamically from configuration
         var timeoutSeconds = configuration.GetValue<int>("LlmService:Timeout");
-        if (timeoutSeconds <= 0) timeoutSeconds = 100; // Default timeout of 100 seconds
+        if (timeoutSeconds <= 0) timeoutSeconds = 500; // Default timeout of 100 seconds
 
         var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
