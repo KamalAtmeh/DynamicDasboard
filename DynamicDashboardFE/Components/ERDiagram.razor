@@ -1,0 +1,82 @@
+﻿@* @using DynamicDashboardCommon.Models
+<div class="er-diagram-container" @ref="containerRef"></div>
+
+@code {
+    [Parameter] public List<Table> Tables { get; set; }
+    [Parameter] public List<Relationship> Relationships { get; set; }
+    [Parameter] public EventCallback<Table> OnTableSelected { get; set; }
+    [Parameter] public EventCallback<Relationship> OnRelationshipSelected { get; set; }
+    [Parameter] public EventCallback<(Table, Table)> OnCreateRelationship { get; set; }
+
+    ElementReference containerRef;
+    IJSObjectReference network;
+    IJSObjectReference vis;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            vis = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/ERDiagram.js");
+            await vis.InvokeVoidAsync("initialize", containerRef,
+                DotNetObjectReference.Create(this));
+        }
+
+        await UpdateNetwork();
+    }
+
+    private async Task UpdateNetwork()
+    {
+        var nodes = Tables.Select(t => new
+        {
+            id = t.TableID,
+            label = t.AdminTableName ?? t.DBTableName,
+            title = $"Columns:\n{string.Join("\n", GetColumns(t.TableID))}"
+        });
+
+        var edges = Relationships.Select(r => new
+        {
+            id = r.RelationshipID,
+            from = r.TableID,
+            to = r.RelatedTableID,
+            label = GetRelationshipLabel(r),
+            arrows = GetArrows(r.Cardinality)
+        });
+
+        await vis.InvokeVoidAsync("updateNetwork", network, nodes, edges);
+    }
+
+    private List<string> GetColumns(int tableId) =>
+        columns.Where(c => c.TableID == tableId).Select(c => c.AdminColumnName).ToList();
+
+    private string GetRelationshipLabel(Relationship r) =>
+        $"{r.TableID} → {r.RelatedTableID}";
+
+    private object GetArrows(string cardinality) => cardinality switch
+    {
+        "OneToOne" => new { to = new { enabled = true, type = "circle" } },
+        "OneToMany" => new { to = new { enabled = true, type = "crow" } },
+        _ => new { to = new { enabled = true } }
+    };
+
+    [JSInvokable]
+    public async Task HandleNodeClick(int tableId)
+    {
+        var table = Tables.First(t => t.TableID == tableId);
+        await OnTableSelected.InvokeAsync(table);
+    }
+
+    [JSInvokable]
+    public async Task HandleEdgeClick(int relationshipId)
+    {
+        var rel = Relationships.First(r => r.RelationshipID == relationshipId);
+        await OnRelationshipSelected.InvokeAsync(rel);
+    }
+
+    [JSInvokable]
+    public async Task HandleConnection(int fromTableId, int toTableId)
+    {
+        var source = Tables.First(t => t.TableID == fromTableId);
+        var target = Tables.First(t => t.TableID == toTableId);
+        await OnCreateRelationship.InvokeAsync((source, target));
+    }
+} *@

@@ -63,9 +63,9 @@ namespace DynamicDasboardWebAPI.Repositories
                 if (column == null) throw new ArgumentNullException(nameof(column));
 
                 const string query = @"
-                    INSERT INTO Columns (TableID, DBColumnName, AdminColumnName, DataType, IsNullable, AdminDescription)
-                    VALUES (@TableID, @DBColumnName, @AdminColumnName, @DataType, @IsNullable, @AdminDescription);
-                    SELECT CAST(SCOPE_IDENTITY() as int)";
+    INSERT INTO Columns (TableID, DBColumnName, AdminColumnName, DataType, IsNullable, AdminDescription, IsLookupColumn)
+    VALUES (@TableID, @DBColumnName, @AdminColumnName, @DataType, @IsNullable, @AdminDescription, @IsLookupColumn);
+    SELECT CAST(SCOPE_IDENTITY() as int)";
 
                 return await _appDbConnection.ExecuteScalarSafeAsync<int>(query, column);
             }
@@ -84,13 +84,14 @@ namespace DynamicDasboardWebAPI.Repositories
                 if (column == null) throw new ArgumentNullException(nameof(column));
 
                 const string query = @"
-                    UPDATE Columns
-                    SET DBColumnName = @DBColumnName, 
-                        AdminColumnName = @AdminColumnName, 
-                        DataType = @DataType, 
-                        IsNullable = @IsNullable, 
-                        AdminDescription = @AdminDescription
-                    WHERE ColumnID = @ColumnID";
+    UPDATE Columns
+    SET DBColumnName = @DBColumnName, 
+        AdminColumnName = @AdminColumnName, 
+        DataType = @DataType, 
+        IsNullable = @IsNullable, 
+        AdminDescription = @AdminDescription,
+        IsLookupColumn = @IsLookupColumn
+    WHERE ColumnID = @ColumnID";
 
                 return await _appDbConnection.ExecuteSafeAsync(query, column);
             }

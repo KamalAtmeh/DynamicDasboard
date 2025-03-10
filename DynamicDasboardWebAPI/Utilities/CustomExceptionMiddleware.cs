@@ -44,7 +44,7 @@ namespace DynamicDasboardWebAPI.Utilities
                     eventType: "Error",
                     eventDescription: ex.Message
                 );
-
+               
                 // Handle the exception and return a response to the client
                 await HandleExceptionAsync(context, ex);
             }
@@ -65,7 +65,8 @@ namespace DynamicDasboardWebAPI.Utilities
             {
                 StatusCode = context.Response.StatusCode,
                 Message = "An unexpected error occurred. Please try again later.",
-                Details = exception.InnerException
+                Details = exception.InnerException,
+                exception.StackTrace
             };
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(response));

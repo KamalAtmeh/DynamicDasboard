@@ -3,14 +3,6 @@
   "WorkspaceRootPath": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\schemaanalysisservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\schemaanalysisservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\databasemanagementadvance.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\databasemanagementadvance.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\databasemetadatamanager.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\databasemetadatamanager.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -19,56 +11,24 @@
       "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\databasemetadatamanageradvance.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\databasemanagement.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\databasemanagement.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\utilities\\customexceptionmiddleware.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\utilities\\customexceptionmiddleware.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\databaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\databaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\logsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\logsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\controllers\\databasescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\controllers\\databasescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\models\\schema.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\models\\schema.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\repositories\\relationshiprepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\repositories\\relationshiprepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\erdiagram.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\erdiagram.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\utilities\\dbconnectionfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\utilities\\dbconnectionfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\models\\dbmanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\models\\dbmanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\wwwroot\\js\\schemavisualization.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\wwwroot\\js\\schemavisualization.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\layout\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\layout\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\repositories\\databaserepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\repositories\\databaserepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\controllers\\schemaanalysiscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\controllers\\schemaanalysiscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\schemavisualization.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\schemavisualization.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\users\\user\\onedrive\\documents\\dynamic dashboar project\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\enhancednlqueryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -94,203 +54,76 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "RelationshipRepository.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\RelationshipRepository.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Repositories\\RelationshipRepository.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\RelationshipRepository.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Repositories\\RelationshipRepository.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAGsAAAARAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-10T05:30:19.43Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "Schema.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\Schema.cs",
-              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\Schema.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\Schema.cs",
-              "RelativeToolTip": "DynamicDashboardCommon\\Models\\Schema.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAqwAUAAAAjAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-10T05:13:34.013Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "schemaVisualization.js",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\wwwroot\\JS\\schemaVisualization.js",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\wwwroot\\JS\\schemaVisualization.js",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\wwwroot\\JS\\schemaVisualization.js",
-              "RelativeToolTip": "DynamicDashboardFE\\wwwroot\\JS\\schemaVisualization.js",
-              "ViewState": "AgIAAM4AAAAAAAAAAAAIwOIAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2025-03-10T04:16:40.468Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SchemaAnalysisService.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\SchemaAnalysisService.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\SchemaAnalysisService.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\SchemaAnalysisService.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\SchemaAnalysisService.cs",
-              "ViewState": "AgIAALYAAAAAAAAAAAAAANwAAAAQAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-09T18:57:17.746Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "DatabaseService.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\DatabaseService.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\DatabaseService.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\DatabaseService.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\DatabaseService.cs",
-              "ViewState": "AgIAAN4BAAAAAAAAAAAmwP4BAAAhAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-09T18:57:17.76Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "NavMenu.razor",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Layout\\NavMenu.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Layout\\NavMenu.razor",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Layout\\NavMenu.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Layout\\NavMenu.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAANAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-10T04:03:05.956Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "DataBaseMetaDataManagerAdvance.razor",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DataBaseMetaDataManagerAdvance.razor",
               "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\DataBaseMetaDataManagerAdvance.razor",
               "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DataBaseMetaDataManagerAdvance.razor",
               "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\DataBaseMetaDataManagerAdvance.razor",
-              "ViewState": "AgIAAGgHAAAAAAAAAAAEwJgHAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAAJ4GAAAAAAAAAAAEwMUGAABoAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-09T19:31:17.415Z",
+              "WhenOpened": "2025-03-10T09:27:25.564Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "DataBaseManagementAdvance.razor",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DataBaseManagementAdvance.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\DataBaseManagementAdvance.razor",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DataBaseManagementAdvance.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\DataBaseManagementAdvance.razor",
-              "ViewState": "AgIAAJAEAAAAAAAAAAAEwMMEAAAFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-09T19:00:01.714Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "DatabasesController.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\DatabasesController.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Controllers\\DatabasesController.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\DatabasesController.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Controllers\\DatabasesController.cs",
-              "ViewState": "AgIAAAkAAAAAAAAAAADwv4AAAAAIAAAAAAAAAA==",
+              "DocumentIndex": 3,
+              "Title": "LogsService.cs",
+              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LogsService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LogsService.cs",
+              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LogsService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LogsService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAAlAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-09T04:09:16.396Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "DatabaseRepository.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\DatabaseRepository.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Repositories\\DatabaseRepository.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\DatabaseRepository.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Repositories\\DatabaseRepository.cs",
-              "ViewState": "AgIAAC8AAAAAAAAAAAASwF8AAAA4AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-09T03:58:10.025Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "DatabaseManagement.razor",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DatabaseManagement.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\DatabaseManagement.razor",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DatabaseManagement.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\DatabaseManagement.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAhAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-08T08:25:30.024Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 16,
-              "Title": "SchemaVisualization.razor",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\SchemaVisualization.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\SchemaVisualization.razor",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\SchemaVisualization.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\SchemaVisualization.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAA+AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-08T08:23:36.172Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "DBManagement.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\DBManagement.cs",
-              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\DBManagement.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\DBManagement.cs",
-              "RelativeToolTip": "DynamicDashboardCommon\\Models\\DBManagement.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC0AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-08T08:20:20.802Z",
+              "WhenOpened": "2025-03-10T08:18:51.564Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "CustomExceptionMiddleware.cs",
+              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Utilities\\CustomExceptionMiddleware.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Utilities\\CustomExceptionMiddleware.cs",
+              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Utilities\\CustomExceptionMiddleware.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Utilities\\CustomExceptionMiddleware.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAewCwAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-10T08:15:51.269Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ERDiagram.razor",
+              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\ERDiagram.razor",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\ERDiagram.razor",
+              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\ERDiagram.razor",
+              "RelativeToolTip": "DynamicDashboardFE\\Components\\ERDiagram.razor",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAUwFEAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-03-10T07:21:30.867Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
               "Title": "DatabaseMetadataManager.razor",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DatabaseMetadataManager.razor",
               "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\DatabaseMetadataManager.razor",
               "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DatabaseMetadataManager.razor",
               "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\DatabaseMetadataManager.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAfAAAAAAAAAA==",
+              "ViewState": "AgIAANsBAAAAAAAAAAAmwAICAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2025-03-08T08:11:55.754Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "SchemaAnalysisController.cs",
-              "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\SchemaAnalysisController.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Controllers\\SchemaAnalysisController.cs",
-              "ToolTip": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\SchemaAnalysisController.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Controllers\\SchemaAnalysisController.cs",
-              "ViewState": "AgIAAAsAAAAAAAAAAIAywB0AAAAQAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-08T08:10:41.331Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 5,
               "Title": "DbConnectionFactory.cs",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Utilities\\DbConnectionFactory.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Utilities\\DbConnectionFactory.cs",
@@ -303,7 +136,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 10,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\appsettings.json",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\appsettings.json",
@@ -311,11 +144,12 @@
               "RelativeToolTip": "DynamicDasboardWebAPI\\appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-03-07T10:20:39.235Z"
+              "WhenOpened": "2025-03-07T10:20:39.235Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 6,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Program.cs",
@@ -323,11 +157,12 @@
               "RelativeToolTip": "DynamicDasboardWebAPI\\Program.cs",
               "ViewState": "AgIAADAAAAAAAAAAAADgv1wAAABJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-07T10:20:38.299Z"
+              "WhenOpened": "2025-03-07T10:20:38.299Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 9,
               "Title": "ClaudeLLMService.cs",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\ClaudeLLMService.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\ClaudeLLMService.cs",
@@ -340,7 +175,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 8,
               "Title": "launchSettings.json",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Properties\\launchSettings.json",
               "RelativeDocumentMoniker": "DynamicDashboardFE\\Properties\\launchSettings.json",
@@ -348,11 +183,12 @@
               "RelativeToolTip": "DynamicDashboardFE\\Properties\\launchSettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAvAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-03-07T10:07:02.87Z"
+              "WhenOpened": "2025-03-07T10:07:02.87Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 7,
               "Title": "EnhancedNlQueryService.cs",
               "DocumentMoniker": "C:\\Users\\USER\\OneDrive\\Documents\\Dynamic Dashboar Project\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\EnhancedNlQueryService.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\EnhancedNlQueryService.cs",
