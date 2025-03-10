@@ -71,6 +71,9 @@ builder.Services.AddScoped<EnhancedNlQueryService>();
 builder.Services.AddScoped<BatchProcessingService>();
 builder.Services.AddScoped<DatabaseService>();
 
+builder.Services.AddScoped<DatabaseJsonSchemaRepository>();
+builder.Services.AddScoped<DatabaseJsonSchemaService>();
+
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });
 

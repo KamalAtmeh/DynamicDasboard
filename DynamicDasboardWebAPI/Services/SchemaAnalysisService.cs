@@ -338,21 +338,21 @@ Format your response as a JSON object with the following structure:
                 var tables = (await _tableService.GetTablesByDatabaseIdAsync(databaseId)).ToList();
 
                 // Find source table
-                var sourceTable = tables.FirstOrDefault(t => t.DBTableName.Equals(relationshipData.SourceTable, StringComparison.OrdinalIgnoreCase));
+                var sourceTable = tables.FirstOrDefault(t => t.DBTableName.Equals(relationshipData.SourceTable.Table, StringComparison.OrdinalIgnoreCase));
                 if (sourceTable == null) return false;
 
                 // Find target table
-                var targetTable = tables.FirstOrDefault(t => t.DBTableName.Equals(relationshipData.TargetTable, StringComparison.OrdinalIgnoreCase));
+                var targetTable = tables.FirstOrDefault(t => t.DBTableName.Equals(relationshipData.TargetTable.Table, StringComparison.OrdinalIgnoreCase));
                 if (targetTable == null) return false;
 
                 // Find source column
                 var sourceColumns = await _columnService.GetColumnsByTableIdAsync(sourceTable.TableID);
-                var sourceColumn = sourceColumns.FirstOrDefault(c => c.DBColumnName.Equals(relationshipData.SourceColumn, StringComparison.OrdinalIgnoreCase));
+                var sourceColumn = sourceColumns.FirstOrDefault(c => c.DBColumnName.Equals(relationshipData.SourceTable.Column, StringComparison.OrdinalIgnoreCase));
                 if (sourceColumn == null) return false;
 
                 // Find target column
                 var targetColumns = await _columnService.GetColumnsByTableIdAsync(targetTable.TableID);
-                var targetColumn = targetColumns.FirstOrDefault(c => c.DBColumnName.Equals(relationshipData.TargetColumn, StringComparison.OrdinalIgnoreCase));
+                var targetColumn = targetColumns.FirstOrDefault(c => c.DBColumnName.Equals(relationshipData.TargetTable.Column, StringComparison.OrdinalIgnoreCase));
                 if (targetColumn == null) return false;
 
                 // Create relationship

@@ -795,8 +795,8 @@
 															@foreach (var relationship in analysisResult.AnalysisData.SuggestedRelationships)
 															{
 																<tr>
-																	<td>@relationship.SourceTable.@relationship.SourceColumn</td>
-																	<td>@relationship.TargetTable.@relationship.TargetColumn</td>
+																	<td>@relationship.SourceTable.@relationship.SourceTable.Column</td>
+																	<td>@relationship.TargetTable.@relationship.TargetTable.Column</td>
 																	<td>@relationship.RelationshipType</td>
 																	<td>
 																		<div class="progress">
@@ -2370,9 +2370,7 @@
 			(ue.Type == "Column" && ue.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase))) ?? false;
 
 		// Check if table has suggested relationships
-		bool hasSuggestedRelationships = data.SuggestedRelationships?.Any(sr =>
-			sr.SourceTable.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) ||
-			sr.TargetTable.Equals(table.TableName, StringComparison.OrdinalIgnoreCase)) ?? false;
+		bool hasSuggestedRelationships = false;
 
 		return hasTableSuggestion || hasColumnSuggestions || hasConflicts ||
 						hasUnclearElements || hasSuggestedRelationships;
@@ -3248,9 +3246,9 @@
 						group = "edges",
 						data = new
 						{
-							id = $"suggested_rel_{relationship.SourceTable}_{relationship.SourceColumn}_{relationship.TargetTable}_{relationship.TargetColumn}",
-							source = $"column_{relationship.SourceTable}_{relationship.SourceColumn}",
-							target = $"column_{relationship.TargetTable}_{relationship.TargetColumn}",
+							id = $"suggested_rel_{relationship.SourceTable}_{relationship.SourceTable.Column}_{relationship.TargetTable}_{relationship.TargetTable.Column}",
+							source = $"column_{relationship.SourceTable}_{relationship.SourceTable.Column}",
+							target = $"column_{relationship.TargetTable}_{relationship.TargetTable.Column}",
 							label = relationship.RelationshipType,
 							type = "suggested",
 							confidence = relationship.Confidence
