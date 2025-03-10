@@ -1731,7 +1731,7 @@
 						<div class="row mb-3">
 							<div class="col-md-6">
 								<label class="form-label">Source Table</label>
-								<select class="form-select" @bind="newRelationship.SourceTable" @onchange="SourceTableChanged">
+								<select class="form-select" @bind="newRelationship.SourceTable" @bind:after="SourceTableChanged">
 									<option value="">-- Select Source Table --</option>
 									@foreach (var table in schema)
 									{
@@ -1771,7 +1771,7 @@
 						<div class="row mb-3">
 							<div class="col-md-6">
 								<label class="form-label">Target Table</label>
-								<select class="form-select" @bind="newRelationship.TargetTable" @onchange="TargetTableChanged">
+									<select class="form-select" @bind="newRelationship.TargetTable" @bind:after="TargetTableChanged">
 									<option value="">-- Select Target Table --</option>
 									@foreach (var table in schema)
 									{
@@ -1830,7 +1830,8 @@
 						<div class="row mb-3">
 							<div class="col-md-6">
 								<label class="form-label">Source Table</label>
-								<select class="form-select" @bind="editingRelationship.SourceTable" @onchange="EditSourceTableChanged">
+									<select class="form-select" @bind="newRelationship.SourceTable" @bind:after="EditSourceTableChanged">
+
 									@foreach (var table in schema)
 									{
 										<option value="@table.TableName">@table.TableName</option>
@@ -1868,7 +1869,7 @@
 						<div class="row mb-3">
 							<div class="col-md-6">
 								<label class="form-label">Target Table</label>
-								<select class="form-select" @bind="editingRelationship.TargetTable" @onchange="EditTargetTableChanged">
+									<select class="form-select" @bind="newRelationship.TargetTable" @bind:after="EditTargetTableChanged">
 									@foreach (var table in schema)
 									{
 										<option value="@table.TableName">@table.TableName</option>
@@ -1941,6 +1942,7 @@
 	// Change tracking
 	private List<ChangeRecord> changeHistory = new();
 	private bool hasUnsavedChanges = false;
+	private bool needsRender = false;
 
 	//Relationships
 	private string relationshipFilter = "";
@@ -2002,7 +2004,7 @@
 
 	protected override void OnParametersSet()
 	{
-		if (Tables.Count > 0 || Columns.Count > 0 || Relationships.Count > 0)
+		if (schema != null && schema.Count > 0)
 		{
 			needsRender = true;
 		}
@@ -2260,20 +2262,26 @@
 		foreach (var relationship in modifiedRelationships)
 		{
 			string key = $"{relationship.SourceTable}.{relationship.SourceColumn} → {relationship.TargetTable}.{relationship.TargetColumn}";
-
-			changeRecord.Changes[key + "|RelationshipType"] = new
-			{
-				oldValue = "Unknown", // In a real impl, track the old value
-				newValue = relationship.RelationshipType
-			};
+			
+			changeRecord.Changes[key + "|RelationshipType"] = new ChangeDetail
+				{
+					EntityType = "Relationship",
+					EntityName = key,
+					PropertyName = "RelationshipType",
+					OldValue = "Unknown",
+					NewValue = relationship.RelationshipType
+				};
 
 			if (!string.IsNullOrEmpty(relationship.Description))
 			{
-				changeRecord.Changes[key + "|Description"] = new
-				{
-					oldValue = "Unknown", // In a real impl, track the old value
-					newValue = relationship.Description
-				};
+				changeRecord.Changes[key + "|Description"] = new ChangeDetail
+					{
+						EntityType = "Relationship",
+						EntityName = key,
+						PropertyName = "Description",
+						OldValue = "Unknown",
+						NewValue = relationship.Description
+					};
 			}
 		}
 
@@ -2285,11 +2293,14 @@
 			{
 				string displayKey = $"{parts[0]}.{parts[1]} → {parts[2]}.{parts[3]}";
 
-				changeRecord.Changes[displayKey] = new
-				{
-					oldValue = "Relationship existed",
-					newValue = "Relationship deleted"
-				};
+				changeRecord.Changes[key + "|RelationshipType"] = new ChangeDetail
+					{
+						EntityType = "Relationship",
+						EntityName = key,
+						PropertyName = "RelationshipType",
+						OldValue = "Relationship",
+						NewValue = "Relationship deleted"
+					};
 			}
 		}
 
