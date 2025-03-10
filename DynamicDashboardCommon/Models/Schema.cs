@@ -19,5 +19,7 @@ namespace DynamicDashboardCommon.Models
         public bool IsPrimary { get; set; }
         public bool IsForeignKey { get; set; }
         public string AdminDescription { get; set; }
+
+        public bool IsLookupColumn { get; set; }
     }
 }

@@ -1,0 +1,2567 @@
+﻿@page "/admin/metadataadvance/{DatabaseId:int}"
+@using DynamicDashboardCommon.Models
+@using System.Text.Json
+@using System.Text
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<div class="container-fluid py-3">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-gradient-primary text-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="m-0 font-weight-bold">Database Metadata Manager</h3>
+                <p class="m-0 text-white-50">Manage table and column descriptions for improved natural language processing</p>
+            </div>
+            <div class="d-flex">
+                <div class="btn-group me-2">
+                    <button class="btn btn-light" @onclick="ToggleView" title="Toggle view mode">
+                        <i class="fas @(isAdvancedView ? "fa-list-ul" : "fa-th-large")"></i>
+                    </button>
+                    <button class="btn btn-light" @onclick="ToggleSchemaVisualization" title="Show/hide schema visualization">
+                        <i class="fas fa-project-diagram"></i>
+                    </button>
+                </div>
+                <button class="btn btn-light" @onclick="GoBack">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                </button>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">@loadingMessage</p>
+            </div>
+        }
+        else if (errorMessage != null)
+        {
+            <div class="alert alert-danger m-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                @errorMessage
+                <div class="mt-3">
+                    <button class="btn btn-primary" @onclick="LoadSchema">Try Again</button>
+                    <button class="btn btn-secondary ms-2" @onclick="GoBack">Go Back</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card-body p-0">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(activeTab == "tables" ? "active" : "")"
+                                @onclick='() => SetActiveTab("tables")' type="button" role="tab">
+                            <i class="fas fa-table me-2"></i>Tables & Columns
+                        </button>
+                      
+                        <div class="table-responsive">
+                            @if (filteredTables == null || !filteredTables.Any())
+                            {
+                                <div class="alert alert-info m-3">
+                                    @if (!string.IsNullOrEmpty(tableFilter))
+                                    {
+                                        <span>No tables match your search criteria. Try a different search term.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>No tables found in this database.</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <table class="table table-hover table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 1%"></th>
+                                            <th style="width: 25%">Database Table Name</th>
+                                            <th style="width: 25%">User-Friendly Name</th>
+                                            <th style="width: 40%">Description</th>
+                                            <th style="width: 9%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var table in filteredTables)
+                                        {
+                                            bool hasIssues = HasIssuesForTable(table);
+                                            bool isExpanded = expandedTables.ContainsKey(table.GetHashCode()) && expandedTables[table.GetHashCode()];
+
+                                            <tr class="@(hasIssues ? "table-warning" : "")">
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-link" @onclick="() => ToggleTableExpansion(table)">
+                                                        <i class="fas @(isExpanded ? "fa-chevron-down" : "fa-chevron-right")"></i>
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    @table.TableName
+                                                    @if (hasIssues)
+                                                    {
+                                                        <i class="fas fa-exclamation-circle text-warning ms-2" title="This table has suggested improvements"></i>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" placeholder="Enter user-friendly name"
+                                                               @bind="table.AdminTableName" @oninput="() => MarkTableAsModified(table)" />
+                                                        @if (isAdvancedView && hasAnalysisResults)
+                                                        {
+                                                            <button class="btn btn-outline-secondary" type="button"
+                                                                    @onclick="() => ApplySuggestedTableName(table)"
+                                                                    title="Apply AI suggestion">
+                                                                <i class="fas fa-magic"></i>
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <textarea class="form-control" rows="1" placeholder="Enter description"
+                                                                  @bind="table.AdminDescription" @oninput="() => MarkTableAsModified(table)"></textarea>
+                                                        @if (isAdvancedView && hasAnalysisResults)
+                                                        {
+                                                            <button class="btn btn-outline-secondary" type="button"
+                                                                    @onclick="() => ApplySuggestedTableDescription(table)"
+                                                                    title="Apply AI suggestion">
+                                                                <i class="fas fa-magic"></i>
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SaveTableChanges(table)" title="Save changes">
+                                                            <i class="fas fa-save"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ShowTableDetails(table)" title="Show details">
+                                                            <i class="fas fa-info-circle"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            @if (isExpanded)
+                                            {
+                                                <tr>
+                                                    <td colspan="5" class="p-0 border-0">
+                                                        <div class="card m-2 shadow-sm">
+                                                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                                                <h6 class="m-0">Columns for @table.TableName (@table.Columns.Count)</h6>
+                                                                <div class="input-group" style="width: 300px;">
+                                                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                                                    <input type="text" class="form-control form-control-sm"
+                                                                           placeholder="Search columns..."
+                                                                           @oninput="(e) => FilterColumns(e, table)" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="card-body p-0">
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-sm table-hover border-0 mb-0">
+                                                                        <thead class="table-light">
+                                                                            <tr>
+                                                                                <th style="width: 20%">Column Name</th>
+                                                                                <th style="width: 20%">User-Friendly Name</th>
+                                                                                <th style="width: 15%">Data Type</th>
+                                                                                <th style="width: 10%">Properties</th>
+                                                                                <th style="width: 30%">Description</th>
+                                                                                <th style="width: 5%"></th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            @{
+                                                                                var filteredColumns = GetFilteredColumns(table);
+                                                                            }
+
+                                                                            @foreach (var column in filteredColumns)
+                                                                            {
+                                                                                bool columnHasIssues = HasIssuesForColumn(table, column);
+
+                                                                                <tr class="@(columnHasIssues ? "table-warning" : "")">
+                                                                                    <td>
+                                                                                        @column.ColumnName
+                                                                                        @if (columnHasIssues)
+                                                                                        {
+                                                                                            <i class="fas fa-exclamation-circle text-warning ms-2"
+                                                                                               title="This column has suggested improvements"></i>
+                                                                                        }
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <div class="input-group">
+                                                                                            <input type="text" class="form-control form-control-sm"
+                                                                                                   placeholder="User-friendly name"
+                                                                                                   @bind="column.AdminColumnName"
+                                                                                                   @oninput="() => MarkColumnAsModified(table, column)" />
+                                                                                            @if (isAdvancedView && hasAnalysisResults)
+                                                                                            {
+                                                                                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                                                                                        @onclick="() => ApplySuggestedColumnName(table, column)"
+                                                                                                        title="Apply AI suggestion">
+                                                                                                    <i class="fas fa-magic"></i>
+                                                                                                </button>
+                                                                                            }
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <div class="d-flex align-items-center">
+                                                                                            <span class="badge bg-secondary me-1">@column.DataType</span>
+                                                                                            @if (!column.IsNullable)
+                                                                                            {
+                                                                                                <span class="badge bg-danger me-1">Required</span>
+                                                                                            }
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <div class="form-check form-switch">
+                                                                                            <input class="form-check-input" type="checkbox"
+                                                                                                   id="lookupColumn_@(table.TableName)_@(column.ColumnName)"
+                                                                                                   checked="@column.IsLookupColumn"
+                                                                                                   @onchange="(e) => ToggleLookupColumn(table, column, e)" />
+                                                                                            <label class="form-check-label"
+                                                                                                   for="lookupColumn_@(table.TableName)_@(column.ColumnName)">
+                                                                                                Lookup
+                                                                                            </label>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <div class="input-group">
+                                                                                            <textarea class="form-control form-control-sm" rows="1"
+                                                                                                      placeholder="Column purpose and meaning"
+                                                                                                      @bind="column.AdminDescription"
+                                                                                                      @oninput="() => MarkColumnAsModified(table, column)"></textarea>
+                                                                                            @if (isAdvancedView && hasAnalysisResults)
+                                                                                            {
+                                                                                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                                                                                        @onclick="() => ApplySuggestedColumnDescription(table, column)"
+                                                                                                        title="Apply AI suggestion">
+                                                                                                    <i class="fas fa-magic"></i>
+                                                                                                </button>
+                                                                                            }
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <button class="btn btn-sm btn-outline-info"
+                                                                                                @onclick="() => ShowColumnDetails(table, column)"
+                                                                                                title="Show column details">
+                                                                                            <i class="fas fa-info-circle"></i>
+                                                                                        </button>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            }
+
+                                                                            @if (!filteredColumns.Any())
+                                                                            {
+                                                                                <tr>
+                                                                                    <td colspan="6" class="text-center py-3">
+                                                                                        <em>No columns match your search criteria.</em>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            }
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </li>
+                    @if (hasAnalysisResults)
+                    {
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(activeTab == "analysis" ? "active" : "")"
+                                    @onclick='() => SetActiveTab("analysis")' type="button" role="tab">
+                                <i class="fas fa-lightbulb me-2"></i>AI Suggestions
+                                @if (hasSuggestions)
+                                {
+                                    <span class="badge bg-primary ms-1">@suggestionCount</span>
+                                }
+                            </button>
+                            <!-- AI Suggestions Tab - Add this inside the Tab Content section -->
+                            @if (activeTab == "analysis")
+                            {
+                                <div class="tab-pane fade show active">
+                                    @if (!hasAnalysisResults)
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            No schema analysis has been performed yet.
+                                            <button class="btn btn-primary ms-3" @onclick="RunSchemaAnalysis">
+                                                <i class="fas fa-magic me-2"></i>Analyze Schema
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <h5>Analysis Results</h5>
+                                            <div>
+                                                <button class="btn btn-success" @onclick="ApplyAllSuggestions" disabled="@(!hasAnalysisResults)">
+                                                    <i class="fas fa-check-double me-2"></i>Apply All Suggestions
+                                                </button>
+                                                <button class="btn btn-outline-secondary ms-2" @onclick="RunSchemaAnalysis">
+                                                    <i class="fas fa-sync me-2"></i>Re-run Analysis
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Analysis categories as secondary tabs -->
+                                        <ul class="nav nav-pills mb-3" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link @(analysisCategoryTab == "tablesuggestions" ? "active" : "")"
+                                                        @onclick='() => SetAnalysisCategoryTab("tablesuggestions")' type="button" role="tab">
+                                                    <i class="fas fa-table me-1"></i> Table Suggestions
+                                                    @if (analysisResult.AnalysisData.TableDescriptions.Count > 0)
+                                                    {
+                                                        <span class="badge bg-primary ms-1">@analysisResult.AnalysisData.TableDescriptions.Count</span>
+                                                    }
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link @(analysisCategoryTab == "columnsuggestions" ? "active" : "")"
+                                                        @onclick='() => SetAnalysisCategoryTab("columnsuggestions")' type="button" role="tab">
+                                                    <i class="fas fa-columns me-1"></i> Column Suggestions
+                                                    @if (analysisResult.AnalysisData.ColumnDescriptions.Count > 0)
+                                                    {
+                                                        <span class="badge bg-primary ms-1">@analysisResult.AnalysisData.ColumnDescriptions.Count</span>
+                                                    }
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link @(analysisCategoryTab == "conflicts" ? "active" : "")"
+                                                        @onclick='() => SetAnalysisCategoryTab("conflicts")' type="button" role="tab">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i> Conflicts
+                                                    @if (analysisResult.AnalysisData.PotentialConflicts.Count > 0)
+                                                    {
+                                                        <span class="badge bg-warning ms-1">@analysisResult.AnalysisData.PotentialConflicts.Count</span>
+                                                    }
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link @(analysisCategoryTab == "unclear" ? "active" : "")"
+                                                        @onclick='() => SetAnalysisCategoryTab("unclear")' type="button" role="tab">
+                                                    <i class="fas fa-question-circle me-1"></i> Unclear Elements
+                                                    @if (analysisResult.AnalysisData.UnclearElements.Count > 0)
+                                                    {
+                                                        <span class="badge bg-secondary ms-1">@analysisResult.AnalysisData.UnclearElements.Count</span>
+                                                    }
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link @(analysisCategoryTab == "relationships" ? "active" : "")"
+                                                        @onclick='() => SetAnalysisCategoryTab("relationships")' type="button" role="tab">
+                                                    <i class="fas fa-link me-1"></i> Suggested Relationships
+                                                    @if (analysisResult.AnalysisData.SuggestedRelationships.Count > 0)
+                                                    {
+                                                        <span class="badge bg-info ms-1">@analysisResult.AnalysisData.SuggestedRelationships.Count</span>
+                                                    }
+                                                </button>
+                                            </li>
+                                        </ul>
+
+                                        <!-- Table Suggestions -->
+                                        @if (analysisCategoryTab == "tablesuggestions")
+                                        {
+                                            @if (analysisResult.AnalysisData.TableDescriptions.Count == 0)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No table name or description suggestions found.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Table Name</th>
+                                                                <th>Current Display Name</th>
+                                                                <th>Suggested Name</th>
+                                                                <th>Current Description</th>
+                                                                <th>Suggested Description</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var suggestion in analysisResult.AnalysisData.TableDescriptions)
+                                                            {
+                                                                var table = schema.FirstOrDefault(t =>
+                                                                t.TableName.Equals(suggestion.TableName, StringComparison.OrdinalIgnoreCase));
+
+                                                                if (table != null)
+                                                                {
+                                                                    <tr>
+                                                                        <td>@table.TableName</td>
+                                                                        <td>@(string.IsNullOrEmpty(table.AdminTableName) ? "-" : table.AdminTableName)</td>
+                                                                        <td>
+                                                                            <div class="@(table.AdminTableName == suggestion.SuggestedName ? "text-success" : "")">
+                                                                                @suggestion.SuggestedName
+                                                                                @if (table.AdminTableName == suggestion.SuggestedName)
+                                                                                {
+                                                                                    <i class="fas fa-check-circle text-success ms-2"></i>
+                                                                                }
+                                                                            </div>
+                                                                        </td>
+                                                                        <td>@(string.IsNullOrEmpty(table.AdminDescription) ? "-" : table.AdminDescription)</td>
+                                                                        <td>
+                                                                            <div class="@(table.AdminDescription == suggestion.SuggestedDescription ? "text-success" : "")">
+                                                                                @suggestion.SuggestedDescription
+                                                                                @if (table.AdminDescription == suggestion.SuggestedDescription)
+                                                                                {
+                                                                                    <i class="fas fa-check-circle text-success ms-2"></i>
+                                                                                }
+                                                                            </div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="btn-group">
+                                                                                <button class="btn btn-sm btn-outline-primary"
+                                                                                        @onclick="() => ApplyTableNameSuggestion(table, suggestion)"
+                                                                                        disabled="@(table.AdminTableName == suggestion.SuggestedName)">
+                                                                                    Apply Name
+                                                                                </button>
+                                                                                <button class="btn btn-sm btn-outline-primary"
+                                                                                        @onclick="() => ApplyTableDescriptionSuggestion(table, suggestion)"
+                                                                                        disabled="@(table.AdminDescription == suggestion.SuggestedDescription)">
+                                                                                    Apply Description
+                                                                                </button>
+                                                                                <button class="btn btn-sm btn-success"
+                                                                                        @onclick="() => ApplyAllTableSuggestions(table, suggestion)"
+                                                                                        disabled="@(table.AdminTableName == suggestion.SuggestedName &&
+                                                                       table.AdminDescription == suggestion.SuggestedDescription)">
+                                                                                    Apply All
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        }
+
+                                        <!-- Column Suggestions -->
+                                        @if (analysisCategoryTab == "columnsuggestions")
+                                        {
+                                            @if (analysisResult.AnalysisData.ColumnDescriptions.Count == 0)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No column name or description suggestions found.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Table</th>
+                                                                <th>Column</th>
+                                                                <th>Current Name</th>
+                                                                <th>Suggested Name</th>
+                                                                <th>Current Description</th>
+                                                                <th>Suggested Description</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var suggestion in analysisResult.AnalysisData.ColumnDescriptions)
+                                                            {
+                                                                var table = schema.FirstOrDefault(t =>
+                                                                t.TableName.Equals(suggestion.TableName, StringComparison.OrdinalIgnoreCase));
+
+                                                                if (table != null)
+                                                                {
+                                                                    var column = table.Columns.FirstOrDefault(c =>
+                                                                    c.ColumnName.Equals(suggestion.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+                                                                    if (column != null)
+                                                                    {
+                                                                        <tr>
+                                                                            <td>@table.TableName</td>
+                                                                            <td>@column.ColumnName</td>
+                                                                            <td>@(string.IsNullOrEmpty(column.AdminColumnName) ? "-" : column.AdminColumnName)</td>
+                                                                            <td>
+                                                                                <div class="@(column.AdminColumnName == suggestion.SuggestedName ? "text-success" : "")">
+                                                                                    @suggestion.SuggestedName
+                                                                                    @if (column.AdminColumnName == suggestion.SuggestedName)
+                                                                                    {
+                                                                                        <i class="fas fa-check-circle text-success ms-2"></i>
+                                                                                    }
+                                                                                </div>
+                                                                            </td>
+                                                                            <td>@(string.IsNullOrEmpty(column.AdminDescription) ? "-" : column.AdminDescription)</td>
+                                                                            <td>
+                                                                                <div class="@(column.AdminDescription == suggestion.SuggestedDescription ? "text-success" : "")">
+                                                                                    @suggestion.SuggestedDescription
+                                                                                    @if (column.AdminDescription == suggestion.SuggestedDescription)
+                                                                                    {
+                                                                                        <i class="fas fa-check-circle text-success ms-2"></i>
+                                                                                    }
+                                                                                </div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="btn-group">
+                                                                                    <button class="btn btn-sm btn-outline-primary"
+                                                                                            @onclick="() => ApplyColumnNameSuggestion(table, column, suggestion)"
+                                                                                            disabled="@(column.AdminColumnName == suggestion.SuggestedName)">
+                                                                                        Apply Name
+                                                                                    </button>
+                                                                                    <button class="btn btn-sm btn-outline-primary"
+                                                                                            @onclick="() => ApplyColumnDescriptionSuggestion(table, column, suggestion)"
+                                                                                            disabled="@(column.AdminDescription == suggestion.SuggestedDescription)">
+                                                                                        Apply Description
+                                                                                    </button>
+                                                                                    <button class="btn btn-sm btn-success"
+                                                                                            @onclick="() => ApplyAllColumnSuggestions(table, column, suggestion)"
+                                                                                            disabled="@(column.AdminColumnName == suggestion.SuggestedName &&
+                                                                           column.AdminDescription == suggestion.SuggestedDescription)">
+                                                                                        Apply All
+                                                                                    </button>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    }
+                                                                }
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        }
+
+                                        <!-- Conflicts -->
+                                        @if (analysisCategoryTab == "conflicts")
+                                        {
+                                            @if (analysisResult.AnalysisData.PotentialConflicts.Count == 0)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No potential conflicts found in the schema.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="accordion" id="conflictsAccordion">
+                                                    @foreach (var conflict in analysisResult.AnalysisData.PotentialConflicts)
+                                                    {
+                                                        string conflictId = $"conflict_{conflict.GetHashCode()}";
+
+                                                        <div class="accordion-item">
+                                                            <h2 class="accordion-header" id="heading_@conflictId">
+                                                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                                                        data-bs-target="#collapse_@conflictId" aria-expanded="true"
+                                                                        aria-controls="collapse_@conflictId">
+                                                                    <span class="badge bg-warning me-2">@conflict.Type</span>
+                                                                    @conflict.ConflictDescription
+                                                                </button>
+                                                            </h2>
+                                                            <div id="collapse_@conflictId" class="accordion-collapse collapse show"
+                                                                 aria-labelledby="heading_@conflictId" data-bs-parent="#conflictsAccordion">
+                                                                <div class="accordion-body">
+                                                                    <table class="table table-bordered">
+                                                                        <thead class="table-light">
+                                                                            <tr>
+                                                                                <th>Name</th>
+                                                                                @if (conflict.Type == "Column")
+                                                                                {
+                                                                                    <th>Table</th>
+                                                                                }
+                                                                                <th>Suggested Resolution</th>
+                                                                                <th>Actions</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            @foreach (var item in conflict.Items)
+                                                                            {
+                                                                                <tr>
+                                                                                    <td>@item.Name</td>
+                                                                                    @if (conflict.Type == "Column")
+                                                                                    {
+                                                                                        <td>@item.TableName</td>
+                                                                                    }
+                                                                                    <td>@item.SuggestedResolution</td>
+                                                                                    <td>
+                                                                                        <button class="btn btn-sm btn-primary"
+                                                                                                @onclick="() => ApplyConflictResolution(conflict.Type, item)">
+                                                                                            Apply Resolution
+                                                                                        </button>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            }
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+
+                                        <!-- Unclear Elements -->
+                                        @if (analysisCategoryTab == "unclear")
+                                        {
+                                            @if (analysisResult.AnalysisData.UnclearElements.Count == 0)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No unclear elements found in the schema.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="row">
+                                                    @foreach (var element in analysisResult.AnalysisData.UnclearElements)
+                                                    {
+                                                        <div class="col-md-6 mb-3">
+                                                            <div class="card h-100">
+                                                                <div class="card-header bg-light">
+                                                                    <h6 class="mb-0">
+                                                                        <span class="badge bg-secondary me-2">@element.Type</span>
+                                                                        @element.Name
+                                                                        @if (element.Type == "Column")
+                                                                        {
+                                                                            <span class="text-muted"> in @element.TableName</span>
+                                                                        }
+                                                                    </h6>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <h6 class="card-subtitle mb-2 text-muted">Issue:</h6>
+                                                                    <p>@element.Issue</p>
+                                                                    <h6 class="card-subtitle mb-2 text-muted">Suggestion:</h6>
+                                                                    <p>@element.Suggestion</p>
+                                                                </div>
+                                                                <div class="card-footer">
+                                                                    <button class="btn btn-primary" @onclick="() => ApplyUnclearElementSuggestion(element)">
+                                                                        Apply Suggestion
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+
+                                        <!-- Suggested Relationships -->
+                                        @if (analysisCategoryTab == "relationships")
+                                        {
+                                            @if (analysisResult.AnalysisData.SuggestedRelationships.Count == 0)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No relationships suggested for this schema.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>From</th>
+                                                                <th>To</th>
+                                                                <th>Relationship Type</th>
+                                                                <th>Confidence</th>
+                                                                <th>Reasoning</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var relationship in analysisResult.AnalysisData.SuggestedRelationships)
+                                                            {
+                                                                <tr>
+                                                                    <td>@relationship.SourceTable.@relationship.SourceColumn</td>
+                                                                    <td>@relationship.TargetTable.@relationship.TargetColumn</td>
+                                                                    <td>@relationship.RelationshipType</td>
+                                                                    <td>
+                                                                        <div class="progress">
+                                                                            <div class="progress-bar bg-info" role="progressbar"
+                                                                                 style="width: @(relationship.Confidence * 100)%;"
+                                                                                 aria-valuenow="@(relationship.Confidence * 100)"
+                                                                                 aria-valuemin="0" aria-valuemax="100">
+                                                                                @((relationship.Confidence * 100).ToString("F0"))%
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>@relationship.Reasoning</td>
+                                                                    <td>
+                                                                        <button class="btn btn-sm btn-primary"
+                                                                                @onclick="() => AddSuggestedRelationship(relationship)">
+                                                                            Add Relationship
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        }
+                                    }
+                                </div>
+                            }
+                        </li>
+                    }
+                    @if (showSchemaVisualization)
+                    {
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(activeTab == "visualization" ? "active" : "")"
+                                    @onclick='() => SetActiveTab("visualization")' type="button" role="tab">
+                                <i class="fas fa-project-diagram me-2"></i>Schema Visualization
+                            </button>
+                        </li>
+                        <!-- Schema Visualization Tab - Add this inside the Tab Content section -->
+                        @if (activeTab == "visualization")
+                        {
+                            <div class="tab-pane fade show active">
+                                @if (!showSchemaVisualization)
+                                {
+                                    <div class="alert alert-info m-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Schema visualization is disabled.
+                                        <button class="btn btn-primary ms-3" @onclick="ToggleSchemaVisualization">
+                                            <i class="fas fa-project-diagram me-2"></i>Enable Visualization
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="card shadow-sm">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">Schema Visualization</h5>
+                                            <div>
+                                                <div class="btn-group me-2">
+                                                    <button class="btn btn-outline-secondary" @onclick="ZoomIn" title="Zoom in">
+                                                        <i class="fas fa-search-plus"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary" @onclick="ZoomOut" title="Zoom out">
+                                                        <i class="fas fa-search-minus"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary" @onclick="ResetSchemaView" title="Reset view">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-outline-primary @(visualizationMode == "tables" ? "active" : "")"
+                                                            @onclick='() => SetVisualizationMode("tables")'>
+                                                        Tables Only
+                                                    </button>
+                                                    <button class="btn btn-outline-primary @(visualizationMode == "full" ? "active" : "")"
+                                                            @onclick='() => SetVisualizationMode("full")'>
+                                                        Tables & Columns
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div id="schema-visualization" style="height: 600px; width: 100%;">
+                                                @if (isInitializingViz)
+                                                {
+                                                    <div class="d-flex justify-content-center align-items-center h-100">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Loading visualization...</span>
+                                                        </div>
+                                                        <span class="ms-2">Initializing schema visualization...</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <div class="card shadow-sm">
+                                            <div class="card-header bg-light">
+                                                <h5 class="mb-0">Legend</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <h6>Node Types</h6>
+                                                        <ul class="list-group">
+                                                            <li class="list-group-item d-flex align-items-center">
+                                                                <div class="me-2" style="width: 20px; height: 20px; background-color: #4e73df; border-radius: 4px;"></div>
+                                                                <span>Table</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex align-items-center">
+                                                                <div class="me-2" style="width: 20px; height: 20px; background-color: #f8f9fa; border: 1px solid #d1d3e2; border-radius: 4px;"></div>
+                                                                <span>Column</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex align-items-center">
+                                                                <div class="me-2" style="width: 20px; height: 20px; background-color: #36b9cc; border-radius: 4px;"></div>
+                                                                <span>Lookup Column</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <h6>Relationship Types</h6>
+                                                        <ul class="list-group">
+                                                            <li class="list-group-item d-flex align-items-center">
+                                                                <div class="me-2 d-flex align-items-center">
+                                                                    <div style="width: 20px; height: 2px; background-color: #dddfeb;"></div>
+                                                                    <i class="fas fa-chevron-right text-muted ms-1"></i>
+                                                                </div>
+                                                                <span>Normal Relationship</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex align-items-center">
+                                                                <div class="me-2 d-flex align-items-center">
+                                                                    <div style="width: 20px; height: 2px; background-color: #4e73df;"></div>
+                                                                    <i class="fas fa-chevron-right text-primary ms-1"></i>
+                                                                </div>
+                                                                <span>Primary Key</span>
+                                                            </li>
+                                                            <li class="list-group-item d-flex align-items-center">
+                                                                <div class="me-2 d-flex align-items-center">
+                                                                    <div style="width: 20px; height: 2px; background-color: #36b9cc; border-style: dashed;"></div>
+                                                                    <i class="fas fa-chevron-right text-info ms-1"></i>
+                                                                </div>
+                                                                <span>Suggested Relationship</span>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <h6>Controls</h6>
+                                                        <ul class="list-group">
+                                                            <li class="list-group-item">Click on nodes to view details</li>
+                                                            <li class="list-group-item">Drag nodes to reposition</li>
+                                                            <li class="list-group-item">Mouse wheel to zoom in/out</li>
+                                                            <li class="list-group-item">Click and drag background to pan</li>
+                                                            <li class="list-group-item">Double-click background to reset view</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(activeTab == "bulk" ? "active" : "")"
+                                @onclick='() => SetActiveTab("bulk")' type="button" role="tab">
+                            <i class="fas fa-tasks me-2"></i>Bulk Operations
+                        </button>
+                        <!-- Bulk Operations Tab - Add this inside the Tab Content section -->
+                        @if (activeTab == "bulk")
+                        {
+                            <div class="tab-pane fade show active">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-light">
+                                                <h5 class="mb-0">Bulk Find & Replace</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="card-text">Replace text in names and descriptions across multiple tables and columns.</p>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Find Text</label>
+                                                    <input type="text" class="form-control" @bind="findText"
+                                                           placeholder="Text to search for" />
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Replace With</label>
+                                                    <input type="text" class="form-control" @bind="replaceText"
+                                                           placeholder="Text to replace with" />
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Where to Search</label>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="searchTableNames"
+                                                               @bind="searchTableNames" />
+                                                        <label class="form-check-label" for="searchTableNames">
+                                                            Table Display Names
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="searchTableDescriptions"
+                                                               @bind="searchTableDescriptions" />
+                                                        <label class="form-check-label" for="searchTableDescriptions">
+                                                            Table Descriptions
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="searchColumnNames"
+                                                               @bind="searchColumnNames" />
+                                                        <label class="form-check-label" for="searchColumnNames">
+                                                            Column Display Names
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="searchColumnDescriptions"
+                                                               @bind="searchColumnDescriptions" />
+                                                        <label class="form-check-label" for="searchColumnDescriptions">
+                                                            Column Descriptions
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="matchCase"
+                                                           @bind="matchCase" />
+                                                    <label class="form-check-label" for="matchCase">
+                                                        Match Case
+                                                    </label>
+                                                </div>
+
+                                                <button class="btn btn-primary" @onclick="FindAndReplace"
+                                                        disabled="@(!CanPerformFindReplace())">
+                                                    <i class="fas fa-search me-2"></i>Find and Replace
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-header bg-light">
+                                                <h5 class="mb-0">Batch Template Application</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="card-text">Apply naming patterns to multiple tables or columns at once.</p>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Template Type</label>
+                                                    <select class="form-select" @bind="templateType">
+                                                        <option value="table">Table Display Names</option>
+                                                        <option value="column">Column Display Names</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Template Pattern</label>
+                                                    <input type="text" class="form-control" @bind="templatePattern"
+                                                           placeholder="e.g., Customer {Name} = 'Customer Orders'" />
+                                                    <div class="form-text">
+                                                        Use {Name} as placeholder for the original name.
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Apply To</label>
+                                                    @if (templateType == "table")
+                                                    {
+                                                        <select class="form-select" size="8" multiple @bind="selectedTemplateItems">
+                                                            @foreach (var table in schema)
+                                                            {
+                                                                <option value="@table.TableName">@table.TableName</option>
+                                                            }
+                                                        </select>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="mb-2">
+                                                            <select class="form-select" @bind="templateTable">
+                                                                <option value="">-- Select Table --</option>
+                                                                @foreach (var table in schema)
+                                                                {
+                                                                    <option value="@table.TableName">@table.TableName</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+
+                                                        @if (!string.IsNullOrEmpty(templateTable))
+                                                        {
+                                                            <select class="form-select" size="8" multiple @bind="selectedTemplateItems">
+                                                                @foreach (var column in GetColumnsForTemplateTable())
+                                                                {
+                                                                    <option value="@column.ColumnName">@column.ColumnName</option>
+                                                                }
+                                                            </select>
+                                                        }
+                                                    }
+                                                </div>
+
+                                                <button class="btn btn-primary" @onclick="ApplyTemplate"
+                                                        disabled="@(!CanApplyTemplate())">
+                                                    <i class="fas fa-magic me-2"></i>Apply Template
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Bulk Actions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">Import/Export</h5>
+                                                        <p class="card-text">Import or export metadata configurations.</p>
+                                                        <div class="d-flex gap-2">
+                                                            <button class="btn btn-outline-primary" @onclick="ExportMetadata">
+                                                                <i class="fas fa-file-export me-2"></i>Export
+                                                            </button>
+                                                            <button class="btn btn-outline-primary" @onclick="() => importFileInput.Click()">
+                                                                <i class="fas fa-file-import me-2"></i>Import
+                                                            </button>
+                                                            <InputFile id="importFile" OnChange="ImportMetadata" hidden
+                                                                       @ref="importFileInput" accept=".json" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">Column Suggestions</h5>
+                                                        <p class="card-text">Mark columns based on common patterns.</p>
+                                                        <button class="btn btn-outline-primary" @onclick="DetectLookupColumns">
+                                                            <i class="fas fa-search me-2"></i>Auto-Detect Lookup Columns
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">Metadata Reset</h5>
+                                                        <p class="card-text">Clear or reset metadata settings.</p>
+                                                        <div class="d-flex gap-2">
+                                                            <button class="btn btn-outline-danger" @onclick="ClearAllDescriptions">
+                                                                <i class="fas fa-eraser me-2"></i>Clear Descriptions
+                                                            </button>
+                                                            <button class="btn btn-outline-danger" @onclick="ResetToOriginal">
+                                                                <i class="fas fa-undo me-2"></i>Reset All
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bulk operation results -->
+                                @if (bulkOperationResults.Count > 0)
+                                {
+                                    <div class="card">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">Operation Results</h5>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearBulkResults">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Operation</th>
+                                                            <th>Items Affected</th>
+                                                            <th>Details</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var result in bulkOperationResults)
+                                                        {
+                                                            <tr>
+                                                                <td>@result.Operation</td>
+                                                                <td>@result.ItemsAffected</td>
+                                                                <td>@result.Details</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(activeTab == "history" ? "active" : "")"
+                                @onclick='() => SetActiveTab("history")' type="button" role="tab">
+                            <i class="fas fa-history me-2"></i>Change History
+                        </button>
+                        <!-- Change History Tab - Add this inside the Tab Content section -->
+                        @if (activeTab == "history")
+                        {
+                            <div class="tab-pane fade show active">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Change History</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (changeHistory.Count == 0)
+                                        {
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                No changes have been recorded yet. Changes will appear here after you save modifications.
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date/Time</th>
+                                                            <th>User</th>
+                                                            <th>Description</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var change in changeHistory.OrderByDescending(c => c.Timestamp))
+                                                        {
+                                                            <tr>
+                                                                <td>@change.Timestamp.ToString("g")</td>
+                                                                <td>@change.User</td>
+                                                                <td>@change.Description</td>
+                                                                <td>
+                                                                    @if (change.Changes.Count > 0)
+                                                                    {
+                                                                        <button class="btn btn-sm btn-outline-info"
+                                                                                @onclick="() => ShowChangeDetails(change)">
+                                                                            <i class="fas fa-list"></i> Details
+                                                                        </button>
+                                                                    }
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Change details modal -->
+                                @if (selectedChange != null)
+                                {
+                                    <div class="modal fade show" tabindex="-1" style="display: block;">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Change Details</h5>
+                                                    <button type="button" class="btn-close" @onclick="HideChangeDetails"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <dl class="row">
+                                                        <dt class="col-sm-3">Timestamp:</dt>
+                                                        <dd class="col-sm-9">@selectedChange.Timestamp.ToString("F")</dd>
+
+                                                        <dt class="col-sm-3">User:</dt>
+                                                        <dd class="col-sm-9">@selectedChange.User</dd>
+
+                                                        <dt class="col-sm-3">Description:</dt>
+                                                        <dd class="col-sm-9">@selectedChange.Description</dd>
+                                                    </dl>
+
+                                                    <h6>Modified Items:</h6>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-striped">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Item</th>
+                                                                    <th>Field</th>
+                                                                    <th>Previous Value</th>
+                                                                    <th>New Value</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var change in selectedChange.Changes)
+                                                                {
+                                                                    <tr>
+                                                                        <td>@change.Key.Split('|')[0]</td>
+                                                                        <td>@change.Key.Split('|')[1]</td>
+                                                                        <td>@((change.Value as dynamic)?.oldValue ?? "")</td>
+                                                                        <td>@((change.Value as dynamic)?.newValue ?? "")</td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" @onclick="HideChangeDetails">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-backdrop fade show"></div>
+                                }
+                            </div>
+                        }
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content p-3">
+                    <!-- Tables & Columns Tab -->
+                    @if (activeTab == "tables")
+                    {
+                        <div class="tab-pane fade show active">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div class="d-flex">
+                                    <div class="input-group me-3" style="width: 300px;">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control" placeholder="Search tables..."
+                                               @oninput="FilterTables" />
+                                    </div>
+                                    <div class="form-check form-switch d-flex align-items-center">
+                                        <input class="form-check-input me-2" type="checkbox" id="showOnlyWithIssues"
+                                               @bind="showOnlyTablesWithIssues" />
+                                        <label class="form-check-label" for="showOnlyWithIssues">
+                                            Show only tables needing attention
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-success" @onclick="SaveAllChanges">
+                                        <i class="fas fa-save me-2"></i>Save All Changes
+                                    </button>
+                                    <button class="btn btn-outline-primary ms-2" @onclick="RunSchemaAnalysis">
+                                        <i class="fas fa-magic me-2"></i>Analyze Schema
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tables List -->
+                            <!-- This will be implemented separately in Part 2 -->
+                        </div>
+                    }
+
+                    <!-- Other tab contents will be implemented in subsequent parts -->
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int DatabaseId { get; set; }
+
+    // State variables
+    private string activeTab = "tables";
+    private bool isAdvancedView = false;
+    private bool showSchemaVisualization = false;
+    private bool isLoading = true;
+    private string loadingMessage = "Loading database schema...";
+    private string errorMessage;
+    private string tableFilter = "";
+    private string columnFilter = "";
+    private bool showOnlyTablesWithIssues = false;
+    private SchemaTableDto selectedTable;
+    private Dictionary<int, bool> expandedTables = new();
+    private Dictionary<int, List<SchemaColumnDto>> modifiedColumns = new();
+    private List<SchemaTableDto> schema;
+    private List<SchemaTableDto> filteredTables;
+
+    // Analysis results
+    private SchemaAnalysisResult analysisResult;
+    private bool hasAnalysisResults => analysisResult?.AnalysisData != null;
+    private bool hasSuggestions => HasAnyIssues();
+    private int suggestionCount => CountAllIssues();
+
+    // Change tracking
+    private List<ChangeRecord> changeHistory = new();
+    private bool hasUnsavedChanges = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSchema();
+    }
+
+    private async Task LoadSchema()
+    {
+        isLoading = true;
+        loadingMessage = "Loading database schema...";
+        errorMessage = null;
+
+        try
+        {
+            schema = await Http.GetFromJsonAsync<List<SchemaTableDto>>($"api/databases/{DatabaseId}/schema");
+            filteredTables = schema;
+
+            // Initialize expanded state dictionary for tables
+            foreach (var table in schema)
+            {
+                expandedTables[table.GetHashCode()] = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading database schema: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SetActiveTab(string tabName)
+    {
+        activeTab = tabName;
+    }
+
+    private void ToggleView()
+    {
+        isAdvancedView = !isAdvancedView;
+    }
+
+    private void ToggleSchemaVisualization()
+    {
+        showSchemaVisualization = !showSchemaVisualization;
+        if (showSchemaVisualization && activeTab != "visualization")
+        {
+            SetActiveTab("visualization");
+        }
+    }
+
+    private void FilterTables(ChangeEventArgs e)
+    {
+        tableFilter = e.Value?.ToString() ?? "";
+        ApplyTableFilters();
+    }
+
+    private void ApplyTableFilters()
+    {
+        if (schema == null) return;
+
+        IEnumerable<SchemaTableDto> result = schema;
+
+        // Apply text filter
+        if (!string.IsNullOrWhiteSpace(tableFilter))
+        {
+            result = result.Where(t =>
+                t.TableName.Contains(tableFilter, StringComparison.OrdinalIgnoreCase) ||
+                t.AdminTableName?.Contains(tableFilter, StringComparison.OrdinalIgnoreCase) == true ||
+                t.AdminDescription?.Contains(tableFilter, StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        // Apply "issues only" filter if enabled
+        if (showOnlyTablesWithIssues && hasAnalysisResults)
+        {
+            result = result.Where(t => HasIssuesForTable(t));
+        }
+
+        filteredTables = result.ToList();
+    }
+
+    private bool HasIssuesForTable(SchemaTableDto table)
+    {
+        if (analysisResult?.AnalysisData == null) return false;
+
+        var data = analysisResult.AnalysisData;
+
+        // Check if this table has suggestions
+        bool hasTableSuggestion = data.TableDescriptions?.Any(td =>
+            td.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase)) ?? false;
+
+        // Check if any columns have suggestions
+        bool hasColumnSuggestions = data.ColumnDescriptions?.Any(cd =>
+            cd.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase)) ?? false;
+
+        // Check if table is part of any conflicts
+        bool hasConflicts = data.PotentialConflicts?.Any(pc =>
+            pc.Type == "Table" && pc.Items.Any(i =>
+                i.Name.Equals(table.TableName, StringComparison.OrdinalIgnoreCase))) ?? false;
+
+        // Check if table has unclear elements
+        bool hasUnclearElements = data.UnclearElements?.Any(ue =>
+            (ue.Type == "Table" && ue.Name.Equals(table.TableName, StringComparison.OrdinalIgnoreCase)) ||
+            (ue.Type == "Column" && ue.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase))) ?? false;
+
+        // Check if table has suggested relationships
+        bool hasSuggestedRelationships = data.SuggestedRelationships?.Any(sr =>
+            sr.SourceTable.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) ||
+            sr.TargetTable.Equals(table.TableName, StringComparison.OrdinalIgnoreCase)) ?? false;
+
+        return hasTableSuggestion || hasColumnSuggestions || hasConflicts ||
+               hasUnclearElements || hasSuggestedRelationships;
+    }
+
+    private bool HasAnyIssues()
+    {
+        if (analysisResult?.AnalysisData == null) return false;
+
+        var data = analysisResult.AnalysisData;
+        return (data.TableDescriptions?.Count > 0) ||
+               (data.ColumnDescriptions?.Count > 0) ||
+               (data.PotentialConflicts?.Count > 0) ||
+               (data.UnclearElements?.Count > 0) ||
+               (data.SuggestedRelationships?.Count > 0);
+    }
+
+    private int CountAllIssues()
+    {
+        if (analysisResult?.AnalysisData == null) return 0;
+
+        var data = analysisResult.AnalysisData;
+        return (data.TableDescriptions?.Count ?? 0) +
+               (data.ColumnDescriptions?.Count ?? 0) +
+               (data.PotentialConflicts?.Count ?? 0) +
+               (data.UnclearElements?.Count ?? 0) +
+               (data.SuggestedRelationships?.Count ?? 0);
+    }
+
+    private async Task RunSchemaAnalysis()
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        loadingMessage = "Analyzing database schema...";
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<SchemaAnalysisResult>($"api/schemaanalysis/analyze/{DatabaseId}");
+            analysisResult = response;
+
+            if (response?.Success == true)
+            {
+                // Auto-switch to analysis tab if it contains suggestions
+                if (HasAnyIssues())
+                {
+                    SetActiveTab("analysis");
+                }
+            }
+            else
+            {
+                errorMessage = $"Analysis failed: {response?.ErrorMessage}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error analyzing schema: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAllChanges()
+    {
+        if (isLoading || schema == null) return;
+
+        isLoading = true;
+        loadingMessage = "Saving changes...";
+
+        try
+        {
+            // Record the changes in history before saving
+            RecordChanges();
+
+            // Save schema changes to the API
+            var response = await Http.PostAsJsonAsync($"api/databases/{DatabaseId}/schema", schema);
+
+            if (response.IsSuccessStatusCode)
+            {
+                hasUnsavedChanges = false;
+                await JSRuntime.InvokeVoidAsync("alert", "All changes saved successfully!");
+            }
+            else
+            {
+                errorMessage = $"Error saving changes: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving changes: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void RecordChanges()
+    {
+        // This is a placeholder for the change tracking functionality
+        // In a real implementation, this would compare the current state with the original
+        // and record specific changes for the history
+        changeHistory.Add(new ChangeRecord
+            {
+                Timestamp = DateTime.Now,
+                Description = "Schema changes saved",
+                User = "Current User" // In a real app, get the actual user
+            });
+    }
+
+    private void GoBack()
+    {
+        if (hasUnsavedChanges)
+        {
+            // In a real implementation, show a confirmation dialog
+            // For now, just navigate back
+        }
+
+        NavigationManager.NavigateTo("/admin/dbmanagement");
+    }
+
+    // Simple record class for change tracking
+    private class ChangeRecord
+    {
+        public DateTime Timestamp { get; set; }
+        public string Description { get; set; }
+        public string User { get; set; }
+        public Dictionary<string, object> Changes { get; set; } = new();
+    }
+
+
+
+    //Tables & Columns
+    // Table expansion
+    private void ToggleTableExpansion(SchemaTableDto table)
+    {
+        int tableKey = table.GetHashCode();
+        if (expandedTables.ContainsKey(tableKey))
+        {
+            expandedTables[tableKey] = !expandedTables[tableKey];
+        }
+        else
+        {
+            expandedTables[tableKey] = true;
+        }
+    }
+
+    // Column filtering
+    private void FilterColumns(ChangeEventArgs e, SchemaTableDto table)
+    {
+        columnFilter = e.Value?.ToString() ?? "";
+        // The actual filtering is done in GetFilteredColumns
+    }
+
+    private List<SchemaColumnDto> GetFilteredColumns(SchemaTableDto table)
+    {
+        if (table?.Columns == null) return new List<SchemaColumnDto>();
+
+        if (string.IsNullOrWhiteSpace(columnFilter))
+        {
+            return table.Columns;
+        }
+
+        return table.Columns.Where(c =>
+            c.ColumnName.Contains(columnFilter, StringComparison.OrdinalIgnoreCase) ||
+            c.AdminColumnName?.Contains(columnFilter, StringComparison.OrdinalIgnoreCase) == true ||
+            c.DataType?.Contains(columnFilter, StringComparison.OrdinalIgnoreCase) == true ||
+            c.AdminDescription?.Contains(columnFilter, StringComparison.OrdinalIgnoreCase) == true
+        ).ToList();
+    }
+
+    // Change tracking
+    private void MarkTableAsModified(SchemaTableDto table)
+    {
+        hasUnsavedChanges = true;
+    }
+
+    private void MarkColumnAsModified(SchemaTableDto table, SchemaColumnDto column)
+    {
+        hasUnsavedChanges = true;
+
+        // Track specific column changes for possible undo functionality
+        int tableKey = table.GetHashCode();
+        if (!modifiedColumns.ContainsKey(tableKey))
+        {
+            modifiedColumns[tableKey] = new List<SchemaColumnDto>();
+        }
+
+        if (!modifiedColumns[tableKey].Contains(column))
+        {
+            modifiedColumns[tableKey].Add(column);
+        }
+    }
+
+    // Lookup column toggle
+    private void ToggleLookupColumn(SchemaTableDto table, SchemaColumnDto column, ChangeEventArgs e)
+    {
+        if (e.Value is bool isChecked)
+        {
+            column.IsLookupColumn = isChecked;
+            MarkColumnAsModified(table, column);
+        }
+    }
+
+    // Individual save functionality
+    private async Task SaveTableChanges(SchemaTableDto table)
+    {
+        if (isLoading) return;
+
+        try
+        {
+            // In a real implementation, you would save just this specific table
+            // For simplicity, we'll use the full save method
+            await SaveAllChanges();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving table changes: {ex.Message}";
+        }
+    }
+
+    // Details views
+    private void ShowTableDetails(SchemaTableDto table)
+    {
+        selectedTable = table;
+        // In a full implementation, this would open a modal with detailed information
+        // For now, we'll just expand the table to show its columns
+        int tableKey = table.GetHashCode();
+        expandedTables[tableKey] = true;
+    }
+
+    private void ShowColumnDetails(SchemaTableDto table, SchemaColumnDto column)
+    {
+        // In a full implementation, this would open a modal with detailed column information
+        // For now, we'll just log to console
+        Console.WriteLine($"Column details: {table.TableName}.{column.ColumnName}");
+    }
+
+    // AI suggestion handling
+    private bool HasIssuesForColumn(SchemaTableDto table, SchemaColumnDto column)
+    {
+        if (analysisResult?.AnalysisData == null) return false;
+
+        var data = analysisResult.AnalysisData;
+
+        // Check if column has suggestions
+        bool hasColumnSuggestion = data.ColumnDescriptions?.Any(cd =>
+            cd.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) &&
+            cd.ColumnName.Equals(column.ColumnName, StringComparison.OrdinalIgnoreCase)) ?? false;
+
+        // Check if column is part of any conflicts
+        bool hasConflicts = data.PotentialConflicts?.Any(pc =>
+            pc.Type == "Column" && pc.Items.Any(i =>
+                i.TableName?.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) == true &&
+                i.Name.Equals(column.ColumnName, StringComparison.OrdinalIgnoreCase))) ?? false;
+
+        // Check if column has unclear elements
+        bool hasUnclearElements = data.UnclearElements?.Any(ue =>
+            ue.Type == "Column" &&
+            ue.TableName?.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) == true &&
+            ue.Name.Equals(column.ColumnName, StringComparison.OrdinalIgnoreCase)) ?? false;
+
+        return hasColumnSuggestion || hasConflicts || hasUnclearElements;
+    }
+
+    private void ApplySuggestedTableName(SchemaTableDto table)
+    {
+        if (analysisResult?.AnalysisData?.TableDescriptions == null) return;
+
+        var suggestion = analysisResult.AnalysisData.TableDescriptions
+            .FirstOrDefault(td => td.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase));
+
+        if (suggestion != null)
+        {
+            table.AdminTableName = suggestion.SuggestedName;
+            MarkTableAsModified(table);
+        }
+    }
+
+    private void ApplySuggestedTableDescription(SchemaTableDto table)
+    {
+        if (analysisResult?.AnalysisData?.TableDescriptions == null) return;
+
+        var suggestion = analysisResult.AnalysisData.TableDescriptions
+            .FirstOrDefault(td => td.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase));
+
+        if (suggestion != null)
+        {
+            table.AdminDescription = suggestion.SuggestedDescription;
+            MarkTableAsModified(table);
+        }
+    }
+
+    private void ApplySuggestedColumnName(SchemaTableDto table, SchemaColumnDto column)
+    {
+        if (analysisResult?.AnalysisData?.ColumnDescriptions == null) return;
+
+        var suggestion = analysisResult.AnalysisData.ColumnDescriptions
+            .FirstOrDefault(cd =>
+                cd.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) &&
+                cd.ColumnName.Equals(column.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+        if (suggestion != null)
+        {
+            column.AdminColumnName = suggestion.SuggestedName;
+            MarkColumnAsModified(table, column);
+        }
+    }
+
+    private void ApplySuggestedColumnDescription(SchemaTableDto table, SchemaColumnDto column)
+    {
+        if (analysisResult?.AnalysisData?.ColumnDescriptions == null) return;
+
+        var suggestion = analysisResult.AnalysisData.ColumnDescriptions
+            .FirstOrDefault(cd =>
+                cd.TableName.Equals(table.TableName, StringComparison.OrdinalIgnoreCase) &&
+                cd.ColumnName.Equals(column.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+        if (suggestion != null)
+        {
+            column.AdminDescription = suggestion.SuggestedDescription;
+            column.IsLookupColumn = suggestion.IsLookupColumn;
+            MarkColumnAsModified(table, column);
+        }
+    }
+
+
+
+    // AI suggestions tab management
+    private string analysisCategoryTab = "tablesuggestions";
+
+    private void SetAnalysisCategoryTab(string tabName)
+    {
+        analysisCategoryTab = tabName;
+    }
+
+    // Apply suggestions methods
+    private void ApplyTableNameSuggestion(SchemaTableDto table, TableDescription suggestion)
+    {
+        table.AdminTableName = suggestion.SuggestedName;
+        MarkTableAsModified(table);
+    }
+
+    private void ApplyTableDescriptionSuggestion(SchemaTableDto table, TableDescription suggestion)
+    {
+        table.AdminDescription = suggestion.SuggestedDescription;
+        MarkTableAsModified(table);
+    }
+
+    private void ApplyAllTableSuggestions(SchemaTableDto table, TableDescription suggestion)
+    {
+        table.AdminTableName = suggestion.SuggestedName;
+        table.AdminDescription = suggestion.SuggestedDescription;
+        MarkTableAsModified(table);
+    }
+
+    private void ApplyColumnNameSuggestion(SchemaTableDto table, SchemaColumnDto column, ColumnDescription suggestion)
+    {
+        column.AdminColumnName = suggestion.SuggestedName;
+        MarkColumnAsModified(table, column);
+    }
+
+    private void ApplyColumnDescriptionSuggestion(SchemaTableDto table, SchemaColumnDto column, ColumnDescription suggestion)
+    {
+        column.AdminDescription = suggestion.SuggestedDescription;
+        MarkColumnAsModified(table, column);
+    }
+
+    private void ApplyAllColumnSuggestions(SchemaTableDto table, SchemaColumnDto column, ColumnDescription suggestion)
+    {
+        column.AdminColumnName = suggestion.SuggestedName;
+        column.AdminDescription = suggestion.SuggestedDescription;
+        column.IsLookupColumn = suggestion.IsLookupColumn;
+        MarkColumnAsModified(table, column);
+    }
+
+    private void ApplyConflictResolution(string type, ConflictItem item)
+    {
+        if (type == "Table")
+        {
+            var table = schema.FirstOrDefault(t => t.TableName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+            if (table != null)
+            {
+                table.AdminTableName = item.SuggestedResolution;
+                MarkTableAsModified(table);
+            }
+        }
+        else if (type == "Column")
+        {
+            var table = schema.FirstOrDefault(t => t.TableName.Equals(item.TableName, StringComparison.OrdinalIgnoreCase));
+            if (table != null)
+            {
+                var column = table.Columns.FirstOrDefault(c => c.ColumnName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+                if (column != null)
+                {
+                    column.AdminColumnName = item.SuggestedResolution;
+                    MarkColumnAsModified(table, column);
+                }
+            }
+        }
+    }
+
+    private void ApplyUnclearElementSuggestion(UnclearElement element)
+    {
+        if (element.Type == "Table")
+        {
+            var table = schema.FirstOrDefault(t => t.TableName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+            if (table != null)
+            {
+                table.AdminDescription = element.Suggestion;
+                MarkTableAsModified(table);
+            }
+        }
+        else if (element.Type == "Column")
+        {
+            var table = schema.FirstOrDefault(t => t.TableName.Equals(element.TableName, StringComparison.OrdinalIgnoreCase));
+            if (table != null)
+            {
+                var column = table.Columns.FirstOrDefault(c => c.ColumnName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+                if (column != null)
+                {
+                    column.AdminDescription = element.Suggestion;
+                    MarkColumnAsModified(table, column);
+                }
+            }
+        }
+    }
+
+    private async Task AddSuggestedRelationship(SuggestedRelationship relationship)
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        loadingMessage = "Adding relationship...";
+
+        try
+        {
+            // Call the API to add the relationship
+            var response = await Http.PostAsJsonAsync($"api/schemaanalysis/add-relationship/{DatabaseId}", relationship);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Refresh the schema to get the new relationship
+                await LoadSchema();
+                await JSRuntime.InvokeVoidAsync("alert", "Relationship added successfully!");
+            }
+            else
+            {
+                errorMessage = $"Error adding relationship: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error adding relationship: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ApplyAllSuggestions()
+    {
+        if (isLoading || analysisResult?.AnalysisData == null) return;
+
+        isLoading = true;
+        loadingMessage = "Applying all suggestions...";
+
+        try
+        {
+            // Call the API to apply all suggestions
+            var response = await Http.PostAsJsonAsync($"api/schemaanalysis/apply-descriptions/{DatabaseId}", analysisResult.AnalysisData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Refresh the schema to see the applied changes
+                await LoadSchema();
+                await JSRuntime.InvokeVoidAsync("alert", "All suggestions applied successfully!");
+            }
+            else
+            {
+                errorMessage = $"Error applying suggestions: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error applying suggestions: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+
+    // Schema visualization variables
+    private bool isInitializingViz = true;
+    private string visualizationMode = "tables";
+    private DotNetObjectReference<MetadataManager> objRef;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            InitializeVisualization();
+        }
+    }
+
+    private async void InitializeVisualization()
+    {
+        if (!showSchemaVisualization) return;
+
+        try
+        {
+            // Initialize the visualization library
+            await JSRuntime.InvokeVoidAsync("import", "/_content/DynamicDashboardFE/js/schemaVisualization.js");
+            await JSRuntime.InvokeVoidAsync("schemaVisualization.initialize", objRef, "#schema-visualization");
+
+            // Render the schema if we have data
+            if (schema != null && schema.Any())
+            {
+                RenderSchemaVisualization();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error initializing visualization: {ex.Message}";
+        }
+        finally
+        {
+            isInitializingViz = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetVisualizationMode(string mode)
+    {
+        visualizationMode = mode;
+        RenderSchemaVisualization();
+    }
+
+    private async void RenderSchemaVisualization()
+    {
+        if (!showSchemaVisualization || schema == null) return;
+
+        try
+        {
+            // Generate schema elements for visualization
+            var elements = GenerateSchemaElements();
+
+            // Send to JS for rendering
+            await JSRuntime.InvokeVoidAsync("schemaVisualization.render", elements);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error rendering schema visualization: {ex.Message}";
+        }
+    }
+
+    private object GenerateSchemaElements()
+    {
+        var elements = new List<object>();
+
+        // Add tables as nodes
+        foreach (var table in schema)
+        {
+            elements.Add(new
+            {
+                group = "nodes",
+                data = new
+                {
+                    id = $"table_{table.TableName}",
+                    label = string.IsNullOrEmpty(table.AdminTableName) ? table.TableName : table.AdminTableName,
+                    type = "table",
+                    originalName = table.TableName,
+                    description = table.AdminDescription
+                }
+            });
+
+            // Add columns as child nodes if full mode is selected
+            if (visualizationMode == "full")
+            {
+                foreach (var column in table.Columns)
+                {
+                    elements.Add(new
+                    {
+                        group = "nodes",
+                        data = new
+                        {
+                            id = $"column_{table.TableName}_{column.ColumnName}",
+                            parent = $"table_{table.TableName}",
+                            label = string.IsNullOrEmpty(column.AdminColumnName) ? column.ColumnName : column.AdminColumnName,
+                            type = "column",
+                            originalName = column.ColumnName,
+                            dataType = column.DataType,
+                            isNullable = column.IsNullable,
+                            isLookup = column.IsLookupColumn,
+                            description = column.AdminDescription
+                        }
+                    });
+                }
+            }
+        }
+
+        // Add relationships from analysis if available
+        if (hasAnalysisResults && analysisResult.AnalysisData?.SuggestedRelationships != null)
+        {
+            foreach (var relationship in analysisResult.AnalysisData.SuggestedRelationships)
+            {
+                if (visualizationMode == "full")
+                {
+                    // Add as column-to-column relationship
+                    elements.Add(new
+                    {
+                        group = "edges",
+                        data = new
+                        {
+                            id = $"suggested_rel_{relationship.SourceTable}_{relationship.SourceColumn}_{relationship.TargetTable}_{relationship.TargetColumn}",
+                            source = $"column_{relationship.SourceTable}_{relationship.SourceColumn}",
+                            target = $"column_{relationship.TargetTable}_{relationship.TargetColumn}",
+                            label = relationship.RelationshipType,
+                            type = "suggested",
+                            confidence = relationship.Confidence
+                        }
+                    });
+                }
+                else
+                {
+                    // Add as table-to-table relationship
+                    elements.Add(new
+                    {
+                        group = "edges",
+                        data = new
+                        {
+                            id = $"suggested_rel_{relationship.SourceTable}_{relationship.TargetTable}",
+                            source = $"table_{relationship.SourceTable}",
+                            target = $"table_{relationship.TargetTable}",
+                            label = relationship.RelationshipType,
+                            type = "suggested",
+                            confidence = relationship.Confidence
+                        }
+                    });
+                }
+            }
+        }
+
+        return elements;
+    }
+
+    private async Task ZoomIn()
+    {
+        await JSRuntime.InvokeVoidAsync("schemaVisualization.zoomIn");
+    }
+
+    private async Task ZoomOut()
+    {
+        await JSRuntime.InvokeVoidAsync("schemaVisualization.zoomOut");
+    }
+
+    private async Task ResetSchemaView()
+    {
+        await JSRuntime.InvokeVoidAsync("schemaVisualization.resetView");
+    }
+
+    [JSInvokable]
+    public void HandleNodeClick(string nodeId, string nodeType)
+    {
+        // Handle node click from JS
+        if (nodeType == "table")
+        {
+            // Extract table name from nodeId
+            string tableName = nodeId.Replace("table_", "");
+            var table = schema.FirstOrDefault(t => t.TableName == tableName);
+
+            if (table != null)
+            {
+                selectedTable = table;
+                int tableKey = table.GetHashCode();
+                expandedTables[tableKey] = true;
+                activeTab = "tables"; // Switch to tables tab to show the selected table
+                StateHasChanged();
+            }
+        }
+        else if (nodeType == "column")
+        {
+            // Extract table and column from nodeId
+            string[] parts = nodeId.Replace("column_", "").Split('_');
+            if (parts.Length >= 2)
+            {
+                string tableName = parts[0];
+                string columnName = string.Join("_", parts.Skip(1)); // Handle column names with underscores
+
+                var table = schema.FirstOrDefault(t => t.TableName == tableName);
+                if (table != null)
+                {
+                    selectedTable = table;
+                    int tableKey = table.GetHashCode();
+                    expandedTables[tableKey] = true;
+                    activeTab = "tables"; // Switch to tables tab to show the selected table and column
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+
+    // Bulk operations variables
+    private string findText = "";
+    private string replaceText = "";
+    private bool searchTableNames = true;
+    private bool searchTableDescriptions = true;
+    private bool searchColumnNames = true;
+    private bool searchColumnDescriptions = true;
+    private bool matchCase = false;
+
+    private string templateType = "table";
+    private string templatePattern = "{Name}";
+    private string templateTable = "";
+    private List<string> selectedTemplateItems = new();
+    private InputFile importFileInput;
+
+    private List<BulkOperationResult> bulkOperationResults = new();
+
+    // Bulk operations methods
+    private bool CanPerformFindReplace()
+    {
+        return !string.IsNullOrEmpty(findText) &&
+               (searchTableNames || searchTableDescriptions || searchColumnNames || searchColumnDescriptions);
+    }
+
+    private void FindAndReplace()
+    {
+        if (!CanPerformFindReplace() || schema == null) return;
+
+        int itemsAffected = 0;
+        string details = $"Replaced \"{findText}\" with \"{replaceText}\"";
+
+        StringComparison comparison = matchCase ?
+            StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+        foreach (var table in schema)
+        {
+            if (searchTableNames && !string.IsNullOrEmpty(table.AdminTableName))
+            {
+                if (table.AdminTableName.Contains(findText, comparison))
+                {
+                    table.AdminTableName = table.AdminTableName.Replace(findText, replaceText);
+                    MarkTableAsModified(table);
+                    itemsAffected++;
+                }
+            }
+
+            if (searchTableDescriptions && !string.IsNullOrEmpty(table.AdminDescription))
+            {
+                if (table.AdminDescription.Contains(findText, comparison))
+                {
+                    table.AdminDescription = table.AdminDescription.Replace(findText, replaceText);
+                    MarkTableAsModified(table);
+                    itemsAffected++;
+                }
+            }
+
+            if (searchColumnNames || searchColumnDescriptions)
+            {
+                foreach (var column in table.Columns)
+                {
+                    if (searchColumnNames && !string.IsNullOrEmpty(column.AdminColumnName))
+                    {
+                        if (column.AdminColumnName.Contains(findText, comparison))
+                        {
+                            column.AdminColumnName = column.AdminColumnName.Replace(findText, replaceText);
+                            MarkColumnAsModified(table, column);
+                            itemsAffected++;
+                        }
+                    }
+
+                    if (searchColumnDescriptions && !string.IsNullOrEmpty(column.AdminDescription))
+                    {
+                        if (column.AdminDescription.Contains(findText, comparison))
+                        {
+                            column.AdminDescription = column.AdminDescription.Replace(findText, replaceText);
+                            MarkColumnAsModified(table, column);
+                            itemsAffected++;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add result to log
+        bulkOperationResults.Add(new BulkOperationResult
+            {
+                Operation = "Find and Replace",
+                ItemsAffected = itemsAffected,
+                Details = details
+            });
+
+        hasUnsavedChanges = itemsAffected > 0;
+    }
+
+    private List<SchemaColumnDto> GetColumnsForTemplateTable()
+    {
+        if (string.IsNullOrEmpty(templateTable) || schema == null) return new List<SchemaColumnDto>();
+
+        var table = schema.FirstOrDefault(t => t.TableName == templateTable);
+        return table?.Columns ?? new List<SchemaColumnDto>();
+    }
+
+    private bool CanApplyTemplate()
+    {
+        return !string.IsNullOrEmpty(templatePattern) &&
+               selectedTemplateItems.Count > 0 &&
+               (templateType != "column" || !string.IsNullOrEmpty(templateTable));
+    }
+
+    private void ApplyTemplate()
+    {
+        if (!CanApplyTemplate() || schema == null) return;
+
+        int itemsAffected = 0;
+        string details = $"Applied template: \"{templatePattern}\"";
+
+        if (templateType == "table")
+        {
+            foreach (var tableName in selectedTemplateItems)
+            {
+                var table = schema.FirstOrDefault(t => t.TableName == tableName);
+                if (table != null)
+                {
+                    table.AdminTableName = templatePattern.Replace("{Name}", table.TableName);
+                    MarkTableAsModified(table);
+                    itemsAffected++;
+                }
+            }
+        }
+        else if (templateType == "column" && !string.IsNullOrEmpty(templateTable))
+        {
+            var table = schema.FirstOrDefault(t => t.TableName == templateTable);
+            if (table != null)
+            {
+                foreach (var columnName in selectedTemplateItems)
+                {
+                    var column = table.Columns.FirstOrDefault(c => c.ColumnName == columnName);
+                    if (column != null)
+                    {
+                        column.AdminColumnName = templatePattern.Replace("{Name}", column.ColumnName);
+                        MarkColumnAsModified(table, column);
+                        itemsAffected++;
+                    }
+                }
+            }
+        }
+
+        // Add result to log
+        bulkOperationResults.Add(new BulkOperationResult
+            {
+                Operation = $"Apply Template to {templateType}s",
+                ItemsAffected = itemsAffected,
+                Details = details
+            });
+
+        hasUnsavedChanges = itemsAffected > 0;
+        selectedTemplateItems.Clear(); // Reset selection
+    }
+
+    private async Task ExportMetadata()
+    {
+        if (schema == null) return;
+
+        try
+        {
+            // Serialize the schema to JSON
+            var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+            string json = JsonSerializer.Serialize(schema, options);
+
+            // Trigger a file download
+            await JSRuntime.InvokeVoidAsync("downloadFile",
+                $"metadata_export_{DateTime.Now:yyyyMMdd}.json",
+                "application/json",
+                json);
+
+            // Add result to log
+            bulkOperationResults.Add(new BulkOperationResult
+                {
+                    Operation = "Export Metadata",
+                    ItemsAffected = schema.Count,
+                    Details = $"Exported {schema.Count} tables with metadata"
+                });
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error exporting metadata: {ex.Message}";
+        }
+    }
+
+    private async Task ImportMetadata(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount == 0) return;
+
+        try
+        {
+            // Read the uploaded file
+            var file = e.File;
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream().ReadAsync(buffer);
+            string json = Encoding.UTF8.GetString(buffer);
+
+            // Deserialize the JSON to schema objects
+            var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+            var importedSchema = JsonSerializer.Deserialize<List<SchemaTableDto>>(json, options);
+
+            if (importedSchema == null || importedSchema.Count == 0)
+            {
+                errorMessage = "The imported file does not contain valid schema metadata.";
+                return;
+            }
+
+            int tablesUpdated = 0;
+            int columnsUpdated = 0;
+
+            // Update existing schema with imported values
+            foreach (var importedTable in importedSchema)
+            {
+                var existingTable = schema.FirstOrDefault(t =>
+                    t.TableName.Equals(importedTable.TableName, StringComparison.OrdinalIgnoreCase));
+
+                if (existingTable != null)
+                {
+                    existingTable.AdminTableName = importedTable.AdminTableName;
+                    existingTable.AdminDescription = importedTable.AdminDescription;
+                    MarkTableAsModified(existingTable);
+                    tablesUpdated++;
+
+                    foreach (var importedColumn in importedTable.Columns)
+                    {
+                        var existingColumn = existingTable.Columns.FirstOrDefault(c =>
+                            c.ColumnName.Equals(importedColumn.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+                        if (existingColumn != null)
+                        {
+                            existingColumn.AdminColumnName = importedColumn.AdminColumnName;
+                            existingColumn.AdminDescription = importedColumn.AdminDescription;
+                            existingColumn.IsLookupColumn = importedColumn.IsLookupColumn;
+                            MarkColumnAsModified(existingTable, existingColumn);
+                            columnsUpdated++;
+                        }
+                    }
+                }
+            }
+
+            // Add result to log
+            bulkOperationResults.Add(new BulkOperationResult
+                {
+                    Operation = "Import Metadata",
+                    ItemsAffected = tablesUpdated + columnsUpdated,
+                    Details = $"Updated {tablesUpdated} tables and {columnsUpdated} columns"
+                });
+
+            hasUnsavedChanges = tablesUpdated > 0 || columnsUpdated > 0;
+
+            // Show confirmation
+            await JSRuntime.InvokeVoidAsync("alert",
+                $"Import complete. Updated {tablesUpdated} tables and {columnsUpdated} columns.");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error importing metadata: {ex.Message}";
+        }
+    }
+
+    private void DetectLookupColumns()
+    {
+        if (schema == null) return;
+
+        int columnsUpdated = 0;
+
+        // Common patterns for lookup columns
+        string[] lookupPatterns = new[]
+        {
+        "id", "key", "code", "type", "status", "category", "reference",
+        "fk", "foreign", "parent", "child", "related"
+    };
+
+        foreach (var table in schema)
+        {
+            foreach (var column in table.Columns)
+            {
+                bool wasLookup = column.IsLookupColumn;
+
+                // Check if column name matches lookup patterns
+                bool matchesPattern = lookupPatterns.Any(pattern =>
+                    column.ColumnName.EndsWith(pattern, StringComparison.OrdinalIgnoreCase) ||
+                    column.ColumnName.StartsWith(pattern, StringComparison.OrdinalIgnoreCase));
+
+                // Check if column name references another table
+                bool referencesTable = schema.Any(t =>
+                    t != table && column.ColumnName.Contains(t.TableName, StringComparison.OrdinalIgnoreCase));
+
+                // Check if column type is likely a key (int, guid, etc.)
+                bool isKeyType = column.DataType?.ToLower() == "int" ||
+                              column.DataType?.ToLower() == "bigint" ||
+                              column.DataType?.ToLower().Contains("char") == true && column.ColumnName.EndsWith("id", StringComparison.OrdinalIgnoreCase);
+
+                // Mark as lookup if any condition is met
+                if ((matchesPattern || referencesTable || isKeyType) && !wasLookup)
+                {
+                    column.IsLookupColumn = true;
+                    MarkColumnAsModified(table, column);
+                    columnsUpdated++;
+                }
+            }
+        }
+
+        // Add result to log
+        bulkOperationResults.Add(new BulkOperationResult
+            {
+                Operation = "Detect Lookup Columns",
+                ItemsAffected = columnsUpdated,
+                Details = $"Identified {columnsUpdated} new lookup columns"
+            });
+
+        hasUnsavedChanges = columnsUpdated > 0;
+    }
+
+    private async Task ClearAllDescriptions()
+    {
+        if (schema == null) return;
+
+        // Ask for confirmation
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
+            "Are you sure you want to clear all descriptions? This cannot be undone.");
+
+        if (!confirmed) return;
+
+        int itemsAffected = 0;
+
+        foreach (var table in schema)
+        {
+            if (!string.IsNullOrEmpty(table.AdminDescription))
+            {
+                table.AdminDescription = "";
+                MarkTableAsModified(table);
+                itemsAffected++;
+            }
+
+            foreach (var column in table.Columns)
+            {
+                if (!string.IsNullOrEmpty(column.AdminDescription))
+                {
+                    column.AdminDescription = "";
+                    MarkColumnAsModified(table, column);
+                    itemsAffected++;
+                }
+            }
+        }
+
+        // Add result to log
+        bulkOperationResults.Add(new BulkOperationResult
+            {
+                Operation = "Clear Descriptions",
+                ItemsAffected = itemsAffected,
+                Details = "Cleared all descriptions"
+            });
+
+        hasUnsavedChanges = itemsAffected > 0;
+    }
+
+    private async Task ResetToOriginal()
+    {
+        if (schema == null) return;
+
+        // Ask for confirmation
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
+            "Are you sure you want to reset all metadata to default values? This cannot be undone.");
+
+        if (!confirmed) return;
+
+        int itemsAffected = 0;
+
+        foreach (var table in schema)
+        {
+            if (!string.IsNullOrEmpty(table.AdminTableName) || !string.IsNullOrEmpty(table.AdminDescription))
+            {
+                table.AdminTableName = table.TableName; // Reset to original name
+                table.AdminDescription = "";
+                MarkTableAsModified(table);
+                itemsAffected++;
+            }
+
+            foreach (var column in table.Columns)
+            {
+                if (!string.IsNullOrEmpty(column.AdminColumnName) || !string.IsNullOrEmpty(column.AdminDescription) || column.IsLookupColumn)
+                {
+                    column.AdminColumnName = column.ColumnName; // Reset to original name
+                    column.AdminDescription = "";
+                    column.IsLookupColumn = false;
+                    MarkColumnAsModified(table, column);
+                    itemsAffected++;
+                }
+            }
+        }
+
+        // Add result to log
+        bulkOperationResults.Add(new BulkOperationResult
+            {
+                Operation = "Reset All Metadata",
+                ItemsAffected = itemsAffected,
+                Details = "Reset all metadata to default values"
+            });
+
+        hasUnsavedChanges = itemsAffected > 0;
+    }
+
+    private void ClearBulkResults()
+    {
+        bulkOperationResults.Clear();
+    }
+
+    // Bulk operation result class
+    private class BulkOperationResult
+    {
+        public string Operation { get; set; }
+        public int ItemsAffected { get; set; }
+        public string Details { get; set; }
+    }
+
+    // Change history methods
+    private ChangeRecord selectedChange;
+
+    private void ShowChangeDetails(ChangeRecord change)
+    {
+        selectedChange = change;
+    }
+
+    private void HideChangeDetails()
+    {
+        selectedChange = null;
+    }
+
+    // Add support for JavaScript download function
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+
+            // Define JavaScript functions
+            await JSRuntime.InvokeVoidAsync("window.downloadFile", DotNetObjectReference.Create(this));
+
+            // Initialize visualization if enabled
+            if (showSchemaVisualization)
+            {
+                InitializeVisualization();
+            }
+        }
+    }
+
+    // Add additional JavaScript interop code
+    [JSInvokable]
+    public string GetFileName(string defaultName)
+    {
+        // This could be enhanced to allow dynamic naming
+        return defaultName;
+    }
+}
