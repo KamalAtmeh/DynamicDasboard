@@ -517,7 +517,7 @@
             Service for managing database operations including connections, metadata, and queries.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DatabaseRepository,DynamicDasboardWebAPI.Repositories.TableRepository,DynamicDasboardWebAPI.Repositories.ColumnRepository,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DatabaseRepository,DynamicDasboardWebAPI.Repositories.TableRepository,DynamicDasboardWebAPI.Repositories.ColumnRepository,DynamicDasboardWebAPI.Services.RelationshipService,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DatabaseService"/> class.
             </summary>
@@ -617,11 +617,21 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.SaveDatabaseSchemaAsync(System.Int32,System.Collections.Generic.IEnumerable{DynamicDashboardCommon.Models.SchemaTableDto})">
             <summary>
-            Saves database schema to the application database.
+            Saves database schema to the application database with proper handling of tables, columns, and relationships.
             </summary>
             <param name="databaseId">The ID of the database.</param>
             <param name="schema">The schema to save.</param>
             <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.ProcessTableColumns(System.Int32,System.Collections.Generic.IEnumerable{DynamicDashboardCommon.Models.SchemaColumnDto},System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.Dictionary{System.String,System.Int32}},System.Data.IDbTransaction)">
+            <summary>
+            Processes columns for a table, updating existing ones and adding new ones.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.ProcessRelationships(System.Int32,System.Collections.Generic.IEnumerable{DynamicDashboardCommon.Models.SchemaTableDto},System.Collections.Generic.Dictionary{System.String,System.Int32},System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.Dictionary{System.String,System.Int32}},System.Data.IDbTransaction)">
+            <summary>
+            Processes relationships between tables and columns.
+            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.EnhancedNlQueryService">
             <summary>

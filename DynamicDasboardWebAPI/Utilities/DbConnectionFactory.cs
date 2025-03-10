@@ -35,26 +35,37 @@ public class DbConnectionFactory
     public IDbConnection CreateConnection(int databaseId)
     {
         var (connectionString, databaseType) = GetConnectionInfo(databaseId);
-
+        IDbConnection connection = null;
         if (databaseType == (int)(DatabaseTypeEnum.SQLServer))
         {
             // Enable MARS for SQL Server connections
             var builder = new SqlConnectionStringBuilder(connectionString);
-           // builder.MultipleActiveResultSets = true; // Enable MARS
-            return new SqlConnection(builder.ConnectionString);
+            // builder.MultipleActiveResultSets = true; // Enable MARS
+            connection = new SqlConnection(builder.ConnectionString);
         }
         else if (databaseType == (int)(DatabaseTypeEnum.MySQL))
         {
-            return new MySqlConnection(connectionString);
+            connection = new MySqlConnection(connectionString);
         }
         else if (databaseType == (int)(DatabaseTypeEnum.Oracle))
         {
-            return new OracleConnection(connectionString);
+            connection = new OracleConnection(connectionString);
         }
         else
         {
-            throw new ArgumentException($"Unsupported database type: {databaseType}");
+            return null;
         }
+
+        if (connection is DbConnection dbConnection)
+        {
+            dbConnection.Open();
+        }
+        else
+        {
+            connection.Open();
+        }
+
+        return connection;
     }
 
     /// <summary>

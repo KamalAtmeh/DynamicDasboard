@@ -139,5 +139,20 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
+        [HttpGet("{id}/relationships")]
+        public async Task<ActionResult<IEnumerable<SchemaRelationshipDto>>> GetDatabaseRelationships(int id)
+        {
+            try
+            {
+                var relationships = await _service.GetDatabaseRelationshipsAsync(id);
+                return Ok(relationships);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving relationships for database ID {DatabaseId}", id);
+                return StatusCode(500, "An error occurred while retrieving the database relationships.");
+            }
+        }
+
     }
 }
