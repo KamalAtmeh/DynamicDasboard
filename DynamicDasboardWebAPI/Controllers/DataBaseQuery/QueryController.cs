@@ -1,11 +1,11 @@
 ﻿using DynamicDashboardCommon.Models;
 using DynamicDasboardWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models.DynamicDashboardCommon.Models;
+using DynamicDashboardCommon.Enums;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -17,7 +17,7 @@ namespace DynamicDasboardWebAPI.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class QueryController : ControllerBase
+    public class QueryController : AppControllerBase
     {
         private readonly QueryService _nlQueryService;
 
@@ -25,35 +25,27 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Initializes a new instance of the <see cref="QueryController"/> class.
         /// </summary>
         /// <param name="nlQueryService">The natural language query service.</param>
-        /// <param name="logger">The logger.</param>
-        public QueryController(
-            QueryService nlQueryService)
+        /// <param name="logsService">Service for logs and exception handling.</param>
+        public QueryController(QueryService nlQueryService, ILogsService logsService)
+            : base(logsService)
         {
             _nlQueryService = nlQueryService ?? throw new ArgumentNullException(nameof(nlQueryService));
-
         }
 
         /// <summary>
         /// Step 1: Analyzes a natural language question and returns an explanation.
         /// </summary>
-        /// <param name="request">The natural language query request.</param>
-        /// <returns>An explanation of how the system understands the question.</returns>
         [HttpPost("analyze")]
-        public async Task<ActionResult<AnalysisResponse>> AnalyzeQuestion([FromBody] NlQueryRequest request)
+        public async Task<IActionResult> AnalyzeQuestion([FromBody] NlQueryRequest request)
         {
             if (request == null)
-            {
                 return BadRequest("Request cannot be null.");
-            }
 
             if (string.IsNullOrWhiteSpace(request.Question))
-            {
                 return BadRequest("Question cannot be empty.");
-            }
 
             try
             {
-
                 var response = await _nlQueryService.AnalyzeQuestionAsync(request);
 
                 if (response.Success)
@@ -62,43 +54,30 @@ namespace DynamicDasboardWebAPI.Controllers
                 }
                 else
                 {
-
+                    // Return 500 with the response, but no exception thrown here
                     return StatusCode(500, response);
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new AnalysisResponse
-                {
-                    Question = request.Question,
-                    Success = false,
-                    ErrorMessage = $"An unexpected error occurred: {ex.Message}"
-                });
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
             }
         }
 
         /// <summary>
         /// Step 2: Generates SQL from a confirmed understanding.
         /// </summary>
-        /// <param name="request">The confirmation request with resolved ambiguities.</param>
-        /// <returns>The generated SQL query.</returns>
         [HttpPost("generate")]
-        public async Task<ActionResult<SqlGenerationResponse>> GenerateSql([FromBody] NlQueryConfirmationRequest request)
+        public async Task<IActionResult> GenerateSql([FromBody] NlQueryConfirmationRequest request)
         {
             if (request == null)
-            {
                 return BadRequest("Request cannot be null.");
-            }
 
             if (string.IsNullOrWhiteSpace(request.OriginalQuestion))
-            {
                 return BadRequest("Original question cannot be empty.");
-            }
 
             if (string.IsNullOrWhiteSpace(request.ConfirmedUnderstanding))
-            {
                 return BadRequest("Confirmed understanding cannot be empty.");
-            }
 
             try
             {
@@ -115,32 +94,21 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new SqlGenerationResponse
-                {
-                    OriginalQuestion = request.OriginalQuestion,
-                    Success = false,
-                    ErrorMessage = $"An unexpected error occurred: {ex.Message}"
-                });
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
             }
         }
 
         /// <summary>
         /// Step 3: Executes a SQL query and returns the results.
         /// </summary>
-        /// <param name="request">The execution request with the SQL query.</param>
-        /// <returns>The query results with explanation.</returns>
         [HttpPost("execute")]
-        public async Task<ActionResult<QueryExecutionResponse>> ExecuteQuery([FromBody] SqlExecutionRequest request)
+        public async Task<IActionResult> ExecuteQuery([FromBody] SqlExecutionRequest request)
         {
             if (request == null)
-            {
                 return BadRequest("Request cannot be null.");
-            }
 
             if (string.IsNullOrWhiteSpace(request.Sql))
-            {
                 return BadRequest("SQL query cannot be empty.");
-            }
 
             try
             {
@@ -157,33 +125,17 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new QueryExecutionResponse
-                {
-                    OriginalQuestion = request.OriginalQuestion,
-                    Sql = request.Sql,
-                    Success = false,
-                    ErrorMessage = $"An unexpected error occurred: {ex.Message}"
-                });
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
             }
         }
 
         /// <summary>
         /// Unified endpoint for backward compatibility: processes a natural language query in one step.
         /// </summary>
-        /// <param name="request">The natural language query request.</param>
-        /// <returns>The query response including SQL and results.</returns>
         [HttpPost("process")]
-        public async Task<ActionResult<NlQueryResponse>> ProcessQuery([FromBody] NlQueryRequest request)
+        public async Task<IActionResult> ProcessQuery([FromBody] NlQueryRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest("Request cannot be null.");
-            }
 
-            if (string.IsNullOrWhiteSpace(request.Question))
-            {
-                return BadRequest("Question cannot be empty.");
-            }
 
             try
             {
@@ -195,31 +147,24 @@ namespace DynamicDasboardWebAPI.Controllers
                 }
                 else
                 {
-                    return StatusCode(500, response);
+                    throw new Exception("Error processing query");
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new NlQueryResponse
-                {
-                    FormattedQuestion = request.Question,
-                    Success = false,
-                    ErrorMessage = $"An unexpected error occurred: {ex.Message}"
-                });
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
             }
         }
 
         /// <summary>
         /// Gets example questions for a specific database.
         /// </summary>
-        /// <param name="databaseId">The database ID.</param>
-        /// <returns>A list of example questions.</returns>
         [HttpGet("examples/{databaseId}")]
-        public ActionResult<List<string>> GetExampleQuestions(int databaseId)
+        public async Task<IActionResult> GetExampleQuestions(int databaseId)
         {
             try
             {
-                // Generate examples based on database schema (simplified for now)
+                // Basic example questions. This is a synchronous call.
                 var examples = new List<string>
                 {
                     "Show me the top 10 customers by total order value",
@@ -238,7 +183,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "An unexpected error occurred.");
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
             }
         }
     }

@@ -40,10 +40,17 @@ namespace DynamicDasboardWebAPI.Services
         /// <exception cref="ArgumentException">Thrown when the column name is null or whitespace.</exception>
         public async Task<int> AddColumnAsync(Column column)
         {
-            if (string.IsNullOrWhiteSpace(column.DBColumnName))
-                throw new ArgumentException("Column name is required.");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(column.DBColumnName))
+                    throw new ArgumentException("Column name is required.");
 
-            return await _repository.AddColumnAsync(column);
+                return await _repository.AddColumnAsync(column);
+            }
+            catch(Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>
@@ -54,10 +61,17 @@ namespace DynamicDasboardWebAPI.Services
         /// <exception cref="ArgumentException">Thrown when the column name is null or whitespace.</exception>
         public async Task<int> UpdateColumnAsync(Column column)
         {
-            if (string.IsNullOrWhiteSpace(column.DBColumnName))
-                throw new ArgumentException("Column name is required.");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(column.DBColumnName))
+                    throw new ArgumentException("Column name is required.");
 
-            return await _repository.UpdateColumnAsync(column);
+                return await _repository.UpdateColumnAsync(column);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>
@@ -67,7 +81,14 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>The number of affected rows.</returns>
         public async Task<int> DeleteColumnAsync(int columnId)
         {
-            return await _repository.DeleteColumnAsync(columnId);
+            try
+            {
+                return await _repository.DeleteColumnAsync(columnId);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

@@ -59,7 +59,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Failed to generate explanation", ex);
+                throw;
             }
         }
 
@@ -99,7 +99,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Failed to generate SQL", ex);
+                throw;
             }
         }
 
@@ -137,7 +137,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Failed to generate result explanation", ex);
+                throw;
             }
         }
 

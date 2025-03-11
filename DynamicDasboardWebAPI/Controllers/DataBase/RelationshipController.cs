@@ -3,6 +3,7 @@ using DynamicDasboardWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DynamicDashboardCommon.Enums;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -11,7 +12,7 @@ namespace DynamicDasboardWebAPI.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class RelationshipsController : ControllerBase
+    public class RelationshipsController : AppControllerBase
     {
         private readonly RelationshipService _service;
 
@@ -19,7 +20,9 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Initializes a new instance of the <see cref="RelationshipsController"/> class.
         /// </summary>
         /// <param name="service">The relationship service.</param>
-        public RelationshipsController(RelationshipService service)
+        public RelationshipsController(RelationshipService service,
+        ILogsService logsService)
+        : base(logsService)
         {
             _service = service;
         }
@@ -32,8 +35,16 @@ namespace DynamicDasboardWebAPI.Controllers
         [HttpGet("table/{tableId}")]
         public async Task<ActionResult<IEnumerable<Relationship>>> GetRelationshipsByTableId(int tableId)
         {
-            var relationships = await _service.GetRelationshipsByTableIdAsync(tableId);
-            return Ok(relationships);
+            try
+            {
+                var relationships = await _service.GetRelationshipsByTableIdAsync(tableId);
+                return Ok(relationships);
+            }
+            catch (Exception ex)
+
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>

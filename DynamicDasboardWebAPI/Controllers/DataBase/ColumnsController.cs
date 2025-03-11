@@ -3,6 +3,7 @@ using DynamicDasboardWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DynamicDashboardCommon.Enums;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -20,9 +21,9 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Initializes a new instance of the <see cref="ColumnsController"/> class.
         /// </summary>
         /// <param name="service">The column service to handle business logic.</param>
-        public ColumnsController(ColumnService service,
-        ILogsService logsService)  // Use factory instead
-        : base(logsService)
+        /// <param name="logsService">Service for logging exceptions.</param>
+        public ColumnsController(ColumnService service, ILogsService logsService)
+            : base(logsService)
         {
             _service = service;
         }
@@ -33,10 +34,17 @@ namespace DynamicDasboardWebAPI.Controllers
         /// <param name="tableId">The ID of the table.</param>
         /// <returns>A list of columns for the specified table.</returns>
         [HttpGet("table/{tableId}")]
-        public async Task<ActionResult<IEnumerable<Column>>> GetColumnsByTableId(int tableId)
+        public async Task<IActionResult> GetColumnsByTableId(int tableId)
         {
-            var columns = await _service.GetColumnsByTableIdAsync(tableId);
-            return Ok(columns);
+            try
+            {
+                var columns = await _service.GetColumnsByTableIdAsync(tableId);
+                return Ok(columns);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>
@@ -45,10 +53,17 @@ namespace DynamicDasboardWebAPI.Controllers
         /// <param name="column">The column to add.</param>
         /// <returns>The ID of the newly added column.</returns>
         [HttpPost]
-        public async Task<ActionResult<int>> AddColumn([FromBody] Column column)
+        public async Task<IActionResult> AddColumn([FromBody] Column column)
         {
-            var result = await _service.AddColumnAsync(column);
-            return Ok(result);
+            try
+            {
+                var result = await _service.AddColumnAsync(column);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>
@@ -58,13 +73,20 @@ namespace DynamicDasboardWebAPI.Controllers
         /// <param name="column">The updated column data.</param>
         /// <returns>The ID of the updated column.</returns>
         [HttpPut("{columnId}")]
-        public async Task<ActionResult<int>> UpdateColumn(int columnId, [FromBody] Column column)
+        public async Task<IActionResult> UpdateColumn(int columnId, [FromBody] Column column)
         {
-            if (columnId != column.ColumnID)
-                return BadRequest("Column ID mismatch.");
+            try
+            {
+                if (columnId != column.ColumnID)
+                    return BadRequest("Column ID mismatch.");
 
-            var result = await _service.UpdateColumnAsync(column);
-            return Ok(result);
+                var result = await _service.UpdateColumnAsync(column);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>
@@ -73,10 +95,17 @@ namespace DynamicDasboardWebAPI.Controllers
         /// <param name="columnId">The ID of the column to delete.</param>
         /// <returns>The ID of the deleted column.</returns>
         [HttpDelete("{columnId}")]
-        public async Task<ActionResult<int>> DeleteColumn(int columnId)
+        public async Task<IActionResult> DeleteColumn(int columnId)
         {
-            var result = await _service.DeleteColumnAsync(columnId);
-            return Ok(result);
+            try
+            {
+                var result = await _service.DeleteColumnAsync(columnId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
     }
 }

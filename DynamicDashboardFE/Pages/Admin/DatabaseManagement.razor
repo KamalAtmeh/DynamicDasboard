@@ -44,10 +44,10 @@
                             @foreach (var db in databases)
                             {
                                 <tr>
-                                    <td>@db.DatabaseName</td>
+                                    <td>@db.FriendlyName</td>
                                     <td>@db.DatabaseTypeName</td>
                                     <td>@(db.Description?.Length > 50 ? db.Description.Substring(0, 47) + "..." : db.Description)</td>
-                                    <td>@db.CreatedBy</td>
+									<td>@db.CreatedBy</td> <!-- temp -->
                                     <td>
                                         @if (db.IsActive == true)
                                         {
@@ -97,8 +97,8 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Database Name</label>
-                                <InputText @bind-Value="databaseModel.DatabaseName" class="form-control" />
-                                <ValidationMessage For="@(() => databaseModel.DatabaseName)" />
+                                <InputText @bind-Value="databaseModel.Name" class="form-control" />
+                                <ValidationMessage For="@(() => databaseModel.FriendlyName)" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Database Type</label>
@@ -116,7 +116,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Database Name</label>
-                                <InputText @bind-Value="databaseModel.DatabaseName" class="form-control" />
+                                <InputText @bind-Value="databaseModel.FriendlyName" class="form-control" />
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -206,7 +206,7 @@
             {
                 IsActive = true,
                 TypeID = 1, // Default to SQL Server //temp
-                CreatedBy = 1, // Default to current user (would be dynamic in real implementation) //temp
+                CreatedBy = 3, // Default to current user (would be dynamic in real implementation) //temp
                 Port = 0
             };
         isEditMode = false;
@@ -217,10 +217,11 @@
     {
         databaseModel = new Database
             {
+				Name = db.Name,
                 DatabaseID = db.DatabaseID,
                 TypeID = db.TypeID,
                 ServerAddress = db.ServerAddress,
-                DatabaseName = db.DatabaseName,
+                FriendlyName = db.FriendlyName,
                 Port = db.Port,
                 Username = db.Username,
                 EncryptedCredentials = db.EncryptedCredentials,

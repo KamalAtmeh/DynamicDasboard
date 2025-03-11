@@ -3822,7 +3822,7 @@
 		try
 		{
 			var database = await Http.GetFromJsonAsync<Database>($"api/databases/{DatabaseId}");
-			databaseName = database?.DataBaseViewingName ?? database?.DatabaseName ?? "Unknown Database";
+			databaseName = database?.Name ?? database?.Name ?? "Unknown Database";
 		}
 		catch (Exception ex)
 		{

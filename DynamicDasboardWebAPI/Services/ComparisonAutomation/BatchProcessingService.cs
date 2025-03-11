@@ -107,6 +107,7 @@ namespace DynamicDasboardWebAPI.Services
                             false,
                             ex.Message
                         );
+                        throw;
                     }
                 }
 

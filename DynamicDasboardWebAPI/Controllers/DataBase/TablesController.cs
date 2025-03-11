@@ -3,6 +3,7 @@ using DynamicDasboardWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DynamicDashboardCommon.Enums;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -12,7 +13,7 @@ namespace DynamicDasboardWebAPI.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class TablesController : ControllerBase
+    public class TablesController : AppControllerBase
     {
         private readonly TableService _service;
 
@@ -20,7 +21,9 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Initializes a new instance of the <see cref="TablesController"/> class.
         /// </summary>
         /// <param name="service">The table service to interact with the data layer.</param>
-        public TablesController(TableService service)
+        /// <param name="logsService">The logs service for handling exceptions.</param>
+        public TablesController(TableService service, ILogsService logsService)
+            : base(logsService)
         {
             _service = service;
         }
@@ -29,24 +32,36 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Gets the list of tables for a specific database.
         /// </summary>
         /// <param name="databaseId">The ID of the database.</param>
-        /// <returns>A list of tables in the specified database.</returns>
         [HttpGet("database/{databaseId}")]
-        public async Task<ActionResult<IEnumerable<Table>>> GetTablesByDatabaseId(int databaseId)
+        public async Task<IActionResult> GetTablesByDatabaseId(int databaseId)
         {
-            var tables = await _service.GetTablesByDatabaseIdAsync(databaseId);
-            return Ok(tables);
+            try
+            {
+                var tables = await _service.GetTablesByDatabaseIdAsync(databaseId);
+                return Ok(tables);
+            }
+            catch (System.Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>
         /// Adds a new table to the database.
         /// </summary>
         /// <param name="table">The table to add.</param>
-        /// <returns>The ID of the newly created table.</returns>
         [HttpPost]
-        public async Task<ActionResult<int>> AddTable([FromBody] Table table)
+        public async Task<IActionResult> AddTable([FromBody] Table table)
         {
-            var result = await _service.AddTableAsync(table);
-            return Ok(result);
+            try
+            {
+                var result = await _service.AddTableAsync(table);
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>
@@ -54,27 +69,39 @@ namespace DynamicDasboardWebAPI.Controllers
         /// </summary>
         /// <param name="tableId">The ID of the table to update.</param>
         /// <param name="table">The updated table data.</param>
-        /// <returns>The ID of the updated table.</returns>
         [HttpPut("{tableId}")]
-        public async Task<ActionResult<int>> UpdateTable(int tableId, [FromBody] Table table)
+        public async Task<IActionResult> UpdateTable(int tableId, [FromBody] Table table)
         {
-            if (tableId != table.TableID)
-                return BadRequest("Table ID mismatch.");
+            try
+            {
+                if (tableId != table.TableID)
+                    return BadRequest("Table ID mismatch.");
 
-            var result = await _service.UpdateTableAsync(table);
-            return Ok(result);
+                var result = await _service.UpdateTableAsync(table);
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         /// <summary>
         /// Deletes a table from the database.
         /// </summary>
         /// <param name="tableId">The ID of the table to delete.</param>
-        /// <returns>The ID of the deleted table.</returns>
         [HttpDelete("{tableId}")]
-        public async Task<ActionResult<int>> DeleteTable(int tableId)
+        public async Task<IActionResult> DeleteTable(int tableId)
         {
-            var result = await _service.DeleteTableAsync(tableId);
-            return Ok(result);
+            try
+            {
+                var result = await _service.DeleteTableAsync(tableId);
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
     }
 }

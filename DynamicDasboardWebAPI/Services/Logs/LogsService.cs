@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using DynamicDasboardWebAPI.Repositories;
+using DynamicDashboardCommon.Helper;
 using DynamicDashboardCommon.Models;
 
 namespace DynamicDasboardWebAPI.Services
@@ -11,14 +12,15 @@ namespace DynamicDasboardWebAPI.Services
     public class LogsService : ILogsService
     {
         private readonly LogsRepository _repository;
-
+        private ILogger<LogsService> _logger;
         /// <summary>
         /// Initializes a new instance of the <see cref="LogsService"/> class.
         /// </summary>
         /// <param name="repository">Instance of the logs repository.</param>
-        public LogsService(LogsRepository repository)
+        public LogsService(LogsRepository repository, ILogger<LogsService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         /// <summary>
@@ -30,7 +32,14 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task AddLogAsync(int? userId, string eventType, string eventDescription)
         {
-            await _repository.AddLogAsync(userId, eventType, eventDescription);
+            try
+            {
+                await _repository.AddLogAsync(userId, eventType, eventDescription);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ApplicationHelper.GetExceptionDetails(ex));
+            }
         }
     }
 }

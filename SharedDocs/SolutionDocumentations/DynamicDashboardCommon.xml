@@ -71,11 +71,6 @@
             Unique identifier for the database connection
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.Database.DataBaseViewingName">
-            <summary>
-            Name of the database connection
-            </summary>
-        </member>
         <member name="P:DynamicDashboardCommon.Models.Database.TypeID">
             <summary>
             Type ID of the database (Foreign key to DatabaseTypes)
@@ -86,7 +81,7 @@
             Server address for the database connection
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.Database.DatabaseName">
+        <member name="P:DynamicDashboardCommon.Models.Database.FriendlyName">
             <summary>
             Actual name of the database
             </summary>

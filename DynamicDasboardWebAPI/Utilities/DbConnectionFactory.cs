@@ -176,21 +176,28 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public string BuildConnectionString(Database database)
         {
-            if (database == null)
-                return string.Empty;
-
-            // Use existing connection string if provided
-            if (!string.IsNullOrWhiteSpace(database.ConnectionString))
-                return database.ConnectionString;
-
-            // Build the connection string based on database type
-            return database.TypeID switch
+            try
             {
-                (int)EnumDatabaseType.SQLServer => BuildSqlServerConnectionString(database),
-                (int)EnumDatabaseType.MySQL => BuildMySqlConnectionString(database),
-                (int)EnumDatabaseType.Oracle => BuildOracleConnectionString(database),
-                _ => string.Empty
-            };
+                if (database == null)
+                    return string.Empty;
+
+                // Use existing connection string if provided
+                if (!string.IsNullOrWhiteSpace(database.ConnectionString))
+                    return database.ConnectionString;
+
+                // Build the connection string based on database type
+                return database.TypeID switch
+                {
+                    (int)EnumDatabaseType.SQLServer => BuildSqlServerConnectionString(database),
+                    (int)EnumDatabaseType.MySQL => BuildMySqlConnectionString(database),
+                    (int)EnumDatabaseType.Oracle => BuildOracleConnectionString(database),
+                    _ => string.Empty
+                };
+            }
+            catch(Exception)
+            {
+                throw;
+            }
         }
 
         public IDbConnection BuildConnection(EnumDatabaseType dbType, string connectionString)
@@ -353,6 +360,10 @@ namespace DynamicDasboardWebAPI.Utilities
 
                 return await operation(_appDbConnection);
             }
+            catch (Exception)
+            {
+                throw;
+            }
             finally
             {
                 if (!wasOpen && _appDbConnection.State == ConnectionState.Open)
@@ -457,7 +468,7 @@ namespace DynamicDasboardWebAPI.Utilities
             var builder = new SqlConnectionStringBuilder
             {
                 DataSource = database.ServerAddress,
-                InitialCatalog = database.DatabaseName,
+                InitialCatalog = database.Name,
                 ConnectTimeout = 30
                 // MultipleActiveResultSets = true // if needed
             };
@@ -483,7 +494,7 @@ namespace DynamicDasboardWebAPI.Utilities
             var builder = new MySqlConnectionStringBuilder
             {
                 Server = database.ServerAddress,
-                Database = database.DatabaseName,
+                Database = database.Name,
                 Port = (uint)database.Port,
                 ConnectionTimeout = 30
             };

@@ -40,14 +40,6 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>An explanation of how the system understands the question</returns>
         public async Task<AnalysisResponse> AnalyzeQuestionAsync(NlQueryRequest request)
         {
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
-
-            if (string.IsNullOrWhiteSpace(request.Question))
-                throw new ArgumentException("Question cannot be empty", nameof(request));
-
-            if (request.DatabaseId <= 0)
-                throw new ArgumentException("DatabaseId must be specified", nameof(request));
 
             try
             {
@@ -90,14 +82,7 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-                return new AnalysisResponse
-                {
-                    Question = request.Question,
-                    DatabaseId = request.DatabaseId,
-                    Explanation = "I couldn't analyze this question due to an error.",
-                    ErrorMessage = ex.Message,
-                    Success = false
-                };
+                throw;
             }
         }
 
@@ -108,21 +93,8 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>Generated SQL query</returns>
         public async Task<SqlGenerationResponse> GenerateSqlAsync(NlQueryConfirmationRequest request)
         {
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
-
-            if (string.IsNullOrWhiteSpace(request.OriginalQuestion))
-                throw new ArgumentException("Original question cannot be empty", nameof(request));
-
-            if (string.IsNullOrWhiteSpace(request.ConfirmedUnderstanding))
-                throw new ArgumentException("Confirmed understanding cannot be empty", nameof(request));
-
-            if (request.DatabaseId <= 0)
-                throw new ArgumentException("DatabaseId must be specified", nameof(request));
-
             try
             {
-
 
                 // Get database metadata
                 var metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
@@ -148,13 +120,7 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-                return new SqlGenerationResponse
-                {
-                    OriginalQuestion = request.OriginalQuestion,
-                    DatabaseId = request.DatabaseId,
-                    ErrorMessage = ex.Message,
-                    Success = false
-                };
+                throw;
             }
         }
 
@@ -165,15 +131,6 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>Query results with explanation</returns>
         public async Task<QueryExecutionResponse> ExecuteQueryAsync(SqlExecutionRequest request)
         {
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
-
-            if (string.IsNullOrWhiteSpace(request.Sql))
-                throw new ArgumentException("SQL query cannot be empty", nameof(request));
-
-            if (request.DatabaseId <= 0)
-                throw new ArgumentException("DatabaseId must be specified", nameof(request));
-
             try
             {
                 // Execute the query
@@ -206,14 +163,7 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-                return new QueryExecutionResponse
-                {
-                    OriginalQuestion = request.OriginalQuestion,
-                    DatabaseId = request.DatabaseId,
-                    Sql = request.Sql,
-                    ErrorMessage = ex.Message,
-                    Success = false
-                };
+                throw;
             }
         }
 
@@ -224,8 +174,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <returns>Complete query response</returns>
         public async Task<NlQueryResponse> ProcessNaturalLanguageQueryAsync(NlQueryRequest request)
         {
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
+
 
             try
             {
@@ -282,12 +231,7 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-                return new NlQueryResponse
-                {
-                    FormattedQuestion = request.Question,
-                    Success = false,
-                    ErrorMessage = ex.Message
-                };
+                throw;
             }
         }
 
@@ -295,274 +239,282 @@ namespace DynamicDasboardWebAPI.Services
 
         private string FormatSchemaForLlm(DatabaseMetadataDto metadata)
         {
-            if (metadata?.Tables == null || !metadata.Tables.Any())
+            try
             {
-                return "No tables found in metadata.";
+
+
+                var schemaBuilder = new StringBuilder();
+                schemaBuilder.AppendLine("Database Schema:");
+
+                foreach (var tableMetadata in metadata.Tables)
+                {
+                    var table = tableMetadata.Table;
+                    // Table header
+                    schemaBuilder.Append($"- {table.DBTableName}");
+                    if (!string.IsNullOrWhiteSpace(table.AdminTableName))
+                    {
+                        schemaBuilder.Append($" (Admin Name: {table.AdminTableName})");
+                    }
+                    if (!string.IsNullOrWhiteSpace(table.AdminDescription))
+                    {
+                        schemaBuilder.Append($" - {table.AdminDescription}");
+                    }
+                    schemaBuilder.AppendLine();
+
+                    // Columns
+                    if (tableMetadata.Columns != null)
+                    {
+                        schemaBuilder.AppendLine("  Columns:");
+                        foreach (var column in tableMetadata.Columns)
+                        {
+                            schemaBuilder.Append($"    - {column.DBColumnName} ({column.DataType})");
+
+                            if (!string.IsNullOrWhiteSpace(column.AdminColumnName))
+                            {
+                                schemaBuilder.Append($" (Admin Name: {column.AdminColumnName})");
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(column.AdminDescription))
+                            {
+                                schemaBuilder.Append($" - {column.AdminDescription}");
+                            }
+
+                            schemaBuilder.AppendLine();
+                        }
+                    }
+
+                    // Relationships
+                    if (tableMetadata.Relationships != null && tableMetadata.Relationships.Any())
+                    {
+                        schemaBuilder.AppendLine("  Relationships:");
+                        foreach (var relationship in tableMetadata.Relationships)
+                        {
+                            schemaBuilder.AppendLine(
+                                $"    - {relationship.RelationshipType}: " +
+                                $"Table {relationship.TableID}, Column {relationship.ColumnID} " +
+                                $"-> Related Table {relationship.RelatedTableID}, Column {relationship.RelatedColumnID}"
+                            );
+                        }
+                    }
+
+                    schemaBuilder.AppendLine(); // Separator between tables
+                }
+                return schemaBuilder.ToString();
             }
-
-            var schemaBuilder = new StringBuilder();
-            schemaBuilder.AppendLine("Database Schema:");
-
-            foreach (var tableMetadata in metadata.Tables)
+            catch (Exception ex)
             {
-                var table = tableMetadata.Table;
-                // Table header
-                schemaBuilder.Append($"- {table.DBTableName}");
-                if (!string.IsNullOrWhiteSpace(table.AdminTableName))
-                {
-                    schemaBuilder.Append($" (Admin Name: {table.AdminTableName})");
-                }
-                if (!string.IsNullOrWhiteSpace(table.AdminDescription))
-                {
-                    schemaBuilder.Append($" - {table.AdminDescription}");
-                }
-                schemaBuilder.AppendLine();
-
-                // Columns
-                if (tableMetadata.Columns != null)
-                {
-                    schemaBuilder.AppendLine("  Columns:");
-                    foreach (var column in tableMetadata.Columns)
-                    {
-                        schemaBuilder.Append($"    - {column.DBColumnName} ({column.DataType})");
-
-                        if (!string.IsNullOrWhiteSpace(column.AdminColumnName))
-                        {
-                            schemaBuilder.Append($" (Admin Name: {column.AdminColumnName})");
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(column.AdminDescription))
-                        {
-                            schemaBuilder.Append($" - {column.AdminDescription}");
-                        }
-
-                        schemaBuilder.AppendLine();
-                    }
-                }
-
-                // Relationships
-                if (tableMetadata.Relationships != null && tableMetadata.Relationships.Any())
-                {
-                    schemaBuilder.AppendLine("  Relationships:");
-                    foreach (var relationship in tableMetadata.Relationships)
-                    {
-                        schemaBuilder.AppendLine(
-                            $"    - {relationship.RelationshipType}: " +
-                            $"Table {relationship.TableID}, Column {relationship.ColumnID} " +
-                            $"-> Related Table {relationship.RelatedTableID}, Column {relationship.RelatedColumnID}"
-                        );
-                    }
-                }
-
-                schemaBuilder.AppendLine(); // Separator between tables
+                throw;
             }
-
-            return schemaBuilder.ToString();
         }
 
 
 
         // Helper method to get table name
-        private string GetTableName(Dictionary<string, object> metadata, int tableId)
-        {
-            if (metadata.TryGetValue("tables", out var tablesObj) &&
-                tablesObj is IEnumerable<Table> tables)
-            {
-                return tables.FirstOrDefault(t => t.TableID == tableId)?.DBTableName ?? $"Table_{tableId}";
-            }
-            return $"Table_{tableId}";
-        }
+
 
         // Helper method to get column name
-        private string GetColumnName(Dictionary<string, object> metadata, int tableId, int columnId)
-        {
-            if (metadata.TryGetValue("columns", out var columnsObj) &&
-                columnsObj is IEnumerable<Column> columns)
-            {
-                return columns.FirstOrDefault(c => c.TableID == tableId && c.ColumnID == columnId)?.DBColumnName ?? $"Column_{columnId}";
-            }
-            return $"Column_{columnId}";
-        }
+
 
         private Dictionary<string, string> ExtractAdminDescriptions(List<TableMetadataDto> tableMetadataDtos)
         {
             var descriptions = new Dictionary<string, string>();
 
-            if (tableMetadataDtos == null || !tableMetadataDtos.Any())
+            try
             {
-                return descriptions;
-            }
-
-            // Extract table descriptions
-            foreach (var tableMetadata in tableMetadataDtos)
-            {
-                var table = tableMetadata.Table;
-                if (table != null && !string.IsNullOrEmpty(table.DBTableName))
+                if (tableMetadataDtos == null || !tableMetadataDtos.Any())
                 {
-                    if (!string.IsNullOrEmpty(table.AdminTableName))
-                    {
-                        descriptions[table.DBTableName] = table.AdminTableName;
-                    }
-
-                    if (!string.IsNullOrEmpty(table.AdminDescription))
-                    {
-                        descriptions[$"{table.DBTableName} description"] = table.AdminDescription;
-                    }
+                    return descriptions;
                 }
 
-                // Extract column descriptions for this table
-                if (tableMetadata.Columns != null)
+                // Extract table descriptions
+                foreach (var tableMetadata in tableMetadataDtos)
                 {
-                    foreach (var column in tableMetadata.Columns)
+                    var table = tableMetadata.Table;
+                    if (table != null && !string.IsNullOrEmpty(table.DBTableName))
                     {
-                        if (column != null && !string.IsNullOrEmpty(column.DBColumnName))
+                        if (!string.IsNullOrEmpty(table.AdminTableName))
                         {
-                            if (!string.IsNullOrEmpty(column.AdminColumnName))
-                            {
-                                descriptions[column.DBColumnName] = column.AdminColumnName;
-                            }
+                            descriptions[table.DBTableName] = table.AdminTableName;
+                        }
 
-                            if (!string.IsNullOrEmpty(column.AdminDescription))
+                        if (!string.IsNullOrEmpty(table.AdminDescription))
+                        {
+                            descriptions[$"{table.DBTableName} description"] = table.AdminDescription;
+                        }
+                    }
+
+                    // Extract column descriptions for this table
+                    if (tableMetadata.Columns != null)
+                    {
+                        foreach (var column in tableMetadata.Columns)
+                        {
+                            if (column != null && !string.IsNullOrEmpty(column.DBColumnName))
                             {
-                                descriptions[$"{column.DBColumnName} description"] = column.AdminDescription;
+                                if (!string.IsNullOrEmpty(column.AdminColumnName))
+                                {
+                                    descriptions[column.DBColumnName] = column.AdminColumnName;
+                                }
+
+                                if (!string.IsNullOrEmpty(column.AdminDescription))
+                                {
+                                    descriptions[$"{column.DBColumnName} description"] = column.AdminDescription;
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            return descriptions;
+                return descriptions;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         private TemplateMatchInfo CreateTemplateInfoFromExplanation(ExplanationResponse explanation)
         {
-            // For backward compatibility, create a TemplateMatchInfo from the explanation
-            var templateInfo = new TemplateMatchInfo
+            try
             {
-                Intent = "dynamic_query", // Default intent for compatibility
-                ConfidenceScore = explanation.ConfidenceScore
-            };
+                // For backward compatibility, create a TemplateMatchInfo from the explanation
+                var templateInfo = new TemplateMatchInfo
+                {
+                    Intent = "dynamic_query", // Default intent for compatibility
+                    ConfidenceScore = explanation.ConfidenceScore
+                };
 
-            // Add operations based on SQL preview
-            if (!string.IsNullOrEmpty(explanation.PreviewSql))
-            {
-                var sql = explanation.PreviewSql.ToLowerInvariant();
+                // Add operations based on SQL preview
+                if (!string.IsNullOrEmpty(explanation.PreviewSql))
+                {
+                    var sql = explanation.PreviewSql.ToLowerInvariant();
 
-                if (sql.Contains("select") && !sql.Contains("count("))
-                {
-                    templateInfo.Intent = "retrieve";
-                }
-                else if (sql.Contains("count("))
-                {
-                    templateInfo.Intent = "count";
-                }
-                else if (sql.Contains("sum(") || sql.Contains("avg(") ||
-                         sql.Contains("min(") || sql.Contains("max("))
-                {
-                    templateInfo.Intent = "aggregate";
-                }
-
-                if (sql.Contains("where"))
-                {
-                    templateInfo.Operations.Add("filter");
-                }
-
-                if (sql.Contains("group by"))
-                {
-                    templateInfo.Operations.Add("group");
-                }
-
-                if (sql.Contains("order by"))
-                {
-                    templateInfo.Operations.Add("sort");
-                }
-
-                if (sql.Contains("top") || sql.Contains("limit"))
-                {
-                    templateInfo.Operations.Add("limit");
-                }
-
-                if (sql.Contains("join"))
-                {
-                    templateInfo.Operations.Add("join");
-                }
-            }
-
-            // Add parameters from adjustable parameters
-            if (explanation.AdjustableParameters != null)
-            {
-                foreach (var param in explanation.AdjustableParameters)
-                {
-                    templateInfo.Parameters.Add(new QueryParameter
+                    if (sql.Contains("select") && !sql.Contains("count("))
                     {
-                        Name = param.Key,
-                        Value = param.Value.DefaultValue,
-                        EntityType = param.Value.ParameterType
-                    });
-                }
-            }
+                        templateInfo.Intent = "retrieve";
+                    }
+                    else if (sql.Contains("count("))
+                    {
+                        templateInfo.Intent = "count";
+                    }
+                    else if (sql.Contains("sum(") || sql.Contains("avg(") ||
+                             sql.Contains("min(") || sql.Contains("max("))
+                    {
+                        templateInfo.Intent = "aggregate";
+                    }
 
-            return templateInfo;
+                    if (sql.Contains("where"))
+                    {
+                        templateInfo.Operations.Add("filter");
+                    }
+
+                    if (sql.Contains("group by"))
+                    {
+                        templateInfo.Operations.Add("group");
+                    }
+
+                    if (sql.Contains("order by"))
+                    {
+                        templateInfo.Operations.Add("sort");
+                    }
+
+                    if (sql.Contains("top") || sql.Contains("limit"))
+                    {
+                        templateInfo.Operations.Add("limit");
+                    }
+
+                    if (sql.Contains("join"))
+                    {
+                        templateInfo.Operations.Add("join");
+                    }
+                }
+
+                // Add parameters from adjustable parameters
+                if (explanation.AdjustableParameters != null)
+                {
+                    foreach (var param in explanation.AdjustableParameters)
+                    {
+                        templateInfo.Parameters.Add(new QueryParameter
+                        {
+                            Name = param.Key,
+                            Value = param.Value.DefaultValue,
+                            EntityType = param.Value.ParameterType
+                        });
+                    }
+                }
+
+                return templateInfo;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         private (int? ViewingTypeId, string ViewingTypeName, string FormattedResult) DetermineDataViewingType(
             List<Dictionary<string, object>> results,
             string query)
         {
-            // If no results, default to table
-            if (results == null || results.Count == 0)
+            try
             {
-                return (null, "Table", null);
-            }
+                // If no results, default to table
+                if (results == null || results.Count == 0)
+                {
+                    return (null, "Table", null);
+                }
 
-            // Single result with single column might be a label or number
-            if (results.Count == 1 && results[0].Count == 1)
+                // Single result with single column might be a label or number
+                if (results.Count == 1 && results[0].Count == 1)
+                {
+                    var singleValue = results[0].Values.First();
+
+                    // Check for numeric types
+                    if (singleValue is int intVal)
+                    {
+                        return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(intVal));
+                    }
+                    else if (singleValue is decimal decVal)
+                    {
+                        return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(decVal));
+                    }
+                    else if (singleValue is double doubleVal)
+                    {
+                        return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(doubleVal));
+                    }
+                    else if (singleValue is float floatVal)
+                    {
+                        return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(floatVal));
+                    }
+                    else if (singleValue is long longVal)
+                    {
+                        return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(longVal));
+                    }
+                    else
+                    {
+                        // For other single values, use label
+                        return ((int)DataViewingTypeEnum.Label, "Label", singleValue?.ToString());
+                    }
+                }
+
+                // Aggregate queries might need special handling
+                if (IsAggregateQuery(query))
+                {
+                    // Check if aggregate result is numeric
+                    var sampleValue = results[0].Values.First();
+                    if (sampleValue is int || sampleValue is decimal ||
+                        sampleValue is double || sampleValue is float ||
+                        sampleValue is long)
+                    {
+                        return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(Convert.ToDecimal(sampleValue)));
+                    }
+                }
+
+                // Default to table for complex or multi-column results
+                return ((int)DataViewingTypeEnum.Table, "Table", null);
+            }
+            catch (Exception ex)
             {
-                var singleValue = results[0].Values.First();
-
-                // Check for numeric types
-                if (singleValue is int intVal)
-                {
-                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(intVal));
-                }
-                else if (singleValue is decimal decVal)
-                {
-                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(decVal));
-                }
-                else if (singleValue is double doubleVal)
-                {
-                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(doubleVal));
-                }
-                else if (singleValue is float floatVal)
-                {
-                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(floatVal));
-                }
-                else if (singleValue is long longVal)
-                {
-                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(longVal));
-                }
-                else
-                {
-                    // For other single values, use label
-                    return ((int)DataViewingTypeEnum.Label, "Label", singleValue?.ToString());
-                }
+                throw;
             }
-
-            // Aggregate queries might need special handling
-            if (IsAggregateQuery(query))
-            {
-                // Check if aggregate result is numeric
-                var sampleValue = results[0].Values.First();
-                if (sampleValue is int || sampleValue is decimal ||
-                    sampleValue is double || sampleValue is float ||
-                    sampleValue is long)
-                {
-                    return ((int)DataViewingTypeEnum.Number, "Number", FormatNumber(Convert.ToDecimal(sampleValue)));
-                }
-            }
-
-            // Default to table for complex or multi-column results
-            return ((int)DataViewingTypeEnum.Table, "Table", null);
         }
 
         private bool IsAggregateQuery(string query)
@@ -575,6 +527,7 @@ namespace DynamicDasboardWebAPI.Services
                    query.Contains("min(");
         }
 
+        //to move into helper if this is needed
         private string FormatNumber(object numberValue)
         {
             try

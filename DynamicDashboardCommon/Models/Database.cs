@@ -7,15 +7,15 @@ namespace DynamicDashboardCommon.Models
     /// </summary>
     public class Database
     {
+
+       
+
         /// <summary>
         /// Unique identifier for the database connection
         /// </summary>
         public int DatabaseID { get; set; }
 
-        /// <summary>
-        /// Name of the database connection
-        /// </summary>
-        public string DataBaseViewingName { get; set; } = string.Empty;
+        public string Name { get; set; }
 
         /// <summary>
         /// Type ID of the database (Foreign key to DatabaseTypes)
@@ -30,7 +30,7 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Actual name of the database
         /// </summary>
-        public string DatabaseName { get; set; } = string.Empty;
+        public string FriendlyName { get; set; } = string.Empty;
 
         /// <summary>
         /// Port number for the database connection

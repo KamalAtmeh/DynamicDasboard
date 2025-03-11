@@ -741,8 +741,10 @@
 	private int endPage => Math.Min(totalPages, startPage + 4);
 
 	// Database connection for both modes
+	//temp
 	private string dbServer = "(LocalDB)\\MSSQLLocalDB";
 	private string dbName = "ECommerceDB";
+	private string FriendlyName = "ECommerce DataBase";
 	private string dbAuthType = "windows";
 	private string dbUsername = "";
 	private string dbPassword = "";
@@ -879,8 +881,8 @@
 			var database = new Database
 				{
 					ServerAddress = dbServer,
-					DataBaseViewingName = dbName,
-					DatabaseName = dbName,
+					Name = dbName,
+					FriendlyName = FriendlyName,
 					TypeID = 1,   // temp Default to SQL Server
 					Username = dbUsername,
 					EncryptedCredentials = dbPassword,
@@ -888,7 +890,7 @@
 					Description = string.Empty,
 					ConnectionString = string.Empty,
 					CreatedAt = DateTime.Now,
-					CreatedBy = 1,
+					CreatedBy = 3,
 					DatabaseTypeName = "SQL",
 					DBCreationScript = " string.empy" // 0 indicates a new connection test
 				};

@@ -18,11 +18,10 @@ namespace DynamicDasboardWebAPI.Services
     /// </summary>
     public class DatabaseService : IDatabaseService
     {
-        private readonly DatabaseRepository _repository;
+        private readonly DatabaseRepository _DBRepository;
         private readonly TableRepository _tableRepository;
         private readonly ColumnRepository _columnRepository;
         private readonly RelationshipService _relationshipService;
-        private readonly DbConnectionFactory _connectionFactory;
         private readonly ConcurrentDictionary<string, int> _typeIdCache = new();
 
         /// <summary>
@@ -37,15 +36,14 @@ namespace DynamicDasboardWebAPI.Services
             DatabaseRepository repository,
             TableRepository tableRepository,
             ColumnRepository columnRepository,
-            RelationshipService relationshipService,
-            DbConnectionFactory connectionFactoryl)
+            RelationshipService relationshipService)
         {
-            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _DBRepository = repository ?? throw new ArgumentNullException(nameof(repository));
             _tableRepository = tableRepository ?? throw new ArgumentNullException(nameof(tableRepository));
             _relationshipService = relationshipService ?? throw new ArgumentNullException(nameof(relationshipService));
             _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
-            _connectionFactory = _connectionFactory ?? throw new ArgumentNullException(nameof(_connectionFactory));
-            
+
+
         }
 
         /// <summary>
@@ -56,7 +54,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var databases = await _repository.GetAllDatabasesAsync();
+                var databases = await _DBRepository.GetAllDatabasesAsync();
 
                 // Enrich with type names if needed
                 foreach (var db in databases)
@@ -88,13 +86,13 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
                 // Validate required fields
-                if (!string.IsNullOrWhiteSpace(database.DatabaseName) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
+                if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.FriendlyName))
                 {
                     // Set initial values for new database
                     database.CreatedAt = DateTime.UtcNow;
                     database.IsActive = true;
 
-                    int databaseId = await _repository.AddDatabaseAsync(database);
+                    int databaseId = await _DBRepository.AddDatabaseAsync(database);
 
                     return databaseId;
                 }
@@ -121,9 +119,9 @@ namespace DynamicDasboardWebAPI.Services
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(database.DatabaseName) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.DatabaseName))
+                if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.FriendlyName))
                 {     // Validate required fields
-                    int result = await _repository.UpdateDatabaseAsync(database);
+                    int result = await _DBRepository.UpdateDatabaseAsync(database);
                     return result;
                 }
                 else
@@ -146,7 +144,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                int result = await _repository.DeleteDatabaseAsync(databaseId);
+                int result = await _DBRepository.DeleteDatabaseAsync(databaseId);
                 return result;
             }
             catch (Exception ex)
@@ -178,9 +176,10 @@ namespace DynamicDasboardWebAPI.Services
                     // Convert request to a temporary database object
                     database = new Database
                     {
+                        Name = database.Name,
                         DatabaseID = database.DatabaseID,
                         ServerAddress = database.ServerAddress,
-                        DatabaseName = database.DatabaseName,
+                        FriendlyName = database.FriendlyName,
                         TypeID = database.TypeID,
                         Port = database.Port,
                         Username = database.Username,
@@ -188,7 +187,7 @@ namespace DynamicDasboardWebAPI.Services
                     };
                 }
                 // Test connection
-                bool isSuccess = await _repository.TestConnectionAsync(database);
+                bool isSuccess = await _DBRepository.TestConnectionAsync(database);
                 return isSuccess;
             }
             catch (Exception ex)
@@ -207,7 +206,7 @@ namespace DynamicDasboardWebAPI.Services
             {
 
                 // Get types from repository
-                return await _repository.GetSupportedDatabaseTypesAsync();
+                return await _DBRepository.GetSupportedDatabaseTypesAsync();
             }
             catch (Exception ex)
             {
@@ -244,7 +243,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var database = await _repository.GetDatabaseByIdAsync(databaseId);
+                var database = await _DBRepository.GetDatabaseByIdAsync(databaseId);
                 return database;
             }
             catch (Exception ex)
@@ -261,7 +260,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                return await _repository.GetSupportedDatabaseTypesAsync();
+                return await _DBRepository.GetSupportedDatabaseTypesAsync();
             }
             catch (Exception ex)
             {
@@ -289,7 +288,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // If not in cache, get from repository
-                string typeName = await _repository.GetDatabaseTypeNameAsync(typeId);
+                string typeName = await _DBRepository.GetDatabaseTypeNameAsync(typeId);
 
                 // If found, add to cache
                 if (!string.IsNullOrEmpty(typeName))
@@ -301,9 +300,7 @@ namespace DynamicDasboardWebAPI.Services
             }
             catch (Exception ex)
             {
-
-                // Fallback
-                return string.Empty;
+                throw;
             }
         }
 
@@ -312,40 +309,41 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="databaseId">The ID of the database.</param>
         /// <returns>A collection of tables and columns from the schema.</returns>
-        public async Task<IEnumerable<SchemaTableDto>> RetrieveDatabaseSchemaAsync(int databaseId)
-        {
-            try
-            {
+        //public async Task<IEnumerable<SchemaTableDto>> RetrieveDatabaseSchemaAsync(int databaseId)
+        //{
+        //    try
+        //    {
 
-                // Check if schema already exists in our application database
-                var existingTables = await _tableRepository.GetTablesByDatabaseIdAsync(databaseId);
-                if (existingTables.Any())
-                {
-                    // Return the existing schema
-                    return await GetSavedSchemaAsync(databaseId);
-                }
+        //        // Check if schema already exists in our application database
+        //        var existingTables = await _tableRepository.GetTablesByDatabaseIdAsync(databaseId);
+        //        if (existingTables.Any())
+        //        {
+        //            // Return the existing schema
+        //            return await GetSavedSchemaAsync(databaseId);
+        //        }
 
-                // Get the database connection details
-                var database = await GetDatabaseByIdAsync(databaseId);
-                if (database == null)
-                    throw new ArgumentException($"Database with ID {databaseId} not found");
+        //        // Get the database connection details
+        //        var database = await GetDatabaseByIdAsync(databaseId);
+        //        if (database == null)
+        //            throw new ArgumentException($"Database with ID {databaseId} not found");
 
-                // Create a connection to the target database
-                using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId);
+        //        // Create a connection to the target database
 
-                // Retrieve the schema - this uses the polymorphic method in DatabaseHelper that works across database types
-                var schemaData = await connection.GetDatabaseSchemaAsync();
+        //        //using var connection = await _DBRepository.CreateOpenConnectionAsync(databaseId);
 
-                // Convert the schema data to DTOs
-                var result = ConvertSchemaToDto(schemaData);
+        //        // Retrieve the schema - this uses the polymorphic method in DatabaseHelper that works across database types
+        //        var schemaData = await _DBRepository.GetDatabaseSchemaAsync();
 
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+        //        // Convert the schema data to DTOs
+        //        var result = ConvertSchemaToDto(schemaData);
+
+        //        return result;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //}
 
         /// <summary>
         /// Retrieves schema information that has been saved in the application database.
@@ -356,35 +354,42 @@ namespace DynamicDasboardWebAPI.Services
         {
             var result = new List<SchemaTableDto>();
 
-            // Get all tables for the database
-            var tables = await _tableRepository.GetTablesByDatabaseIdAsync(databaseId);
-
-            foreach (var table in tables)
+            try
             {
-                // Get all columns for the table
-                var columns = await _columnRepository.GetColumnsByTableIdAsync(table.TableID);
+                // Get all tables for the database
+                var tables = await _tableRepository.GetTablesByDatabaseIdAsync(databaseId);
 
-                var tableDto = new SchemaTableDto
+                foreach (var table in tables)
                 {
-                    TableName = table.DBTableName,
-                    AdminTableName = table.AdminTableName,
-                    AdminDescription = table.AdminDescription,
-                    Columns = columns.Select(c => new SchemaColumnDto
+                    // Get all columns for the table
+                    var columns = await _columnRepository.GetColumnsByTableIdAsync(table.TableID);
+
+                    var tableDto = new SchemaTableDto
                     {
-                        ColumnName = c.DBColumnName,
-                        AdminColumnName = c.AdminColumnName,
-                        DataType = c.DataType,
-                        IsNullable = c.IsNullable,
-                        IsPrimary = false, // Would need to retrieve from database
-                        IsForeignKey = false, // Would need to retrieve from database
-                        AdminDescription = c.AdminDescription
-                    }).ToList()
-                };
+                        TableName = table.DBTableName,
+                        AdminTableName = table.AdminTableName,
+                        AdminDescription = table.AdminDescription,
+                        Columns = columns.Select(c => new SchemaColumnDto
+                        {
+                            ColumnName = c.DBColumnName,
+                            AdminColumnName = c.AdminColumnName,
+                            DataType = c.DataType,
+                            IsNullable = c.IsNullable,
+                            IsPrimary = false, // Would need to retrieve from database
+                            IsForeignKey = false, // Would need to retrieve from database
+                            AdminDescription = c.AdminDescription
+                        }).ToList()
+                    };
 
-                result.Add(tableDto);
+                    result.Add(tableDto);
+                }
+
+                return result;
             }
-
-            return result;
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>
@@ -397,45 +402,52 @@ namespace DynamicDasboardWebAPI.Services
             // Initialize the dictionary to store table DTOs
             var tableDtos = new Dictionary<string, SchemaTableDto>();
 
-            foreach (var item in schemaData)
+            try
             {
-                var tableName = item.TABLE_NAME.ToString();
-                var columnName = item.COLUMN_NAME.ToString();
-                var dataType = item.DATA_TYPE.ToString();
-                var isNullable = item.IS_NULLABLE.ToString().Equals("YES", StringComparison.OrdinalIgnoreCase);
-                var isPrimary = Convert.ToBoolean(item.IS_PRIMARY_KEY);
-
-                // Check if the table already exists in the dictionary
-                if (!tableDtos.TryGetValue(tableName, out SchemaTableDto tableDto))
+                foreach (var item in schemaData)
                 {
-                    // Create a new table DTO if it doesn't exist
-                    tableDto = new SchemaTableDto
-                    {
-                        TableName = tableName,
-                        AdminTableName = tableName, // Default to the database table name
-                        AdminDescription = "", // Empty initially
-                        Columns = new List<SchemaColumnDto>()
-                    };
+                    var tableName = item.TABLE_NAME.ToString();
+                    var columnName = item.COLUMN_NAME.ToString();
+                    var dataType = item.DATA_TYPE.ToString();
+                    var isNullable = item.IS_NULLABLE.ToString().Equals("YES", StringComparison.OrdinalIgnoreCase);
+                    var isPrimary = Convert.ToBoolean(item.IS_PRIMARY_KEY);
 
-                    // Add the new table DTO to the dictionary
-                    tableDtos[tableName] = tableDto;
+                    // Check if the table already exists in the dictionary
+                    if (!tableDtos.TryGetValue(tableName, out SchemaTableDto tableDto))
+                    {
+                        // Create a new table DTO if it doesn't exist
+                        tableDto = new SchemaTableDto
+                        {
+                            TableName = tableName,
+                            AdminTableName = tableName, // Default to the database table name
+                            AdminDescription = "", // Empty initially
+                            Columns = new List<SchemaColumnDto>()
+                        };
+
+                        // Add the new table DTO to the dictionary
+                        tableDtos[tableName] = tableDto;
+                    }
+
+                    // Add the column to the table's column list
+                    tableDto.Columns.Add(new SchemaColumnDto
+                    {
+                        ColumnName = columnName,
+                        AdminColumnName = columnName, // Default to the database column name
+                        DataType = dataType,
+                        IsNullable = isNullable,
+                        IsPrimary = isPrimary,
+                        IsForeignKey = false, // Additional logic required to determine foreign keys
+                        AdminDescription = "" // Empty initially
+                    });
                 }
 
-                // Add the column to the table's column list
-                tableDto.Columns.Add(new SchemaColumnDto
-                {
-                    ColumnName = columnName,
-                    AdminColumnName = columnName, // Default to the database column name
-                    DataType = dataType,
-                    IsNullable = isNullable,
-                    IsPrimary = isPrimary,
-                    IsForeignKey = false, // Additional logic required to determine foreign keys
-                    AdminDescription = "" // Empty initially
-                });
+                // Return the values of the dictionary (collection of SchemaTableDto)
+                return tableDtos.Values;
             }
-
-            // Return the values of the dictionary (collection of SchemaTableDto)
-            return tableDtos.Values;
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         /// <summary>
@@ -444,102 +456,102 @@ namespace DynamicDasboardWebAPI.Services
         /// <param name="databaseId">The ID of the database.</param>
         /// <param name="schema">The schema to save.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public async Task SaveDatabaseSchemaAsync(int databaseId, IEnumerable<SchemaTableDto> schema)
-        {
-            try
-            {
+        //public async Task SaveDatabaseSchemaAsync(int databaseId, IEnumerable<SchemaTableDto> schema)
+        //{
+        //    try
+        //    {
 
-                // Using a transaction to ensure all-or-nothing updates
-                using (var connection = _connectionFactory.CreateConnection(databaseId))
-                {
-                    // Begin a transaction
-                    using (var transaction = connection.BeginTransaction())
-                    {
-                        try
-                        {
-                            // Get all existing tables and relationships
-                            var existingTables = (await _tableRepository.GetTablesByDatabaseIdAsync(databaseId)).ToList();
-                            var existingTableDict = existingTables.ToDictionary(t => t.DBTableName, StringComparer.OrdinalIgnoreCase);
+        //        // Using a transaction to ensure all-or-nothing updates
+        //        using (var connection = _connectionFactory.CreateConnection(databaseId))
+        //        {
+        //            // Begin a transaction
+        //            using (var transaction = connection.BeginTransaction())
+        //            {
+        //                try
+        //                {
+        //                    // Get all existing tables and relationships
+        //                    var existingTables = (await _tableRepository.GetTablesByDatabaseIdAsync(databaseId)).ToList();
+        //                    var existingTableDict = existingTables.ToDictionary(t => t.DBTableName, StringComparer.OrdinalIgnoreCase);
 
-                            // Track processed tables and their columns
-                            var processedTableIds = new HashSet<int>();
-                            var tableNameToIdMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            var columnMapping = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+        //                    // Track processed tables and their columns
+        //                    var processedTableIds = new HashSet<int>();
+        //                    var tableNameToIdMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        //                    var columnMapping = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
 
-                            // Process tables in schema
-                            foreach (var tableDto in schema)
-                            {
-                                // Check if table exists
-                                if (existingTableDict.TryGetValue(tableDto.TableName, out var existingTable))
-                                {
-                                    processedTableIds.Add(existingTable.TableID);
-                                    tableNameToIdMap[tableDto.TableName] = existingTable.TableID;
+        //                    // Process tables in schema
+        //                    foreach (var tableDto in schema)
+        //                    {
+        //                        // Check if table exists
+        //                        if (existingTableDict.TryGetValue(tableDto.TableName, out var existingTable))
+        //                        {
+        //                            processedTableIds.Add(existingTable.TableID);
+        //                            tableNameToIdMap[tableDto.TableName] = existingTable.TableID;
 
-                                    // Update table properties if changed
-                                    bool tableChanged =
-                                        existingTable.AdminTableName != tableDto.AdminTableName ||
-                                        existingTable.AdminDescription != tableDto.AdminDescription;
+        //                            // Update table properties if changed
+        //                            bool tableChanged =
+        //                                existingTable.AdminTableName != tableDto.AdminTableName ||
+        //                                existingTable.AdminDescription != tableDto.AdminDescription;
 
-                                    if (tableChanged)
-                                    {
-                                        existingTable.AdminTableName = tableDto.AdminTableName;
-                                        existingTable.AdminDescription = tableDto.AdminDescription;
-                                        await _tableRepository.UpdateTableAsync(existingTable);
-                                    }
+        //                            if (tableChanged)
+        //                            {
+        //                                existingTable.AdminTableName = tableDto.AdminTableName;
+        //                                existingTable.AdminDescription = tableDto.AdminDescription;
+        //                                await _tableRepository.UpdateTableAsync(existingTable);
+        //                            }
 
-                                    // Process columns for this table
-                                    await ProcessTableColumns(existingTable.TableID, tableDto.Columns, columnMapping, transaction);
-                                }
-                                else
-                                {
-                                    // Create new table
-                                    var newTable = new Table
-                                    {
-                                        DatabaseID = databaseId,
-                                        DBTableName = tableDto.TableName,
-                                        AdminTableName = tableDto.AdminTableName,
-                                        AdminDescription = tableDto.AdminDescription
-                                    };
+        //                            // Process columns for this table
+        //                            await ProcessTableColumns(existingTable.TableID, tableDto.Columns, columnMapping, transaction);
+        //                        }
+        //                        else
+        //                        {
+        //                            // Create new table
+        //                            var newTable = new Table
+        //                            {
+        //                                DatabaseID = databaseId,
+        //                                DBTableName = tableDto.TableName,
+        //                                AdminTableName = tableDto.AdminTableName,
+        //                                AdminDescription = tableDto.AdminDescription
+        //                            };
 
-                                    int newTableId = await _tableRepository.AddTableAsync(newTable);
-                                    processedTableIds.Add(newTableId);
-                                    tableNameToIdMap[tableDto.TableName] = newTableId;
+        //                            int newTableId = await _tableRepository.AddTableAsync(newTable);
+        //                            processedTableIds.Add(newTableId);
+        //                            tableNameToIdMap[tableDto.TableName] = newTableId;
 
-                                    // Add all columns for the new table
-                                    await ProcessTableColumns(newTableId, tableDto.Columns, columnMapping, transaction);
-                                }
-                            }
+        //                            // Add all columns for the new table
+        //                            await ProcessTableColumns(newTableId, tableDto.Columns, columnMapping, transaction);
+        //                        }
+        //                    }
 
-                            // Process relationships (if schema has relationship info)
-                            await ProcessRelationships(databaseId, schema, tableNameToIdMap, columnMapping, transaction);
+        //                    // Process relationships (if schema has relationship info)
+        //                    await ProcessRelationships(databaseId, schema, tableNameToIdMap, columnMapping, transaction);
 
-                            // Handle tables not in schema (optional deletion)
-                            foreach (var existingTable in existingTables)
-                            {
-                                if (!processedTableIds.Contains(existingTable.TableID))
-                                {
-                                    // Delete table not in schema
-                                    await _tableRepository.DeleteTableAsync(existingTable.TableID);
-                                }
-                            }
+        //                    // Handle tables not in schema (optional deletion)
+        //                    foreach (var existingTable in existingTables)
+        //                    {
+        //                        if (!processedTableIds.Contains(existingTable.TableID))
+        //                        {
+        //                            // Delete table not in schema
+        //                            await _tableRepository.DeleteTableAsync(existingTable.TableID);
+        //                        }
+        //                    }
 
-                            // Commit transaction
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            // Rollback on error
-                            transaction.Rollback();
-                            throw;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+        //                    // Commit transaction
+        //                    transaction.Commit();
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    // Rollback on error
+        //                    transaction.Rollback();
+        //                    throw;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //}
 
         /// <summary>
         /// Processes columns for a table, updating existing ones and adding new ones.
@@ -547,67 +559,74 @@ namespace DynamicDasboardWebAPI.Services
         private async Task ProcessTableColumns(int tableId, IEnumerable<SchemaColumnDto> columnDtos,
             Dictionary<string, Dictionary<string, int>> columnMapping, IDbTransaction transaction)
         {
-            // Get existing columns
-            var existingColumns = await _columnRepository.GetColumnsByTableIdAsync(tableId);
-            var existingColumnDict = existingColumns.ToDictionary(c => c.DBColumnName, StringComparer.OrdinalIgnoreCase);
-            var processedColumnIds = new HashSet<int>();
-            var tableDictionary = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-            // Process columns
-            foreach (var columnDto in columnDtos)
+            try
             {
-                if (existingColumnDict.TryGetValue(columnDto.ColumnName, out var existingColumn))
+                // Get existing columns
+                var existingColumns = await _columnRepository.GetColumnsByTableIdAsync(tableId);
+                var existingColumnDict = existingColumns.ToDictionary(c => c.DBColumnName, StringComparer.OrdinalIgnoreCase);
+                var processedColumnIds = new HashSet<int>();
+                var tableDictionary = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+                // Process columns
+                foreach (var columnDto in columnDtos)
                 {
-                    processedColumnIds.Add(existingColumn.ColumnID);
-                    tableDictionary[columnDto.ColumnName] = existingColumn.ColumnID;
-
-                    // Update column if changed
-                    bool columnChanged =
-                        existingColumn.AdminColumnName != columnDto.AdminColumnName ||
-                        existingColumn.AdminDescription != columnDto.AdminDescription ||
-                        existingColumn.IsLookupColumn != columnDto.IsLookupColumn;
-
-                    if (columnChanged)
+                    if (existingColumnDict.TryGetValue(columnDto.ColumnName, out var existingColumn))
                     {
-                        existingColumn.AdminColumnName = columnDto.AdminColumnName;
-                        existingColumn.AdminDescription = columnDto.AdminDescription;
-                        existingColumn.IsLookupColumn = columnDto.IsLookupColumn;
-                        await _columnRepository.UpdateColumnAsync(existingColumn);
+                        processedColumnIds.Add(existingColumn.ColumnID);
+                        tableDictionary[columnDto.ColumnName] = existingColumn.ColumnID;
+
+                        // Update column if changed
+                        bool columnChanged =
+                            existingColumn.AdminColumnName != columnDto.AdminColumnName ||
+                            existingColumn.AdminDescription != columnDto.AdminDescription ||
+                            existingColumn.IsLookupColumn != columnDto.IsLookupColumn;
+
+                        if (columnChanged)
+                        {
+                            existingColumn.AdminColumnName = columnDto.AdminColumnName;
+                            existingColumn.AdminDescription = columnDto.AdminDescription;
+                            existingColumn.IsLookupColumn = columnDto.IsLookupColumn;
+                            await _columnRepository.UpdateColumnAsync(existingColumn);
+                        }
+                    }
+                    else
+                    {
+                        // Create new column
+                        var newColumn = new Column
+                        {
+                            TableID = tableId,
+                            DBColumnName = columnDto.ColumnName,
+                            AdminColumnName = columnDto.AdminColumnName,
+                            DataType = columnDto.DataType,
+                            IsNullable = columnDto.IsNullable,
+                            AdminDescription = columnDto.AdminDescription,
+                            IsLookupColumn = columnDto.IsLookupColumn
+                        };
+
+                        int newColumnId = await _columnRepository.AddColumnAsync(newColumn);
+                        tableDictionary[columnDto.ColumnName] = newColumnId;
                     }
                 }
-                else
+
+                // Handle columns not in schema (delete)
+                foreach (var existingColumn in existingColumns)
                 {
-                    // Create new column
-                    var newColumn = new Column
+                    if (!processedColumnIds.Contains(existingColumn.ColumnID))
                     {
-                        TableID = tableId,
-                        DBColumnName = columnDto.ColumnName,
-                        AdminColumnName = columnDto.AdminColumnName,
-                        DataType = columnDto.DataType,
-                        IsNullable = columnDto.IsNullable,
-                        AdminDescription = columnDto.AdminDescription,
-                        IsLookupColumn = columnDto.IsLookupColumn
-                    };
-
-                    int newColumnId = await _columnRepository.AddColumnAsync(newColumn);
-                    tableDictionary[columnDto.ColumnName] = newColumnId;
+                        await _columnRepository.DeleteColumnAsync(existingColumn.ColumnID);
+                    }
                 }
-            }
 
-            // Handle columns not in schema (delete)
-            foreach (var existingColumn in existingColumns)
-            {
-                if (!processedColumnIds.Contains(existingColumn.ColumnID))
+                // Store column mapping for this table
+                var tableInfo = await _tableRepository.GetTableByIdAsync(tableId);
+                if (tableInfo != null)
                 {
-                    await _columnRepository.DeleteColumnAsync(existingColumn.ColumnID);
+                    columnMapping[tableInfo.DBTableName] = tableDictionary;
                 }
             }
-
-            // Store column mapping for this table
-            var tableInfo = await _tableRepository.GetTableByIdAsync(tableId);
-            if (tableInfo != null)
+            catch (Exception)
             {
-                columnMapping[tableInfo.DBTableName] = tableDictionary;
+                throw;
             }
         }
 
@@ -620,98 +639,104 @@ namespace DynamicDasboardWebAPI.Services
         {
             // Get all existing relationships for all tables
             var allRelationships = new List<Relationship>();
-
-            foreach (var tableId in tableNameToIdMap.Values)
+            try
             {
-                var tableRelationships = await _relationshipService.GetRelationshipsByTableIdAsync(tableId);
-                allRelationships.AddRange(tableRelationships);
-            }
-
-            // Track processed relationships
-            var processedRelationshipIds = new HashSet<int>();
-
-            // Extract and process relationships from schema
-            // We need to detect if the schema includes relationship information
-            bool hasRelationshipInfo = schema.Any(t => t.GetType().GetProperty("Relationships") != null);
-
-            if (hasRelationshipInfo)
-            {
-                foreach (dynamic tableDto in schema)
+                foreach (var tableId in tableNameToIdMap.Values)
                 {
-                    if (tableDto.Relationships != null)
+                    var tableRelationships = await _relationshipService.GetRelationshipsByTableIdAsync(tableId);
+                    allRelationships.AddRange(tableRelationships);
+                }
+
+                // Track processed relationships
+                var processedRelationshipIds = new HashSet<int>();
+
+                // Extract and process relationships from schema
+                // We need to detect if the schema includes relationship information
+                bool hasRelationshipInfo = schema.Any(t => t.GetType().GetProperty("Relationships") != null);
+
+                if (hasRelationshipInfo)
+                {
+                    foreach (dynamic tableDto in schema)
                     {
-                        string sourceTableName = tableDto.TableName;
-
-                        if (!tableNameToIdMap.TryGetValue(sourceTableName, out int sourceTableId))
+                        if (tableDto.Relationships != null)
                         {
-                            continue;
-                        }
+                            string sourceTableName = tableDto.TableName;
 
-                        foreach (dynamic rel in tableDto.Relationships)
-                        {
-                            // Extract relationship data
-                            string targetTableName = rel.TargetTable;
-                            string sourceColumnName = rel.SourceColumn;
-                            string targetColumnName = rel.TargetColumn;
-                            string relationType = rel.RelationshipType;
-
-                            if (!tableNameToIdMap.TryGetValue(targetTableName, out int targetTableId) ||
-                                !columnMapping.ContainsKey(sourceTableName) ||
-                                !columnMapping.ContainsKey(targetTableName) ||
-                                !columnMapping[sourceTableName].TryGetValue(sourceColumnName, out int sourceColumnId) ||
-                                !columnMapping[targetTableName].TryGetValue(targetColumnName, out int targetColumnId))
+                            if (!tableNameToIdMap.TryGetValue(sourceTableName, out int sourceTableId))
                             {
                                 continue;
                             }
 
-                            // Check for existing relationship
-                            var existingRel = allRelationships.FirstOrDefault(r =>
-                                r.TableID == sourceTableId &&
-                                r.ColumnID == sourceColumnId &&
-                                r.RelatedTableID == targetTableId &&
-                                r.RelatedColumnID == targetColumnId);
-
-                            if (existingRel != null)
+                            foreach (dynamic rel in tableDto.Relationships)
                             {
-                                processedRelationshipIds.Add(existingRel.RelationshipID);
+                                // Extract relationship data
+                                string targetTableName = rel.TargetTable;
+                                string sourceColumnName = rel.SourceColumn;
+                                string targetColumnName = rel.TargetColumn;
+                                string relationType = rel.RelationshipType;
 
-                                // Update if needed
-                                if (existingRel.RelationshipType != relationType)
+                                if (!tableNameToIdMap.TryGetValue(targetTableName, out int targetTableId) ||
+                                    !columnMapping.ContainsKey(sourceTableName) ||
+                                    !columnMapping.ContainsKey(targetTableName) ||
+                                    !columnMapping[sourceTableName].TryGetValue(sourceColumnName, out int sourceColumnId) ||
+                                    !columnMapping[targetTableName].TryGetValue(targetColumnName, out int targetColumnId))
                                 {
-                                    existingRel.RelationshipType = relationType;
-                                    await _relationshipService.UpdateRelationshipAsync(existingRel);
+                                    continue;
                                 }
-                            }
-                            else
-                            {
-                                // Create new relationship
-                                var newRelationship = new Relationship
-                                {
-                                    TableID = sourceTableId,
-                                    ColumnID = sourceColumnId,
-                                    RelatedTableID = targetTableId,
-                                    RelatedColumnID = targetColumnId,
-                                    RelationshipType = relationType,
-                                    Description = $"Relationship from {sourceTableName}.{sourceColumnName} to {targetTableName}.{targetColumnName}",
-                                    IsEnforced = false,
-                                    CreatedAt = DateTime.UtcNow,
-                                    CreatedBy = 1 // System user ID
-                                };
 
-                                await _relationshipService.AddRelationshipAsync(newRelationship);
+                                // Check for existing relationship
+                                var existingRel = allRelationships.FirstOrDefault(r =>
+                                    r.TableID == sourceTableId &&
+                                    r.ColumnID == sourceColumnId &&
+                                    r.RelatedTableID == targetTableId &&
+                                    r.RelatedColumnID == targetColumnId);
+
+                                if (existingRel != null)
+                                {
+                                    processedRelationshipIds.Add(existingRel.RelationshipID);
+
+                                    // Update if needed
+                                    if (existingRel.RelationshipType != relationType)
+                                    {
+                                        existingRel.RelationshipType = relationType;
+                                        await _relationshipService.UpdateRelationshipAsync(existingRel);
+                                    }
+                                }
+                                else
+                                {
+                                    // Create new relationship
+                                    var newRelationship = new Relationship
+                                    {
+                                        TableID = sourceTableId,
+                                        ColumnID = sourceColumnId,
+                                        RelatedTableID = targetTableId,
+                                        RelatedColumnID = targetColumnId,
+                                        RelationshipType = relationType,
+                                        Description = $"Relationship from {sourceTableName}.{sourceColumnName} to {targetTableName}.{targetColumnName}",
+                                        IsEnforced = false,
+                                        CreatedAt = DateTime.UtcNow,
+                                        CreatedBy = 3 // System user ID //temp
+                                    };
+
+                                    await _relationshipService.AddRelationshipAsync(newRelationship);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // Handle relationships not in schema (delete)
-            foreach (var relationship in allRelationships)
-            {
-                if (!processedRelationshipIds.Contains(relationship.RelationshipID))
+                // Handle relationships not in schema (delete)
+                foreach (var relationship in allRelationships)
                 {
-                    await _relationshipService.DeleteRelationshipAsync(relationship.RelationshipID);
+                    if (!processedRelationshipIds.Contains(relationship.RelationshipID))
+                    {
+                        await _relationshipService.DeleteRelationshipAsync(relationship.RelationshipID);
+                    }
                 }
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 

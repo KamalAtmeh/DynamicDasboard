@@ -589,7 +589,7 @@
         try
         {
             isLoading = true;
-            var dbJsonSchema = await Http.GetFromJsonAsync<DatabaseJsonSchema>($"api/DatabaseJsonSchema/{DatabaseId}");
+            var dbJsonSchema = await Http.GetFromJsonAsync<DatabaseJsonSchema>($"api/DatabaseSchema/{DatabaseId}");
             if (dbJsonSchema != null && !string.IsNullOrWhiteSpace(dbJsonSchema.SchemaData))
             {
                 currentSchema = JsonSerializer.Deserialize<DatabaseSchemaDetail>(dbJsonSchema.SchemaData);
@@ -642,15 +642,15 @@
                 };
 
             // Check if schema already exists
-            var existingSchema = await Http.GetFromJsonAsync<DatabaseJsonSchema>($"api/DatabaseJsonSchema/{DatabaseId}");
+            var existingSchema = await Http.GetFromJsonAsync<DatabaseJsonSchema>($"api/DatabaseSchema/{DatabaseId}");
             HttpResponseMessage response;
             if (existingSchema == null)
             {
-                response = await Http.PostAsJsonAsync("api/DatabaseJsonSchema", schemaToSave);
+                response = await Http.PostAsJsonAsync("api/DatabaseSchema", schemaToSave);
             }
             else
             {
-                response = await Http.PutAsJsonAsync($"api/DatabaseJsonSchema/{DatabaseId}", schemaToSave);
+                response = await Http.PutAsJsonAsync($"api/DatabaseSchema/{DatabaseId}", schemaToSave);
             }
 
             if (response.IsSuccessStatusCode)

@@ -66,11 +66,12 @@ namespace DynamicDasboardWebAPI.Repositories
             try
             {
                 const string query = @"
-                    INSERT INTO Databases 
-                    (Name, TypeID, ServerAddress, DatabaseName, Port, Username, EncryptedCredentials, 
+                   
+                    INSERT INTO [dbo].[Databases]
+                    ([Name], TypeID, ServerAddress, [FriendlyName], Port, Username, EncryptedCredentials, 
                      ConnectionString, Description, CreatedBy, DBCreationScript, IsActive, CreatedAt) 
                     VALUES 
-                    (@Name, @TypeID, @ServerAddress, @DatabaseName, @Port, @Username, @EncryptedCredentials, 
+                    (@Name, @TypeID, @ServerAddress, @FriendlyName, @Port, @Username, @EncryptedCredentials, 
                      @ConnectionString, @Description, @CreatedBy, @DBCreationScript, @IsActive, @CreatedAt);
                     SELECT CAST(SCOPE_IDENTITY() as int)";
 
@@ -104,7 +105,8 @@ namespace DynamicDasboardWebAPI.Repositories
             {
                 const string query = @"
                     UPDATE Databases 
-                    SET DatabaseName = @DatabaseName, 
+                    SET [Name] = @Name,
+                        [FriendlyName] = @FriendlyName, 
                         TypeID = @TypeID, 
                         ConnectionString = @ConnectionString,
                         Description = @Description,

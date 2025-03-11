@@ -770,7 +770,7 @@
 			//	DatabaseId = 5;
 			// Get database info
 			var database = await Http.GetFromJsonAsync<Database>($"api/databases/{DatabaseId}");
-			databaseName = database?.DatabaseName;
+			databaseName = database?.Name;
 
 			// Get tables
 			tables = await Http.GetFromJsonAsync<List<Table>>($"api/tables/database/{DatabaseId}") ?? new List<Table>();
@@ -1350,7 +1350,7 @@
 				Description = "",
 				IsEnforced = false,
 				CreatedAt = DateTime.UtcNow,
-				CreatedBy = 1 //temp
+				CreatedBy = 3 //temp
 			};
 
 		// Pre-load columns for the default selected table

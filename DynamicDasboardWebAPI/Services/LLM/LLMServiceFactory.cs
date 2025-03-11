@@ -29,25 +29,46 @@ namespace DynamicDasboardWebAPI.Services.LLM
         /// <returns>An implementation of ILlmService</returns>
         public ILLMService CreateLlmService()
         {
-            var providerName = _configuration["LlmService:Provider"]?.ToLowerInvariant() ?? "claude";
-            return providerName switch
+            try
             {
-                "claude" => CreateClaudeService(),
-                "deepseek" => CreateDeepSeekService(),
-                _ => throw new NotSupportedException($"LLM provider '{providerName}' is not supported")
-            };
+                var providerName = _configuration["LlmService:Provider"]?.ToLowerInvariant() ?? "claude";
+                return providerName switch
+                {
+                    "claude" => CreateClaudeService(),
+                    "deepseek" => CreateDeepSeekService(),
+                    _ => throw new NotSupportedException($"LLM provider '{providerName}' is not supported")
+                };
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         private ILLMService CreateClaudeService()
         {
-            var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
-            return new ClaudeLLMService(httpClient, _configuration);
+            try
+            {
+                var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
+                return new ClaudeLLMService(httpClient, _configuration);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         private ILLMService CreateDeepSeekService()
         {
-            var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
-            return new DeepSeekLLMService(httpClient, _configuration);
+            try
+            {
+                var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
+                return new DeepSeekLLMService(httpClient, _configuration);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }

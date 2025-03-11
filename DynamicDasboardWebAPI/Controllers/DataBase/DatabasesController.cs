@@ -27,48 +27,84 @@ namespace DynamicDasboardWebAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Database>>> GetAllDatabases()
         {
-            var databases = await _service.GetAllDatabasesAsync();
-            return Ok(databases);
+            try
+            {
+                var databases = await _service.GetAllDatabasesAsync();
+                return Ok(databases);
+            }
+            catch (Exception ex)
+
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         [HttpGet("{databaseID}")]
         public async Task<ActionResult<IEnumerable<Database>>> GetDataBaseByID(int databaseID)
         {
-            var databases = await _service.GetDatabaseByIdAsync(databaseID);
-            return Ok(databases);
+            try
+            {
+                var databases = await _service.GetDatabaseByIdAsync(databaseID);
+                return Ok(databases);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<int>> AddDatabase([FromBody] Database database)
         {
-            var result = await _service.AddDatabaseAsync(database);
-            return Ok(result);
+            try
+            {
+                var result = await _service.AddDatabaseAsync(database);
+                return Ok(result);
+            }
+            catch (Exception ex)
+
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<ActionResult<int>> UpdateDatabase(int id, [FromBody] Database database)
         {
-            if (id != database.DatabaseID)
-                return BadRequest("Database ID mismatch.");
+            try
+            {
+                if (id != database.DatabaseID)
+                    return BadRequest("Database ID mismatch.");
 
-            var result = await _service.UpdateDatabaseAsync(database);
-            return Ok(result);
+                var result = await _service.UpdateDatabaseAsync(database);
+                return Ok(result);
+            }
+            catch (Exception ex)
+
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
+
 
         [HttpDelete("{id}")]
         public async Task<ActionResult<int>> DeleteDatabase(int id)
         {
+            try
+            { 
             var result = await _service.DeleteDatabaseAsync(id);
             return Ok(result);
+            }
+            catch (Exception ex)
+
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
         }
 
         [HttpPost("test-connection")]
         public async Task<ActionResult<bool>> TestConnection([FromBody] Database database)
         {
-            if (database == null)
-            {
-                return BadRequest("Connection details are required.");
-            }
             try
             {
                 var result = await _service.TestConnectionAsync(database);
@@ -106,7 +142,6 @@ namespace DynamicDasboardWebAPI.Controllers
             catch (Exception ex)
             {
                 return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
-              
             }
         }
 
@@ -116,13 +151,12 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var schema = await _service.RetrieveDatabaseSchemaAsync(id);
+                var schema = new List<SchemaTableDto>();
                 return Ok(schema);
             }
             catch (Exception ex)
             {
                 return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
-                return StatusCode(500, "An error occurred while retrieving the database schema.");
             }
         }
 
@@ -131,7 +165,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                await _service.SaveDatabaseSchemaAsync(id, schema);
+                //await _service.SaveDatabaseSchemaAsync(id, schema);
                 return Ok();
             }
             catch (Exception ex)
@@ -150,7 +184,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-               return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
             }
         }
 
