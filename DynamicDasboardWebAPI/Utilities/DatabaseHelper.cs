@@ -7,7 +7,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using DynamicDashboardCommon.Models;
 using Microsoft.Data.SqlClient;
-using static NlQueryRepository;
+using static DynamicDasboardWebAPI.Repositories.QueryRepository;
 
 namespace DynamicDasboardWebAPI.Utilities
 {
@@ -117,7 +117,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error executing scalar query: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -127,8 +127,6 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public static async Task<T> WithConnectionAsync<T>(this IDbConnection connection, Func<IDbConnection, Task<T>> operation)
         {
-            if (connection == null) throw new ArgumentNullException(nameof(connection));
-            if (operation == null) throw new ArgumentNullException(nameof(operation));
 
             bool wasOpen = connection.State == ConnectionState.Open;
 
@@ -138,6 +136,11 @@ namespace DynamicDasboardWebAPI.Utilities
                     connection.Open();
 
                 return await operation(connection);
+            }
+            catch
+            {
+                connection?.Close();
+                throw;
             }
             finally
             {
@@ -483,7 +486,7 @@ namespace DynamicDasboardWebAPI.Utilities
         /// <summary>
         /// Gets database type name by its ID from the application database
         /// </summary>
-     
+
 
         #endregion
 
@@ -673,8 +676,8 @@ namespace DynamicDasboardWebAPI.Utilities
         /// <summary>
         /// Gets complete database metadata in a minimal number of database calls
         /// </summary>
-        public static async Task<DatabaseMetadataDto> GetCompleteDatabaseMetadataAsync(
-            this IDbConnection connection, int databaseId, ILogger logger = null)
+        public static async Task<DatabaseMetadataDto> GetDatabaseMetadataAsync(
+            this IDbConnection connection, int databaseId)
         {
             if (connection == null) throw new ArgumentNullException(nameof(connection));
             if (databaseId <= 0) throw new ArgumentException("Invalid database ID", nameof(databaseId));
@@ -685,7 +688,7 @@ namespace DynamicDasboardWebAPI.Utilities
                 return await connection.WithConnectionAsync(async conn =>
                 {
                     // 1. Get all tables
-                    logger?.LogInformation("Retrieving tables for database ID {DatabaseId}", databaseId);
+
                     var tables = await conn.GetTablesByDatabaseIdAsync(databaseId);
                     var tablesList = tables.ToList();
 
@@ -696,7 +699,6 @@ namespace DynamicDasboardWebAPI.Utilities
                     var tableIds = tablesList.Select(t => t.TableID).ToList();
 
                     // 3. Get all columns and relationships in just two queries
-                    logger?.LogInformation("Retrieving columns and relationships for {TableCount} tables", tableIds.Count);
                     var columnsTask = conn.GetColumnsForTablesAsync(tableIds);
                     var relationshipsTask = conn.GetRelationshipsForTablesAsync(tableIds);
 
@@ -727,8 +729,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                logger?.LogError(ex, "Error retrieving complete metadata for database ID {DatabaseId}", databaseId);
-                throw new DatabaseException($"Error retrieving metadata for database {databaseId}: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -939,9 +940,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                // Log but don't throw as this is a non-critical operation
-                // If we have a logger, we could log here
-                // _logger?.LogError(ex, "Error updating connection status for database: {DatabaseId}", databaseId);
+                throw;
             }
         }
 

@@ -85,4 +85,7 @@ namespace DynamicDashboardCommon.Models
     //    [JsonPropertyName("content")]
     //    public string content { get; set; }
     //}
+
+    // DTO to represent database metadata
+
 }

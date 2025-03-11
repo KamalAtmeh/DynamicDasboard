@@ -19,16 +19,14 @@ namespace DynamicDasboardWebAPI.Services.LLM
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<DeepSeekLLMService> _logger;
         private readonly string _apiKey;
         private readonly string _model;
         private readonly string _apiEndpoint;
 
-        public DeepSeekLLMService(HttpClient httpClient, IConfiguration configuration, ILogger<DeepSeekLLMService> logger)
+        public DeepSeekLLMService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             // Get configuration values
             _apiKey = _configuration["DeepSeek:ApiKey"]
@@ -46,8 +44,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
         {
             try
             {
-                _logger.LogInformation("Generating explanation for question: {Question}", question);
-
                 // Build the system prompt
                 var systemPrompt = BuildExplanationSystemPrompt(databaseSchema, adminDescriptions);
 
@@ -63,7 +59,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating explanation for question: {Question}", question);
                 throw new ApplicationException("Failed to generate explanation", ex);
             }
         }
@@ -77,8 +72,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
         {
             try
             {
-                _logger.LogInformation("Generating SQL for question: {Question}", question);
-
                 // Build the system prompt
                 var systemPrompt = BuildSqlGenerationSystemPrompt(databaseSchema);
 
@@ -106,7 +99,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating SQL for question: {Question}", question);
                 throw new ApplicationException("Failed to generate SQL", ex);
             }
         }
@@ -119,8 +111,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
         {
             try
             {
-                _logger.LogInformation("Generating result explanation for question: {Question}", question);
-
                 // Build the system prompt
                 var systemPrompt = "You are a helpful assistant explaining database query results to non-technical users. " +
                     "Provide clear, concise explanations that focus on the business insights from the data.";
@@ -147,7 +137,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating result explanation for question: {Question}", question);
                 throw new ApplicationException("Failed to generate result explanation", ex);
             }
         }
@@ -254,7 +243,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("DeepSeek API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
                 throw new ApplicationException($"DeepSeek API error: {response.StatusCode}");
             }
 
@@ -303,8 +291,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error parsing explanation response: {Response}", jsonResponse);
-
                 // Return a basic response when parsing fails
                 return new ExplanationResponse
                 {

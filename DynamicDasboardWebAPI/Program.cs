@@ -2,6 +2,7 @@ using DynamicDasboardWebAPI.Repositories;
 using DynamicDasboardWebAPI.Services;
 using DynamicDasboardWebAPI.Services.LLM;
 using DynamicDasboardWebAPI.Utilities;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 
@@ -10,12 +11,23 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the DI container
 builder.Services.AddControllers(); // This registers all controller-related services
 
-// Register the database connection service
+//Register the database connection service
 builder.Services.AddScoped<IDbConnection>(provider =>
 {
     // Fetch the connection string from appsettings.json
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    return new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+return new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+});
+
+//builder.Services.AddTransient<IDbConnection>(provider =>
+//{
+//    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+//    return new SqlConnection(connectionString);
+//});
+
+builder.Logging.AddEventLog(config => {
+    config.SourceName = "DynamicDashboard";
+    config.LogName = "Application";
 });
 
 // Register the dynamic database connection factory
@@ -23,8 +35,7 @@ builder.Services.AddScoped<DbConnectionFactory>(provider =>
 {
     var appDbConnection = provider.GetRequiredService<IDbConnection>();
     var configuration = provider.GetRequiredService<IConfiguration>();
-    var logger = provider.GetService<ILogger<DbConnectionFactory>>();
-    return new DbConnectionFactory(appDbConnection, configuration, logger);
+    return new DbConnectionFactory(appDbConnection, configuration);
 });
 
 // Configure CORS to allow requests from the Blazor app
@@ -46,9 +57,8 @@ builder.Services.AddScoped<RelationshipRepository>();
 builder.Services.AddScoped<ILogsService, LogsService>();
 builder.Services.AddScoped<QueryRepository>();
 
-builder.Services.AddScoped<NlQueryRepository>();
+builder.Services.AddScoped<QueryRepository>();
 builder.Services.AddScoped<BatchProcessingRepository>();
-builder.Services.AddHttpClient<QueryGeneratorService>();
 builder.Services.AddScoped<QueryLogsRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -61,18 +71,16 @@ builder.Services.AddScoped<QueryService>();
 // Register LLM services
 builder.Services.AddHttpClient<ILLMService>(); // HttpClient for LLM services
 // Add SchemaAnalysisService
-builder.Services.AddHttpClient<SchemaAnalysisService>();
-builder.Services.AddScoped<SchemaAnalysisService>();
 builder.Services.AddScoped<LLMServiceFactory>();
-builder.Services.AddScoped<NlQueryService>();
-builder.Services.AddScoped<EnhancedNlQueryService>();
+builder.Services.AddScoped<QueryService>();
+builder.Services.AddScoped<QueryService>();
 
 // Register the batch processing service
 builder.Services.AddScoped<BatchProcessingService>();
 builder.Services.AddScoped<DatabaseService>();
 
 builder.Services.AddScoped<DatabaseJsonSchemaRepository>();
-builder.Services.AddScoped<DatabaseJsonSchemaService>();
+builder.Services.AddScoped<DatabaseSchemaService>();
 
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });

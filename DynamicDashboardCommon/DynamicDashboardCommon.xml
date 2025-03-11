@@ -4,7 +4,7 @@
         <name>DynamicDashboardCommon</name>
     </assembly>
     <members>
-        <member name="T:DynamicDashboardCommon.Enums.DatabaseTypeEnum">
+        <member name="T:DynamicDashboardCommon.Enums.EnumDatabaseType">
             <summary>
             Enum representing the supported database types in the application.
             </summary>

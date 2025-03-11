@@ -13,16 +13,14 @@ namespace DynamicDasboardWebAPI.Services.LLM
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<LLMServiceFactory> _logger;
 
         public LLMServiceFactory(
             IServiceProvider serviceProvider,
-            IConfiguration configuration,
-            ILogger<LLMServiceFactory> logger)
+            IConfiguration configuration
+            )
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -32,9 +30,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
         public ILLMService CreateLlmService()
         {
             var providerName = _configuration["LlmService:Provider"]?.ToLowerInvariant() ?? "claude";
-
-            _logger.LogInformation("Creating LLM service with provider: {Provider}", providerName);
-
             return providerName switch
             {
                 "claude" => CreateClaudeService(),
@@ -46,15 +41,13 @@ namespace DynamicDasboardWebAPI.Services.LLM
         private ILLMService CreateClaudeService()
         {
             var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
-            return new ClaudeLLMService(httpClient, _configuration,
-                _serviceProvider.GetRequiredService<ILogger<ClaudeLLMService>>());
+            return new ClaudeLLMService(httpClient, _configuration);
         }
 
         private ILLMService CreateDeepSeekService()
         {
             var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
-            return new DeepSeekLLMService(httpClient, _configuration,
-                _serviceProvider.GetRequiredService<ILogger<DeepSeekLLMService>>());
+            return new DeepSeekLLMService(httpClient, _configuration);
         }
     }
 }

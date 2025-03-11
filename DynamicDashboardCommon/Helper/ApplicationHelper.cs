@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Diagnostics;
+
 
 namespace DynamicDashboardCommon.Helper
 {
@@ -41,5 +43,32 @@ namespace DynamicDashboardCommon.Helper
         {
             return JsonSerializer.Serialize(obj, new JsonSerializerOptions { WriteIndented = true });
         }
+
+        // Returns the details of an exception as a string.
+        public static string GetExceptionDetails(Exception ex)
+        {
+            if (ex == null) return string.Empty;
+
+            // Create a stack trace with file info
+            var stackTrace = new StackTrace(ex, true);
+            // Get the first frame (where exception originated)
+            var frame = stackTrace.GetFrame(0);
+            var fileName = frame?.GetFileName() ?? "Unknown File";
+            var methodName = frame?.GetMethod()?.Name ?? "Unknown Method";
+
+            var sb = new StringBuilder();
+            sb.AppendLine("===== Exception Details =====");
+            sb.AppendLine($"File: {fileName}");
+            sb.AppendLine($"Method: {methodName}");
+            sb.AppendLine($"Message: {ex.Message}");
+            sb.AppendLine("Full Stack Trace:");
+            sb.AppendLine(ex.StackTrace);
+            sb.AppendLine("=============================");
+
+            return sb.ToString();
+
+        }
+
+
     }
 }

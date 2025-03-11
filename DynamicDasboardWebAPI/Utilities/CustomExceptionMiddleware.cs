@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using DynamicDasboardWebAPI.Services;
+using DynamicDashboardCommon.Enums;
 
 namespace DynamicDasboardWebAPI.Utilities
 {
@@ -37,14 +38,15 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
+
                 // Resolve ILogsService from the scoped service provider
                 var logsService = context.RequestServices.GetRequiredService<DynamicDasboardWebAPI.Services.ILogsService>();
-                await logsService.LogExceptionAsync(
+                await logsService.AddLogAsync(
                     userId: null, // Optional: Fetch from context
-                    eventType: "Error",
+                    eventType: LoggingType.Error.ToString(),
                     eventDescription: ex.Message
                 );
-               
+
                 // Handle the exception and return a response to the client
                 await HandleExceptionAsync(context, ex);
             }
@@ -65,8 +67,7 @@ namespace DynamicDasboardWebAPI.Utilities
             {
                 StatusCode = context.Response.StatusCode,
                 Message = "An unexpected error occurred. Please try again later.",
-                Details = exception.InnerException,
-                exception.StackTrace
+                Details = exception.InnerException
             };
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(response));

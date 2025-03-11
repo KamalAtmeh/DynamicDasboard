@@ -186,4 +186,17 @@ namespace DynamicDashboardCommon.Models
         public DateTime date { get; set; }
         public string changes { get; set; }
     }
+
+    public class DatabaseMetadataDto
+    {
+        public int DatabaseId { get; set; }
+        public List<TableMetadataDto> Tables { get; set; }
+    }
+
+    public class TableMetadataDto
+    {
+        public Table Table { get; set; }
+        public IEnumerable<Column> Columns { get; set; }
+        public IEnumerable<Relationship> Relationships { get; set; }
+    }
 }

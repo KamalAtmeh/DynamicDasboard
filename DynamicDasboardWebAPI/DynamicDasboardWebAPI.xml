@@ -4,33 +4,90 @@
         <name>DynamicDasboardWebAPI</name>
     </assembly>
     <members>
-        <member name="T:DynamicDasboardWebAPI.Configurations.AppSettings">
+        <member name="T:DynamicDasboardWebAPI.Controllers.AppControllerBase">
             <summary>
-            Configuration settings for different database connections.
+            Base controller that provides logging and common functionality for all API controllers.
             </summary>
         </member>
-        <member name="P:DynamicDasboardWebAPI.Configurations.AppSettings.SQLServerWindowsAuth">
+        <member name="M:DynamicDasboardWebAPI.Controllers.AppControllerBase.#ctor(DynamicDasboardWebAPI.Services.ILogsService)">
             <summary>
-            Gets or sets the connection string for SQL Server using Windows Authentication.
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.AppControllerBase"/> class.
+            </summary>
+            <param name="logsService">The primary logging service.</param>
+            <param name="loggerFactory">The logger factory.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.AppControllerBase.GetUserId">
+            <summary>
+            Gets the current user ID from claims, or null if not authenticated, to be moved
+            </summary>
+            <returns>The user ID or null.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.AppControllerBase.HandleExceptionAsync(System.Exception,System.String,System.String)">
+            <summary>
+            Logs an exception and returns a standardized error response.
+            </summary>
+            <param name="ex">The exception to log.</param>
+            <param name="eventType">The type of event that caused the exception.</param>
+            <param name="customMessage">Optional custom message to return to the client.</param>
+            <returns>A 500 Internal Server Error response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.AppControllerBase.HandleNotFoundAsync(System.String,System.Object)">
+            <summary>
+            Handles a not found result with logging.
+            </summary>
+            <param name="entityName">The name of the entity that wasn't found.</param>
+            <param name="id">The ID that was searched for.</param>
+            <returns>A 404 Not Found response.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.QueryController">
+            <summary>
+            Enhanced controller for processing natural language queries with a multi-step workflow:
+            1. Analyze question and provide explanation
+            2. Generate SQL from confirmed understanding
+            3. Execute query and return results
             </summary>
         </member>
-        <member name="P:DynamicDasboardWebAPI.Configurations.AppSettings.MySQL">
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.#ctor(DynamicDasboardWebAPI.Services.QueryService)">
             <summary>
-            Gets or sets the connection string for MySQL database.
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.QueryController"/> class.
             </summary>
+            <param name="nlQueryService">The natural language query service.</param>
+            <param name="logger">The logger.</param>
         </member>
-        <member name="P:DynamicDasboardWebAPI.Configurations.AppSettings.Oracle">
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.AnalyzeQuestion(DynamicDashboardCommon.Models.NlQueryRequest)">
             <summary>
-            Gets or sets the connection string for Oracle database.
+            Step 1: Analyzes a natural language question and returns an explanation.
             </summary>
+            <param name="request">The natural language query request.</param>
+            <returns>An explanation of how the system understands the question.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Configurations.DatabaseConfig">
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.GenerateSql(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
             <summary>
-            Represents the configuration settings for the database connection.
-            This class is used to store and manage database-related configuration
-            settings such as connection strings, database provider, and other
-            relevant options.
+            Step 2: Generates SQL from a confirmed understanding.
             </summary>
+            <param name="request">The confirmation request with resolved ambiguities.</param>
+            <returns>The generated SQL query.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ExecuteQuery(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
+            <summary>
+            Step 3: Executes a SQL query and returns the results.
+            </summary>
+            <param name="request">The execution request with the SQL query.</param>
+            <returns>The query results with explanation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ProcessQuery(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Unified endpoint for backward compatibility: processes a natural language query in one step.
+            </summary>
+            <param name="request">The natural language query request.</param>
+            <returns>The query response including SQL and results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.GetExampleQuestions(System.Int32)">
+            <summary>
+            Gets example questions for a specific database.
+            </summary>
+            <param name="databaseId">The database ID.</param>
+            <returns>A list of example questions.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.ColumnsController">
             <summary>
@@ -38,7 +95,7 @@
             Provides endpoints to get, add, update, and delete columns.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.ColumnsController.#ctor(DynamicDasboardWebAPI.Services.ColumnService)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.ColumnsController.#ctor(DynamicDasboardWebAPI.Services.ColumnService,DynamicDasboardWebAPI.Services.ILogsService)">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.ColumnsController"/> class.
             </summary>
@@ -72,81 +129,6 @@
             </summary>
             <param name="columnId">The ID of the column to delete.</param>
             <returns>The ID of the deleted column.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController">
-            <summary>
-            Enhanced controller for processing natural language queries with a multi-step workflow:
-            1. Analyze question and provide explanation
-            2. Generate SQL from confirmed understanding
-            3. Execute query and return results
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.#ctor(DynamicDasboardWebAPI.Services.EnhancedNlQueryService,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController})">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController"/> class.
-            </summary>
-            <param name="nlQueryService">The natural language query service.</param>
-            <param name="logger">The logger.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.AnalyzeQuestion(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Step 1: Analyzes a natural language question and returns an explanation.
-            </summary>
-            <param name="request">The natural language query request.</param>
-            <returns>An explanation of how the system understands the question.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.GenerateSql(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
-            <summary>
-            Step 2: Generates SQL from a confirmed understanding.
-            </summary>
-            <param name="request">The confirmation request with resolved ambiguities.</param>
-            <returns>The generated SQL query.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.ExecuteQuery(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
-            <summary>
-            Step 3: Executes a SQL query and returns the results.
-            </summary>
-            <param name="request">The execution request with the SQL query.</param>
-            <returns>The query results with explanation.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.ProcessQuery(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Unified endpoint for backward compatibility: processes a natural language query in one step.
-            </summary>
-            <param name="request">The natural language query request.</param>
-            <returns>The query response including SQL and results.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.EnhancedNlQueryController.GetExampleQuestions(System.Int32)">
-            <summary>
-            Gets example questions for a specific database.
-            </summary>
-            <param name="databaseId">The database ID.</param>
-            <returns>A list of example questions.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Controllers.QueryGeneratorController">
-            <summary>
-            API Controller for handling query generation and Excel file processing.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryGeneratorController.#ctor(DynamicDasboardWebAPI.Services.QueryGeneratorService)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.QueryGeneratorController"/> class.
-            </summary>
-            <param name="queryGeneratorService">The service for generating queries and processing Excel files.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryGeneratorController.GenerateQuery(DynamicDashboardCommon.Models.QueryRequest)">
-            <summary>
-            Generates a query based on the provided schema and question.
-            </summary>
-            <param name="request">The request containing the schema and question.</param>
-            <returns>An IActionResult containing the generated query or an error message.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryGeneratorController.ProcessExcel(Microsoft.AspNetCore.Http.IFormFile)">
-            <summary>
-            Processes an uploaded Excel file and returns a modified version.
-            </summary>
-            <param name="file">The uploaded Excel file.</param>
-            <returns>An IActionResult containing the modified Excel file or an error message.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.RelationshipsController">
             <summary>
@@ -261,77 +243,139 @@
             <param name="id">The ID of the user to retrieve.</param>
             <returns>The user with the specified ID.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.BatchProcessingRepository.LogBatchJobAsync(System.String,System.Int32,System.Int32,System.Nullable{System.Int32})">
+        <member name="M:DynamicDasboardWebAPI.Repositories.BaseRepository.WithConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32)">
             <summary>
-            Logs a batch processing job.
+            A common helper to manage connection creation, opening, and disposal 
+            for a specific database ID.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.BaseRepository.WithConnectionAsync(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task},System.Int32)">
+            <summary>
+            Overload for void-returning operations
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.BatchProcessingRepository.LogBatchJobAsync(System.String,System.Int32,System.Int32,System.Nullable{System.Int32},System.Int32)">
+            <summary>
+            Logs a batch processing job into either the default DB or a dynamic DB.
             </summary>
             <param name="fileName">The name of the processed file.</param>
             <param name="totalQuestions">The total number of questions processed.</param>
             <param name="successCount">The number of successfully processed questions.</param>
             <param name="userId">The user ID (optional).</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
             <returns>The ID of the inserted log.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.BatchProcessingRepository.LogBatchDetailAsync(System.Int32,System.String,System.String,System.Boolean,System.String)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.BatchProcessingRepository.LogBatchDetailAsync(System.Int32,System.String,System.String,System.Boolean,System.String,System.Int32)">
             <summary>
-            Logs details for each question in a batch.
+            Logs details for each question in a batch into either the default DB or a dynamic DB.
             </summary>
             <param name="batchId">The ID of the batch processing log.</param>
             <param name="question">The natural language question.</param>
             <param name="generatedSql">The generated SQL query.</param>
             <param name="success">Whether the processing was successful.</param>
             <param name="errorMessage">Error message if processing failed (optional).</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
             <returns>The ID of the inserted log detail.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.BatchProcessingRepository.GetRecentBatchJobsAsync(System.Nullable{System.Int32},System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.BatchProcessingRepository.GetRecentBatchJobsAsync(System.Nullable{System.Int32},System.Int32,System.Int32)">
             <summary>
-            Gets recent batch processing jobs.
+            Gets recent batch processing jobs from either the default DB or a dynamic DB.
             </summary>
             <param name="userId">The user ID (optional).</param>
             <param name="limit">Maximum number of jobs to return.</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
             <returns>A list of recent batch processing jobs.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.GenericRepository`1">
-            <summary>  
-            A generic repository class that provides basic CRUD operations for entities.  
-            This class can be used as a base class for specific entity repositories.  
-            </summary>  
-            <typeparam name="TEntity">The type of the entity.</typeparam>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String)">
+            <summary>
+            Executes a SQL query on the default DB and returns the results as a list of dictionaries.
+            </summary>
+            <param name="query">The SQL query to execute.</param>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.GenericRepository`1.#ctor">
-            <summary>  
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.GenericRepository`1"/> class.  
-            </summary>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryOnDatabaseAsync(System.String,System.Int32)">
+            <summary>
+            Executes a query on a specific (dynamic) database using its ID.
+            </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.GenericRepository`1.GetAll">
-            <summary>  
-            Gets all entities.  
-            </summary>  
-            <returns>A collection of all entities.</returns>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.GetDatabaseMetadataAsync(System.Int32)">
+            <summary>
+            Retrieves metadata for a database (logic uses the default DB connection).
+            </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.GenericRepository`1.Find(System.Linq.Expressions.Expression{System.Func{`0,System.Boolean}})">
-            <summary>  
-            Finds entities based on a predicate.  
-            </summary>  
-            <param name="predicate">The predicate to filter entities.</param>  
-            <returns>A collection of entities that match the predicate.</returns>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.GetColumnsByTableIdAsync(System.Int32,System.Int32)">
+            <summary>
+            Fetch columns for a specific table.
+            </summary>
+            <param name="tableId">The table ID.</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.GenericRepository`1.Add(`0)">
-            <summary>  
-            Adds a new entity.  
-            </summary>  
-            <param name="entity">The entity to add.</param>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.GetColumnByIdAsync(System.Int32,System.Int32)">
+            <summary>
+            Get a specific column by ID.
+            </summary>
+            <param name="columnId">The column ID.</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.GenericRepository`1.Update(`0)">
-            <summary>  
-            Updates an existing entity.  
-            </summary>  
-            <param name="entity">The entity to update.</param>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.AddColumnAsync(DynamicDashboardCommon.Models.Column,System.Int32)">
+            <summary>
+            Add a new column.
+            </summary>
+            <param name="column">The column object to add.</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.GenericRepository`1.Delete(`0)">
-            <summary>  
-            Deletes an entity.  
-            </summary>  
-            <param name="entity">The entity to delete.</param>  
+        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.UpdateColumnAsync(DynamicDashboardCommon.Models.Column,System.Int32)">
+            <summary>
+            Update an existing column.
+            </summary>
+            <param name="column">The column object with updated data.</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.DeleteColumnAsync(System.Int32,System.Int32)">
+            <summary>
+            Delete a column.
+            </summary>
+            <param name="columnId">The column ID to delete.</param>
+            <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseByIdAsync(System.Int32)">
+            <summary>
+            Get a database by ID (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetAllDatabasesAsync">
+            <summary>
+            Get all databases (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.AddDatabaseAsync(DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Add a new database connection (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.UpdateDatabaseAsync(DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Update an existing database connection (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.DeleteDatabaseAsync(System.Int32)">
+            <summary>
+            Soft-delete a database connection by marking it inactive (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetSupportedDatabaseTypesAsync">
+            <summary>
+            Get supported database types (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetDatabaseTypeNameAsync(System.Int32)">
+            <summary>
+            Get a database type name by its ID (uses default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Test a database connection using DbConnectionFactory logic (no direct DB usage).
+            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.IDatabaseRepository">
             <summary>
@@ -366,9 +410,56 @@
             <param name="databaseName">The name of the database.</param>
             <returns>A task that represents the asynchronous operation. The task result contains the database entity.</returns>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.IUserRepository">
+        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.GetRelationshipsByTableIdAsync(System.Int32)">
             <summary>
-            Defines the contract for user repository operations.
+            Fetch relationships for a specific table (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.GetRelationshipByIdAsync(System.Int32)">
+            <summary>
+            Get a specific relationship by ID (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.AddRelationshipAsync(DynamicDashboardCommon.Models.Relationship)">
+            <summary>
+            Add a new relationship (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.UpdateRelationshipAsync(DynamicDashboardCommon.Models.Relationship)">
+            <summary>
+            Update an existing relationship (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.DeleteRelationshipAsync(System.Int32)">
+            <summary>
+            Delete a relationship (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.GetTablesByDatabaseIdAsync(System.Int32)">
+            <summary>
+            Fetch tables for a specific database (default DB).
+            Note: The 'databaseId' parameter here is part of the entity logic (i.e., which DB row?), 
+            not the dynamic DB connection ID.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.GetTableByIdAsync(System.Int32)">
+            <summary>
+            Get a specific table by ID (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.AddTableAsync(DynamicDashboardCommon.Models.Table)">
+            <summary>
+            Add a new table (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.UpdateTableAsync(DynamicDashboardCommon.Models.Table)">
+            <summary>
+            Update an existing table (default DB).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TableRepository.DeleteTableAsync(System.Int32)">
+            <summary>
+            Delete a table (default DB).
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.LogsRepository">
@@ -376,16 +467,17 @@
             Repository for logging events in the Logs table.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.#ctor(System.Data.IDbConnection,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DatabaseRepository})">
+        <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.#ctor(System.Data.IDbConnection,DynamicDasboardWebAPI.Utilities.DbConnectionFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.LogsRepository"/> class.
             </summary>
-            <param name="connection">Database connection instance.</param>
+            <param name="appDbConnection">Default database connection instance.</param>
+            <param name="connectionFactory">Factory for dynamic connections (not used here).</param>
             <param name="logger">Optional logger for capturing repository operations.</param>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.AddLogAsync(System.Nullable{System.Int32},System.String,System.String)">
             <summary>
-            Inserts a new log entry into the Logs table.
+            Inserts a new log entry into the Logs table (default DB).
             </summary>
             <param name="userId">The ID of the user (nullable).</param>
             <param name="eventType">The type of the event.</param>
@@ -394,26 +486,23 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.GetRecentLogsAsync(System.Int32)">
             <summary>
-            Gets recent log entries.
+            Gets recent log entries (default DB).
             </summary>
             <param name="limit">Maximum number of log entries to retrieve.</param>
-            <returns>A collection of recent log entries.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.GetLogsByEventTypeAsync(System.String,System.Int32)">
             <summary>
-            Gets log entries by event type.
+            Gets log entries by event type (default DB).
             </summary>
             <param name="eventType">Type of event to filter by.</param>
             <param name="limit">Maximum number of log entries to retrieve.</param>
-            <returns>A collection of log entries of the specified type.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.LogsRepository.GetLogsByUserIdAsync(System.Int32,System.Int32)">
             <summary>
-            Gets log entries for a specific user.
+            Gets log entries for a specific user (default DB).
             </summary>
             <param name="userId">User ID to filter by.</param>
             <param name="limit">Maximum number of log entries to retrieve.</param>
-            <returns>A collection of log entries for the specified user.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Repositories.QueryLogsRepository">
             <summary>
@@ -422,53 +511,53 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.LogQueryAsync(System.String,System.Nullable{System.Int32},System.Int32,System.String)">
             <summary>
-            Logs an executed query into the QueryLogs table.
+            Logs an executed query into the QueryLogs table (default DB).
+            The parameter 'databaseID' here is stored in 'DatabaseType' column, 
+            not used for dynamic connections.
             </summary>
-            <param name="queryText">The SQL query executed.</param>
-            <param name="executedBy">User ID of the executor (nullable).</param>
-            <param name="databaseType">The type of database used.</param>
-            <param name="result">Serialized result of the query (optional).</param>
-            <returns>The number of rows affected.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.GetQueryHistoryAsync(System.Nullable{System.Int32},System.Int32)">
             <summary>
-            Gets the history of executed queries.
+            Gets the history of executed queries (default DB).
             </summary>
-            <param name="userId">Optional user ID to filter by.</param>
-            <param name="limit">Number of records to retrieve.</param>
-            <returns>List of query log entries.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryLogsRepository.GetQueryByIdAsync(System.Int32)">
             <summary>
-            Gets details of a specific query by ID.
-            </summary>
-            <param name="queryId">The ID of the query to retrieve.</param>
-            <returns>The query details.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.QueryRepository">
-            <summary>
-            Repository for executing dynamic SQL queries.
+            Gets details of a specific query by ID (default DB).
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String)">
+        <member name="T:DynamicDasboardWebAPI.Services.QueryService">
             <summary>
-            Executes a dynamic SQL query using the default connection and returns the result.
+            Enhanced service for processing natural language queries with a two-step confirmation process
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String,System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.AnalyzeQuestionAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
             <summary>
-            Executes a dynamic SQL query on the specified database and returns the result.
+            Step 1: Analyze a natural language question and generate an explanation
             </summary>
+            <param name="request">The natural language query request</param>
+            <returns>An explanation of how the system understands the question</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.Object)">
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
             <summary>
-            Executes a dynamic SQL query with parameters and returns the result.
+            Step 2: Generate SQL based on confirmed understanding
             </summary>
+            <param name="request">The confirmation request with resolved ambiguities</param>
+            <returns>Generated SQL query</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryWithParamsAsync(System.String,System.Int32,System.Object)">
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
             <summary>
-            Executes a dynamic SQL query with parameters on the specified database.
+            Step 3: Execute the generated SQL and explain the results
             </summary>
+            <param name="request">The execution request with the SQL query</param>
+            <returns>Query results with explanation</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ProcessNaturalLanguageQueryAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Combined method for backward compatibility: Analyze, generate SQL, and execute in one step
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>Complete query response</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
             <summary>
@@ -517,7 +606,7 @@
             Service for managing database operations including connections, metadata, and queries.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DatabaseRepository,DynamicDasboardWebAPI.Repositories.TableRepository,DynamicDasboardWebAPI.Repositories.ColumnRepository,DynamicDasboardWebAPI.Services.RelationshipService,DbConnectionFactory,Microsoft.Extensions.Logging.ILogger{DynamicDasboardWebAPI.Services.DatabaseService})">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.#ctor(DynamicDasboardWebAPI.Repositories.DatabaseRepository,DynamicDasboardWebAPI.Repositories.TableRepository,DynamicDasboardWebAPI.Repositories.ColumnRepository,DynamicDasboardWebAPI.Services.RelationshipService,DynamicDasboardWebAPI.Utilities.DbConnectionFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DatabaseService"/> class.
             </summary>
@@ -633,39 +722,6 @@
             Processes relationships between tables and columns.
             </summary>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Services.EnhancedNlQueryService">
-            <summary>
-            Enhanced service for processing natural language queries with a two-step confirmation process
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.AnalyzeQuestionAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Step 1: Analyze a natural language question and generate an explanation
-            </summary>
-            <param name="request">The natural language query request</param>
-            <returns>An explanation of how the system understands the question</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
-            <summary>
-            Step 2: Generate SQL based on confirmed understanding
-            </summary>
-            <param name="request">The confirmation request with resolved ambiguities</param>
-            <returns>Generated SQL query</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
-            <summary>
-            Step 3: Execute the generated SQL and explain the results
-            </summary>
-            <param name="request">The execution request with the SQL query</param>
-            <returns>Query results with explanation</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.EnhancedNlQueryService.ProcessNaturalLanguageQueryAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Combined method for backward compatibility: Analyze, generate SQL, and execute in one step
-            </summary>
-            <param name="request">The natural language query request</param>
-            <returns>Complete query response</returns>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDatabaseService.GetAllDatabasesAsync">
             <summary>
             Asynchronously retrieves all databases.
@@ -685,201 +741,6 @@
             </summary>
             <param name="databaseId">The ID of the database to retrieve metadata for.</param>
             <returns>A boolean indicating whether the metadata retrieval was successful.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.ILogsService">
-            <summary>
-            Provides methods for logging exceptions.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.ILogsService.LogExceptionAsync(System.Nullable{System.Int32},System.String,System.String)">
-            <summary>
-            Logs an exception asynchronously.
-            </summary>
-            <param name="userId">The ID of the user who encountered the exception. Can be null.</param>
-            <param name="eventType">The type of event that occurred.</param>
-            <param name="eventDescription">A description of the event.</param>
-            <returns>A task that represents the asynchronous operation.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IUserService.GetAllUsersAsync">
-            <summary>
-            Retrieves all users asynchronously.
-            </summary>
-            <returns>A task that represents the asynchronous operation. The task result contains a collection of users.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IUserService.AddUserAsync(DynamicDashboardCommon.Models.User)">
-            <summary>
-            Adds a new user asynchronously.
-            </summary>
-            <param name="user">The user to add.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the ID of the added user.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.IUserService.GetUserByIDAsync(System.Int32)">
-            <summary>
-            Retrieves a user by their ID asynchronously.
-            </summary>
-            <param name="userId">The ID of the user to retrieve.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the user with the specified ID.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService">
-            <summary>
-            Implementation of ILlmService using Anthropic's Claude API
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
-            <inheritdoc/>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
-            <summary>
-            Implementation of ILlmService using DeepSeek API
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <inheritdoc/>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
-            <inheritdoc/>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.LLM.ILLMService">
-            <summary>
-            Interface for Language Model services that support natural language processing capabilities.
-            This abstraction allows switching between different LLM providers (DeepSeek, Claude, etc.)
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <summary>
-            Analyzes a natural language question and generates an explanation of its understanding.
-            </summary>
-            <param name="question">The natural language question</param>
-            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
-            <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
-            <returns>An explanation response including understanding explanation and identified ambiguities</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <summary>
-            Generates SQL from a natural language question after confirmation of understanding.
-            </summary>
-            <param name="question">The original natural language question</param>
-            <param name="confirmedUnderstanding">The confirmed explanation of the question's meaning</param>
-            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
-            <param name="resolvedAmbiguities">Dictionary of ambiguities and their resolutions</param>
-            <returns>A generated SQL query</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
-            <summary>
-            Generates an explanation for SQL query results.
-            </summary>
-            <param name="question">The original natural language question</param>
-            <param name="sql">The SQL query that was executed</param>
-            <param name="results">The query results</param>
-            <returns>A user-friendly explanation of the results</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
-            <summary>
-            Factory for creating LLM service instances based on configuration
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory.CreateLlmService">
-            <summary>
-            Creates an LLM service based on the configuration
-            </summary>
-            <returns>An implementation of ILlmService</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.LogsService">
-            <summary>
-            Service layer for logging events.
-            This class provides methods to log exceptions and other events into the database.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LogsService.#ctor(DynamicDasboardWebAPI.Repositories.LogsRepository)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.LogsService"/> class.
-            </summary>
-            <param name="repository">Instance of the logs repository.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LogsService.LogExceptionAsync(System.Nullable{System.Int32},System.String,System.String)">
-            <summary>
-            Logs an exception into the database.
-            </summary>
-            <param name="userId">The ID of the user (nullable).</param>
-            <param name="eventType">The type of the event.</param>
-            <param name="eventDescription">The description of the event.</param>
-            <returns>A task that represents the asynchronous operation.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.NlQueryService.DetermineDataViewingType(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.String)">
-            <summary>
-            Determines the most appropriate viewing type for the query results
-            </summary>
-            <param name="results">The query results</param>
-            <param name="query">The original SQL query</param>
-            <returns>Recommended viewing type ID and name</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.NlQueryService.IsAggregateQuery(System.String)">
-            <summary>
-            Checks if the query is an aggregate query
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.NlQueryService.FormatNumber(System.Object)">
-            <summary>
-            Formats numbers with appropriate culture and precision
-            </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.QueryGeneratorService">
-            <summary>
-            Service to generate SQL queries based on provided schema and questions, and process Excel files to insert generated queries.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryGeneratorService.#ctor(Microsoft.Extensions.Configuration.IConfiguration,System.Net.Http.HttpClient)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.QueryGeneratorService"/> class.
-            </summary>
-            <param name="config">The configuration settings.</param>
-            <param name="httpClient">The HTTP client for making API requests.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryGeneratorService.ProcessExcelFile(System.IO.Stream)">
-            <summary>
-            Processes an Excel file to generate SQL queries based on the schema and questions provided in the file.
-            </summary>
-            <param name="fileStream">The stream of the Excel file to process.</param>
-            <returns>A byte array representing the modified Excel file.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryGeneratorService.GenerateQuery(System.String,System.String)">
-            <summary>
-            Generates a SQL query based on the provided schema and question.
-            </summary>
-            <param name="schema">The database schema.</param>
-            <param name="question">The question to generate the query for.</param>
-            <returns>An <see cref="T:Microsoft.AspNetCore.Mvc.IActionResult"/> containing the generated query or error message.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryGeneratorService.IsSchemaValid(System.String)">
-            <summary>
-            Validates the provided schema.
-            </summary>
-            <param name="schema">The database schema to validate.</param>
-            <returns><c>true</c> if the schema is valid; otherwise, <c>false</c>.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.QueryGeneratorService.DeepSeekResponse">
-            <summary>
-            Represents the response from the DeepSeek API.
-            </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.QueryGeneratorService.Choice">
-            <summary>
-            Represents a choice in the DeepSeek API response.
-            </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.QueryGeneratorService.Message">
-            <summary>
-            Represents a message in the DeepSeek API response.
-            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.RelationshipService">
             <summary>  
@@ -963,6 +824,134 @@
             </summary>
             <param name="tableId">The ID of the table to delete.</param>
             <returns>The number of affected rows.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService">
+            <summary>
+            Implementation of ILlmService using Anthropic's Claude API
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
+            <summary>
+            Implementation of ILlmService using DeepSeek API
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.ILLMService">
+            <summary>
+            Interface for Language Model services that support natural language processing capabilities.
+            This abstraction allows switching between different LLM providers (DeepSeek, Claude, etc.)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Analyzes a natural language question and generates an explanation of its understanding.
+            </summary>
+            <param name="question">The natural language question</param>
+            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
+            <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
+            <returns>An explanation response including understanding explanation and identified ambiguities</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Generates SQL from a natural language question after confirmation of understanding.
+            </summary>
+            <param name="question">The original natural language question</param>
+            <param name="confirmedUnderstanding">The confirmed explanation of the question's meaning</param>
+            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
+            <param name="resolvedAmbiguities">Dictionary of ambiguities and their resolutions</param>
+            <returns>A generated SQL query</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Generates an explanation for SQL query results.
+            </summary>
+            <param name="question">The original natural language question</param>
+            <param name="sql">The SQL query that was executed</param>
+            <param name="results">The query results</param>
+            <returns>A user-friendly explanation of the results</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
+            <summary>
+            Factory for creating LLM service instances based on configuration
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory.CreateLlmService">
+            <summary>
+            Creates an LLM service based on the configuration
+            </summary>
+            <returns>An implementation of ILlmService</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.ILogsService">
+            <summary>
+            Provides methods for logging exceptions.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.ILogsService.AddLogAsync(System.Nullable{System.Int32},System.String,System.String)">
+            <summary>
+            Logs an exception asynchronously.
+            </summary>
+            <param name="userId">The ID of the user who encountered the exception. Can be null.</param>
+            <param name="eventType">The type of event that occurred.</param>
+            <param name="eventDescription">A description of the event.</param>
+            <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LogsService">
+            <summary>
+            Service layer for logging events.
+            This class provides methods to log exceptions and other events into the database.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LogsService.#ctor(DynamicDasboardWebAPI.Repositories.LogsRepository)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.LogsService"/> class.
+            </summary>
+            <param name="repository">Instance of the logs repository.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LogsService.AddLogAsync(System.Nullable{System.Int32},System.String,System.String)">
+            <summary>
+            Logs an exception into the database.
+            </summary>
+            <param name="userId">The ID of the user (nullable).</param>
+            <param name="eventType">The type of the event.</param>
+            <param name="eventDescription">The description of the event.</param>
+            <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IUserService.GetAllUsersAsync">
+            <summary>
+            Retrieves all users asynchronously.
+            </summary>
+            <returns>A task that represents the asynchronous operation. The task result contains a collection of users.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IUserService.AddUserAsync(DynamicDashboardCommon.Models.User)">
+            <summary>
+            Adds a new user asynchronously.
+            </summary>
+            <param name="user">The user to add.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the ID of the added user.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IUserService.GetUserByIDAsync(System.Int32)">
+            <summary>
+            Retrieves a user by their ID asynchronously.
+            </summary>
+            <param name="userId">The ID of the user to retrieve.</param>
+            <returns>A task that represents the asynchronous operation. The task result contains the user with the specified ID.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.UserService">
             <summary>
@@ -1133,7 +1122,7 @@
             Gets all relationships for multiple tables in a single query
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetCompleteDatabaseMetadataAsync(System.Data.IDbConnection,System.Int32,Microsoft.Extensions.Logging.ILogger)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.GetDatabaseMetadataAsync(System.Data.IDbConnection,System.Int32)">
             <summary>
             Gets complete database metadata in a minimal number of database calls
             </summary>
@@ -1161,98 +1150,65 @@
             Sanitizes a SQL identifier to help prevent SQL injection
             </summary>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Utilities.QueryBuilder">
-            <summary>
-            The QueryBuilder class is responsible for constructing SQL queries dynamically.
-            This class provides methods to build SELECT, INSERT, UPDATE, and DELETE queries
-            based on the provided parameters. It helps in creating complex queries in a 
-            programmatic way, ensuring that the queries are syntactically correct and 
-            preventing SQL injection attacks by using parameterized queries.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Utilities.QueryBuilder.ExtractSqlQueryFromMarkdown(System.String)">
-            <summary>
-            Extracts the SQL query from a markdown code block
-            </summary>
-            <param name="input">Input string containing a SQL query with markdown code block syntax</param>
-            <returns>The clean SQL query without markdown delimiters</returns>
-        </member>
-        <member name="M:NlQueryRepository.ExecuteQueryAsync(System.String)">
-            <summary>
-            Executes a SQL query and returns the results as a list of dictionaries.
-            </summary>
-            <param name="query">The SQL query to execute.</param>
-            <returns>A list of dictionaries, where each dictionary represents a row of data.</returns>
-        </member>
-        <member name="M:NlQueryRepository.ExecuteQueryOnDatabaseAsync(System.String,System.Int32)">
-            <summary>
-            Executes a query on a specific database using its ID
-            </summary>
-        </member>
-        <member name="M:NlQueryRepository.GetDatabaseMetadataAsync(System.Int32)">
-            <summary>
-            Retrieves metadata for a database including tables and columns.
-            </summary>
-            <returns>A dictionary containing database metadata.</returns>
-        </member>
-        <member name="M:DbConnectionFactory.CreateConnection(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.CreateConnection(System.Int32)">
             <summary>
             Creates a database connection based on the database ID.
             </summary>
+            //Temp to change it into async
         </member>
-        <member name="M:DbConnectionFactory.CreateOpenConnectionAsync(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.CreateOpenConnectionAsync(System.Int32)">
             <summary>
             Creates and opens a database connection asynchronously.
             </summary>
         </member>
-        <member name="M:DbConnectionFactory.TestConnectionAsync(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.TestConnectionAsync(System.Int32)">
             <summary>
             Tests a database connection asynchronously.
             </summary>
         </member>
-        <member name="M:DbConnectionFactory.TestConnectionAsync(DynamicDashboardCommon.Models.Database,System.String)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.TestConnectionAsync(DynamicDashboardCommon.Models.Database,System.String)">
             <summary>
             Tests a database connection using explicit connection parameters.
             </summary>
         </member>
-        <member name="M:DbConnectionFactory.BuildConnectionString(DynamicDashboardCommon.Models.Database)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.BuildConnectionString(DynamicDashboardCommon.Models.Database)">
             <summary>
             Builds a connection string from a Database object
             </summary>
         </member>
-        <member name="M:DbConnectionFactory.ClearCache">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.ClearCache">
             <summary>
             Clears the connection string cache
             </summary>
         </member>
-        <member name="M:DbConnectionFactory.GetConnectionInfo(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.ExecuteWithConnectionAsync``1(System.Int32,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32,System.Int32)">
+            <summary>
+            Executes an operation with proper connection management for a specific database
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.ExecuteWithConnectionAsync(System.Int32,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task},System.Int32,System.Int32)">
+            <summary>
+            Executes an operation with proper connection management for a specific database (void return)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.ExecuteWithAppConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
+            <summary>
+            Executes an operation with proper connection management using the application database connection
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.ExecuteWithAppConnectionAsync(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task})">
+            <summary>
+            Executes an operation with proper connection management using the application database connection (void return)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.GetConnectionInfo(System.Int32)">
             <summary>
             Gets connection information for a database by ID
             </summary>
             <param name="databaseId">The database ID</param>
             <returns>A tuple containing connection string and database type ID</returns>
         </member>
-        <member name="M:DbConnectionFactory.ExecuteWithConnectionAsync``1(System.Int32,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32,System.Int32)">
-            <summary>
-            Executes an operation with proper connection management for a specific database
-            </summary>
-        </member>
-        <member name="M:DbConnectionFactory.ExecuteWithConnectionAsync(System.Int32,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task},System.Int32,System.Int32)">
-            <summary>
-            Executes an operation with proper connection management for a specific database (void return)
-            </summary>
-        </member>
-        <member name="M:DbConnectionFactory.ExecuteWithAppConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">
-            <summary>
-            Executes an operation with proper connection management using the application database connection
-            </summary>
-        </member>
-        <member name="M:DbConnectionFactory.ExecuteWithAppConnectionAsync(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task})">
-            <summary>
-            Executes an operation with proper connection management using the application database connection (void return)
-            </summary>
-        </member>
-        <member name="M:DbConnectionFactory.UpdateConnectionStatusAsync(System.Int32,System.Boolean)">
+        <member name="M:DynamicDasboardWebAPI.Utilities.DbConnectionFactory.UpdateConnectionStatusAsync(System.Int32,System.Boolean)">
             <summary>
             Updates the connection status for a database
             </summary>
