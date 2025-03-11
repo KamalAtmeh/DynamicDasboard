@@ -79,12 +79,12 @@
             Gets example questions for a specific database.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.CreateSchema(DynamicDashboardCommon.Models.DatabaseJsonSchema)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.CreateSchema(DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
             Create a new schema entry.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateSchema(System.Int32,DynamicDashboardCommon.Models.DatabaseJsonSchema)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateSchema(System.Int32,DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
             Update an existing schema entry.
             </summary>

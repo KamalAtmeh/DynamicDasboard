@@ -16,7 +16,7 @@ namespace DynamicDasboardWebAPI.Services
             
         }
 
-        public async Task<int> CreateSchemaAsync(DatabaseJsonSchema schema)
+        public async Task<int> CreateSchemaAsync(DatabaseSchema schema)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<int> UpdateSchemaAsync(DatabaseJsonSchema schema)
+        public async Task<int> UpdateSchemaAsync(DatabaseSchema schema)
         {
             try
             {
@@ -40,7 +40,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<DatabaseJsonSchema> GetSchemaByIdAsync(int id)
+        public async Task<DatabaseSchema> GetSchemaByIdAsync(int id)
         {
             try
             {

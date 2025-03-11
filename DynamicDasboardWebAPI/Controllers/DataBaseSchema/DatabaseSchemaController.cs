@@ -26,7 +26,7 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Create a new schema entry.
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> CreateSchema([FromBody] DatabaseJsonSchema schema)
+        public async Task<IActionResult> CreateSchema([FromBody] DatabaseSchema schema)
         {
             try
             {
@@ -43,7 +43,7 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Update an existing schema entry.
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSchema(int id, [FromBody] DatabaseJsonSchema schema)
+        public async Task<IActionResult> UpdateSchema(int id, [FromBody] DatabaseSchema schema)
         {
             if (id != schema.Id)
                 return BadRequest("Schema ID mismatch.");

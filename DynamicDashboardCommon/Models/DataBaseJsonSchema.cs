@@ -4,7 +4,7 @@ namespace DynamicDashboardCommon.Models
 {
     // This entity represents the database schema saved as a JSON document.
     // It maps to the DatabaseSchemas table.
-    public class DatabaseJsonSchema
+    public class DatabaseSchema
     {
         public int Id { get; set; }                   // Primary key (Identity)
         public string Name { get; set; }              // Database name

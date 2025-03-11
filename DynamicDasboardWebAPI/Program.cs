@@ -19,12 +19,6 @@ builder.Services.AddScoped<IDbConnection>(provider =>
 return new Microsoft.Data.SqlClient.SqlConnection(connectionString);
 });
 
-//builder.Services.AddTransient<IDbConnection>(provider =>
-//{
-//    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-//    return new SqlConnection(connectionString);
-//});
-
 builder.Logging.AddEventLog(config => {
     config.SourceName = "DynamicDashboard";
     config.LogName = "Application";

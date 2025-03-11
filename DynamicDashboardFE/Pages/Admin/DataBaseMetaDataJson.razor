@@ -99,15 +99,15 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
-                            @if (currentSchema?.tables != null)
+                            @if (currentSchema?.Tables != null)
                             {
-                                @foreach (var table in currentSchema.tables)
+                                @foreach (var table in currentSchema.Tables)
                                 {
-                                    <div class="list-group-item list-group-item-action @(selectedTable?.id == table.id ? "active" : "")" @onclick="() => SelectTable(table)">
+                                    <div class="list-group-item list-group-item-action @(selectedTable?.Id == table.Id ? "active" : "")" @onclick="() => SelectTable(table)">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
                                                 <i class="fas fa-table me-2"></i>
-                                                <span>@(string.IsNullOrEmpty(table.FriendlyName) ? table.dbName : table.FriendlyName)</span>
+                                                <span>@(string.IsNullOrEmpty(table.FriendlyName) ? table.DBName : table.FriendlyName)</span>
                                             </div>
                                             <span class="badge bg-secondary rounded-pill">@GetColumnCount(table)</span>
                                         </div>
@@ -125,7 +125,7 @@
                 {
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Table Details: @selectedTable.dbName</h5>
+                            <h5 class="mb-0">Table Details: @selectedTable.DBName</h5>
                             <button class="btn btn-sm btn-outline-secondary" @onclick="SaveTableChanges">
                                 <i class="fas fa-save me-1"></i> Save Changes
                             </button>
@@ -135,7 +135,7 @@
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Database Table Name</label>
-                                        <input type="text" class="form-control" value="@selectedTable.dbName" disabled />
+                                        <input type="text" class="form-control" value="@selectedTable.DBName" disabled />
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">User-Friendly Name</label>
@@ -144,7 +144,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Description</label>
-                                    <textarea class="form-control" rows="3" @bind="selectedTable.description" placeholder="Enter description"></textarea>
+                                    <textarea class="form-control" rows="3" @bind="selectedTable.Description" placeholder="Enter description"></textarea>
                                 </div>
 
                                 @if (tableAnalysis != null)
@@ -190,8 +190,8 @@
                                         @foreach (var column in GetColumnsForSelectedTable())
                                         {
                                             <tr>
-                                                <td>@column.dbName</td>
-                                                <td>@column.dataType @(column.isNullable ? "(Nullable)" : "")</td>
+                                                <td>@column.DBName</td>
+                                                <td>@column.DataType @(column.IsNullable ? "(Nullable)" : "")</td>
                                                 <td>
                                                     <input type="text" class="form-control form-control-sm"
                                                            @bind="column.FriendlyName"
@@ -199,13 +199,13 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control form-control-sm"
-                                                           @bind="column.description"
+                                                           @bind="column.Description"
                                                            placeholder="Enter description" />
                                                 </td>
                                                 <td class="text-center">
                                                     <div class="form-check form-switch d-flex justify-content-center">
                                                         <input class="form-check-input" type="checkbox"
-                                                               @bind="column.isLookup" />
+                                                               @bind="column.IsLookup" />
                                                     </div>
                                                 </td>
                                                 <td>
@@ -257,33 +257,33 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @if (currentSchema.relationships != null)
+                                        @if (currentSchema.Relationships != null)
                                         {
-                                            @foreach (var rel in currentSchema.relationships)
+                                            @foreach (var rel in currentSchema.Relationships)
                                             {
-                                                if (editingRelationship != null && editingRelationship.id == rel.id)
+                                                if (editingRelationship != null && editingRelationship.Id == rel.Id)
                                                 {
                                                     <tr class="table-primary">
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.source.table" placeholder="Source Table Id" />
+                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Table" placeholder="Source Table Id" />
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.source.column" placeholder="Source Column Id" />
+                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Column" placeholder="Source Column Id" />
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.type" placeholder="Relationship Type" />
+                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Type" placeholder="Relationship Type" />
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.target.table" placeholder="Target Table Id" />
+                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Table" placeholder="Target Table Id" />
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.target.column" placeholder="Target Column Id" />
+                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Column" placeholder="Target Column Id" />
                                                         </td>
                                                         <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.name" placeholder="Relationship Name" />
+                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Name" placeholder="Relationship Name" />
                                                         </td>
                                                         <td class="text-center">
-                                                            <input type="checkbox" @bind="editingRelationship.enforced" />
+                                                            <input type="checkbox" @bind="editingRelationship.Enforced" />
                                                         </td>
                                                         <td>
                                                             <button class="btn btn-success btn-sm" @onclick="SaveInlineRelationship">
@@ -298,14 +298,14 @@
                                                 else
                                                 {
                                                     <tr>
-                                                        <td>@rel.source.table</td>
-                                                        <td>@rel.source.column</td>
-                                                        <td>@rel.type</td>
-                                                        <td>@rel.target.table</td>
-                                                        <td>@rel.target.column</td>
-                                                        <td>@rel.name</td>
+                                                        <td>@rel.Source.Table</td>
+                                                        <td>@rel.Source.Column</td>
+                                                        <td>@rel.Type</td>
+                                                        <td>@rel.Target.Table</td>
+                                                        <td>@rel.Target.Column</td>
+                                                        <td>@rel.Name</td>
                                                         <td class="text-center">
-                                                            @if (rel.enforced)
+                                                            @if (rel.Enforced)
                                                             {
                                                                 <i class="fas fa-check-circle text-success"></i>
                                                             }
@@ -318,7 +318,7 @@
                                                             <button class="btn btn-warning btn-sm" @onclick="() => EditInlineRelationship(rel)">
                                                                 <i class="fas fa-edit"></i>
                                                             </button>
-                                                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteRelationship(rel.id)">
+                                                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteRelationship(rel.Id)">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
                                                         </td>
@@ -326,7 +326,7 @@
                                                 }
                                             }
                                         }
-                                        @if (currentSchema.relationships == null || currentSchema.relationships.Count == 0)
+                                        @if (currentSchema.Relationships == null || currentSchema.Relationships.Count == 0)
                                         {
                                             <tr>
                                                 <td colspan="8" class="text-center">No relationships defined.</td>
@@ -517,7 +517,7 @@
                 {
                     <div class="mb-3">
                         <label class="form-label">Database Column</label>
-                        <input type="text" class="form-control" value="@selectedColumn.dbName" disabled />
+                        <input type="text" class="form-control" value="@selectedColumn.DBName" disabled />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Suggested Name</label>
@@ -567,7 +567,7 @@
     private RelationshipSchema editingRelationship = null;
 
     // Analysis results reference
-    private AnalysisResults analysisResult => currentSchema.analysisResults;
+    private AnalysisResults analysisResult => currentSchema.AnalysisResults;
 
     // Helper booleans for enabling/disabling UI elements
     private bool hasAnalysisResults => analysisResult != null;
@@ -589,30 +589,30 @@
         try
         {
             isLoading = true;
-            var dbJsonSchema = await Http.GetFromJsonAsync<DatabaseJsonSchema>($"api/DatabaseSchema/{DatabaseId}");
+            var dbJsonSchema = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/{DatabaseId}");
             if (dbJsonSchema != null && !string.IsNullOrWhiteSpace(dbJsonSchema.SchemaData))
             {
                 currentSchema = JsonSerializer.Deserialize<DatabaseSchemaDetail>(dbJsonSchema.SchemaData);
-                databaseName = currentSchema.name;
+                databaseName = currentSchema.Name;
             }
             else
             {
                 // If none found, initialize an empty draft schema
                 currentSchema = new DatabaseSchemaDetail
                     {
-                        id = DatabaseId,
-                        name = "New Database Schema",
-                        status = "draft",
-                        tables = new List<TableSchema>(),
-                        relationships = new List<RelationshipSchema>()
+                        Id = DatabaseId,
+                        Name = "New Database Schema",
+                        Status = "draft",
+                        Tables = new List<TableSchema>(),
+                        Relationships = new List<RelationshipSchema>()
                     };
-                databaseName = currentSchema.name;
+                databaseName = currentSchema.Name;
             }
 
             // If we have tables, default to the first one
-            if (currentSchema.tables != null && currentSchema.tables.Count > 0)
+            if (currentSchema.Tables != null && currentSchema.Tables.Count > 0)
             {
-                selectedTable = currentSchema.tables[0];
+                selectedTable = currentSchema.Tables[0];
             }
         }
         catch (Exception ex)
@@ -633,7 +633,7 @@
 
             // Re-serialize the entire schema
             string schemaData = JsonSerializer.Serialize(currentSchema, new JsonSerializerOptions { WriteIndented = true });
-            var schemaToSave = new DatabaseJsonSchema
+            var schemaToSave = new DatabaseSchema
                 {
                     Id = DatabaseId,
                     Name = databaseName,
@@ -642,7 +642,7 @@
                 };
 
             // Check if schema already exists
-            var existingSchema = await Http.GetFromJsonAsync<DatabaseJsonSchema>($"api/DatabaseSchema/{DatabaseId}");
+            var existingSchema = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/{DatabaseId}");
             HttpResponseMessage response;
             if (existingSchema == null)
             {
@@ -684,12 +684,12 @@
         if (selectedTable == null)
             return new List<ColumnSchema>();
 
-        return selectedTable.columns ?? new List<ColumnSchema>();
+        return selectedTable.Columns ?? new List<ColumnSchema>();
     }
 
     private int GetColumnCount(TableSchema table)
     {
-        return table.columns?.Count ?? 0;
+        return table.Columns?.Count ?? 0;
     }
 
     private async Task SaveTableChanges()
@@ -724,8 +724,8 @@
         if (selectedColumn != null && selectedColumnAnalysis != null)
         {
             selectedColumn.FriendlyName = selectedColumnAnalysis.SuggestedName;
-            selectedColumn.description = selectedColumnAnalysis.SuggestedDescription;
-            selectedColumn.isLookup = selectedColumnAnalysis.IsLookupColumn;
+            selectedColumn.Description = selectedColumnAnalysis.SuggestedDescription;
+            selectedColumn.IsLookup = selectedColumnAnalysis.IsLookupColumn;
             isColumnSuggestionModalOpen = false;
         }
     }
@@ -740,18 +740,18 @@
     {
         editingRelationship = new RelationshipSchema
             {
-                id = Guid.NewGuid().ToString(),
-                name = "",
-                type = "one-to-many",
-                status = "active",
-                enforced = false,
-                source = new RelationshipEndpoint { table = "", column = "" },
-                target = new RelationshipEndpoint { table = "", column = "" },
-                metadata = new RelationshipMetadata
+                Id = Guid.NewGuid().ToString(),
+                Name = "",
+                Type = "one-to-many",
+                Status = "active",
+                Enforced = false,
+                Source = new RelationshipEndpoint { Table = "", Column = "" },
+                Target = new RelationshipEndpoint { Table = "", Column = "" },
+                Metadata = new RelationshipMetadata
                 {
-                    confidence = 0.0,
-                    discoveredAt = DateTime.UtcNow,
-                    lastValidated = DateTime.UtcNow
+                    Confidence = 0.0,
+                    DiscoveredAt = DateTime.UtcNow,
+                    LastValidated = DateTime.UtcNow
                 }
             };
         currentView = "relationships";
@@ -772,14 +772,14 @@
     {
         if (editingRelationship == null) return;
 
-        var index = currentSchema.relationships.FindIndex(r => r.id == editingRelationship.id);
+        var index = currentSchema.Relationships.FindIndex(r => r.Id == editingRelationship.Id);
         if (index >= 0)
         {
-            currentSchema.relationships[index] = editingRelationship;
+            currentSchema.Relationships[index] = editingRelationship;
         }
         else
         {
-            currentSchema.relationships.Add(editingRelationship);
+            currentSchema.Relationships.Add(editingRelationship);
         }
         editingRelationship = null;
         await SaveSchemaJson();
@@ -792,7 +792,7 @@
             var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this relationship?");
             if (!confirm) return;
 
-            currentSchema.relationships.RemoveAll(r => r.id == relationshipId);
+            currentSchema.Relationships.RemoveAll(r => r.Id == relationshipId);
             await SaveSchemaJson();
             await JSRuntime.InvokeVoidAsync("alert", "Relationship deleted successfully!");
         }
@@ -816,7 +816,7 @@
             var analysis = await Http.GetFromJsonAsync<AnalysisResults>($"api/schemaanalysis/analyze/{DatabaseId}");
             if (analysis != null)
             {
-                currentSchema.analysisResults = analysis;
+                currentSchema.AnalysisResults = analysis;
             }
             else
             {
@@ -879,10 +879,10 @@
             if (type == "Column")
             {
                 // find table, find column, rename
-                var tableObj = currentSchema.tables?.Find(t => t.dbName.Equals(item.TableName, StringComparison.OrdinalIgnoreCase));
-                if (tableObj != null && tableObj.columns != null)
+                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(item.TableName, StringComparison.OrdinalIgnoreCase));
+                if (tableObj != null && tableObj.Columns != null)
                 {
-                    var col = tableObj.columns.Find(c => c.dbName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+                    var col = tableObj.Columns.Find(c => c.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
                     if (col != null)
                     {
                         col.FriendlyName = item.SuggestedResolution;
@@ -892,7 +892,7 @@
             else if (type == "Table")
             {
                 // find table, rename
-                var tableObj = currentSchema.tables?.Find(t => t.dbName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
                 if (tableObj != null)
                 {
                     tableObj.FriendlyName = item.SuggestedResolution;
@@ -914,22 +914,22 @@
         {
             if (element.Type == "Column")
             {
-                var tableObj = currentSchema.tables?.Find(t => t.dbName.Equals(element.TableName, StringComparison.OrdinalIgnoreCase));
-                if (tableObj != null && tableObj.columns != null)
+                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(element.TableName, StringComparison.OrdinalIgnoreCase));
+                if (tableObj != null && tableObj.Columns != null)
                 {
-                    var col = tableObj.columns.Find(c => c.dbName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+                    var col = tableObj.Columns.Find(c => c.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
                     if (col != null)
                     {
-                        col.description = element.Suggestion;
+                        col.Description = element.Suggestion;
                     }
                 }
             }
             else if (element.Type == "Table")
             {
-                var tableObj = currentSchema.tables?.Find(t => t.dbName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
                 if (tableObj != null)
                 {
-                    tableObj.description = element.Suggestion;
+                    tableObj.Description = element.Suggestion;
                 }
             }
             await SaveSchemaJson();
@@ -949,31 +949,31 @@
             // Convert suggested relationship to a normal RelationshipSchema, add to currentSchema
             var newRel = new RelationshipSchema
                 {
-                    id = Guid.NewGuid().ToString(),
-                    name = "SuggestedRel",
-                    type = relationship.RelationshipType,
-                    status = "active",
-                    enforced = false,
-                    source = new RelationshipEndpoint
+                    Id = Guid.NewGuid().ToString(),
+                    Name = "SuggestedRel",
+                    Type = relationship.RelationshipType,
+                    Status = "active",
+                    Enforced = false,
+                    Source = new RelationshipEndpoint
                     {
-                        table = relationship.SourceTable.Table,
-                        column = relationship.SourceTable.Column
+                        Table = relationship.SourceTable.Table,
+                        Column = relationship.SourceTable.Column
                     },
-                    target = new RelationshipEndpoint
+                    Target = new RelationshipEndpoint
                     {
-                        table = relationship.TargetTable.Table,
-                        column = relationship.TargetTable.Column
+                        Table = relationship.TargetTable.Table,
+                        Column = relationship.TargetTable.Column
                     },
-                    metadata = new RelationshipMetadata
+                    Metadata = new RelationshipMetadata
                     {
-                        confidence = relationship.Confidence,
-                        discoveredAt = DateTime.UtcNow,
-                        lastValidated = DateTime.UtcNow
+                        Confidence = relationship.Confidence,
+                        DiscoveredAt = DateTime.UtcNow,
+                        LastValidated = DateTime.UtcNow
                     }
                 };
-            if (currentSchema.relationships == null)
-                currentSchema.relationships = new List<RelationshipSchema>();
-            currentSchema.relationships.Add(newRel);
+            if (currentSchema.Relationships == null)
+                currentSchema.Relationships = new List<RelationshipSchema>();
+            currentSchema.Relationships.Add(newRel);
 
             await SaveSchemaJson();
             await JSRuntime.InvokeVoidAsync("alert", "Suggested relationship added!");
@@ -991,12 +991,12 @@
             return;
 
         selectedTable.FriendlyName = tableAnalysis.SuggestedName;
-        selectedTable.description = tableAnalysis.SuggestedDescription;
+        selectedTable.Description = tableAnalysis.SuggestedDescription;
     }
 
     // Retrieve analysis info for the selected table
     private TableDescription tableAnalysis => analysisResult?.TableDescriptions?
-        .Find(t => t.TableName.Equals(selectedTable?.dbName, StringComparison.OrdinalIgnoreCase));
+        .Find(t => t.TableName.Equals(selectedTable?.DBName, StringComparison.OrdinalIgnoreCase));
 
     // Retrieve analysis info for a column
     private ColumnDescription GetColumnAnalysis(ColumnSchema column)
@@ -1005,8 +1005,8 @@
             return null;
 
         return analysisResult.ColumnDescriptions.Find(cd =>
-            cd.TableName.Equals(selectedTable.dbName, StringComparison.OrdinalIgnoreCase)
-            && cd.ColumnName.Equals(column.dbName, StringComparison.OrdinalIgnoreCase));
+            cd.TableName.Equals(selectedTable.DBName, StringComparison.OrdinalIgnoreCase)
+            && cd.ColumnName.Equals(column.DBName, StringComparison.OrdinalIgnoreCase));
     }
 
     // Navigation methods

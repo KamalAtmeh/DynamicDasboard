@@ -16,7 +16,7 @@ namespace DynamicDasboardWebAPI.Repositories
         {
         }
 
-        public async Task<int> InsertDatabaseJsonSchemaAsync(DatabaseJsonSchema schema)
+        public async Task<int> InsertDatabaseJsonSchemaAsync(DatabaseSchema schema)
         {
             try
             {
@@ -36,7 +36,7 @@ SELECT CAST(SCOPE_IDENTITY() as int);";
             }
         }
 
-        public async Task<int> UpdateDatabaseJsonSchemaAsync(DatabaseJsonSchema schema)
+        public async Task<int> UpdateDatabaseJsonSchemaAsync(DatabaseSchema schema)
         {
             try
             {
@@ -59,7 +59,7 @@ WHERE Id = @Id;";
             }
         }
 
-        public async Task<DatabaseJsonSchema> GetDatabaseJsonSchemaByIdAsync(int id)
+        public async Task<DatabaseSchema> GetDatabaseJsonSchemaByIdAsync(int id)
         {
             try
             {
@@ -67,7 +67,7 @@ WHERE Id = @Id;";
 
                 return await WithConnectionAsync(async conn =>
                 {
-                    return await conn.QueryFirstOrDefaultAsync<DatabaseJsonSchema>(sql, new { Id = id });
+                    return await conn.QueryFirstOrDefaultAsync<DatabaseSchema>(sql, new { Id = id });
                 });
             }
             catch (Exception)

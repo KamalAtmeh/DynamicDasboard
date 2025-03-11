@@ -6,143 +6,135 @@ namespace DynamicDashboardCommon.Models
     // The top-level JSON object stored in DatabaseSchemas.SchemaData
     public class DatabaseSchemaDetail
     {
-        public int id { get; set; }
-        public string name { get; set; }
-        public string status { get; set; }
-        public VersionInfo version { get; set; }
-        public Config config { get; set; }
-        public List<TableSchema> tables { get; set; }
-        public List<RelationshipSchema> relationships { get; set; }
-        public AnalysisResults analysisResults { get; set; }
-        public List<VersionHistory> versionHistory { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Status { get; set; }
+        public VersionInfo Version { get; set; }
+        public Config Config { get; set; }
+        public List<TableSchema> Tables { get; set; }
+        public List<RelationshipSchema> Relationships { get; set; }
+        public AnalysisResults AnalysisResults { get; set; }
+        public List<VersionHistory> VersionHistory { get; set; }
     }
 
     public class VersionInfo
     {
-        public string number { get; set; }
-        public string description { get; set; }
-        public DateTime created { get; set; }
-        public DateTime modified { get; set; }
+        public string Number { get; set; }
+        public string Description { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime Modified { get; set; }
     }
 
     public class Config
     {
-        public bool caseSensitive { get; set; }
-        public string collation { get; set; }
-        public SchemaAnalysisSettings schemaAnalysisSettings { get; set; }
+        public bool CaseSensitive { get; set; }
+        public string Collation { get; set; }
+        public SchemaAnalysisSettings SchemaAnalysisSettings { get; set; }
     }
 
     public class SchemaAnalysisSettings
     {
-        public bool autoDetectRelationships { get; set; }
-        public double confidenceThreshold { get; set; }
+        public bool AutoDetectRelationships { get; set; }
+        public double ConfidenceThreshold { get; set; }
     }
 
     public class TableSchema
     {
-        public string id { get; set; }
-        public string status { get; set; }
-        public string dbName { get; set; }
-        public string FriendlyName { get; set; } // Replaces "adminName"
-        public string description { get; set; }
-        public List<ColumnSchema> columns { get; set; }
-        public List<IndexSchema> indexes { get; set; }
+        public string Id { get; set; }
+        public string Status { get; set; }
+        public string DBName { get; set; }
+        public string FriendlyName { get; set; }
+        public string Description { get; set; }
+        public List<ColumnSchema> Columns { get; set; }
+        public List<IndexSchema> Indexes { get; set; }
     }
 
     public class ColumnSchema
     {
-        public string id { get; set; }
-        public string dbName { get; set; }
+        public string Id { get; set; }
+        public string DBName { get; set; }
         public string FriendlyName { get; set; }
-        public string dataType { get; set; }
-        public bool isNullable { get; set; }
-        public bool isPrimaryKey { get; set; }
-        public bool isLookup { get; set; }
-        public string description { get; set; }
-        public UiConfig uiConfig { get; set; }
-        public List<ConstraintSchema> constraints { get; set; }
+        public string DataType { get; set; }
+        public bool IsNullable { get; set; }
+        public bool IsPrimaryKey { get; set; }
+        public bool IsLookup { get; set; }
+        public string Description { get; set; }
+        public UiConfig UIConfig { get; set; }
+        public List<ConstraintSchema> Constraints { get; set; }
     }
 
     public class UiConfig
     {
-        public bool visible { get; set; }
-        public int order { get; set; }
-        public string defaultSort { get; set; }
+        public bool Visible { get; set; }
+        public int Order { get; set; }
+        public string DefaultSort { get; set; }
     }
 
     public class ConstraintSchema
     {
-        public string type { get; set; }
-        public string expression { get; set; }
+        public string Type { get; set; }
+        public string Expression { get; set; }
     }
 
     public class IndexSchema
     {
-        public string name { get; set; }
-        public List<string> columns { get; set; }
-        public bool isUnique { get; set; }
+        public string Name { get; set; }
+        public List<string> Columns { get; set; }
+        public bool IsUnique { get; set; }
     }
 
     public class RelationshipSchema
     {
-        public string id { get; set; }
-        public string name { get; set; }
-        public string type { get; set; } // e.g. "one-to-many"
-        public string status { get; set; }
-        public RelationshipEndpoint source { get; set; }
-        public RelationshipEndpoint target { get; set; }
-        public bool enforced { get; set; }
-        public RelationshipMetadata metadata { get; set; }
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Type { get; set; } // e.g. "one-to-many"
+        public string Status { get; set; }
+        public RelationshipEndpoint Source { get; set; }
+        public RelationshipEndpoint Target { get; set; }
+        public bool Enforced { get; set; }
+        public RelationshipMetadata Metadata { get; set; }
     }
 
     public class RelationshipEndpoint
     {
-        public string table { get; set; }
-        public string column { get; set; }
+        public string Table { get; set; }
+        public string Column { get; set; }
     }
 
     public class RelationshipMetadata
     {
-        public double confidence { get; set; }
-        public DateTime discoveredAt { get; set; }
-        public DateTime lastValidated { get; set; }
+        public double Confidence { get; set; }
+        public DateTime DiscoveredAt { get; set; }
+        public DateTime LastValidated { get; set; }
     }
 
     public class AnalysisResults
     {
-        public DateTime lastAnalyzed { get; set; }
-
-        // Potential conflicts
+        public DateTime LastAnalyzed { get; set; }
         public List<PotentialConflict> PotentialConflicts { get; set; }
-
-        // Unclear elements
         public List<UnclearElement> UnclearElements { get; set; }
-
-        // Suggested relationships
         public List<SuggestedRelationship> SuggestedRelationships { get; set; }
-
-        // Table & Column descriptions
         public List<TableDescription> TableDescriptions { get; set; }
         public List<ColumnDescription> ColumnDescriptions { get; set; }
     }
 
     public class PotentialConflict
     {
-        public string Type { get; set; }               // e.g. "Column" or "Table"
+        public string Type { get; set; }
         public string ConflictDescription { get; set; }
         public List<ConflictItem> Items { get; set; }
     }
 
     public class ConflictItem
     {
-        public string Name { get; set; }              // e.g. column or table name
-        public string TableName { get; set; }         // if type=Column
+        public string Name { get; set; }
+        public string TableName { get; set; }
         public string SuggestedResolution { get; set; }
     }
 
     public class UnclearElement
     {
-        public string Type { get; set; }             // "Column" or "Table"
+        public string Type { get; set; }
         public string Name { get; set; }
         public string TableName { get; set; }
         public string Issue { get; set; }
@@ -151,7 +143,7 @@ namespace DynamicDashboardCommon.Models
 
     public class SuggestedRelationship
     {
-        public string RelationshipType { get; set; } // "one-to-many", etc.
+        public string RelationshipType { get; set; }
         public double Confidence { get; set; }
         public TableColumnRef SourceTable { get; set; }
         public TableColumnRef TargetTable { get; set; }
@@ -182,9 +174,9 @@ namespace DynamicDashboardCommon.Models
 
     public class VersionHistory
     {
-        public string version { get; set; }
-        public DateTime date { get; set; }
-        public string changes { get; set; }
+        public string Version { get; set; }
+        public DateTime Date { get; set; }
+        public string Changes { get; set; }
     }
 
     public class DatabaseMetadataDto
