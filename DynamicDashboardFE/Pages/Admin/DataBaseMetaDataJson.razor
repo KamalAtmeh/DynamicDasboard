@@ -103,7 +103,7 @@
 							{
 								@foreach (var table in currentSchema.Tables)
 								{
-									<div class="list-group-item list-group-item-action @(selectedTable?.Id == table.Id ? "active" : "")" @onclick="() => SelectTable(table)">
+									<div class="list-group-item list-group-item-action @(selectedTable?.ID == table.ID ? "active" : "")" @onclick="() => SelectTable(table)">
 										<div class="d-flex justify-content-between align-items-center">
 											<div>
 												<i class="fas fa-table me-2"></i>
@@ -292,23 +292,23 @@
 										{
 											@foreach (var rel in currentSchema.Relationships)
 											{
-												if (editingRelationship != null && editingRelationship.Id == rel.Id)
+												if (editingRelationship != null && editingRelationship.ID == rel.ID)
 												{
 													<tr class="table-primary">
 														<td>
-															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Table" placeholder="Source Table Id" />
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.TableID" placeholder="Source Table Id" />
 														</td>
 														<td>
-															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Column" placeholder="Source Column Id" />
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.ColumnID" placeholder="Source Column Id" />
 														</td>
 														<td>
 															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Type" placeholder="Relationship Type" />
 														</td>
 														<td>
-															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Table" placeholder="Target Table Id" />
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.TableID" placeholder="Target Table Id" />
 														</td>
 														<td>
-															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Column" placeholder="Target Column Id" />
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.ColumnID" placeholder="Target Column Id" />
 														</td>
 														<td>
 															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Name" placeholder="Relationship Name" />
@@ -329,11 +329,11 @@
 												else
 												{
 													<tr>
-														<td>@rel.Source.Table</td>
-														<td>@rel.Source.Column</td>
+														<td>@rel.Source.TableName</td>
+														<td>@rel.Source.ColumnName</td>
 														<td>@rel.Type</td>
-														<td>@rel.Target.Table</td>
-														<td>@rel.Target.Column</td>
+														<td>@rel.Target.TableName</td>
+														<td>@rel.Target.ColumnName</td>
 														<td>@rel.Name</td>
 														<td class="text-center">
 															@if (rel.Enforced)
@@ -349,7 +349,7 @@
 															<button class="btn btn-warning btn-sm" @onclick="() => EditInlineRelationship(rel)">
 																<i class="fas fa-edit"></i>
 															</button>
-															<button class="btn btn-danger btn-sm" @onclick="() => DeleteRelationship(rel.Id)">
+															<button class="btn btn-danger btn-sm" @onclick="() => DeleteRelationship(rel.ID)">
 																<i class="fas fa-trash"></i>
 															</button>
 														</td>
@@ -629,7 +629,7 @@
 	private string currentView = "tables";
 
 	// Full JSON schema loaded from the server
-	private DatabaseSchemaDetail currentSchema = new DatabaseSchemaDetail();
+	private DatabaseSchema currentSchema = new DatabaseSchema();
 	private TableSchema selectedTable;
 
 	// For column suggestion
@@ -672,16 +672,17 @@
 			loadingMessage = "Loading database metadata...";
 
 			// Use the API to get the schema
-			var response = await Http.GetAsync($"api/DatabaseSchema/{DatabaseId}");
+			var response = await Http.GetAsync($"api/DatabaseSchema/GetSchema/{DatabaseId}");
 
 			if (response.IsSuccessStatusCode)
 			{
 				var dbJsonSchema = await response.Content.ReadFromJsonAsync<DatabaseSchema>();
 
+
 				if (dbJsonSchema != null && !string.IsNullOrWhiteSpace(dbJsonSchema.SchemaData))
 				{
 					// The schema exists - deserialize it
-					currentSchema = await Http.GetFromJsonAsync<DatabaseSchemaDetail>($"api/DatabaseSchema/parsed/{DatabaseId}");
+					currentSchema = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/parsed/{DatabaseId}");
 					databaseName = currentSchema.Name;
 				}
 				else
@@ -727,7 +728,7 @@
 			string schemaData = JsonSerializer.Serialize(currentSchema, new JsonSerializerOptions { WriteIndented = true });
 			var schemaToSave = new DatabaseSchema
 				{
-					Id = DatabaseId,
+					ID = DatabaseId,
 					Name = databaseName,
 					Status = 1,
 					SchemaData = schemaData
@@ -826,13 +827,13 @@
 	{
 		editingRelationship = new RelationshipSchema
 			{
-				Id = Guid.NewGuid().ToString(),
+				ID = Guid.NewGuid().ToString(),
 				Name = "",
 				Type = "one-to-many",
 				Status = "active",
 				Enforced = false,
-				Source = new RelationshipEndpoint { Table = "", Column = "" },
-				Target = new RelationshipEndpoint { Table = "", Column = "" },
+				Source = new RelationshipDetails { TableID = "", ColumnID = "" },
+				Target = new RelationshipDetails { TableID = "", ColumnID = "" },
 				Metadata = new RelationshipMetadata
 				{
 					Confidence = 0.0,
@@ -854,21 +855,40 @@
 		editingRelationship = null;
 	}
 
+	// When editing a relationship, also update the friendly names
 	private async Task SaveInlineRelationship()
 	{
 		if (editingRelationship == null) return;
 
-		var index = currentSchema.Relationships.FindIndex(r => r.Id == editingRelationship.Id);
-		if (index >= 0)
+		// Update friendly names before saving
+		var sourceTable = currentSchema.Tables.FirstOrDefault(t => t.ID == editingRelationship.Source.TableID);
+		var sourceColumn = sourceTable?.Columns?.FirstOrDefault(c => c.ID == editingRelationship.Source.ColumnID);
+		var targetTable = currentSchema.Tables.FirstOrDefault(t => t.ID == editingRelationship.Target.TableID);
+		var targetColumn = targetTable?.Columns?.FirstOrDefault(c => c.ID == editingRelationship.Target.ColumnID);
+
+		if (sourceTable != null && sourceColumn != null && targetTable != null && targetColumn != null)
 		{
-			currentSchema.Relationships[index] = editingRelationship;
+			editingRelationship.Source.TableName = !string.IsNullOrEmpty(sourceTable.FriendlyName) ? sourceTable.FriendlyName : sourceTable.DBName;
+			editingRelationship.Source.ColumnName = !string.IsNullOrEmpty(sourceColumn.FriendlyName) ? sourceColumn.FriendlyName : sourceColumn.DBName;
+			editingRelationship.Target.TableName = !string.IsNullOrEmpty(targetTable.FriendlyName) ? targetTable.FriendlyName : targetTable.DBName;
+			editingRelationship.Target.ColumnName = !string.IsNullOrEmpty(targetColumn.FriendlyName) ? targetColumn.FriendlyName : targetColumn.DBName;
+
+			var index = currentSchema.Relationships.FindIndex(r => r.ID == editingRelationship.ID);
+			if (index >= 0)
+			{
+				currentSchema.Relationships[index] = editingRelationship;
+			}
+			else
+			{
+				currentSchema.Relationships.Add(editingRelationship);
+			}
+			editingRelationship = null;
+			await SaveSchemaJson();
 		}
 		else
 		{
-			currentSchema.Relationships.Add(editingRelationship);
+			await JSRuntime.InvokeVoidAsync("alert", "Error: Could not find all table or column references.");
 		}
-		editingRelationship = null;
-		await SaveSchemaJson();
 	}
 
 	private async Task DeleteRelationship(string relationshipId)
@@ -878,7 +898,7 @@
 			var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this relationship?");
 			if (!confirm) return;
 
-			currentSchema.Relationships.RemoveAll(r => r.Id == relationshipId);
+			currentSchema.Relationships.RemoveAll(r => r.ID == relationshipId);
 			await SaveSchemaJson();
 			await JSRuntime.InvokeVoidAsync("alert", "Relationship deleted successfully!");
 		}
@@ -1035,20 +1055,20 @@
 			// Convert suggested relationship to a normal RelationshipSchema, add to currentSchema
 			var newRel = new RelationshipSchema
 				{
-					Id = Guid.NewGuid().ToString(),
+					ID = Guid.NewGuid().ToString(),
 					Name = "SuggestedRel",
 					Type = relationship.RelationshipType,
 					Status = "active",
 					Enforced = false,
-					Source = new RelationshipEndpoint
+					Source = new RelationshipDetails
 					{
-						Table = relationship.SourceTable.Table,
-						Column = relationship.SourceTable.Column
+						TableID = relationship.SourceTable.Table,
+						ColumnID = relationship.SourceTable.Column
 					},
-					Target = new RelationshipEndpoint
+					Target = new RelationshipDetails
 					{
-						Table = relationship.TargetTable.Table,
-						Column = relationship.TargetTable.Column
+						TableID = relationship.TargetTable.Table,
+						ColumnID = relationship.TargetTable.Column
 					},
 					Metadata = new RelationshipMetadata
 					{

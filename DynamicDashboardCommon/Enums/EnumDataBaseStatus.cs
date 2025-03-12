@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace DynamicDashboardCommon.Enums
 {
-    public enum EnumLoggingType
+    public enum EnumDataBaseStatus
     {
         Unknown = 0,
-        Error = 1,
-        Warning = 2,
-        Information = 3
+        Active = 1,
+        Draft = 2,
+        InActive = 3
+
     }
 }

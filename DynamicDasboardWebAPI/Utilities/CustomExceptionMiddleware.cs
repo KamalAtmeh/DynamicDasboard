@@ -44,7 +44,7 @@ namespace DynamicDasboardWebAPI.Utilities
                 var logsService = context.RequestServices.GetRequiredService<DynamicDasboardWebAPI.Services.ILogsService>();
                 await logsService.AddLogAsync(
                     userId: null, // Optional: Fetch from context
-                    eventType: LoggingType.Error.ToString(),
+                    eventType: EnumLoggingType.Error.ToString(),
                     eventDescription: ApplicationHelper.GetExceptionDetails(ex)
                 );
 

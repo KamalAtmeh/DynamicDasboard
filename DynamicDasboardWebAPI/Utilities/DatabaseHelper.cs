@@ -693,7 +693,7 @@ namespace DynamicDasboardWebAPI.Utilities
                     var tablesList = tables.ToList();
 
                     if (tablesList.Count == 0)
-                        return new DatabaseMetadataDto { DatabaseId = databaseId, Tables = new List<TableMetadataDto>() };
+                        return new DatabaseMetadataDto { DatabaseID = databaseId, Tables = new List<TableMetadataDto>() };
 
                     // 2. Get all table IDs
                     var tableIds = tablesList.Select(t => t.TableID).ToList();
@@ -722,7 +722,7 @@ namespace DynamicDasboardWebAPI.Utilities
 
                     return new DatabaseMetadataDto
                     {
-                        DatabaseId = databaseId,
+                        DatabaseID = databaseId,
                         Tables = tableMetadata
                     };
                 });

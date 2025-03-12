@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace DynamicDashboardCommon.Enums
 {
-    public enum EnumLoggingType
+    public enum EnumRelationShipType
     {
         Unknown = 0,
-        Error = 1,
-        Warning = 2,
-        Information = 3
+        OneToOne = 1,
+        OneToMany = 2,
+        ManyToOne = 3,
+        ManyToMany = 4
     }
 }

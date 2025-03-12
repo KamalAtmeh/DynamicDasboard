@@ -23,7 +23,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// for a specific database ID.
         /// </summary>
         protected async Task<T> WithConnectionAsync<T>(
-            Func<IDbConnection, Task<T>> operation, int databaseId = 0)
+            Func<IDbConnection, Task<T>> operation, int databaseId = 0, bool isApplicationDB = false)
         {
             try
             {

@@ -60,7 +60,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -94,7 +94,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -125,7 +125,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -152,7 +152,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -183,7 +183,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
     }

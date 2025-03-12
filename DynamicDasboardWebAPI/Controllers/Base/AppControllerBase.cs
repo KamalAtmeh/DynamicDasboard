@@ -79,7 +79,7 @@ namespace DynamicDasboardWebAPI.Controllers
         protected async Task<IActionResult> HandleNotFoundAsync(string entityName, object id)
         {
             var message = $"{entityName} with ID {id} not found";
-            await _logsService.AddLogAsync(GetUserId(), Enum.GetName(typeof(LoggingType), LoggingType.Warning), message);
+            await _logsService.AddLogAsync(GetUserId(), Enum.GetName(typeof(EnumLoggingType), EnumLoggingType.Warning), message);
 
             return NotFound(new
             {

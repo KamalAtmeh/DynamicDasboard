@@ -73,7 +73,7 @@ builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<BatchProcessingService>();
 builder.Services.AddScoped<DatabaseService>();
 
-builder.Services.AddScoped<DatabaseJsonSchemaRepository>();
+builder.Services.AddScoped<DatabaseSchemaRepository>();
 builder.Services.AddScoped<DatabaseSchemaService>();
 
 // Register HttpClient with a base address

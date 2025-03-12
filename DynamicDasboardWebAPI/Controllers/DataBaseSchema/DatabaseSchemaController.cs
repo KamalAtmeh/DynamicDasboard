@@ -35,7 +35,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -45,7 +45,7 @@ namespace DynamicDasboardWebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateSchema(int id, [FromBody] DatabaseSchema schema)
         {
-            if (id != schema.Id)
+            if (id != schema.ID)
                 return BadRequest("Schema ID mismatch.");
 
             try
@@ -55,27 +55,28 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
         /// <summary>
         /// Retrieve a schema entry by its ID.
         /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetSchema(int id)
+        [HttpGet("GetSchema/{databaseID}")]
+        public async Task<IActionResult> GetSchemaByDataBaseID(int databaseID)
         {
             try
             {
-                var schema = await _dbSchemaService.GetSchemaByIdAsync(id);
-                if (schema == null)
-                    return NotFound();
-
+                var schema = await _dbSchemaService.GetSchemaByDataBaseIdAsync(databaseID);
+                if (schema == null || schema.ID == 0)
+                {
+                    return null; //temp Service need to handle the return and validations
+                }
                 return Ok(schema);
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -83,7 +84,7 @@ namespace DynamicDasboardWebAPI.Controllers
         /// Deactivate (soft-delete) a schema entry by updating its status.
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeactivateSchema(int id)
+        public async Task<IActionResult> DeactivateSchemaByDataBaseID(int id)
         {
             try
             {
@@ -92,7 +93,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -115,7 +116,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 
@@ -127,12 +128,12 @@ namespace DynamicDasboardWebAPI.Controllers
 
 
         // Get parsed schema
-        [HttpGet("parsed/{id}")]
-        public async Task<IActionResult> GetParsedSchema(int id)
+        [HttpGet("parsed/{databaseID}")]
+        public async Task<IActionResult> GetParsedSchema(int databaseID)
         {
             try
             {
-                var schema = await _dbSchemaService.GetSchemaByIdAsync(id);
+                var schema = await _dbSchemaService.GetSchemaByDataBaseIdAsync(databaseID);
                 if (schema == null)
                     return NotFound();
 
@@ -141,7 +142,7 @@ namespace DynamicDasboardWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
         #endregion

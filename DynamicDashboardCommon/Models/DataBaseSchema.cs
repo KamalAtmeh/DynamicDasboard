@@ -4,17 +4,21 @@ using System.Collections.Generic;
 namespace DynamicDashboardCommon.Models
 {
     // The top-level JSON object stored in DatabaseSchemas.SchemaData
-    public class DatabaseSchemaDetail
+    public class DatabaseSchema
     {
-        public int Id { get; set; }
+        public int ID { get; set; }
+        public int DataBaseID { get; set; }
         public string Name { get; set; }
-        public string Status { get; set; }
+        public int Status { get; set; }
         public VersionInfo Version { get; set; }
         public Config Config { get; set; }
         public List<TableSchema> Tables { get; set; }
         public List<RelationshipSchema> Relationships { get; set; }
         public AnalysisResults AnalysisResults { get; set; }
         public List<VersionHistory> VersionHistory { get; set; }
+        public string SchemaData { get; set; }        // JSON data (must be valid JSON)
+        public DateTime CreatedAt { get; set; }       // Creation timestamp
+        public DateTime ModifiedAt { get; set; }      // Last modified timestamp
     }
 
     public class VersionInfo
@@ -40,7 +44,7 @@ namespace DynamicDashboardCommon.Models
 
     public class TableSchema
     {
-        public string Id { get; set; }
+        public string ID { get; set; }
         public string Status { get; set; }
         public string DBName { get; set; }
         public string FriendlyName { get; set; }
@@ -53,7 +57,7 @@ namespace DynamicDashboardCommon.Models
 
     public class ColumnSchema
     {
-        public string Id { get; set; }
+        public string ID { get; set; }
         public string DBName { get; set; }
         public string FriendlyName { get; set; }
         public string DataType { get; set; }
@@ -88,20 +92,22 @@ namespace DynamicDashboardCommon.Models
 
     public class RelationshipSchema
     {
-        public string Id { get; set; }
+        public string ID { get; set; }
         public string Name { get; set; }
         public string Type { get; set; } // e.g. "one-to-many"
         public string Status { get; set; }
-        public RelationshipEndpoint Source { get; set; }
-        public RelationshipEndpoint Target { get; set; }
+        public RelationshipDetails Source { get; set; }
+        public RelationshipDetails Target { get; set; }
         public bool Enforced { get; set; }
         public RelationshipMetadata Metadata { get; set; }
     }
 
-    public class RelationshipEndpoint
+    public class RelationshipDetails
     {
-        public string Table { get; set; }
-        public string Column { get; set; }
+        public string TableID { get; set; }      // Table ID
+        public string TableName { get; set; }  // Table friendly name
+        public string ColumnID { get; set; }     // Column ID
+        public string ColumnName { get; set; } // Column friendly name
     }
 
     public class RelationshipMetadata
@@ -184,7 +190,7 @@ namespace DynamicDashboardCommon.Models
 
     public class DatabaseMetadataDto
     {
-        public int DatabaseId { get; set; }
+        public int DatabaseID { get; set; }
         public List<TableMetadataDto> Tables { get; set; }
     }
 

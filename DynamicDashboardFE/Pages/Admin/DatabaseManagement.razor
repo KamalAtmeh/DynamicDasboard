@@ -246,13 +246,65 @@
         {
             if (isEditMode)
             {
+                // Update existing database 
                 await Http.PutAsJsonAsync($"api/databases/{databaseModel.DatabaseID}", databaseModel);
-                await JSRuntime.InvokeVoidAsync("alert", "Database updated successfully!");
+
+                try
+                {
+                    var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{databaseModel.DatabaseID}");
+
+                    if (schemaResponse != null && schemaResponse.ID != 0)
+                    {
+                        await JSRuntime.InvokeVoidAsync("alert", "DataBase been updated successfully");
+                    }
+                    else
+                    {
+                        // var error = await schemaResponse.Content.ReadAsStringAsync();
+                        await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
+                    }
+                }
+                catch (Exception schemaEx)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
+                }
             }
             else
             {
-                await Http.PostAsJsonAsync("api/databases", databaseModel);
-                await JSRuntime.InvokeVoidAsync("alert", "Database added successfully!");
+                // Create new database and retrieve schema
+                var response = await Http.PostAsJsonAsync("api/databases", databaseModel);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Get the ID of the newly created database
+                    var newDatabaseId = await response.Content.ReadFromJsonAsync<int>();
+
+                    // Show initial success message
+                    await JSRuntime.InvokeVoidAsync("alert", "Database added successfully! Retrieving schema...");
+
+                    // Call schema retrieval endpoint
+                    try
+                    {
+                        var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{newDatabaseId}");
+
+                        if (schemaResponse != null && schemaResponse.ID != 0)
+                        {
+                            await JSRuntime.InvokeVoidAsync("alert", "Schema successfully retrieved and saved.");
+                        }
+                        else
+                        {
+                            // var error = await schemaResponse.Content.ReadAsStringAsync();
+                            await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed:");
+                        }
+                    }
+                    catch (Exception schemaEx)
+                    {
+                        await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed");
+                    }
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Failed to create database.");
+                }
             }
 
             showDatabaseForm = false;

@@ -89,12 +89,12 @@
             Update an existing schema entry.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.GetSchema(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.GetSchemaByDataBaseID(System.Int32)">
             <summary>
             Retrieve a schema entry by its ID.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.DeactivateSchema(System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.DeactivateSchemaByDataBaseID(System.Int32)">
             <summary>
             Deactivate (soft-delete) a schema entry by updating its status.
             </summary>
@@ -252,7 +252,7 @@
             Gets a user by ID.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.BaseRepository.WithConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Repositories.BaseRepository.WithConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32,System.Boolean)">
             <summary>
             A common helper to manage connection creation, opening, and disposal 
             for a specific database ID.
@@ -309,6 +309,21 @@
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.GetDatabaseMetadataAsync(System.Int32)">
             <summary>
             Retrieves metadata for a database (logic uses the default DB connection).
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseSchemaRepository.GetTablesAsync(DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Retrieves tables from a connected database.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseSchemaRepository.GetColumnsAsync(DynamicDashboardCommon.Models.Database,System.String)">
+            <summary>
+            Retrieves columns for a specific table.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseSchemaRepository.GetRelationshipsAsync(DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Retrieves relationships from a connected database.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.ColumnRepository.GetColumnsByTableIdAsync(System.Int32,System.Int32)">
@@ -568,22 +583,27 @@
             <param name="request">The natural language query request</param>
             <returns>Complete query response</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(System.Int32,DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Retrieves the database schema from a connected database and saves it in our schema format.
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.DeserializeSchema(System.String)">
             <summary>
-            Deserializes a JSON schema string into a DatabaseSchemaDetail object.
+            Deserializes a JSON schema string into a DatabaseSchema object.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.SerializeSchema(DynamicDashboardCommon.Models.DatabaseSchemaDetail)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.SerializeSchema(DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
-            Serializes a DatabaseSchemaDetail object to a JSON string.
+            Serializes a DatabaseSchema object to a JSON string.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableById(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableById(DynamicDashboardCommon.Models.DatabaseSchema,System.Int32)">
             <summary>
             Finds a table in the schema by its ID.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableByName(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.String)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableByName(DynamicDashboardCommon.Models.DatabaseSchema,System.String)">
             <summary>
             Finds a table in the schema by its database name.
             </summary>
@@ -598,12 +618,12 @@
             Finds a column in a table by its database name.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetRelationshipsFromTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetRelationshipsFromTable(DynamicDashboardCommon.Models.DatabaseSchema,System.Int32)">
             <summary>
             Gets all relationships where the specified table is the source.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetRelationshipsToTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetRelationshipsToTable(DynamicDashboardCommon.Models.DatabaseSchema,System.Int32)">
             <summary>
             Gets all relationships where the specified table is the target.
             </summary>
@@ -613,17 +633,17 @@
             Creates a new minimal schema for a database.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpsertTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,DynamicDashboardCommon.Models.TableSchema)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpsertTable(DynamicDashboardCommon.Models.DatabaseSchema,DynamicDashboardCommon.Models.TableSchema)">
             <summary>
             Updates a table in the schema, adding it if it doesn't exist.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpsertRelationship(DynamicDashboardCommon.Models.DatabaseSchemaDetail,DynamicDashboardCommon.Models.RelationshipSchema)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpsertRelationship(DynamicDashboardCommon.Models.DatabaseSchema,DynamicDashboardCommon.Models.RelationshipSchema)">
             <summary>
             Updates a relationship in the schema, adding it if it doesn't exist.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.ValidateSchema(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.String@)">
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.ValidateSchema(DynamicDashboardCommon.Models.DatabaseSchema,System.String@)">
             <summary>
             Validates that the schema structure is correct.
             </summary>
