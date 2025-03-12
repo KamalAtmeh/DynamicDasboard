@@ -9,66 +9,6 @@
             Enum representing the supported database types in the application.
             </summary>
         </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.ParseSchema(System.String)">
-            <summary>
-            Deserializes a JSON schema string into a DatabaseSchemaDetail object.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.SerializeSchema(DynamicDashboardCommon.Models.DatabaseSchemaDetail)">
-            <summary>
-            Serializes a DatabaseSchemaDetail object to a JSON string.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.FindTableById(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
-            <summary>
-            Finds a table in the schema by its ID.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.FindTableByName(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.String)">
-            <summary>
-            Finds a table in the schema by its database name.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.FindColumnById(DynamicDashboardCommon.Models.TableSchema,System.Int32)">
-            <summary>
-            Finds a column in a table by its ID.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.FindColumnByName(DynamicDashboardCommon.Models.TableSchema,System.String)">
-            <summary>
-            Finds a column in a table by its database name.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.GetRelationshipsFromTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
-            <summary>
-            Gets all relationships where the specified table is the source.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.GetRelationshipsToTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
-            <summary>
-            Gets all relationships where the specified table is the target.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.CreateMinimalSchema(System.Int32,System.String)">
-            <summary>
-            Creates a new minimal schema for a database.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.UpsertTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,DynamicDashboardCommon.Models.TableSchema)">
-            <summary>
-            Updates a table in the schema, adding it if it doesn't exist.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.UpsertRelationship(DynamicDashboardCommon.Models.DatabaseSchemaDetail,DynamicDashboardCommon.Models.RelationshipSchema)">
-            <summary>
-            Updates a relationship in the schema, adding it if it doesn't exist.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.ValidateSchema(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.String@)">
-            <summary>
-            Validates that the schema structure is correct.
-            </summary>
-        </member>
         <member name="T:DynamicDashboardCommon.Models.BatchProcessingLog">
             <summary>
             Represents a log entry for a batch processing job.

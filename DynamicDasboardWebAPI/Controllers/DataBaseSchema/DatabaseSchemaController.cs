@@ -120,5 +120,30 @@ namespace DynamicDasboardWebAPI.Controllers
         }
 
         #endregion
+
+
+        #region Json Schema CRUD Operations
+
+
+
+        // Get parsed schema
+        [HttpGet("parsed/{id}")]
+        public async Task<IActionResult> GetParsedSchema(int id)
+        {
+            try
+            {
+                var schema = await _dbSchemaService.GetSchemaByIdAsync(id);
+                if (schema == null)
+                    return NotFound();
+
+                var schemaDetail = _dbSchemaService.DeserializeSchema(schema.SchemaData);
+                return Ok(schemaDetail);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, LoggingType.Error.ToString());
+            }
+        }
+        #endregion
     }
 }

@@ -568,6 +568,66 @@
             <param name="request">The natural language query request</param>
             <returns>Complete query response</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.DeserializeSchema(System.String)">
+            <summary>
+            Deserializes a JSON schema string into a DatabaseSchemaDetail object.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.SerializeSchema(DynamicDashboardCommon.Models.DatabaseSchemaDetail)">
+            <summary>
+            Serializes a DatabaseSchemaDetail object to a JSON string.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableById(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
+            <summary>
+            Finds a table in the schema by its ID.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableByName(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.String)">
+            <summary>
+            Finds a table in the schema by its database name.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindColumnById(DynamicDashboardCommon.Models.TableSchema,System.Int32)">
+            <summary>
+            Finds a column in a table by its ID.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindColumnByName(DynamicDashboardCommon.Models.TableSchema,System.String)">
+            <summary>
+            Finds a column in a table by its database name.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetRelationshipsFromTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
+            <summary>
+            Gets all relationships where the specified table is the source.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetRelationshipsToTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.Int32)">
+            <summary>
+            Gets all relationships where the specified table is the target.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.CreateMinimalSchema(System.Int32,System.String)">
+            <summary>
+            Creates a new minimal schema for a database.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpsertTable(DynamicDashboardCommon.Models.DatabaseSchemaDetail,DynamicDashboardCommon.Models.TableSchema)">
+            <summary>
+            Updates a table in the schema, adding it if it doesn't exist.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpsertRelationship(DynamicDashboardCommon.Models.DatabaseSchemaDetail,DynamicDashboardCommon.Models.RelationshipSchema)">
+            <summary>
+            Updates a relationship in the schema, adding it if it doesn't exist.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.ValidateSchema(DynamicDashboardCommon.Models.DatabaseSchemaDetail,System.String@)">
+            <summary>
+            Validates that the schema structure is correct.
+            </summary>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
             <summary>
             Service class for managing columns in the database.

@@ -47,6 +47,8 @@ namespace DynamicDashboardCommon.Models
         public string Description { get; set; }
         public List<ColumnSchema> Columns { get; set; }
         public List<IndexSchema> Indexes { get; set; }
+
+        public List<string> Synonyms { get; set; } = new List<string>();
     }
 
     public class ColumnSchema
@@ -61,6 +63,7 @@ namespace DynamicDashboardCommon.Models
         public string Description { get; set; }
         public UiConfig UIConfig { get; set; }
         public List<ConstraintSchema> Constraints { get; set; }
+        public List<string> Synonyms { get; set; } = new List<string>();
     }
 
     public class UiConfig

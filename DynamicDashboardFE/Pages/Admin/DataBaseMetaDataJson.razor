@@ -6,1035 +6,1191 @@
 @inject NavigationManager NavigationManager
 
 <div class="container-fluid">
-    <h3 class="mb-4">
-        <i class="fas fa-database me-2"></i> Database Metadata Management
-        @if (!string.IsNullOrEmpty(databaseName))
-        {
-            <span class="text-muted fs-5"> - @databaseName</span>
-        }
-    </h3>
+	<h3 class="mb-4">
+		<i class="fas fa-database me-2"></i> Database Metadata Management
+		@if (!string.IsNullOrEmpty(databaseName))
+		{
+			<span class="text-muted fs-5"> - @databaseName</span>
+		}
+	</h3>
 
-    @if (isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="ms-3">@loadingMessage</div>
-        </div>
-    }
-    else
-    {
-        <div class="row">
-            <!-- Left Panel: Controls and Table List -->
-            <div class="col-md-3">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary" @onclick="RunSchemaAnalysis" disabled="@isAnalyzing">
-                                @if (isAnalyzing)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>Analyzing...</span>
-                                }
-                                else
-                                {
-                                    <i class="fas fa-magic me-2"></i>
-                                    <span>Analyze Schema</span>
-                                }
-                            </button>
-                            <button class="btn btn-success" @onclick="ApplyAllSuggestions" disabled="@(!hasAnalysisResults || isApplying)">
-                                @if (isApplying)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>Applying...</span>
-                                }
-                                else
-                                {
-                                    <i class="fas fa-check-double me-2"></i>
-                                    <span>Apply All Suggestions</span>
-                                }
-                            </button>
-                            <button class="btn btn-outline-primary" @onclick="ShowTableList">
-                                <i class="fas fa-table me-2"></i>
-                                <span>View Tables</span>
-                            </button>
-                            <button class="btn btn-outline-primary" @onclick="ShowRelationshipManager">
-                                <i class="fas fa-link me-2"></i>
-                                <span>Manage Relationships</span>
-                            </button>
-                            <button class="btn btn-outline-info" @onclick="ShowConflicts" disabled="@(!hasConflicts)">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <span>View Conflicts</span>
-                                @if (hasConflicts)
-                                {
-                                    <span class="badge bg-danger ms-2">@conflictCount</span>
-                                }
-                            </button>
-                            <button class="btn btn-outline-warning" @onclick="ShowUnclearElements" disabled="@(!hasUnclearElements)">
-                                <i class="fas fa-question-circle me-2"></i>
-                                <span>View Unclear Elements</span>
-                                @if (hasUnclearElements)
-                                {
-                                    <span class="badge bg-warning ms-2">@unclearElementsCount</span>
-                                }
-                            </button>
-                            <button class="btn btn-outline-success" @onclick="ShowSuggestedRelationships" disabled="@(!hasSuggestedRelationships)">
-                                <i class="fas fa-link me-2"></i>
-                                <span>View Suggested Relationships</span>
-                                @if (hasSuggestedRelationships)
-                                {
-                                    <span class="badge bg-success ms-2">@suggestedRelationshipsCount</span>
-                                }
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Database Structure</h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            @if (currentSchema?.Tables != null)
-                            {
-                                @foreach (var table in currentSchema.Tables)
-                                {
-                                    <div class="list-group-item list-group-item-action @(selectedTable?.Id == table.Id ? "active" : "")" @onclick="() => SelectTable(table)">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <i class="fas fa-table me-2"></i>
-                                                <span>@(string.IsNullOrEmpty(table.FriendlyName) ? table.DBName : table.FriendlyName)</span>
-                                            </div>
-                                            <span class="badge bg-secondary rounded-pill">@GetColumnCount(table)</span>
-                                        </div>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
+	@if (isLoading)
+	{
+		<div class="d-flex justify-content-center my-5">
+			<div class="spinner-border text-primary" role="status">
+				<span class="visually-hidden">Loading...</span>
+			</div>
+			<div class="ms-3">@loadingMessage</div>
+		</div>
+	}
+	else
+	{
+		<div class="row">
+			<!-- Left Panel: Controls and Table List -->
+			<div class="col-md-3">
+				<div class="card shadow-sm mb-4">
+					<div class="card-header bg-light">
+						<h5 class="mb-0">Actions</h5>
+					</div>
+					<div class="card-body">
+						<div class="d-grid gap-2">
+							<button class="btn btn-primary" @onclick="RunSchemaAnalysis" disabled="@isAnalyzing">
+								@if (isAnalyzing)
+								{
+									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+									<span>Analyzing...</span>
+								}
+								else
+								{
+									<i class="fas fa-magic me-2"></i>
+									<span>Analyze Schema</span>
+								}
+							</button>
+							<button class="btn btn-success" @onclick="ApplyAllSuggestions" disabled="@(!hasAnalysisResults || isApplying)">
+								@if (isApplying)
+								{
+									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+									<span>Applying...</span>
+								}
+								else
+								{
+									<i class="fas fa-check-double me-2"></i>
+									<span>Apply All Suggestions</span>
+								}
+							</button>
+							<button class="btn btn-outline-primary" @onclick="ShowTableList">
+								<i class="fas fa-table me-2"></i>
+								<span>View Tables</span>
+							</button>
+							<button class="btn btn-outline-primary" @onclick="ShowRelationshipManager">
+								<i class="fas fa-link me-2"></i>
+								<span>Manage Relationships</span>
+							</button>
+							<button class="btn btn-outline-info" @onclick="ShowConflicts" disabled="@(!hasConflicts)">
+								<i class="fas fa-exclamation-triangle me-2"></i>
+								<span>View Conflicts</span>
+								@if (hasConflicts)
+								{
+									<span class="badge bg-danger ms-2">@conflictCount</span>
+								}
+							</button>
+							<button class="btn btn-outline-warning" @onclick="ShowUnclearElements" disabled="@(!hasUnclearElements)">
+								<i class="fas fa-question-circle me-2"></i>
+								<span>View Unclear Elements</span>
+								@if (hasUnclearElements)
+								{
+									<span class="badge bg-warning ms-2">@unclearElementsCount</span>
+								}
+							</button>
+							<button class="btn btn-outline-success" @onclick="ShowSuggestedRelationships" disabled="@(!hasSuggestedRelationships)">
+								<i class="fas fa-link me-2"></i>
+								<span>View Suggested Relationships</span>
+								@if (hasSuggestedRelationships)
+								{
+									<span class="badge bg-success ms-2">@suggestedRelationshipsCount</span>
+								}
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="card shadow-sm mb-4">
+					<div class="card-header bg-light">
+						<h5 class="mb-0">Database Structure</h5>
+					</div>
+					<div class="card-body p-0">
+						<div class="list-group list-group-flush">
+							@if (currentSchema?.Tables != null)
+							{
+								@foreach (var table in currentSchema.Tables)
+								{
+									<div class="list-group-item list-group-item-action @(selectedTable?.Id == table.Id ? "active" : "")" @onclick="() => SelectTable(table)">
+										<div class="d-flex justify-content-between align-items-center">
+											<div>
+												<i class="fas fa-table me-2"></i>
+												<span>@(string.IsNullOrEmpty(table.FriendlyName) ? table.DBName : table.FriendlyName)</span>
+											</div>
+											<span class="badge bg-secondary rounded-pill">@GetColumnCount(table)</span>
+										</div>
+									</div>
+								}
+							}
+						</div>
+					</div>
+				</div>
+			</div>
 
-            <!-- Right Panel: Main Content Area -->
-            <div class="col-md-9">
-                @if (currentView == "tables" && selectedTable != null)
-                {
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Table Details: @selectedTable.DBName</h5>
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="SaveTableChanges">
-                                <i class="fas fa-save me-1"></i> Save Changes
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <form>
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Database Table Name</label>
-                                        <input type="text" class="form-control" value="@selectedTable.DBName" disabled />
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">User-Friendly Name</label>
-                                        <input type="text" class="form-control" @bind="selectedTable.FriendlyName" placeholder="Enter user-friendly name" />
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Description</label>
-                                    <textarea class="form-control" rows="3" @bind="selectedTable.Description" placeholder="Enter description"></textarea>
-                                </div>
+			<!-- Right Panel: Main Content Area -->
+			<div class="col-md-9">
+				@if (currentView == "tables" && selectedTable != null)
+				{
+					<div class="card shadow-sm mb-4">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center">
+							<h5 class="mb-0">Table Details: @selectedTable.DBName</h5>
+							<button class="btn btn-sm btn-outline-secondary" @onclick="SaveTableChanges">
+								<i class="fas fa-save me-1"></i> Save Changes
+							</button>
+						</div>
+						<div class="card-body">
+							<form>
+								<div class="row mb-3">
+									<div class="col-md-6">
+										<label class="form-label">Database Table Name</label>
+										<input type="text" class="form-control" value="@selectedTable.DBName" disabled />
+									</div>
+									<div class="col-md-6">
+										<label class="form-label">User-Friendly Name</label>
+										<input type="text" class="form-control" @bind="selectedTable.FriendlyName" placeholder="Enter user-friendly name" />
+									</div>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Description</label>
+									<textarea class="form-control" rows="3" @bind="selectedTable.Description" placeholder="Enter description"></textarea>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Table Synonyms</label>
+									<div class="input-group mb-2">
+										<input type="text" class="form-control" @bind="newTableSynonym"
+											   @onkeypress="@(e => { if(e.Key == "Enter") { AddTableSynonym(); } })"
+											   placeholder="Enter synonym and press Enter or Add" />
+										<button class="btn btn-outline-primary" @onclick="AddTableSynonym">
+											<i class="fas fa-plus"></i> Add
+										</button>
+									</div>
+									<div class="d-flex flex-wrap gap-2">
+										@if (selectedTable.Synonyms != null)
+										{
+											@foreach (var synonym in selectedTable.Synonyms)
+											{
+												<div class="badge bg-light text-dark p-2 d-flex align-items-center">
+													@synonym
+													<button class="btn-close ms-2" style="font-size: 0.6rem"
+															@onclick="() => RemoveTableSynonym(synonym)"></button>
+												</div>
+											}
+										}
+									</div>
+								</div>
 
-                                @if (tableAnalysis != null)
-                                {
-                                    <div class="alert alert-info">
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-lightbulb fs-4 me-3"></i>
-                                            <div>
-                                                <strong>AI Suggestion:</strong>
-                                                <div class="mt-1">
-                                                    <div><strong>Name:</strong> @tableAnalysis.SuggestedName</div>
-                                                    <div><strong>Description:</strong> @tableAnalysis.SuggestedDescription</div>
-                                                </div>
-                                                <button class="btn btn-sm btn-outline-primary mt-2" @onclick="ApplyTableSuggestion">
-                                                    <i class="fas fa-magic me-1"></i> Apply Suggestion
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            </form>
-                        </div>
-                    </div>
+								@if (tableAnalysis != null)
+								{
+									<div class="alert alert-info">
+										<div class="d-flex align-items-center">
+											<i class="fas fa-lightbulb fs-4 me-3"></i>
+											<div>
+												<strong>AI Suggestion:</strong>
+												<div class="mt-1">
+													<div><strong>Name:</strong> @tableAnalysis.SuggestedName</div>
+													<div><strong>Description:</strong> @tableAnalysis.SuggestedDescription</div>
+												</div>
+												<button class="btn btn-sm btn-outline-primary mt-2" @onclick="ApplyTableSuggestion">
+													<i class="fas fa-magic me-1"></i> Apply Suggestion
+												</button>
+											</div>
+										</div>
+									</div>
+								}
+							</form>
+						</div>
+					</div>
 
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Columns</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>DB Column Name</th>
-                                            <th>Data Type</th>
-                                            <th>User-Friendly Name</th>
-                                            <th>Description</th>
-                                            <th>Lookup</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var column in GetColumnsForSelectedTable())
-                                        {
-                                            <tr>
-                                                <td>@column.DBName</td>
-                                                <td>@column.DataType @(column.IsNullable ? "(Nullable)" : "")</td>
-                                                <td>
-                                                    <input type="text" class="form-control form-control-sm"
-                                                           @bind="column.FriendlyName"
-                                                           placeholder="Enter name" />
-                                                </td>
-                                                <td>
-                                                    <input type="text" class="form-control form-control-sm"
-                                                           @bind="column.Description"
-                                                           placeholder="Enter description" />
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="form-check form-switch d-flex justify-content-center">
-                                                        <input class="form-check-input" type="checkbox"
-                                                               @bind="column.IsLookup" />
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    @{
-                                                        var columnAnalysis = GetColumnAnalysis(column);
-                                                    }
-                                                    @if (columnAnalysis != null)
-                                                    {
-                                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ShowColumnSuggestion(column, columnAnalysis)">
-                                                            <i class="fas fa-lightbulb"></i>
-                                                        </button>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="d-flex justify-content-end mt-3">
-                                <button class="btn btn-primary" @onclick="SaveColumnChanges">
-                                    <i class="fas fa-save me-2"></i> Save Column Changes
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                }
-                else if (currentView == "relationships")
-                {
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Relationship Management</h5>
-                            <button class="btn btn-sm btn-primary" @onclick="CreateNewRelationship">
-                                <i class="fas fa-plus me-1"></i> New Relationship
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Source Table</th>
-                                            <th>Source Column</th>
-                                            <th>Type</th>
-                                            <th>Target Table</th>
-                                            <th>Target Column</th>
-                                            <th>Description</th>
-                                            <th>Enforced</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if (currentSchema.Relationships != null)
-                                        {
-                                            @foreach (var rel in currentSchema.Relationships)
-                                            {
-                                                if (editingRelationship != null && editingRelationship.Id == rel.Id)
-                                                {
-                                                    <tr class="table-primary">
-                                                        <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Table" placeholder="Source Table Id" />
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Column" placeholder="Source Column Id" />
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Type" placeholder="Relationship Type" />
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Table" placeholder="Target Table Id" />
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Column" placeholder="Target Column Id" />
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" class="form-control form-control-sm" @bind="editingRelationship.Name" placeholder="Relationship Name" />
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <input type="checkbox" @bind="editingRelationship.Enforced" />
-                                                        </td>
-                                                        <td>
-                                                            <button class="btn btn-success btn-sm" @onclick="SaveInlineRelationship">
-                                                                <i class="fas fa-save"></i>
-                                                            </button>
-                                                            <button class="btn btn-secondary btn-sm" @onclick="CancelInlineEditing">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                                else
-                                                {
-                                                    <tr>
-                                                        <td>@rel.Source.Table</td>
-                                                        <td>@rel.Source.Column</td>
-                                                        <td>@rel.Type</td>
-                                                        <td>@rel.Target.Table</td>
-                                                        <td>@rel.Target.Column</td>
-                                                        <td>@rel.Name</td>
-                                                        <td class="text-center">
-                                                            @if (rel.Enforced)
-                                                            {
-                                                                <i class="fas fa-check-circle text-success"></i>
-                                                            }
-                                                            else
-                                                            {
-                                                                <i class="fas fa-times-circle text-danger"></i>
-                                                            }
-                                                        </td>
-                                                        <td>
-                                                            <button class="btn btn-warning btn-sm" @onclick="() => EditInlineRelationship(rel)">
-                                                                <i class="fas fa-edit"></i>
-                                                            </button>
-                                                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteRelationship(rel.Id)">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            }
-                                        }
-                                        @if (currentSchema.Relationships == null || currentSchema.Relationships.Count == 0)
-                                        {
-                                            <tr>
-                                                <td colspan="8" class="text-center">No relationships defined.</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                }
-                else if (currentView == "conflicts")
-                {
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Potential Conflicts</h5>
-                        </div>
-                        <div class="card-body">
-                            @if (analysisResult?.PotentialConflicts == null || analysisResult.PotentialConflicts.Count == 0)
-                            {
-                                <div class="alert alert-success">
-                                    <i class="fas fa-check-circle me-2"></i> No conflicts detected in the schema.
-                                </div>
-                            }
-                            else
-                            {
-                                @foreach (var conflict in analysisResult.PotentialConflicts)
-                                {
-                                    <div class="card mb-3 border-warning">
-                                        <div class="card-header bg-warning bg-opacity-25">
-                                            <h6 class="mb-0">
-                                                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                                                @conflict.Type Conflict
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>@conflict.ConflictDescription</p>
-                                            <div class="table-responsive">
-                                                <table class="table table-sm">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Name</th>
-                                                            @* If it's a column conflict, show table name *@
-                                                            <th>Table</th>
-                                                            <th>Suggested Resolution</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @if (conflict.Items != null)
-                                                        {
-                                                            @foreach (var item in conflict.Items)
-                                                            {
-                                                                <tr>
-                                                                    <td>@item.Name</td>
-                                                                    <td>@item.TableName</td>
-                                                                    <td>@item.SuggestedResolution</td>
-                                                                    <td>
-                                                                        <button class="btn btn-sm btn-primary" @onclick="() => ApplyConflictResolution(conflict.Type, item)">
-                                                                            <i class="fas fa-check me-1"></i> Apply
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            }
-                                                        }
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                }
-                else if (currentView == "unclearElements")
-                {
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Unclear Elements</h5>
-                        </div>
-                        <div class="card-body">
-                            @if (analysisResult?.UnclearElements == null || analysisResult.UnclearElements.Count == 0)
-                            {
-                                <div class="alert alert-success">
-                                    <i class="fas fa-check-circle me-2"></i> No unclear elements detected in the schema.
-                                </div>
-                            }
-                            else
-                            {
-                                @foreach (var element in analysisResult.UnclearElements)
-                                {
-                                    <div class="card mb-3 border-info">
-                                        <div class="card-header bg-info bg-opacity-25">
-                                            <h6 class="mb-0">
-                                                <i class="fas fa-question-circle me-2 text-info"></i>
-                                                Unclear @element.Type: @element.Name
-                                                @if (element.Type == "Column")
-                                                {
-                                                    <span class="text-muted"> (in @element.TableName)</span>
-                                                }
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <label class="form-label">Issue</label>
-                                                <p>@element.Issue</p>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Suggestion</label>
-                                                <p>@element.Suggestion</p>
-                                            </div>
-                                            <button class="btn btn-primary" @onclick="() => ApplyUnclearElementSuggestion(element)">
-                                                <i class="fas fa-check me-2"></i> Apply Suggestion
-                                            </button>
-                                        </div>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                }
-                else if (currentView == "suggestedRelationships")
-                {
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Suggested Relationships</h5>
-                        </div>
-                        <div class="card-body">
-                            @if (analysisResult?.SuggestedRelationships == null || analysisResult.SuggestedRelationships.Count == 0)
-                            {
-                                <div class="alert alert-success">
-                                    <i class="fas fa-check-circle me-2"></i> No additional relationships suggested.
-                                </div>
-                            }
-                            else
-                            {
-                                @foreach (var relationship in analysisResult.SuggestedRelationships)
-                                {
-                                    <div class="card mb-3 border-success">
-                                        <div class="card-header bg-success bg-opacity-25">
-                                            <h6 class="mb-0">
-                                                <i class="fas fa-link me-2 text-success"></i>
-                                                Suggested @relationship.RelationshipType Relationship
-                                                <span class="badge bg-success ms-2">@(relationship.Confidence * 100)% Confidence</span>
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <div class="d-flex align-items-center mb-2">
-                                                    <strong class="me-2">From:</strong>
-                                                    <span>@relationship.SourceTable.Table.@relationship.SourceTable.Column</span>
-                                                </div>
-                                                <div class="d-flex align-items-center">
-                                                    <strong class="me-2">To:</strong>
-                                                    <span>@relationship.TargetTable.Table.@relationship.TargetTable.Column</span>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Reasoning</label>
-                                                <p>@relationship.Reasoning</p>
-                                            </div>
-                                            <button class="btn btn-primary" @onclick="() => AddSuggestedRelationship(relationship)">
-                                                <i class="fas fa-plus me-2"></i> Add Relationship
-                                            </button>
-                                        </div>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    }
+					<div class="card shadow-sm mb-4">
+						<div class="card-header bg-light">
+							<h5 class="mb-0">Columns</h5>
+						</div>
+						<div class="card-body">
+							<div class="table-responsive">
+								<table class="table table-striped table-hover">
+									<thead>
+										<tr>
+											<th>DB Column Name</th>
+											<th>Data Type</th>
+											<th>User-Friendly Name</th>
+											<th>Description</th>
+											<th>Lookup</th>
+											<th>Actions</th>
+											<th>Synonyms</th>
+										</tr>
+									</thead>
+									<tbody>
+										@foreach (var column in GetColumnsForSelectedTable())
+										{
+											<tr>
+												<td>@column.DBName</td>
+												<td>@column.DataType @(column.IsNullable ? "(Nullable)" : "")</td>
+												<td>
+													<input type="text" class="form-control form-control-sm"
+														   @bind="column.FriendlyName"
+														   placeholder="Enter name" />
+												</td>
+												<td>
+													<input type="text" class="form-control form-control-sm"
+														   @bind="column.Description"
+														   placeholder="Enter description" />
+												</td>
+												<td class="text-center">
+													<div class="form-check form-switch d-flex justify-content-center">
+														<input class="form-check-input" type="checkbox"
+															   @bind="column.IsLookup" />
+													</div>
+												</td>
+												<td>
+													@{
+														var columnAnalysis = GetColumnAnalysis(column);
+													}
+													@if (columnAnalysis != null)
+													{
+														<button class="btn btn-sm btn-outline-info" @onclick="() => ShowColumnSuggestion(column, columnAnalysis)">
+															<i class="fas fa-lightbulb"></i>
+														</button>
+													}
+												</td>
+												<td>
+													<button class="btn btn-sm btn-outline-info" @onclick="() => ShowColumnSynonymsModal(column)">
+														<i class="fas fa-tags"></i>
+														@(column.Synonyms != null && column.Synonyms.Any() ? column.Synonyms.Count : 0)
+													</button>
+												</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							</div>
+							<div class="d-flex justify-content-end mt-3">
+								<button class="btn btn-primary" @onclick="SaveColumnChanges">
+									<i class="fas fa-save me-2"></i> Save Column Changes
+								</button>
+							</div>
+						</div>
+					</div>
+				}
+				else if (currentView == "relationships")
+				{
+					<div class="card shadow-sm mb-4">
+						<div class="card-header bg-light d-flex justify-content-between align-items-center">
+							<h5 class="mb-0">Relationship Management</h5>
+							<button class="btn btn-sm btn-primary" @onclick="CreateNewRelationship">
+								<i class="fas fa-plus me-1"></i> New Relationship
+							</button>
+						</div>
+						<div class="card-body">
+							<div class="table-responsive">
+								<table class="table table-striped table-hover">
+									<thead class="table-light">
+										<tr>
+											<th>Source Table</th>
+											<th>Source Column</th>
+											<th>Type</th>
+											<th>Target Table</th>
+											<th>Target Column</th>
+											<th>Description</th>
+											<th>Enforced</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										@if (currentSchema.Relationships != null)
+										{
+											@foreach (var rel in currentSchema.Relationships)
+											{
+												if (editingRelationship != null && editingRelationship.Id == rel.Id)
+												{
+													<tr class="table-primary">
+														<td>
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Table" placeholder="Source Table Id" />
+														</td>
+														<td>
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Source.Column" placeholder="Source Column Id" />
+														</td>
+														<td>
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Type" placeholder="Relationship Type" />
+														</td>
+														<td>
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Table" placeholder="Target Table Id" />
+														</td>
+														<td>
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Target.Column" placeholder="Target Column Id" />
+														</td>
+														<td>
+															<input type="text" class="form-control form-control-sm" @bind="editingRelationship.Name" placeholder="Relationship Name" />
+														</td>
+														<td class="text-center">
+															<input type="checkbox" @bind="editingRelationship.Enforced" />
+														</td>
+														<td>
+															<button class="btn btn-success btn-sm" @onclick="SaveInlineRelationship">
+																<i class="fas fa-save"></i>
+															</button>
+															<button class="btn btn-secondary btn-sm" @onclick="CancelInlineEditing">
+																<i class="fas fa-times"></i>
+															</button>
+														</td>
+													</tr>
+												}
+												else
+												{
+													<tr>
+														<td>@rel.Source.Table</td>
+														<td>@rel.Source.Column</td>
+														<td>@rel.Type</td>
+														<td>@rel.Target.Table</td>
+														<td>@rel.Target.Column</td>
+														<td>@rel.Name</td>
+														<td class="text-center">
+															@if (rel.Enforced)
+															{
+																<i class="fas fa-check-circle text-success"></i>
+															}
+															else
+															{
+																<i class="fas fa-times-circle text-danger"></i>
+															}
+														</td>
+														<td>
+															<button class="btn btn-warning btn-sm" @onclick="() => EditInlineRelationship(rel)">
+																<i class="fas fa-edit"></i>
+															</button>
+															<button class="btn btn-danger btn-sm" @onclick="() => DeleteRelationship(rel.Id)">
+																<i class="fas fa-trash"></i>
+															</button>
+														</td>
+													</tr>
+												}
+											}
+										}
+										@if (currentSchema.Relationships == null || currentSchema.Relationships.Count == 0)
+										{
+											<tr>
+												<td colspan="8" class="text-center">No relationships defined.</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				}
+				else if (currentView == "conflicts")
+				{
+					<div class="card shadow-sm">
+						<div class="card-header bg-light">
+							<h5 class="mb-0">Potential Conflicts</h5>
+						</div>
+						<div class="card-body">
+							@if (analysisResult?.PotentialConflicts == null || analysisResult.PotentialConflicts.Count == 0)
+							{
+								<div class="alert alert-success">
+									<i class="fas fa-check-circle me-2"></i> No conflicts detected in the schema.
+								</div>
+							}
+							else
+							{
+								@foreach (var conflict in analysisResult.PotentialConflicts)
+								{
+									<div class="card mb-3 border-warning">
+										<div class="card-header bg-warning bg-opacity-25">
+											<h6 class="mb-0">
+												<i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+												@conflict.Type Conflict
+											</h6>
+										</div>
+										<div class="card-body">
+											<p>@conflict.ConflictDescription</p>
+											<div class="table-responsive">
+												<table class="table table-sm">
+													<thead>
+														<tr>
+															<th>Name</th>
+															@* If it's a column conflict, show table name *@
+															<th>Table</th>
+															<th>Suggested Resolution</th>
+															<th>Actions</th>
+														</tr>
+													</thead>
+													<tbody>
+														@if (conflict.Items != null)
+														{
+															@foreach (var item in conflict.Items)
+															{
+																<tr>
+																	<td>@item.Name</td>
+																	<td>@item.TableName</td>
+																	<td>@item.SuggestedResolution</td>
+																	<td>
+																		<button class="btn btn-sm btn-primary" @onclick="() => ApplyConflictResolution(conflict.Type, item)">
+																			<i class="fas fa-check me-1"></i> Apply
+																		</button>
+																	</td>
+																</tr>
+															}
+														}
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								}
+							}
+						</div>
+					</div>
+				}
+				else if (currentView == "unclearElements")
+				{
+					<div class="card shadow-sm">
+						<div class="card-header bg-light">
+							<h5 class="mb-0">Unclear Elements</h5>
+						</div>
+						<div class="card-body">
+							@if (analysisResult?.UnclearElements == null || analysisResult.UnclearElements.Count == 0)
+							{
+								<div class="alert alert-success">
+									<i class="fas fa-check-circle me-2"></i> No unclear elements detected in the schema.
+								</div>
+							}
+							else
+							{
+								@foreach (var element in analysisResult.UnclearElements)
+								{
+									<div class="card mb-3 border-info">
+										<div class="card-header bg-info bg-opacity-25">
+											<h6 class="mb-0">
+												<i class="fas fa-question-circle me-2 text-info"></i>
+												Unclear @element.Type: @element.Name
+												@if (element.Type == "Column")
+												{
+													<span class="text-muted"> (in @element.TableName)</span>
+												}
+											</h6>
+										</div>
+										<div class="card-body">
+											<div class="mb-3">
+												<label class="form-label">Issue</label>
+												<p>@element.Issue</p>
+											</div>
+											<div class="mb-3">
+												<label class="form-label">Suggestion</label>
+												<p>@element.Suggestion</p>
+											</div>
+											<button class="btn btn-primary" @onclick="() => ApplyUnclearElementSuggestion(element)">
+												<i class="fas fa-check me-2"></i> Apply Suggestion
+											</button>
+										</div>
+									</div>
+								}
+							}
+						</div>
+					</div>
+				}
+				else if (currentView == "suggestedRelationships")
+				{
+					<div class="card shadow-sm">
+						<div class="card-header bg-light">
+							<h5 class="mb-0">Suggested Relationships</h5>
+						</div>
+						<div class="card-body">
+							@if (analysisResult?.SuggestedRelationships == null || analysisResult.SuggestedRelationships.Count == 0)
+							{
+								<div class="alert alert-success">
+									<i class="fas fa-check-circle me-2"></i> No additional relationships suggested.
+								</div>
+							}
+							else
+							{
+								@foreach (var relationship in analysisResult.SuggestedRelationships)
+								{
+									<div class="card mb-3 border-success">
+										<div class="card-header bg-success bg-opacity-25">
+											<h6 class="mb-0">
+												<i class="fas fa-link me-2 text-success"></i>
+												Suggested @relationship.RelationshipType Relationship
+												<span class="badge bg-success ms-2">@(relationship.Confidence * 100)% Confidence</span>
+											</h6>
+										</div>
+										<div class="card-body">
+											<div class="mb-3">
+												<div class="d-flex align-items-center mb-2">
+													<strong class="me-2">From:</strong>
+													<span>@relationship.SourceTable.Table.@relationship.SourceTable.Column</span>
+												</div>
+												<div class="d-flex align-items-center">
+													<strong class="me-2">To:</strong>
+													<span>@relationship.TargetTable.Table.@relationship.TargetTable.Column</span>
+												</div>
+											</div>
+											<div class="mb-3">
+												<label class="form-label">Reasoning</label>
+												<p>@relationship.Reasoning</p>
+											</div>
+											<button class="btn btn-primary" @onclick="() => AddSuggestedRelationship(relationship)">
+												<i class="fas fa-plus me-2"></i> Add Relationship
+											</button>
+										</div>
+									</div>
+								}
+							}
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	}
 </div>
 
 <!-- Modal for Column Suggestions -->
 <div class="modal fade @(isColumnSuggestionModalOpen ? "show" : "")" tabindex="-1" style="display: @(isColumnSuggestionModalOpen ? "block" : "none")">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Column Suggestion</h5>
-                <button type="button" class="btn-close" @onclick="CloseColumnSuggestionModal"></button>
-            </div>
-            <div class="modal-body">
-                @if (selectedColumnAnalysis != null && selectedColumn != null)
-                {
-                    <div class="mb-3">
-                        <label class="form-label">Database Column</label>
-                        <input type="text" class="form-control" value="@selectedColumn.DBName" disabled />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Suggested Name</label>
-                        <input type="text" class="form-control" value="@selectedColumnAnalysis.SuggestedName" disabled />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Suggested Description</label>
-                        <textarea class="form-control" rows="3" disabled>@selectedColumnAnalysis.SuggestedDescription</textarea>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" disabled checked="@selectedColumnAnalysis.IsLookupColumn">
-                        <label class="form-check-label">
-                            Suggested as Lookup Column
-                        </label>
-                    </div>
-                }
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseColumnSuggestionModal">Close</button>
-                <button type="button" class="btn btn-primary" @onclick="ApplyColumnSuggestion">Apply Suggestion</button>
-            </div>
-        </div>
-    </div>
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Column Suggestion</h5>
+				<button type="button" class="btn-close" @onclick="CloseColumnSuggestionModal"></button>
+			</div>
+			<div class="modal-body">
+				@if (selectedColumnAnalysis != null && selectedColumn != null)
+				{
+					<div class="mb-3">
+						<label class="form-label">Database Column</label>
+						<input type="text" class="form-control" value="@selectedColumn.DBName" disabled />
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Suggested Name</label>
+						<input type="text" class="form-control" value="@selectedColumnAnalysis.SuggestedName" disabled />
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Suggested Description</label>
+						<textarea class="form-control" rows="3" disabled>@selectedColumnAnalysis.SuggestedDescription</textarea>
+					</div>
+					<div class="form-check mb-3">
+						<input class="form-check-input" type="checkbox" disabled checked="@selectedColumnAnalysis.IsLookupColumn">
+						<label class="form-check-label">
+							Suggested as Lookup Column
+						</label>
+					</div>
+				}
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" @onclick="CloseColumnSuggestionModal">Close</button>
+				<button type="button" class="btn btn-primary" @onclick="ApplyColumnSuggestion">Apply Suggestion</button>
+			</div>
+		</div>
+	</div>
 </div>
 <div class="modal-backdrop fade @(isColumnSuggestionModalOpen ? "show" : "")" style="display: @(isColumnSuggestionModalOpen ? "block" : "none")"></div>
 
+
+<!-- Column Synonyms Modal -->
+<div class="modal fade @(isColumnSynonymsModalOpen ? "show" : "")" tabindex="-1" style="display: @(isColumnSynonymsModalOpen ? "block" : "none")">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Synonyms for @(selectedColumn?.DBName ?? "")</h5>
+				<button type="button" class="btn-close" @onclick="CloseColumnSynonymsModal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="input-group mb-3">
+					<input type="text" class="form-control" @bind="newColumnSynonym"
+						   @onkeypress="@(e => { if(e.Key == "Enter") { AddColumnSynonym(); } })"
+						   placeholder="Enter synonym and press Enter or Add" />
+					<button class="btn btn-outline-primary" @onclick="AddColumnSynonym">
+						<i class="fas fa-plus"></i> Add
+					</button>
+				</div>
+
+				<div class="d-flex flex-wrap gap-2">
+					@if (selectedColumn?.Synonyms != null)
+					{
+						@foreach (var synonym in selectedColumn.Synonyms)
+						{
+							<div class="badge bg-light text-dark p-2 d-flex align-items-center">
+								@synonym
+								<button class="btn-close ms-2" style="font-size: 0.6rem"
+										@onclick="() => RemoveColumnSynonym(synonym)"></button>
+							</div>
+						}
+					}
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" @onclick="CloseColumnSynonymsModal">Close</button>
+				<button type="button" class="btn btn-primary" @onclick="SaveColumnSynonyms">Save Changes</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal-backdrop fade @(isColumnSynonymsModalOpen ? "show" : "")" style="display: @(isColumnSynonymsModalOpen ? "block" : "none")"></div>
+
+
 @code {
-    [Parameter] public int DatabaseId { get; set; }
+	[Parameter] public int DatabaseId { get; set; }
 
-    private string databaseName;
-    private bool isLoading = true;
-    private bool isAnalyzing = false;
-    private bool isApplying = false;
-    private string loadingMessage = "Loading database metadata...";
-    private string currentView = "tables";
+	private string databaseName;
+	private bool isLoading = true;
+	private bool isAnalyzing = false;
+	private bool isApplying = false;
+	private string loadingMessage = "Loading database metadata...";
+	private string currentView = "tables";
 
-    // Full JSON schema loaded from the server
-    private DatabaseSchemaDetail currentSchema = new DatabaseSchemaDetail();
-    private TableSchema selectedTable;
+	// Full JSON schema loaded from the server
+	private DatabaseSchemaDetail currentSchema = new DatabaseSchemaDetail();
+	private TableSchema selectedTable;
 
-    // For column suggestion
-    private ColumnSchema selectedColumn;
-    private ColumnDescription selectedColumnAnalysis;
-    private bool isColumnSuggestionModalOpen = false;
+	// For column suggestion
+	private ColumnSchema selectedColumn;
+	private ColumnDescription selectedColumnAnalysis;
+	private bool isColumnSuggestionModalOpen = false;
 
-    // For relationship inline editing
-    private RelationshipSchema editingRelationship = null;
+	// For relationship inline editing
+	private RelationshipSchema editingRelationship = null;
 
-    // Analysis results reference
-    private AnalysisResults analysisResult => currentSchema.AnalysisResults;
+	// Analysis results reference
+	private AnalysisResults analysisResult => currentSchema.AnalysisResults;
 
-    // Helper booleans for enabling/disabling UI elements
-    private bool hasAnalysisResults => analysisResult != null;
-    private bool hasConflicts => analysisResult != null && analysisResult.PotentialConflicts != null && analysisResult.PotentialConflicts.Count > 0;
-    private bool hasUnclearElements => analysisResult != null && analysisResult.UnclearElements != null && analysisResult.UnclearElements.Count > 0;
-    private bool hasSuggestedRelationships => analysisResult != null && analysisResult.SuggestedRelationships != null && analysisResult.SuggestedRelationships.Count > 0;
+	// Helper booleans for enabling/disabling UI elements
+	private bool hasAnalysisResults => analysisResult != null;
+	private bool hasConflicts => analysisResult != null && analysisResult.PotentialConflicts != null && analysisResult.PotentialConflicts.Count > 0;
+	private bool hasUnclearElements => analysisResult != null && analysisResult.UnclearElements != null && analysisResult.UnclearElements.Count > 0;
+	private bool hasSuggestedRelationships => analysisResult != null && analysisResult.SuggestedRelationships != null && analysisResult.SuggestedRelationships.Count > 0;
 
-    private int conflictCount => analysisResult?.PotentialConflicts?.Count ?? 0;
-    private int unclearElementsCount => analysisResult?.UnclearElements?.Count ?? 0;
-    private int suggestedRelationshipsCount => analysisResult?.SuggestedRelationships?.Count ?? 0;
+	private int conflictCount => analysisResult?.PotentialConflicts?.Count ?? 0;
+	private int unclearElementsCount => analysisResult?.UnclearElements?.Count ?? 0;
+	private int suggestedRelationshipsCount => analysisResult?.SuggestedRelationships?.Count ?? 0;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadSchemaJson();
-    }
+	// For synonyms management
+	private string newTableSynonym = string.Empty;
+	private string newColumnSynonym = string.Empty;
+	private bool isColumnSynonymsModalOpen = false;
+	private List<string> tempColumnSynonyms = new List<string>();
 
-    private async Task LoadSchemaJson()
-    {
-        try
-        {
-            isLoading = true;
-            var dbJsonSchema = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/{DatabaseId}");
-            if (dbJsonSchema != null && !string.IsNullOrWhiteSpace(dbJsonSchema.SchemaData))
-            {
-                currentSchema = JsonSerializer.Deserialize<DatabaseSchemaDetail>(dbJsonSchema.SchemaData);
-                databaseName = currentSchema.Name;
-            }
-            else
-            {
-                // If none found, initialize an empty draft schema
-                currentSchema = new DatabaseSchemaDetail
-                    {
-                        Id = DatabaseId,
-                        Name = "New Database Schema",
-                        Status = "draft",
-                        Tables = new List<TableSchema>(),
-                        Relationships = new List<RelationshipSchema>()
-                    };
-                databaseName = currentSchema.Name;
-            }
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadSchemaJson();
+	}
 
-            // If we have tables, default to the first one
-            if (currentSchema.Tables != null && currentSchema.Tables.Count > 0)
-            {
-                selectedTable = currentSchema.Tables[0];
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error loading schema JSON: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
+	private async Task LoadSchemaJson()
+	{
+		try
+		{
+			isLoading = true;
+			loadingMessage = "Loading database metadata...";
 
-    private async Task SaveSchemaJson()
-    {
-        try
-        {
-            isLoading = true;
+			// Use the API to get the schema
+			var response = await Http.GetAsync($"api/DatabaseSchema/{DatabaseId}");
 
-            // Re-serialize the entire schema
-            string schemaData = JsonSerializer.Serialize(currentSchema, new JsonSerializerOptions { WriteIndented = true });
-            var schemaToSave = new DatabaseSchema
-                {
-                    Id = DatabaseId,
-                    Name = databaseName,
-                    Status = 1, // e.g. active
-                    SchemaData = schemaData
-                };
+			if (response.IsSuccessStatusCode)
+			{
+				var dbJsonSchema = await response.Content.ReadFromJsonAsync<DatabaseSchema>();
 
-            // Check if schema already exists
-            var existingSchema = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/{DatabaseId}");
-            HttpResponseMessage response;
-            if (existingSchema == null)
-            {
-                response = await Http.PostAsJsonAsync("api/DatabaseSchema", schemaToSave);
-            }
-            else
-            {
-                response = await Http.PutAsJsonAsync($"api/DatabaseSchema/{DatabaseId}", schemaToSave);
-            }
+				if (dbJsonSchema != null && !string.IsNullOrWhiteSpace(dbJsonSchema.SchemaData))
+				{
+					// The schema exists - deserialize it
+					currentSchema = await Http.GetFromJsonAsync<DatabaseSchemaDetail>($"api/DatabaseSchema/parsed/{DatabaseId}");
+					databaseName = currentSchema.Name;
+				}
+				else
+				{
+					// No schema exists yet - create a minimal one
+					await JSRuntime.InvokeVoidAsync("alert", $"Error loading schema");
+				}
+			}
+			else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+			{
+				// Schema doesn't exist - create a minimal one
+				await JSRuntime.InvokeVoidAsync("alert", $"Error loading schema");
+			}
+			else
+			{
+				throw new Exception($"Error loading schema: {response.StatusCode}");
+			}
 
-            if (response.IsSuccessStatusCode)
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Schema saved successfully!");
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Error saving schema.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error saving schema: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
+			// If we have tables, default to the first one
+			if (currentSchema.Tables != null && currentSchema.Tables.Count > 0)
+			{
+				selectedTable = currentSchema.Tables[0];
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error loading schema JSON: {ex.Message}");
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
 
-    // Table / Column methods
-    private void SelectTable(TableSchema table)
-    {
-        selectedTable = table;
-        currentView = "tables";
-    }
+	private async Task SaveSchemaJson()
+	{
+		try
+		{
+			isLoading = true;
 
-    private List<ColumnSchema> GetColumnsForSelectedTable()
-    {
-        if (selectedTable == null)
-            return new List<ColumnSchema>();
+			// Re-serialize the entire schema
+			string schemaData = JsonSerializer.Serialize(currentSchema, new JsonSerializerOptions { WriteIndented = true });
+			var schemaToSave = new DatabaseSchema
+				{
+					Id = DatabaseId,
+					Name = databaseName,
+					Status = 1,
+					SchemaData = schemaData
+				};
 
-        return selectedTable.Columns ?? new List<ColumnSchema>();
-    }
+			HttpResponseMessage response;
 
-    private int GetColumnCount(TableSchema table)
-    {
-        return table.Columns?.Count ?? 0;
-    }
+			response = await Http.PutAsJsonAsync($"api/DatabaseSchema/{DatabaseId}", schemaToSave);
 
-    private async Task SaveTableChanges()
-    {
-        if (selectedTable == null)
-            return;
-        await SaveSchemaJson();
-    }
 
-    private async Task SaveColumnChanges()
-    {
-        if (selectedTable == null)
-            return;
-        await SaveSchemaJson();
-    }
+			if (response.IsSuccessStatusCode)
+			{
+				await JSRuntime.InvokeVoidAsync("alert", "Schema saved successfully!");
+			}
+			else
+			{
+				await JSRuntime.InvokeVoidAsync("alert", "Error saving schema.");
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error saving schema");
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
 
-    // Column suggestion modal
-    private void ShowColumnSuggestion(ColumnSchema column, ColumnDescription analysis)
-    {
-        selectedColumn = column;
-        selectedColumnAnalysis = analysis;
-        isColumnSuggestionModalOpen = true;
-    }
+	// Table / Column methods
+	private void SelectTable(TableSchema table)
+	{
+		selectedTable = table;
+		currentView = "tables";
+	}
 
-    private void CloseColumnSuggestionModal()
-    {
-        isColumnSuggestionModalOpen = false;
-    }
+	private List<ColumnSchema> GetColumnsForSelectedTable()
+	{
+		if (selectedTable == null)
+			return new List<ColumnSchema>();
 
-    private void ApplyColumnSuggestion()
-    {
-        if (selectedColumn != null && selectedColumnAnalysis != null)
-        {
-            selectedColumn.FriendlyName = selectedColumnAnalysis.SuggestedName;
-            selectedColumn.Description = selectedColumnAnalysis.SuggestedDescription;
-            selectedColumn.IsLookup = selectedColumnAnalysis.IsLookupColumn;
-            isColumnSuggestionModalOpen = false;
-        }
-    }
+		return selectedTable.Columns ?? new List<ColumnSchema>();
+	}
 
-    // Relationship management
-    private async Task ShowRelationshipManager()
-    {
-        currentView = "relationships";
-    }
+	private int GetColumnCount(TableSchema table)
+	{
+		return table.Columns?.Count ?? 0;
+	}
 
-    private void CreateNewRelationship()
-    {
-        editingRelationship = new RelationshipSchema
-            {
-                Id = Guid.NewGuid().ToString(),
-                Name = "",
-                Type = "one-to-many",
-                Status = "active",
-                Enforced = false,
-                Source = new RelationshipEndpoint { Table = "", Column = "" },
-                Target = new RelationshipEndpoint { Table = "", Column = "" },
-                Metadata = new RelationshipMetadata
-                {
-                    Confidence = 0.0,
-                    DiscoveredAt = DateTime.UtcNow,
-                    LastValidated = DateTime.UtcNow
-                }
-            };
-        currentView = "relationships";
-    }
+	private async Task SaveTableChanges()
+	{
+		if (selectedTable == null)
+			return;
+		await SaveSchemaJson();
+	}
 
-    private void EditInlineRelationship(RelationshipSchema rel)
-    {
-        // Deep copy the existing relationship for editing
-        editingRelationship = JsonSerializer.Deserialize<RelationshipSchema>(JsonSerializer.Serialize(rel));
-    }
+	private async Task SaveColumnChanges()
+	{
+		if (selectedTable == null)
+			return;
+		await SaveSchemaJson();
+	}
 
-    private void CancelInlineEditing()
-    {
-        editingRelationship = null;
-    }
+	// Column suggestion modal
+	private void ShowColumnSuggestion(ColumnSchema column, ColumnDescription analysis)
+	{
+		selectedColumn = column;
+		selectedColumnAnalysis = analysis;
+		isColumnSuggestionModalOpen = true;
+	}
 
-    private async Task SaveInlineRelationship()
-    {
-        if (editingRelationship == null) return;
+	private void CloseColumnSuggestionModal()
+	{
+		isColumnSuggestionModalOpen = false;
+	}
 
-        var index = currentSchema.Relationships.FindIndex(r => r.Id == editingRelationship.Id);
-        if (index >= 0)
-        {
-            currentSchema.Relationships[index] = editingRelationship;
-        }
-        else
-        {
-            currentSchema.Relationships.Add(editingRelationship);
-        }
-        editingRelationship = null;
-        await SaveSchemaJson();
-    }
+	private void ApplyColumnSuggestion()
+	{
+		if (selectedColumn != null && selectedColumnAnalysis != null)
+		{
+			selectedColumn.FriendlyName = selectedColumnAnalysis.SuggestedName;
+			selectedColumn.Description = selectedColumnAnalysis.SuggestedDescription;
+			selectedColumn.IsLookup = selectedColumnAnalysis.IsLookupColumn;
+			isColumnSuggestionModalOpen = false;
+		}
+	}
 
-    private async Task DeleteRelationship(string relationshipId)
-    {
-        try
-        {
-            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this relationship?");
-            if (!confirm) return;
+	// Relationship management
+	private async Task ShowRelationshipManager()
+	{
+		currentView = "relationships";
+	}
 
-            currentSchema.Relationships.RemoveAll(r => r.Id == relationshipId);
-            await SaveSchemaJson();
-            await JSRuntime.InvokeVoidAsync("alert", "Relationship deleted successfully!");
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error deleting relationship: {ex.Message}");
-        }
-    }
+	private void CreateNewRelationship()
+	{
+		editingRelationship = new RelationshipSchema
+			{
+				Id = Guid.NewGuid().ToString(),
+				Name = "",
+				Type = "one-to-many",
+				Status = "active",
+				Enforced = false,
+				Source = new RelationshipEndpoint { Table = "", Column = "" },
+				Target = new RelationshipEndpoint { Table = "", Column = "" },
+				Metadata = new RelationshipMetadata
+				{
+					Confidence = 0.0,
+					DiscoveredAt = DateTime.UtcNow,
+					LastValidated = DateTime.UtcNow
+				}
+			};
+		currentView = "relationships";
+	}
 
-    // Conflicts, Unclear elements, and Suggested relationships
-    private void ShowConflicts() => currentView = "conflicts";
-    private void ShowUnclearElements() => currentView = "unclearElements";
-    private void ShowSuggestedRelationships() => currentView = "suggestedRelationships";
+	private void EditInlineRelationship(RelationshipSchema rel)
+	{
+		// Deep copy the existing relationship for editing
+		editingRelationship = JsonSerializer.Deserialize<RelationshipSchema>(JsonSerializer.Serialize(rel));
+	}
 
-    private async Task RunSchemaAnalysis()
-    {
-        isAnalyzing = true;
-        try
-        {
-            // Example: calling a hypothetical endpoint for analyzing the schema
-            var analysis = await Http.GetFromJsonAsync<AnalysisResults>($"api/schemaanalysis/analyze/{DatabaseId}");
-            if (analysis != null)
-            {
-                currentSchema.AnalysisResults = analysis;
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Error analyzing schema or no data returned.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error analyzing schema: {ex.Message}");
-        }
-        finally
-        {
-            isAnalyzing = false;
-        }
-    }
+	private void CancelInlineEditing()
+	{
+		editingRelationship = null;
+	}
 
-    private async Task ApplyAllSuggestions()
-    {
-        if (analysisResult == null)
-            return;
+	private async Task SaveInlineRelationship()
+	{
+		if (editingRelationship == null) return;
 
-        isApplying = true;
-        try
-        {
-            // Example: calling a hypothetical endpoint to apply suggestions
-            var response = await Http.PostAsJsonAsync($"api/schemaanalysis/apply-descriptions/{DatabaseId}", analysisResult);
-            if (response.IsSuccessStatusCode)
-            {
-                // Reload after applying suggestions
-                await LoadSchemaJson();
-                await JSRuntime.InvokeVoidAsync("alert", "All suggestions applied successfully!");
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Error applying suggestions.");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error applying suggestions: {ex.Message}");
-        }
-        finally
-        {
-            isApplying = false;
-        }
-    }
+		var index = currentSchema.Relationships.FindIndex(r => r.Id == editingRelationship.Id);
+		if (index >= 0)
+		{
+			currentSchema.Relationships[index] = editingRelationship;
+		}
+		else
+		{
+			currentSchema.Relationships.Add(editingRelationship);
+		}
+		editingRelationship = null;
+		await SaveSchemaJson();
+	}
 
-    private void ShowTableList()
-    {
-        currentView = "tables";
-    }
+	private async Task DeleteRelationship(string relationshipId)
+	{
+		try
+		{
+			var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this relationship?");
+			if (!confirm) return;
 
-    // Conflict resolution
-    private async Task ApplyConflictResolution(string type, ConflictItem item)
-    {
-        try
-        {
-            // Example logic: if conflict is a column rename, we rename in memory
-            // Then call SaveSchemaJson
-            if (type == "Column")
-            {
-                // find table, find column, rename
-                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(item.TableName, StringComparison.OrdinalIgnoreCase));
-                if (tableObj != null && tableObj.Columns != null)
-                {
-                    var col = tableObj.Columns.Find(c => c.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
-                    if (col != null)
-                    {
-                        col.FriendlyName = item.SuggestedResolution;
-                    }
-                }
-            }
-            else if (type == "Table")
-            {
-                // find table, rename
-                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
-                if (tableObj != null)
-                {
-                    tableObj.FriendlyName = item.SuggestedResolution;
-                }
-            }
-            await SaveSchemaJson();
-            await JSRuntime.InvokeVoidAsync("alert", "Conflict resolution applied!");
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error applying conflict resolution: {ex.Message}");
-        }
-    }
+			currentSchema.Relationships.RemoveAll(r => r.Id == relationshipId);
+			await SaveSchemaJson();
+			await JSRuntime.InvokeVoidAsync("alert", "Relationship deleted successfully!");
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error deleting relationship: {ex.Message}");
+		}
+	}
 
-    // Unclear element resolution
-    private async Task ApplyUnclearElementSuggestion(UnclearElement element)
-    {
-        try
-        {
-            if (element.Type == "Column")
-            {
-                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(element.TableName, StringComparison.OrdinalIgnoreCase));
-                if (tableObj != null && tableObj.Columns != null)
-                {
-                    var col = tableObj.Columns.Find(c => c.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
-                    if (col != null)
-                    {
-                        col.Description = element.Suggestion;
-                    }
-                }
-            }
-            else if (element.Type == "Table")
-            {
-                var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
-                if (tableObj != null)
-                {
-                    tableObj.Description = element.Suggestion;
-                }
-            }
-            await SaveSchemaJson();
-            await JSRuntime.InvokeVoidAsync("alert", "Suggestion applied!");
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error applying suggestion: {ex.Message}");
-        }
-    }
+	// Conflicts, Unclear elements, and Suggested relationships
+	private void ShowConflicts() => currentView = "conflicts";
+	private void ShowUnclearElements() => currentView = "unclearElements";
+	private void ShowSuggestedRelationships() => currentView = "suggestedRelationships";
 
-    // Adding suggested relationship
-    private async Task AddSuggestedRelationship(SuggestedRelationship relationship)
-    {
-        try
-        {
-            // Convert suggested relationship to a normal RelationshipSchema, add to currentSchema
-            var newRel = new RelationshipSchema
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Name = "SuggestedRel",
-                    Type = relationship.RelationshipType,
-                    Status = "active",
-                    Enforced = false,
-                    Source = new RelationshipEndpoint
-                    {
-                        Table = relationship.SourceTable.Table,
-                        Column = relationship.SourceTable.Column
-                    },
-                    Target = new RelationshipEndpoint
-                    {
-                        Table = relationship.TargetTable.Table,
-                        Column = relationship.TargetTable.Column
-                    },
-                    Metadata = new RelationshipMetadata
-                    {
-                        Confidence = relationship.Confidence,
-                        DiscoveredAt = DateTime.UtcNow,
-                        LastValidated = DateTime.UtcNow
-                    }
-                };
-            if (currentSchema.Relationships == null)
-                currentSchema.Relationships = new List<RelationshipSchema>();
-            currentSchema.Relationships.Add(newRel);
+	private async Task RunSchemaAnalysis()
+	{
+		isAnalyzing = true;
+		try
+		{
+			// Example: calling a hypothetical endpoint for analyzing the schema
+			var analysis = await Http.GetFromJsonAsync<AnalysisResults>($"api/schemaanalysis/analyze/{DatabaseId}");
+			if (analysis != null)
+			{
+				currentSchema.AnalysisResults = analysis;
+			}
+			else
+			{
+				await JSRuntime.InvokeVoidAsync("alert", "Error analyzing schema or no data returned.");
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error analyzing schema: {ex.Message}");
+		}
+		finally
+		{
+			isAnalyzing = false;
+		}
+	}
 
-            await SaveSchemaJson();
-            await JSRuntime.InvokeVoidAsync("alert", "Suggested relationship added!");
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error adding relationship: {ex.Message}");
-        }
-    }
+	private async Task ApplyAllSuggestions()
+	{
+		if (analysisResult == null)
+			return;
 
-    // Table suggestion
-    private void ApplyTableSuggestion()
-    {
-        if (selectedTable == null || tableAnalysis == null)
-            return;
+		isApplying = true;
+		try
+		{
+			// Example: calling a hypothetical endpoint to apply suggestions
+			var response = await Http.PostAsJsonAsync($"api/schemaanalysis/apply-descriptions/{DatabaseId}", analysisResult);
+			if (response.IsSuccessStatusCode)
+			{
+				// Reload after applying suggestions
+				await LoadSchemaJson();
+				await JSRuntime.InvokeVoidAsync("alert", "All suggestions applied successfully!");
+			}
+			else
+			{
+				await JSRuntime.InvokeVoidAsync("alert", "Error applying suggestions.");
+			}
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error applying suggestions: {ex.Message}");
+		}
+		finally
+		{
+			isApplying = false;
+		}
+	}
 
-        selectedTable.FriendlyName = tableAnalysis.SuggestedName;
-        selectedTable.Description = tableAnalysis.SuggestedDescription;
-    }
+	private void ShowTableList()
+	{
+		currentView = "tables";
+	}
 
-    // Retrieve analysis info for the selected table
-    private TableDescription tableAnalysis => analysisResult?.TableDescriptions?
-        .Find(t => t.TableName.Equals(selectedTable?.DBName, StringComparison.OrdinalIgnoreCase));
+	// Conflict resolution
+	private async Task ApplyConflictResolution(string type, ConflictItem item)
+	{
+		try
+		{
+			// Example logic: if conflict is a column rename, we rename in memory
+			// Then call SaveSchemaJson
+			if (type == "Column")
+			{
+				// find table, find column, rename
+				var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(item.TableName, StringComparison.OrdinalIgnoreCase));
+				if (tableObj != null && tableObj.Columns != null)
+				{
+					var col = tableObj.Columns.Find(c => c.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+					if (col != null)
+					{
+						col.FriendlyName = item.SuggestedResolution;
+					}
+				}
+			}
+			else if (type == "Table")
+			{
+				// find table, rename
+				var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+				if (tableObj != null)
+				{
+					tableObj.FriendlyName = item.SuggestedResolution;
+				}
+			}
+			await SaveSchemaJson();
+			await JSRuntime.InvokeVoidAsync("alert", "Conflict resolution applied!");
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error applying conflict resolution: {ex.Message}");
+		}
+	}
 
-    // Retrieve analysis info for a column
-    private ColumnDescription GetColumnAnalysis(ColumnSchema column)
-    {
-        if (analysisResult == null || analysisResult.ColumnDescriptions == null || column == null || selectedTable == null)
-            return null;
+	// Unclear element resolution
+	private async Task ApplyUnclearElementSuggestion(UnclearElement element)
+	{
+		try
+		{
+			if (element.Type == "Column")
+			{
+				var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(element.TableName, StringComparison.OrdinalIgnoreCase));
+				if (tableObj != null && tableObj.Columns != null)
+				{
+					var col = tableObj.Columns.Find(c => c.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+					if (col != null)
+					{
+						col.Description = element.Suggestion;
+					}
+				}
+			}
+			else if (element.Type == "Table")
+			{
+				var tableObj = currentSchema.Tables?.Find(t => t.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+				if (tableObj != null)
+				{
+					tableObj.Description = element.Suggestion;
+				}
+			}
+			await SaveSchemaJson();
+			await JSRuntime.InvokeVoidAsync("alert", "Suggestion applied!");
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error applying suggestion: {ex.Message}");
+		}
+	}
 
-        return analysisResult.ColumnDescriptions.Find(cd =>
-            cd.TableName.Equals(selectedTable.DBName, StringComparison.OrdinalIgnoreCase)
-            && cd.ColumnName.Equals(column.DBName, StringComparison.OrdinalIgnoreCase));
-    }
+	// Adding suggested relationship
+	private async Task AddSuggestedRelationship(SuggestedRelationship relationship)
+	{
+		try
+		{
+			// Convert suggested relationship to a normal RelationshipSchema, add to currentSchema
+			var newRel = new RelationshipSchema
+				{
+					Id = Guid.NewGuid().ToString(),
+					Name = "SuggestedRel",
+					Type = relationship.RelationshipType,
+					Status = "active",
+					Enforced = false,
+					Source = new RelationshipEndpoint
+					{
+						Table = relationship.SourceTable.Table,
+						Column = relationship.SourceTable.Column
+					},
+					Target = new RelationshipEndpoint
+					{
+						Table = relationship.TargetTable.Table,
+						Column = relationship.TargetTable.Column
+					},
+					Metadata = new RelationshipMetadata
+					{
+						Confidence = relationship.Confidence,
+						DiscoveredAt = DateTime.UtcNow,
+						LastValidated = DateTime.UtcNow
+					}
+				};
+			if (currentSchema.Relationships == null)
+				currentSchema.Relationships = new List<RelationshipSchema>();
+			currentSchema.Relationships.Add(newRel);
 
-    // Navigation methods
-    [JSInvokable]
-    public void OnTableClick(string tableId)
-    {
-        // Example code
-        if (int.TryParse(tableId.Replace("table_", ""), out int id))
-        {
-            NavigationManager.NavigateTo($"/admin/edit-table/{id}");
-        }
-    }
+			await SaveSchemaJson();
+			await JSRuntime.InvokeVoidAsync("alert", "Suggested relationship added!");
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error adding relationship: {ex.Message}");
+		}
+	}
 
-    [JSInvokable]
-    public void OnColumnClick(string columnId)
-    {
-        if (int.TryParse(columnId.Replace("column_", ""), out int id))
-        {
-            NavigationManager.NavigateTo($"/admin/edit-column/{id}");
-        }
-    }
+	// Table suggestion
+	private void ApplyTableSuggestion()
+	{
+		if (selectedTable == null || tableAnalysis == null)
+			return;
 
-    [JSInvokable]
-    public void OnRelationshipClick(string relationshipId)
-    {
-        if (int.TryParse(relationshipId.Replace("rel_", ""), out int id))
-        {
-            NavigationManager.NavigateTo($"/admin/edit-relationship/{id}");
-        }
-    }
+		selectedTable.FriendlyName = tableAnalysis.SuggestedName;
+		selectedTable.Description = tableAnalysis.SuggestedDescription;
+	}
+
+	// Retrieve analysis info for the selected table
+	private TableDescription tableAnalysis => analysisResult?.TableDescriptions?
+		.Find(t => t.TableName.Equals(selectedTable?.DBName, StringComparison.OrdinalIgnoreCase));
+
+	// Retrieve analysis info for a column
+	private ColumnDescription GetColumnAnalysis(ColumnSchema column)
+	{
+		if (analysisResult == null || analysisResult.ColumnDescriptions == null || column == null || selectedTable == null)
+			return null;
+
+		return analysisResult.ColumnDescriptions.Find(cd =>
+			cd.TableName.Equals(selectedTable.DBName, StringComparison.OrdinalIgnoreCase)
+			&& cd.ColumnName.Equals(column.DBName, StringComparison.OrdinalIgnoreCase));
+	}
+
+	// Navigation methods
+	[JSInvokable]
+	public void OnTableClick(string tableId)
+	{
+		// Example code
+		if (int.TryParse(tableId.Replace("table_", ""), out int id))
+		{
+			NavigationManager.NavigateTo($"/admin/edit-table/{id}");
+		}
+	}
+
+	[JSInvokable]
+	public void OnColumnClick(string columnId)
+	{
+		if (int.TryParse(columnId.Replace("column_", ""), out int id))
+		{
+			NavigationManager.NavigateTo($"/admin/edit-column/{id}");
+		}
+	}
+
+	[JSInvokable]
+	public void OnRelationshipClick(string relationshipId)
+	{
+		if (int.TryParse(relationshipId.Replace("rel_", ""), out int id))
+		{
+			NavigationManager.NavigateTo($"/admin/edit-relationship/{id}");
+		}
+	}
+
+	// For synonyms management
+
+
+	private void AddTableSynonym()
+	{
+		if (string.IsNullOrWhiteSpace(newTableSynonym) || selectedTable == null)
+			return;
+
+		if (selectedTable.Synonyms == null)
+			selectedTable.Synonyms = new List<string>();
+
+		if (!selectedTable.Synonyms.Contains(newTableSynonym, StringComparer.OrdinalIgnoreCase))
+			selectedTable.Synonyms.Add(newTableSynonym);
+
+		newTableSynonym = string.Empty;
+	}
+
+	private void RemoveTableSynonym(string synonym)
+	{
+		if (selectedTable?.Synonyms == null)
+			return;
+
+		selectedTable.Synonyms.Remove(synonym);
+	}
+
+	private void ShowColumnSynonymsModal(ColumnSchema column)
+	{
+		selectedColumn = column;
+
+		// Initialize synonyms list if null
+		if (selectedColumn.Synonyms == null)
+			selectedColumn.Synonyms = new List<string>();
+
+		// Create a temporary copy for editing
+		tempColumnSynonyms = new List<string>(selectedColumn.Synonyms);
+
+		isColumnSynonymsModalOpen = true;
+	}
+
+	private void CloseColumnSynonymsModal()
+	{
+		isColumnSynonymsModalOpen = false;
+	}
+
+	private void AddColumnSynonym()
+	{
+		if (string.IsNullOrWhiteSpace(newColumnSynonym) || selectedColumn == null)
+			return;
+
+		if (!tempColumnSynonyms.Contains(newColumnSynonym, StringComparer.OrdinalIgnoreCase))
+			tempColumnSynonyms.Add(newColumnSynonym);
+
+		newColumnSynonym = string.Empty;
+	}
+
+	private void RemoveColumnSynonym(string synonym)
+	{
+		tempColumnSynonyms.Remove(synonym);
+	}
+
+	private void SaveColumnSynonyms()
+	{
+		if (selectedColumn != null)
+		{
+			selectedColumn.Synonyms = new List<string>(tempColumnSynonyms);
+		}
+
+		CloseColumnSynonymsModal();
+	}
 }
