@@ -29,19 +29,21 @@ namespace DynamicDashboardFE.Utilities
             });
         }
 
-        public void ShowInfo(string message, int timeout = 3000)
+        public void ShowInfo(string message, int timeout = 5000)
         {
             _toastService.ShowInfo(message, options =>
             {
                 options.Timeout = timeout;
+                options.ShowCloseButton = true;
             });
         }
 
-        public void ShowWarning(string message, int timeout = 4000)
+        public void ShowWarning(string message, int timeout = 5000)
         {
             _toastService.ShowWarning(message, options =>
             {
                 options.Timeout = timeout;
+                options.ShowCloseButton = true;
             });
         }
     }
