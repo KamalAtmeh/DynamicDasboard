@@ -1,0 +1,66 @@
+﻿
+.clickable-badge {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+    .clickable-badge:hover {
+        background-color: #6c757d !important;
+        color: white !important;
+    }
+
+pre {
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    overflow-x: auto;
+}
+
+.card {
+    transition: all 0.3s;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+}
+
+.form-control, .form-select {
+    box-shadow: none;
+    border: 1px solid #d1d3e2;
+}
+
+    .form-control:focus, .form-select:focus {
+        border-color: #bac8f3;
+        box-shadow: 0 0 0 0.2rem rgb(78 115 223 / 25%);
+    }
+
+.nav-tabs .nav-link {
+    color: #4e73df;
+    cursor: pointer;
+}
+
+    .nav-tabs .nav-link.active {
+        color: #224abe;
+        font-weight: bold;
+        border-bottom: 2px solid #224abe;
+    }
+
+/* Add animate.css animations */
+.animate__animated {
+    animation-duration: 0.5s;
+}
+
+.animate__fadeIn {
+    animation-name: fadeIn;
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

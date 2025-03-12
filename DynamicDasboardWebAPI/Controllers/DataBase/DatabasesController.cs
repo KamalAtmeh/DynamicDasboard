@@ -62,7 +62,6 @@ namespace DynamicDasboardWebAPI.Controllers
                 return Ok(result);
             }
             catch (Exception ex)
-
             {
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
@@ -91,9 +90,9 @@ namespace DynamicDasboardWebAPI.Controllers
         public async Task<ActionResult<int>> DeleteDatabase(int id)
         {
             try
-            { 
-            var result = await _service.DeleteDatabaseAsync(id);
-            return Ok(result);
+            {
+                var result = await _service.DeleteDatabaseAsync(id);
+                return Ok(result);
             }
             catch (Exception ex)
 

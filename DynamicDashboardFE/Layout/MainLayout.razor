@@ -1,5 +1,13 @@
 ﻿@inherits LayoutComponentBase
+@using Blazored.Toast
+@using Blazored.Toast.Configuration
+@using Blazored.Toast.Services
+
+
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<BlazoredToasts Position="ToastPosition.TopRight"
+                Timeout="5"
+                ShowProgressBar="true" />
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -9,9 +17,12 @@
         <div class="top-row px-4">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
-
+        
         <article class="content px-4">
+
             @Body
         </article>
     </main>
 </div>
+
+

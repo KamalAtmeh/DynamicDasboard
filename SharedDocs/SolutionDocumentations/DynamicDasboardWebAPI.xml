@@ -59,12 +59,12 @@
             Step 1: Analyzes a natural language question and returns an explanation.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.GenerateSql(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.GenerateSql(DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
             <summary>
             Step 2: Generates SQL from a confirmed understanding.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ExecuteQuery(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ExecuteQuery(DynamicDashboardCommon.Models.SqlExecutionRequest)">
             <summary>
             Step 3: Executes a SQL query and returns the results.
             </summary>
@@ -562,14 +562,14 @@
             <param name="request">The natural language query request</param>
             <returns>An explanation of how the system understands the question</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
             <summary>
             Step 2: Generate SQL based on confirmed understanding
             </summary>
             <param name="request">The confirmation request with resolved ambiguities</param>
             <returns>Generated SQL query</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.DynamicDashboardCommon.Models.SqlExecutionRequest)">
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.SqlExecutionRequest)">
             <summary>
             Step 3: Execute the generated SQL and explain the results
             </summary>

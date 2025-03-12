@@ -9,8 +9,7 @@ namespace DynamicDashboardCommon.Models
     using global::DynamicDashboardCommon.Models.LLM;
     using System.Collections.Generic;
 
-    namespace DynamicDashboardCommon.Models
-    {
+
         /// <summary>
         /// Response from analyzing a natural language question
         /// </summary>
@@ -210,4 +209,4 @@ namespace DynamicDashboardCommon.Models
             public string ErrorMessage { get; set; }
         }
     }
-}
+

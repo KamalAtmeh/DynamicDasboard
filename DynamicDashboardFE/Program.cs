@@ -1,3 +1,5 @@
+using Blazored.Toast;
+using DynamicDashboardFE.Utilities;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -9,6 +11,11 @@ namespace DynamicDashboardFE
         {
             // Create a new WebAssemblyHostBuilder instance with default settings.
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
+            builder.Services.AddBlazoredToast();
+
+            builder.Services.AddScoped<Notifications>();
+
 
             // Add the root component App to the HTML element with id "app".
             builder.RootComponents.Add<App>("#app");
