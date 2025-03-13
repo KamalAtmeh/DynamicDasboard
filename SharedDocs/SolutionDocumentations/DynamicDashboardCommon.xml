@@ -329,6 +329,142 @@
             The type of the parameter (date, number, category, etc.)
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse">
+            <summary>
+            Represents a structured response from the LLM with SQL and explanation
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.SqlQuery">
+            <summary>
+            The generated SQL query
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.BusinessExplanation">
+            <summary>
+            A user-friendly explanation of what the query does
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.DbType">
+            <summary>
+            The database type this SQL is optimized for (e.g., 'SQL Server', 'MySQL', 'Oracle')
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.DbNotes">
+            <summary>
+            Notes about database compatibility or adaptation requirements
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.HasAmbiguities">
+            <summary>
+            Flag indicating whether the system detected any ambiguities
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.DetectedAmbiguities">
+            <summary>
+            Dictionary of detected ambiguities with possible interpretations
+            Key = ambiguous term, Value = list of possible interpretations
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.AdjustableParameters">
+            <summary>
+            Dictionary of adjustable parameters with default values and possible alternatives
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.TermMapping">
+            <summary>
+            Dictionary mapping technical terms to friendly terms
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.LLM.AdjustableParameter">
+            <summary>
+            Represents an adjustable parameter with default value and alternatives
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.AdjustableParameter.Default">
+            <summary>
+            The default value for the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.AdjustableParameter.Alternatives">
+            <summary>
+            List of alternative values for the parameter
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse">
+            <summary>
+            Response for SQL generation with explanation
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.OriginalQuestion">
+            <summary>
+            The original question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.GeneratedSql">
+            <summary>
+            The generated SQL query
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.BusinessExplanation">
+            <summary>
+            A user-friendly explanation of what the query does
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.DbType">
+            <summary>
+            The database type this SQL is optimized for
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.DbNotes">
+            <summary>
+            Notes about database compatibility or adaptation requirements
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.HasAmbiguities">
+            <summary>
+            Flag indicating whether the system detected any ambiguities
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.DetectedAmbiguities">
+            <summary>
+            Dictionary of detected ambiguities with possible interpretations
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.AdjustableParameters">
+            <summary>
+            Dictionary of adjustable parameters with default values and possible alternatives
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.TermMapping">
+            <summary>
+            Dictionary mapping technical terms to friendly terms
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.IsValid">
+            <summary>
+            Flag indicating whether the SQL is valid
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.ValidationErrorMessage">
+            <summary>
+            Validation error message if SQL is invalid
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.Success">
+            <summary>
+            Flag indicating whether SQL generation was successful
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.ErrorMessage">
+            <summary>
+            Error message if SQL generation failed
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.AnalysisResponse">
             <summary>
             Response from analyzing a natural language question

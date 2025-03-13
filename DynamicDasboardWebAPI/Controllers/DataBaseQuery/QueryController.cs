@@ -129,6 +129,37 @@ namespace DynamicDasboardWebAPI.Controllers
         }
 
         /// <summary>
+        /// Generates SQL with explanation for a natural language question
+        /// </summary>
+        [HttpPost("generate-explain")]
+        public async Task<IActionResult> GenerateSqlWithExplanation([FromBody] NlQueryRequest request)
+        {
+            if (request == null)
+                return BadRequest("Request cannot be null.");
+
+            if (string.IsNullOrWhiteSpace(request.Question))
+                return BadRequest("Question cannot be empty.");
+
+            try
+            {
+                var response = await _nlQueryService.GenerateSqlWithExplanationAsync(request);
+
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                else
+                {
+                    return StatusCode(500, response);
+                }
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
         /// Unified endpoint for backward compatibility: processes a natural language query in one step.
         /// </summary>
         [HttpPost("process")]

@@ -47,5 +47,18 @@ namespace DynamicDasboardWebAPI.Services.LLM
             string question,
             string sql,
             List<Dictionary<string, object>> results);
+
+        /// <summary>
+        /// Generates SQL with explanation from a natural language question
+        /// </summary>
+        /// <param name="question">The natural language question</param>
+        /// <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
+        /// <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
+        /// <returns>A structured response with SQL query, explanation, and metadata</returns>
+        Task<SqlExplanationResponse> GenerateSqlWithExplanationAsync(
+            string question,
+            string databaseSchema,
+            Dictionary<string, string> adminDescriptions = null);
+
     }
 }

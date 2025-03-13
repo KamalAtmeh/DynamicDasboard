@@ -140,6 +140,21 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 throw;
             }
         }
+        //Temp Empty Implementation
+        public async Task<SqlExplanationResponse> GenerateSqlWithExplanationAsync(
+            string question,
+            string databaseSchema,
+            Dictionary<string, string> adminDescriptions = null)
+        {
+            try
+            {
+                return new SqlExplanationResponse();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
 
         #region Private Helper Methods
 

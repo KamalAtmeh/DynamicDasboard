@@ -69,6 +69,11 @@
             Step 3: Executes a SQL query and returns the results.
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.GenerateSqlWithExplanation(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Generates SQL with explanation for a natural language question
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ProcessQuery(DynamicDashboardCommon.Models.NlQueryRequest)">
             <summary>
             Unified endpoint for backward compatibility: processes a natural language query in one step.
@@ -613,6 +618,22 @@
             <param name="request">The natural language query request</param>
             <returns>Complete query response</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlWithExplanationAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Generates SQL with explanation from a natural language question
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>SQL explanation response with validation status</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ValidateSqlAsync(System.String,System.Int32)">
+            <summary>
+            Validates a SQL query against a database without retrieving results
+            </summary>
+            <param name="sql">The SQL query to validate</param>
+            <param name="databaseId">The database ID</param>
+            <returns>Task representing the validation</returns>
+            TODO change the implementation of this method to be more dynamic if applicable
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(System.Int32,DynamicDashboardCommon.Models.Database)">
             <summary>
             Retrieves the database schema from a connected database and saves it in our schema format.
@@ -677,6 +698,27 @@
             <summary>
             Validates that the schema structure is correct.
             </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.OptimizeSchemaForLlm(System.String)">
+            <summary>
+            Optimizes the schema JSON by extracting only the essential elements
+            </summary>
+            <param name="schemaJson">The full schema JSON</param>
+            <returns>Optimized schema string</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.BuildOptimizedSchemaString(DynamicDashboardCommon.Models.DatabaseSchema)">
+            <summary>
+            Builds an optimized schema string from a DatabaseSchema object
+            </summary>
+            <param name="schema">The DatabaseSchema object</param>
+            <returns>Optimized schema string</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.ExtractAdminDescriptions(DynamicDashboardCommon.Models.DatabaseSchema)">
+            <summary>
+            Extracts admin descriptions from a schema for friendly terminology
+            </summary>
+            <param name="schema">The DatabaseSchema object</param>
+            <returns>Dictionary mapping technical terms to friendly terms</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
             <summary>
@@ -949,6 +991,9 @@
             Implementation of ILlmService using Anthropic's Claude API
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSqlWithExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
@@ -1005,6 +1050,15 @@
             <param name="sql">The SQL query that was executed</param>
             <param name="results">The query results</param>
             <returns>A user-friendly explanation of the results</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSqlWithExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Generates SQL with explanation from a natural language question
+            </summary>
+            <param name="question">The natural language question</param>
+            <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
+            <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
+            <returns>A structured response with SQL query, explanation, and metadata</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
             <summary>

@@ -95,11 +95,6 @@
             Copies the generated SQL to the clipboard.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.AnalyzeQuestion">
-            <summary>
-            Step 1: Analyzes the natural language question and generates an explanation.
-            </summary>
-        </member>
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ConfirmUnderstanding">
             <summary>
             Step 2: Confirms understanding and generates SQL based on user selections.

@@ -27,7 +27,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         private readonly string _model;
         private readonly string _apiEndpoint;
         private readonly int timeOutSeconds;
-
+        //temp //todo move common methods into a common class and keep only to what is related to the LLM type here Claude for example
         public ClaudeLLMService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -42,6 +42,216 @@ namespace DynamicDasboardWebAPI.Services.LLM
             _apiEndpoint = _configuration["Claude:Endpoint"] ?? "https://api.anthropic.com/v1/messages";
             timeOutSeconds = _configuration.GetValue<int>("LlmService: Timeout", 150);
         }
+
+        // Add these methods to the ClaudeLLMService class
+
+        /// <inheritdoc/>
+        public async Task<SqlExplanationResponse> GenerateSqlWithExplanationAsync(
+            string question,
+            string databaseSchema,
+            Dictionary<string, string> dbDescriptions = null)
+        {
+            try
+            {
+                // Build the system prompt
+                var systemPrompt = BuildSQLScriptwithExplanationSystemPrompt(databaseSchema, dbDescriptions);
+
+                // Build the user prompt
+                var userPrompt = $"Question: {question}\n\nPlease generate a SQL query for this question based on the provided schema, and explain what it does in business terms.";
+
+                // Call Claude API
+                var response = await CallClaudeApiAsync(systemPrompt, userPrompt);
+
+                // Parse the SQL explanation response
+                return ParseSqlExplanationResponse(response);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        private SqlExplanationResponse ParseSqlExplanationResponse(string jsonResponse)
+        {
+            try
+            {
+                // Extract JSON from the response
+                var jsonStart = jsonResponse.IndexOf('{');
+                var jsonEnd = jsonResponse.LastIndexOf('}');
+
+                if (jsonStart >= 0 && jsonEnd > jsonStart)
+                {
+                    var json = jsonResponse.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                    var response = System.Text.Json.JsonSerializer.Deserialize<SqlExplanationResponse>(json,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    if (response != null)
+                        return response;
+                }
+
+                // If we couldn't parse as JSON or the response is null, create a simple response
+                return new SqlExplanationResponse
+                {
+                    SqlQuery = ExtractSqlFromText(jsonResponse),
+                    BusinessExplanation = jsonResponse,
+                    //DbType = 
+                    HasAmbiguities = false
+                };
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                throw;
+            }
+        }
+
+        private string ExtractSqlFromText(string text)
+        {
+            try
+            {
+                // Try to extract SQL from text by looking for SQL keywords
+                var sqlKeywords = new[] { "SELECT", "FROM", "WHERE", "GROUP BY", "ORDER BY", "HAVING", "JOIN" };
+
+                foreach (var keyword in sqlKeywords)
+                {
+                    var keywordIndex = text.IndexOf(keyword);
+                    if (keywordIndex >= 0)
+                    {
+                        // Find the end of the SQL query (next code block or end of text)
+                        var endIndex = text.IndexOf("```", keywordIndex);
+                        if (endIndex >= 0)
+                            return text.Substring(keywordIndex, endIndex - keywordIndex).Trim();
+
+                        // If no code block end, try to find a natural break
+                        endIndex = text.IndexOf("\n\n", keywordIndex);
+                        if (endIndex >= 0)
+                            return text.Substring(keywordIndex, endIndex - keywordIndex).Trim();
+
+                        // If no natural break, return the rest of the text
+                        return text.Substring(keywordIndex).Trim();
+                    }
+                }
+
+                return string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private string BuildSQLScriptwithExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)
+        {
+            try
+            {
+                var prompt = new StringBuilder();
+                prompt.AppendLine("You are an AI assistant that generates SQL queries from natural language questions and explains them in business terms. " +
+                                "Your primary task is to FIRST create a SQL query based on the user's question and schema, THEN explain what it does using friendly business terminology.");
+
+                // Primary approach and priorities
+                prompt.AppendLine("\nFollow this approach:");
+                prompt.AppendLine("1. Generate a SQL query that works for the specified database type (or ANSI-standard SQL if no type specified)");
+                prompt.AppendLine("2. Explain the query's business meaning using friendly terminology");
+                prompt.AppendLine("3. Identify adjustable parameters and potential ambiguities");
+
+                // SQL generation requirements
+                prompt.AppendLine("\nSQL Generation Rules:");
+                prompt.AppendLine("- Use only tables and columns that exist in the provided schema");
+                prompt.AppendLine("- Ensure the SQL is compatible with the specified database type");
+                prompt.AppendLine("- If no database type is specified, use ANSI-standard SQL");
+                prompt.AppendLine("- If a specific database type is specified (MySQL, SQL Server, Oracle, PostgreSQL, etc.), optimize the SQL for that platform");
+                prompt.AppendLine("- Qualify all column names with table aliases (e.g., users.name)");
+                prompt.AppendLine("- Handle NULL values appropriately");
+                prompt.AppendLine("- Ensure GROUP BY includes all non-aggregated columns");
+                prompt.AppendLine("- Use only SELECT queries (no data modification)");
+                prompt.AppendLine("- For pagination/row limiting, use the appropriate syntax for the specified database:");
+                prompt.AppendLine("  * SQL Server: TOP n");
+                prompt.AppendLine("  * MySQL/PostgreSQL/SQLite: LIMIT n");
+                prompt.AppendLine("  * Oracle 12c+: FETCH FIRST n ROWS ONLY");
+                prompt.AppendLine("  * Oracle before 12c: WHERE ROWNUM <= n");
+                prompt.AppendLine("  * ANSI-standard: FETCH FIRST n ROWS ONLY");
+
+                // Business explanation requirements
+                prompt.AppendLine("\nBusiness Explanation Rules:");
+                prompt.AppendLine("1. Use natural, conversational language focused on business meaning");
+                prompt.AppendLine("2. Explain what data will be retrieved and any filters or conditions");
+                prompt.AppendLine("3. Use defined descriptions instead of technical database terms");
+                prompt.AppendLine("4. Highlight business insights the query provides");
+
+                prompt.AppendLine("\nDatabase schema:");
+                prompt.AppendLine(databaseSchema);
+
+                if (adminDescriptions != null && adminDescriptions.Count > 0)
+                {
+                    prompt.AppendLine("\nBusiness terminology (use these terms in your explanation instead of technical names):");
+                    foreach (var description in adminDescriptions)
+                    {
+                        prompt.AppendLine($"- {description.Key}: {description.Value}");
+                    }
+                }
+
+                // Response format
+                prompt.AppendLine("\nYour response should be structured as JSON with the following fields:");
+                prompt.AppendLine("- sqlQuery: The generated SQL query that answers the user's question");
+                prompt.AppendLine("- businessExplanation: A user-friendly explanation of what the query does");
+                prompt.AppendLine("- dbType: The database type this SQL is optimized for (e.g., 'SQL Server', 'MySQL', 'Oracle', 'ANSI-standard')");
+                prompt.AppendLine("- dbNotes: Notes about database compatibility or adaptation requirements");
+                prompt.AppendLine("- hasAmbiguities: Boolean indicating if any ambiguities were detected");
+                prompt.AppendLine("- detectedAmbiguities: Dictionary of ambiguous terms and their possible interpretations");
+                prompt.AppendLine("- adjustableParameters: Dictionary of parameters that could be adjusted");
+                prompt.AppendLine("- termMapping: Dictionary mapping technical terms to friendly terms (from descriptions) used");
+
+                // JSON format instructions
+                prompt.AppendLine("\nIMPORTANT FORMAT REQUIREMENTS:");
+                prompt.AppendLine("1. The 'alternatives' property inside 'adjustableParameters' MUST be an array of strings, even if there's only one alternative.");
+                prompt.AppendLine("2. Use the format: \"alternatives\": [\"option1\", \"option2\"] NOT \"alternatives\": \"Some text\"");
+                prompt.AppendLine("3. All arrays should be properly formatted with square brackets, even for single items.");
+                prompt.AppendLine("4. The SQL query must be properly escaped as a JSON string.");
+
+                // Example with database-specific SQL
+                prompt.AppendLine("\nHere's a complete example of the expected JSON format, in this example it was SQL Server DB Type:");
+                prompt.AppendLine("```json");
+                prompt.AppendLine("{");
+                prompt.AppendLine("  \"sqlQuery\": \"SELECT TOP 10\\n  u.name AS customer_name,\\n  u.email AS customer_email,\\n  SUM(o.amount) AS total_spent\\nFROM users u\\nINNER JOIN orders o \\n  ON u.id = o.user_id\\nWHERE \\n  o.order_date >= '2023-08-01' \\n  AND o.order_date < '2023-09-01'\\nGROUP BY \\n  u.id, \\n  u.name, \\n  u.email\\nORDER BY total_spent DESC;\",");
+                prompt.AppendLine("  \"businessExplanation\": \"This query shows you the top 10 customers who spent the most money during August 2023. It includes each customer's name, email address, and their total spending for that month. The results are ordered from highest spender to lowest.\",");
+                prompt.AppendLine("  \"dbType\": \"SQL Server\",");
+                prompt.AppendLine("  \"dbNotes\": \"This query uses SQL Server's TOP syntax for row limiting. For other databases, use: MySQL/PostgreSQL/SQLite: LIMIT 10; Oracle 12c+: FETCH FIRST 10 ROWS ONLY; Oracle before 12c: WHERE ROWNUM <= 10.\",");
+                prompt.AppendLine("  \"hasAmbiguities\": true,");
+                prompt.AppendLine("  \"detectedAmbiguities\": {");
+                prompt.AppendLine("    \"customer spending\": [");
+                prompt.AppendLine("      \"Total amount spent on all orders\",");
+                prompt.AppendLine("      \"Revenue before discounts or returns\"");
+                prompt.AppendLine("    ]");
+                prompt.AppendLine("  },");
+                prompt.AppendLine("  \"adjustableParameters\": {");
+                prompt.AppendLine("    \"date range\": {");
+                prompt.AppendLine("      \"default\": \"August 2023 (2023-08-01 to 2023-08-31)\",");
+                prompt.AppendLine("      \"alternatives\": [\"Last 30 days\", \"Current month\", \"Year to date\", \"Q3 2023\"]");
+                prompt.AppendLine("    },");
+                prompt.AppendLine("    \"number of customers\": {");
+                prompt.AppendLine("      \"default\": 10,");
+                prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"50\", \"All customers\"]");
+                prompt.AppendLine("    }");
+                prompt.AppendLine("  },");
+                prompt.AppendLine("  \"termMapping\": {");
+                prompt.AppendLine("    \"users\": \"Customers\",");
+                prompt.AppendLine("    \"orders\": \"Purchases\",");
+                prompt.AppendLine("    \"amount\": \"Transaction value\"");
+                prompt.AppendLine("  }");
+                prompt.AppendLine("}");
+                prompt.AppendLine("```");
+                prompt.AppendLine("\nIf a specific database type is provided in the user's question or context, ensure the generated SQL is fully compatible with that database system. If no database type is specified, default to ANSI-standard SQL.");
+
+                return prompt.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+
+
 
         /// <inheritdoc/>
         public async Task<ExplanationResponse> GenerateExplanationAsync(
@@ -156,7 +366,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
         #region Private Helper Methods
 
-        private string BuildSQLScriptwithExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)
+        private string BuildSQLScriptwithExplanationSystemPrompt_Old(string databaseSchema, Dictionary<string, string> adminDescriptions)
         {
             try
             {

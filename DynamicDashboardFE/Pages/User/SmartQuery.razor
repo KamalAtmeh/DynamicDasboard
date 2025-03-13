@@ -40,7 +40,7 @@
                                 @if (isLoading && loadingMessage.Contains("connection"))
                                 {
                                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    <span>Testing...</span> 
+                                    <span>Testing...</span>  
                                 }
                                 else
                                 {
@@ -412,6 +412,125 @@
                                                 No results found for your query.
                                             </div>
                                         }
+                                    </div>
+                                </div>
+                            }
+                            @if (currentStep == QueryStep.SqlExplanation && sqlExplanationResponse != null)
+                            {
+                                <!-- SQL Explanation Step -->
+                                <div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+                                    <div class="card-header bg-light py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="m-0 font-weight-bold">SQL Explanation</h5>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => currentStep = QueryStep.Input">
+                                                <i class="fas fa-arrow-left"></i> Back
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Question:</strong> @userQuestion
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <h6>SQL Query:</h6>
+                                            <div class="d-flex justify-content-end mb-2">
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="CopySqlToClipboard">
+                                                    <i class="fas fa-copy"></i> Copy
+                                                </button>
+                                            </div>
+                                            <pre class="bg-light p-3 rounded @(sqlExplanationResponse.IsValid ? "" : "border border-warning")">@sqlExplanationResponse.GeneratedSql</pre>
+
+                                            @if (!sqlExplanationResponse.IsValid)
+                                            {
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    <strong>Warning:</strong> This SQL may not be valid. @sqlExplanationResponse.ValidationErrorMessage
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <h6>Explanation:</h6>
+                                            <div class="alert alert-success">
+                                                @sqlExplanationResponse.BusinessExplanation
+                                            </div>
+                                        </div>
+
+                                        @if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities.Count > 0)
+                                        {
+                                            <div class="mb-3">
+                                                <h6>Ambiguities Detected:</h6>
+                                                <p>Please clarify the following ambiguous terms:</p>
+
+                                                <div class="list-group">
+                                                    @foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
+                                                    {
+                                                        <div class="list-group-item">
+                                                            <div class="mb-2"><strong>@ambiguity.Key:</strong></div>
+                                                            <select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
+                                                                @foreach (var option in ambiguity.Value)
+                                                                {
+                                                                    <option value="@option">@option</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (sqlExplanationResponse.AdjustableParameters.Count > 0)
+                                        {
+                                            <div class="mb-3">
+                                                <h6>Adjustable Parameters:</h6>
+                                                <p>You can adjust these parameters to refine your query:</p>
+
+                                                <div class="list-group">
+                                                    @foreach (var param in sqlExplanationResponse.AdjustableParameters)
+                                                    {
+                                                        <div class="list-group-item">
+                                                            <div class="mb-2">
+                                                                <strong>@param.Key:</strong>
+                                                            </div>
+                                                            <select class="form-select" @bind="adjustedParameters[param.Key]">
+                                                                <option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
+                                                                @foreach (var option in param.Value.Alternatives)
+                                                                {
+                                                                    <option value="@option">@option</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(sqlExplanationResponse.DbNotes))
+                                        {
+                                            <div class="mb-3">
+                                                <h6>Database Notes:</h6>
+                                                <div class="alert alert-info">
+                                                    @sqlExplanationResponse.DbNotes
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <div class="d-flex justify-content-end mt-3">
+                                            <button class="btn btn-primary" @onclick="ConfirmSqlExplanation" disabled="@isLoading">
+                                                @if (isLoading)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    <span>Executing...</span>
+                                                }
+                                                else
+                                                {
+                                                    <i class="fas fa-check"></i>
+                                                    <span>Confirm & Execute</span>
+                                                }
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             }

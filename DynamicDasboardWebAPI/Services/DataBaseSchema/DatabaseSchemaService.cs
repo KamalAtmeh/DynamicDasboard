@@ -8,6 +8,7 @@ using DynamicDashboardCommon.Enums;
 using System.Data;
 using DynamicDasboardWebAPI.Utilities;
 using System.Linq.Expressions;
+using System.Text;
 
 namespace DynamicDasboardWebAPI.Services
 {
@@ -660,6 +661,150 @@ namespace DynamicDasboardWebAPI.Services
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Optimizes the schema JSON by extracting only the essential elements
+        /// </summary>
+        /// <param name="schemaJson">The full schema JSON</param>
+        /// <returns>Optimized schema string</returns>
+        public  string OptimizeSchemaForLlm(string schemaJson)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(schemaJson))
+                    return string.Empty;
+
+                // Deserialize the schema
+                var schema = JsonSerializer.Deserialize<DatabaseSchema>(schemaJson);
+                if (schema == null)
+                    return string.Empty;
+
+                return BuildOptimizedSchemaString(schema);
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Builds an optimized schema string from a DatabaseSchema object
+        /// </summary>
+        /// <param name="schema">The DatabaseSchema object</param>
+        /// <returns>Optimized schema string</returns>
+        public  string BuildOptimizedSchemaString(DatabaseSchema schema)
+        {
+            if (schema == null || schema.Tables == null || !schema.Tables.Any())
+                return string.Empty;
+
+            var result = new StringBuilder();
+            result.AppendLine("Tables:");
+
+            // Add tables and columns
+            foreach (var table in schema.Tables)
+            {
+                if (table == null || string.IsNullOrWhiteSpace(table.DBName))
+                    continue;
+
+                result.AppendLine($"- {table.DBName}");
+                if (!string.IsNullOrWhiteSpace(table.FriendlyName) && table.FriendlyName != table.DBName)
+                    result.AppendLine($"  (Friendly name: {table.FriendlyName})");
+
+                if (!string.IsNullOrWhiteSpace(table.Description))
+                    result.AppendLine($"  Description: {table.Description}");
+
+                if (table.Columns != null && table.Columns.Any())
+                {
+                    result.AppendLine("  Columns:");
+                    foreach (var column in table.Columns)
+                    {
+                        if (column == null || string.IsNullOrWhiteSpace(column.DBName))
+                            continue;
+
+                        var columnDesc = $"    - {column.DBName} ({column.DataType})";
+                        if (column.IsPrimaryKey)
+                            columnDesc += " (Primary Key)";
+                        if (column.IsLookup)
+                            columnDesc += " (Lookup)";
+                        if (!column.IsNullable)
+                            columnDesc += " (Not Null)";
+
+                        result.AppendLine(columnDesc);
+
+                        if (!string.IsNullOrWhiteSpace(column.FriendlyName) && column.FriendlyName != column.DBName)
+                            result.AppendLine($"      Friendly name: {column.FriendlyName}");
+
+                        if (!string.IsNullOrWhiteSpace(column.Description))
+                            result.AppendLine($"      Description: {column.Description}");
+                    }
+                }
+            }
+
+            // Add relationships
+            if (schema.Relationships != null && schema.Relationships.Any())
+            {
+                result.AppendLine("\nRelationships:");
+                foreach (var relationship in schema.Relationships)
+                {
+                    if (relationship == null || relationship.Source == null || relationship.Target == null)
+                        continue;
+
+                    result.AppendLine($"- {relationship.Source.TableName}.{relationship.Source.ColumnName} -> " +
+                                     $"{relationship.Target.TableName}.{relationship.Target.ColumnName} " +
+                                     $"({relationship.Type})");
+                }
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Extracts admin descriptions from a schema for friendly terminology
+        /// </summary>
+        /// <param name="schema">The DatabaseSchema object</param>
+        /// <returns>Dictionary mapping technical terms to friendly terms</returns>
+        public  Dictionary<string, string> ExtractAdminDescriptions(DatabaseSchema schema)
+        {
+            var descriptions = new Dictionary<string, string>();
+
+            if (schema == null || schema.Tables == null)
+                return descriptions;
+
+            foreach (var table in schema.Tables)
+            {
+                if (table == null || string.IsNullOrWhiteSpace(table.DBName))
+                    continue;
+
+                // Add table friendly name if available
+                if (!string.IsNullOrWhiteSpace(table.FriendlyName) && table.FriendlyName != table.DBName)
+                    descriptions[table.DBName] = table.FriendlyName;
+
+                // Add table description if available
+                if (!string.IsNullOrWhiteSpace(table.Description))
+                    descriptions[$"{table.DBName} description"] = table.Description;
+
+                // Add column friendly names and descriptions
+                if (table.Columns != null)
+                {
+                    foreach (var column in table.Columns)
+                    {
+                        if (column == null || string.IsNullOrWhiteSpace(column.DBName))
+                            continue;
+
+                        // Add column friendly name if available
+                        if (!string.IsNullOrWhiteSpace(column.FriendlyName) && column.FriendlyName != column.DBName)
+                            descriptions[$"{table.DBName}.{column.DBName}"] = column.FriendlyName;
+
+                        // Add column description if available
+                        if (!string.IsNullOrWhiteSpace(column.Description))
+                            descriptions[$"{table.DBName}.{column.DBName} description"] = column.Description;
+                    }
+                }
+            }
+
+            return descriptions;
         }
 
         #endregion

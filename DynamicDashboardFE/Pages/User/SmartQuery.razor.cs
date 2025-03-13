@@ -22,15 +22,19 @@ namespace DynamicDashboardFE.Pages.User
         /// <summary>
         /// Defines the current step in the query workflow.
         /// </summary>
+
+        // Update enum
         private enum QueryStep
         {
             Input,
             Analysis,
+            SqlExplanation,
             Confirmation,
             SqlGeneration,
             Execution,
             Results
         }
+
 
         // Current workflow state
         private QueryStep currentStep = QueryStep.Input;
@@ -48,6 +52,7 @@ namespace DynamicDashboardFE.Pages.User
 
         // SQL generation step
         private SqlGenerationResponse sqlResponse;
+        private SqlGenerationWithExplanationResponse sqlExplanationResponse;
 
         // Execution step
         private QueryExecutionResponse executionResponse;
@@ -167,6 +172,164 @@ namespace DynamicDashboardFE.Pages.User
                 Notifications.ShowError("Error selecting database. Please try again.");
             }
         }
+
+        // Add this method to generate SQL with explanation
+        private async Task GenerateSqlWithExplanation()
+        {
+            if (string.IsNullOrWhiteSpace(userQuestion))
+                return;
+
+            if (databaseId <= 0)
+            {
+                Notifications.ShowWarning("Please select a database first.");
+                return;
+            }
+
+            // Check if connection is established
+            if (!connectionSuccessful)
+            {
+                await TestDatabaseConnection();
+                if (!connectionSuccessful)
+                {
+                    Notifications.ShowError("Database connection failed. Please check your settings.");
+                    return;
+                }
+            }
+
+            // Reset state
+            errorMessage = null;
+            sqlExplanationResponse = null;
+            sqlResponse = null;
+            executionResponse = null;
+            resolvedAmbiguities.Clear();
+            adjustedParameters.Clear();
+
+            try
+            {
+                isLoading = true;
+                loadingMessage = "Thinking ^_^ ...";
+
+                var request = new NlQueryRequest
+                {
+                    Question = userQuestion,
+                    DatabaseId = databaseId
+                };
+
+                var response = await Http.PostAsJsonAsync("api/Query/generate-explain", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    sqlExplanationResponse = await response.Content.ReadFromJsonAsync<SqlGenerationWithExplanationResponse>();
+
+                    // Initialize resolved ambiguities with default values
+                    if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities != null)
+                    {
+                        foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
+                        {
+                            if (ambiguity.Value.Count > 0)
+                            {
+                                resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
+                            }
+                        }
+                    }
+
+                    // Initialize adjusted parameters with default values
+                    if (sqlExplanationResponse.AdjustableParameters != null)
+                    {
+                        foreach (var param in sqlExplanationResponse.AdjustableParameters)
+                        {
+                            adjustedParameters[param.Key] = param.Value.DefaultValue;
+                        }
+                    }
+
+                    currentStep = QueryStep.SqlExplanation;
+
+                    if (!sqlExplanationResponse.IsValid)
+                    {
+                        Notifications.ShowWarning($"Generated SQL may not be valid: {sqlExplanationResponse.ValidationErrorMessage}");
+                    }
+                }
+                else
+                {
+                    Notifications.ShowError("Error. Please try again, with different question");
+                    //todo i need to suggest questions to the user.
+                    currentStep = QueryStep.Input;
+                }
+            }
+            catch (Exception ex)
+            {
+                Notifications.ShowError("Errpr, Please try again. you can use suggested questions");
+                //todo i need to suggest questions to the user.
+                currentStep = QueryStep.Input;
+            }
+            finally
+            {
+                isLoading = false;
+            }
+        }
+
+        // Update AnalyzeQuestion method to use the new flow
+        private async Task AnalyzeQuestion()
+        {
+            // Skip analysis step and go directly to SQL generation with explanation
+            await GenerateSqlWithExplanation();
+        }
+
+        // Add confirmation method
+        private async Task ConfirmSqlExplanation()
+        {
+            if (sqlExplanationResponse == null || string.IsNullOrWhiteSpace(sqlExplanationResponse.GeneratedSql))
+                return;
+
+            try
+            {
+                isLoading = true;
+                loadingMessage = "Loading your data ^_^ ...";
+                errorMessage = null;
+
+                var request = new SqlExecutionRequest
+                {
+                    OriginalQuestion = userQuestion,
+                    DatabaseId = databaseId,
+                    Sql = sqlExplanationResponse.GeneratedSql
+                };
+
+                var response = await Http.PostAsJsonAsync("api/Query/execute", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    executionResponse = await response.Content.ReadFromJsonAsync<QueryExecutionResponse>();
+                    currentStep = QueryStep.Results;
+                    currentPage = 1; // Reset pagination
+
+                    if (executionResponse.Results != null && executionResponse.Results.Count > 0)
+                    {
+                        Notifications.ShowSuccess("Query executed successfully.");
+                    }
+                    else
+                    {
+                        Notifications.ShowWarning("Query executed successfully, but no results were found.");
+                    }
+                }
+                else
+                {
+                    Notifications.ShowError("Error executing query. Please check your database connection.");
+                    currentStep = QueryStep.SqlExplanation;
+                }
+            }
+            catch (Exception)
+            {
+                Notifications.ShowError("An unexpected error occurred. Please try again.");
+                currentStep = QueryStep.SqlExplanation;
+            }
+            finally
+            {
+                isLoading = false;
+            }
+        }
+
+
+
 
 
         /// <summary>
@@ -458,93 +621,93 @@ namespace DynamicDashboardFE.Pages.User
         /// <summary>
         /// Step 1: Analyzes the natural language question and generates an explanation.
         /// </summary>
-        private async Task AnalyzeQuestion()
-        {
-            if (string.IsNullOrWhiteSpace(userQuestion))
-                return;
+        //private async Task AnalyzeQuestion_OLD()
+        //{
+        //    if (string.IsNullOrWhiteSpace(userQuestion))
+        //        return;
 
-            if (databaseId <= 0)
-            {
-                Notifications.ShowWarning("Please select a database first.");
-                return;
-            }
+        //    if (databaseId <= 0)
+        //    {
+        //        Notifications.ShowWarning("Please select a database first.");
+        //        return;
+        //    }
 
-            // Check if connection is established
-            if (!connectionSuccessful)
-            {
-                await TestDatabaseConnection();
-                if (!connectionSuccessful)
-                {
-                    Notifications.ShowError("Database connection failed. Please check your settings.");
-                    return;
-                }
-            }
+        //    // Check if connection is established
+        //    if (!connectionSuccessful)
+        //    {
+        //        await TestDatabaseConnection();
+        //        if (!connectionSuccessful)
+        //        {
+        //            Notifications.ShowError("Database connection failed. Please check your settings.");
+        //            return;
+        //        }
+        //    }
 
-            // Reset state
-            errorMessage = null;
-            analysisResponse = null;
-            sqlResponse = null;
-            executionResponse = null;
-            resolvedAmbiguities.Clear();
-            adjustedParameters.Clear();
+        //    // Reset state
+        //    errorMessage = null;
+        //    analysisResponse = null;
+        //    sqlResponse = null;
+        //    executionResponse = null;
+        //    resolvedAmbiguities.Clear();
+        //    adjustedParameters.Clear();
 
-            try
-            {
-                currentStep = QueryStep.Analysis;
-                isLoading = true;
-                loadingMessage = "Analyzing your question...";
+        //    try
+        //    {
+        //        currentStep = QueryStep.Analysis;
+        //        isLoading = true;
+        //        loadingMessage = "Analyzing your question...";
 
-                var request = new NlQueryRequest
-                {
-                    Question = userQuestion,
-                    DatabaseId = databaseId
-                };
+        //        var request = new NlQueryRequest
+        //        {
+        //            Question = userQuestion,
+        //            DatabaseId = databaseId
+        //        };
 
-                var response = await Http.PostAsJsonAsync("api/Query/analyze", request);
+        //        var response = await Http.PostAsJsonAsync("api/Query/analyze", request);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    analysisResponse = await response.Content.ReadFromJsonAsync<AnalysisResponse>();
+        //        if (response.IsSuccessStatusCode)
+        //        {
+        //            analysisResponse = await response.Content.ReadFromJsonAsync<AnalysisResponse>();
 
-                    // Initialize resolved ambiguities with default values
-                    if (analysisResponse.HasAmbiguities && analysisResponse.DetectedAmbiguities != null)
-                    {
-                        foreach (var ambiguity in analysisResponse.DetectedAmbiguities)
-                        {
-                            if (ambiguity.Value.Count > 0)
-                            {
-                                resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
-                            }
-                        }
-                    }
+        //            // Initialize resolved ambiguities with default values
+        //            if (analysisResponse.HasAmbiguities && analysisResponse.DetectedAmbiguities != null)
+        //            {
+        //                foreach (var ambiguity in analysisResponse.DetectedAmbiguities)
+        //                {
+        //                    if (ambiguity.Value.Count > 0)
+        //                    {
+        //                        resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
+        //                    }
+        //                }
+        //            }
 
-                    // Initialize adjusted parameters with default values
-                    if (analysisResponse.AdjustableParameters != null)
-                    {
-                        foreach (var param in analysisResponse.AdjustableParameters)
-                        {
-                            adjustedParameters[param.Key] = param.Value.DefaultValue;
-                        }
-                    }
+        //            // Initialize adjusted parameters with default values
+        //            if (analysisResponse.AdjustableParameters != null)
+        //            {
+        //                foreach (var param in analysisResponse.AdjustableParameters)
+        //                {
+        //                    adjustedParameters[param.Key] = param.Value.DefaultValue;
+        //                }
+        //            }
 
-                    currentStep = QueryStep.Confirmation;
-                }
-                else
-                {
-                    Notifications.ShowError("Error analyzing your question. Please try again.");
-                    currentStep = QueryStep.Input;
-                }
-            }
-            catch (Exception)
-            {
-                Notifications.ShowError("An unexpected error occurred. Please try again.");
-                currentStep = QueryStep.Input;
-            }
-            finally
-            {
-                isLoading = false;
-            }
-        }
+        //            currentStep = QueryStep.Confirmation;
+        //        }
+        //        else
+        //        {
+        //            Notifications.ShowError("Error analyzing your question. Please try again.");
+        //            currentStep = QueryStep.Input;
+        //        }
+        //    }
+        //    catch (Exception)
+        //    {
+        //        Notifications.ShowError("An unexpected error occurred. Please try again.");
+        //        currentStep = QueryStep.Input;
+        //    }
+        //    finally
+        //    {
+        //        isLoading = false;
+        //    }
+        //}
 
         /// <summary>
         /// Step 2: Confirms understanding and generates SQL based on user selections.

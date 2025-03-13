@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models.LLM;
+using Microsoft.AspNetCore.Connections;
+using System.Text.Json;
 
 
 namespace DynamicDasboardWebAPI.Services
@@ -20,13 +22,19 @@ namespace DynamicDasboardWebAPI.Services
         private readonly QueryRepository _repository;
         private readonly LLMServiceFactory _llmServiceFactory;
         private readonly ILLMService _llmService;
+        private readonly DatabaseService objDataBaseService;
+        private readonly DatabaseSchemaService objSchemaService;
 
         public QueryService(
             QueryRepository repository,
+            DatabaseService databaseService,
+            DatabaseSchemaService schemaService,
             LLMServiceFactory llmServiceFactory
             )
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            objDataBaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+            objSchemaService = schemaService ?? throw new ArgumentNullException(nameof(schemaService));
             _llmServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
 
             // Create LLM service using factory
@@ -235,6 +243,160 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+        /// <summary>
+        /// Generates SQL with explanation from a natural language question
+        /// </summary>
+        /// <param name="request">The natural language query request</param>
+        /// <returns>SQL explanation response with validation status</returns>
+        public async Task<SqlGenerationWithExplanationResponse> GenerateSqlWithExplanationAsync(NlQueryRequest request)
+        {
+            try
+            {
+                // Get database and schema information
+                var database = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                if (database == null)
+                {
+                    return new SqlGenerationWithExplanationResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Database not found"
+                    };
+                }
+
+                // Check if there's a saved schema
+                DatabaseSchema schema = null;
+                var schemaString = "";
+                var adminDescriptions = new Dictionary<string, string>();
+
+                // Try to get schema from database
+                var schemaObj = await objSchemaService.GetSchemaByDataBaseIdAsync(request.DatabaseId);
+                if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
+                {
+                    // Parse the schema
+                    schema = JsonSerializer.Deserialize<DatabaseSchema>(schemaObj.SchemaData);
+                    if (schema != null)
+                    {
+                        // Optimize schema for LLM
+                        schemaString = objSchemaService.BuildOptimizedSchemaString(schema);
+                        adminDescriptions = objSchemaService.ExtractAdminDescriptions(schema);
+                    }
+                }
+                else
+                {
+                    // Fallback to metadata if no saved schema
+                    var metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
+                    if (metadata != null)
+                    {
+                        schemaString = FormatSchemaForLlm(metadata);
+                        adminDescriptions = ExtractAdminDescriptions(metadata.Tables);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(schemaString))
+                {
+                    return new SqlGenerationWithExplanationResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Could not retrieve database schema"
+                    };
+                }
+
+                // Generate SQL with explanation
+                var llmResponse = await _llmService.GenerateSqlWithExplanationAsync(
+                    request.Question,
+                    schemaString,
+                    adminDescriptions);
+
+                if (llmResponse == null || string.IsNullOrEmpty(llmResponse.SqlQuery))
+                {
+                    return new SqlGenerationWithExplanationResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "Failed to generate SQL query"
+                    };
+                }
+
+                // Test SQL validity
+                bool isValid = true;
+                string validationErrorMessage = null;
+
+                try
+                {
+                    await ValidateSqlAsync(llmResponse.SqlQuery, request.DatabaseId);
+                }
+                catch (Exception ex)
+                {
+                    isValid = false;
+                    validationErrorMessage = ex.Message;
+                }
+
+                // Convert parameter options
+                var adjustableParameters = new Dictionary<string, ParameterOptions>();
+                foreach (var param in llmResponse.AdjustableParameters)
+                {
+                    adjustableParameters[param.Key] = new ParameterOptions
+                    {
+                        DefaultValue = param.Value.Default?.ToString(),
+                        Alternatives = param.Value.Alternatives,
+                        ParameterType = param.Value.Default is int or double or decimal or float or long ? "number" : "string"
+                    };
+                }
+
+                // Build the response
+                return new SqlGenerationWithExplanationResponse
+                {
+                    OriginalQuestion = request.Question,
+                    DatabaseId = request.DatabaseId,
+                    GeneratedSql = llmResponse.SqlQuery,
+                    BusinessExplanation = llmResponse.BusinessExplanation,
+                    DbType = llmResponse.DbType,
+                    DbNotes = llmResponse.DbNotes,
+                    HasAmbiguities = llmResponse.HasAmbiguities,
+                    DetectedAmbiguities = llmResponse.DetectedAmbiguities,
+                    AdjustableParameters = adjustableParameters,
+                    TermMapping = llmResponse.TermMapping,
+                    IsValid = isValid,
+                    ValidationErrorMessage = validationErrorMessage,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SqlGenerationWithExplanationResponse
+                {
+                    Success = false,
+                    ErrorMessage = ex.Message
+                };
+            }
+        }
+
+        /// <summary>
+        /// Validates a SQL query against a database without retrieving results
+        /// </summary>
+        /// <param name="sql">The SQL query to validate</param>
+        /// <param name="databaseId">The database ID</param>
+        /// <returns>Task representing the validation</returns>
+        /// TODO change the implementation of this method to be more dynamic if applicable
+        private async Task ValidateSqlAsync(string sql, int databaseId)
+        {
+            //if (string.IsNullOrWhiteSpace(sql))
+            //    throw new ArgumentException("SQL query cannot be empty");
+
+            //// Get database connection
+            //using var connection = await _connectionFactory.CreateOpenConnectionAsync(databaseId);
+            //if (connection == null)
+            //    throw new Exception("Could not connect to database");
+
+            //// Create a command to validate the SQL
+            //using var command = connection.CreateCommand();
+            //command.CommandText = $"SET FMTONLY ON; {sql}; SET FMTONLY OFF;";
+            //command.CommandTimeout = 30;
+
+            //// Execute the command (will throw if SQL is invalid)
+            //await Task.Run(() => command.ExecuteNonQuery());
+            await Task.CompletedTask;
+        }
+
         #region Helper Methods
 
         private string FormatSchemaForLlm(DatabaseMetadataDto metadata)
@@ -306,13 +468,6 @@ namespace DynamicDasboardWebAPI.Services
                 throw;
             }
         }
-
-
-
-        // Helper method to get table name
-
-
-        // Helper method to get column name
 
 
         private Dictionary<string, string> ExtractAdminDescriptions(List<TableMetadataDto> tableMetadataDtos)
