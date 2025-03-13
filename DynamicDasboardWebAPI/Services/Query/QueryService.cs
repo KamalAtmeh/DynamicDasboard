@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using DynamicDashboardCommon.Models.LLM;
 using Microsoft.AspNetCore.Connections;
 using System.Text.Json;
+using static DynamicDashboardCommon.Helper.ApplicationHelper;
 
 
 namespace DynamicDasboardWebAPI.Services
@@ -248,6 +249,11 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="request">The natural language query request</param>
         /// <returns>SQL explanation response with validation status</returns>
+        /// <summary>
+        /// Generates SQL with explanation from a natural language question
+        /// </summary>
+        /// <param name="request">The natural language query request</param>
+        /// <returns>SQL explanation response with validation status</returns>
         public async Task<SqlGenerationWithExplanationResponse> GenerateSqlWithExplanationAsync(NlQueryRequest request)
         {
             try
@@ -301,28 +307,59 @@ namespace DynamicDasboardWebAPI.Services
                     };
                 }
 
-                // Generate SQL with explanation
+                // Generate SQL with explanation, including schema relevance analysis
                 var llmResponse = await _llmService.GenerateSqlWithExplanationAsync(
                     request.Question,
                     schemaString,
                     adminDescriptions);
 
-                if (llmResponse == null || string.IsNullOrEmpty(llmResponse.SqlQuery))
+                if (llmResponse == null)
                 {
                     return new SqlGenerationWithExplanationResponse
                     {
                         Success = false,
-                        ErrorMessage = "Failed to generate SQL query"
+                        ErrorMessage = "Failed to generate response from LLM"
                     };
                 }
 
-                // Test SQL validity
+                // If the question is not related to the schema or SQL is empty, return as is
+                if (!llmResponse.IsSchemaRelated || string.IsNullOrEmpty(llmResponse.GeneratedSql))
+                {
+                    return new SqlGenerationWithExplanationResponse
+                    {
+                        Success = true,
+                        OriginalQuestion = request.Question,
+                        DatabaseId = request.DatabaseId,
+                        IsSchemaRelated = llmResponse.IsSchemaRelated,
+                        SchemaRelevanceMessage = llmResponse.SchemaRelevanceMessage,
+                        HasPartiallyUnrelatedContent = llmResponse.HasPartiallyUnrelatedContent,
+                        UnrelatedQuestionParts = llmResponse.UnrelatedQuestionParts,
+                        SuggestedTopics = llmResponse.SuggestedTopics,
+                        SuggestedQuestions = llmResponse.SuggestedQuestions,
+                        BusinessExplanation = llmResponse.BusinessExplanation,
+                        DbType = llmResponse.DbType,
+                        GeneratedSql = llmResponse.GeneratedSql
+                    };
+                }
+
+                // For related questions with SQL, validate the SQL
                 bool isValid = true;
                 string validationErrorMessage = null;
 
                 try
                 {
-                    await ValidateSqlAsync(llmResponse.SqlQuery, request.DatabaseId);
+                    if (!string.IsNullOrEmpty(llmResponse.GeneratedSql))
+                    {
+                        // Validate SQL
+                        var validationResult = await ValidateSqlAgainstSchemaAsync(
+                            llmResponse.GeneratedSql, request.DatabaseId);
+
+                        if (!validationResult.IsValid)
+                        {
+                            isValid = false;
+                            validationErrorMessage = validationResult.ErrorMessage;
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -331,23 +368,23 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Convert parameter options
-                var adjustableParameters = new Dictionary<string, ParameterOptions>();
+                var adjustableParameters = new Dictionary<string, QueryParameterOptions>();
                 foreach (var param in llmResponse.AdjustableParameters)
                 {
-                    adjustableParameters[param.Key] = new ParameterOptions
+                    adjustableParameters[param.Key] = new QueryParameterOptions
                     {
-                        DefaultValue = param.Value.Default?.ToString(),
+                        DefaultValue = param.Value.DefaultValue?.ToString(),
                         Alternatives = param.Value.Alternatives,
-                        ParameterType = param.Value.Default is int or double or decimal or float or long ? "number" : "string"
+                        ParameterType = param.Value.ParameterType 
                     };
                 }
 
-                // Build the response
+                // Build the full response
                 return new SqlGenerationWithExplanationResponse
                 {
                     OriginalQuestion = request.Question,
                     DatabaseId = request.DatabaseId,
-                    GeneratedSql = llmResponse.SqlQuery,
+                    GeneratedSql = llmResponse.GeneratedSql,
                     BusinessExplanation = llmResponse.BusinessExplanation,
                     DbType = llmResponse.DbType,
                     DbNotes = llmResponse.DbNotes,
@@ -357,16 +394,18 @@ namespace DynamicDasboardWebAPI.Services
                     TermMapping = llmResponse.TermMapping,
                     IsValid = isValid,
                     ValidationErrorMessage = validationErrorMessage,
+                    IsSchemaRelated = llmResponse.IsSchemaRelated,
+                    SchemaRelevanceMessage = llmResponse.SchemaRelevanceMessage,
+                    HasPartiallyUnrelatedContent = llmResponse.HasPartiallyUnrelatedContent,
+                    UnrelatedQuestionParts = llmResponse.UnrelatedQuestionParts,
+                    SuggestedTopics = llmResponse.SuggestedTopics,
+                    SuggestedQuestions = llmResponse.SuggestedQuestions,
                     Success = true
                 };
             }
             catch (Exception ex)
             {
-                return new SqlGenerationWithExplanationResponse
-                {
-                    Success = false,
-                    ErrorMessage = ex.Message
-                };
+                throw;
             }
         }
 
@@ -395,6 +434,85 @@ namespace DynamicDasboardWebAPI.Services
             //// Execute the command (will throw if SQL is invalid)
             //await Task.Run(() => command.ExecuteNonQuery());
             await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlValidationService"/> class
+        /// </summary>
+        /// <param name="schemaService">The database schema service</param>
+
+        /// <summary>
+        /// Validates SQL query syntax without checking against the schema
+        /// </summary>
+        /// <param name="sqlQuery">The SQL query to validate</param>
+        /// <returns>Validation result with error details if any</returns>
+        public QueryValidationResult ValidateSqlSyntax(string sqlQuery)
+        {
+            try
+            {
+                return SqlValidationHelper.ValidateSqlSyntax(sqlQuery);
+            }
+            catch (Exception ex)
+            {
+                return new QueryValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = $"SQL syntax validation error: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Validates SQL query against the schema of a specified database
+        /// </summary>
+        /// <param name="sqlQuery">The SQL query to validate</param>
+        /// <param name="databaseId">The database ID</param>
+        /// <param name="validateRelations">Whether to validate relationship constraints</param>
+        /// <returns>Validation result with error details if any</returns>
+        public async Task<QueryValidationResult> ValidateSqlAgainstSchemaAsync(string sqlQuery, int databaseId, bool validateRelations = false)
+        {
+            try
+            {
+                // Validate basic syntax first
+                var syntaxResult = SqlValidationHelper.ValidateSqlSyntax(sqlQuery);
+                if (!syntaxResult.IsValid)
+                {
+                    return syntaxResult;
+                }
+
+                // Get database schema
+                var schema = await objSchemaService.GetSchemaByDataBaseIdAsync(databaseId);
+                if (schema == null || string.IsNullOrEmpty(schema.SchemaData))
+                {
+                    return new QueryValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Database schema not found"
+                    };
+                }
+
+                // Parse schema from JSON
+                var parsedSchema = objSchemaService.DeserializeSchema(schema.SchemaData);
+                if (parsedSchema == null || parsedSchema.Tables == null || parsedSchema.Tables.Count == 0)
+                {
+                    return new QueryValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Invalid or empty database schema"
+                    };
+                }
+
+                // Validate SQL against schema
+                return SqlValidationHelper.ValidateSqlAgainstSchema(sqlQuery, parsedSchema, validateRelations);
+            }
+            catch (Exception ex)
+            {
+                return new QueryValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = $"SQL validation error: {ex.Message}"
+                };
+            }
         }
 
         #region Helper Methods

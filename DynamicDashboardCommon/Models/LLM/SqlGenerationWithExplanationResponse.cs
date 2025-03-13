@@ -51,7 +51,7 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// Dictionary of adjustable parameters with default values and possible alternatives
         /// </summary>
-        public Dictionary<string, ParameterOptions> AdjustableParameters { get; set; } = new Dictionary<string, ParameterOptions>();
+        public Dictionary<string, QueryParameterOptions> AdjustableParameters { get; set; } = new Dictionary<string, QueryParameterOptions>();
 
         /// <summary>
         /// Dictionary mapping technical terms to friendly terms
@@ -77,5 +77,35 @@ namespace DynamicDashboardCommon.Models
         /// Error message if SQL generation failed
         /// </summary>
         public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Flag indicating whether the question is related to the database schema
+        /// </summary>
+        public bool IsSchemaRelated { get; set; } = true;
+
+        /// <summary>
+        /// Message explaining why the question is not related to the schema (if applicable)
+        /// </summary>
+        public string SchemaRelevanceMessage { get; set; }
+
+        /// <summary>
+        /// List of suggested topics the user can ask about based on the schema
+        /// </summary>
+        public List<string> SuggestedTopics { get; set; } = new List<string>();
+
+        /// <summary>
+        /// List of suggested questions related to the schema
+        /// </summary>
+        public List<string> SuggestedQuestions { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Parts of the question that are not related to the schema
+        /// </summary>
+        public List<string> UnrelatedQuestionParts { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Flag indicating if part of the question (but not all) is unrelated to the schema
+        /// </summary>
+        public bool HasPartiallyUnrelatedContent { get; set; }
     }
 }

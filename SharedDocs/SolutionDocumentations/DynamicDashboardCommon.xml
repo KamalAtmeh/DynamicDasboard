@@ -9,9 +9,172 @@
             Enum representing the supported database types in the application.
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Helper.ApplicationHelper.SqlValidationHelper">
+            <summary>
+            Utility class for SQL script validation against database schema
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.SqlValidationHelper.ValidateSqlSyntax(System.String)">
+            <summary>
+            Basic syntactic validation of SQL script
+            </summary>
+            <param name="sqlScript">SQL script to validate</param>
+            <returns>Validation result with error details if any</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.SqlValidationHelper.ValidateSqlAgainstSchema(System.String,DynamicDashboardCommon.Models.DatabaseSchema,System.Boolean)">
+            <summary>
+            Validates SQL script against a database schema to ensure all referenced objects exist
+            </summary>
+            <param name="sqlScript">SQL script to validate</param>
+            <param name="schema">Database schema containing tables, columns and relationships</param>
+            <param name="validateRelations">Whether to validate relationship constraints</param>
+            <returns>Validation result with error details if any</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ApplicationHelper.SqlValidationHelper.ExtractReferencedObjects(System.String)">
+            <summary>
+            Extracts database objects referenced in the SQL script
+            </summary>
+            <param name="sqlScript">SQL script to analyze</param>
+            <returns>Collection of referenced database objects</returns>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.BatchProcessingLog">
             <summary>
             Represents a log entry for a batch processing job.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DataViewingType">
+            <summary>
+            Represents the different ways data can be viewed in the system
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DataViewingType.DataViewingTypeID">
+            <summary>
+            Unique identifier for the data viewing type
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DataViewingType.Name">
+            <summary>
+            Name of the viewing type (e.g., Table, Label, Number, Chart)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DataViewingType.Description">
+            <summary>
+            Optional description of the viewing type
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DataViewingTypeEnum">
+            <summary>
+            Enum representing predefined data viewing types
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisResult">
+            <summary>
+            Represents the result of a schema analysis operation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.Success">
+            <summary>
+            Gets or sets a value indicating whether the analysis was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.ErrorMessage">
+            <summary>
+            Gets or sets the error message if the analysis failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.RawLLMResponse">
+            <summary>
+            Gets or sets the raw LLM response for debugging.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.AnalysisData">
+            <summary>
+            Gets or sets the analysis data.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisData">
+            <summary>
+            Contains the data from a schema analysis operation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.TableDescriptions">
+            <summary>
+            Gets or sets the suggested descriptions for tables.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.ColumnDescriptions">
+            <summary>
+            Gets or sets the suggested descriptions for columns.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.PotentialConflicts">
+            <summary>
+            Gets or sets the potential conflicts detected in the schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.SuggestedRelationships">
+            <summary>
+            Gets or sets the suggested relationships between tables.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.UnclearElements">
+            <summary>
+            Gets or sets the unclear elements detected in the schema.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TableMetadata">
+            <summary>
+            Represents metadata information for a database table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBTableName">
+            <summary>
+            Gets or sets the name of the database table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdminTableName">
+            <summary>
+            Gets or sets the name of the admin table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBColumnName">
+            <summary>
+            Gets or sets the name of the database column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdminName">
+            <summary>
+            Gets or sets the name of the admin column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DataType">
+            <summary>
+            Gets or sets the data type of the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsNullable">
+            <summary>
+            Gets or sets a value indicating whether the column is nullable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsPrimary">
+            <summary>
+            Gets or sets a value indicating whether the column is a primary key.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsFK">
+            <summary>
+            Gets or sets a value indicating whether the column is a foreign key.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsUnique">
+            <summary>
+            Gets or sets a value indicating whether the column is unique.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBDescription">
+            <summary>
+            Gets or sets the description of the database column.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.Column">
@@ -151,114 +314,103 @@
             JSON string containing example questions for this database.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.DatabaseException">
+        <member name="T:DynamicDashboardCommon.Models.Relationship">
             <summary>
-            Custom exception for database operations
+            Represents a relationship between tables in a dynamic dashboard system.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.DataViewingType">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelationshipID">
             <summary>
-            Represents the different ways data can be viewed in the system
+            Gets or sets the primary key of the relationship.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.DataViewingType.DataViewingTypeID">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.TableID">
             <summary>
-            Unique identifier for the data viewing type
+            Gets or sets the foreign key to the source table.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.DataViewingType.Name">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.ColumnID">
             <summary>
-            Name of the viewing type (e.g., Table, Label, Number, Chart)
+            Gets or sets the foreign key to the column in the source table.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.DataViewingType.Description">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelatedTableID">
             <summary>
-            Optional description of the viewing type
+            Gets or sets the foreign key to the related table.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.DataViewingTypeEnum">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelatedColumnID">
             <summary>
-            Enum representing predefined data viewing types
+            Gets or sets the foreign key to the column in the related table.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisResult">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.RelationshipType">
             <summary>
-            Represents the result of a schema analysis operation.
+            Gets or sets the type of relationship (e.g., "One-to-Many", "Many-to-Many", "One-to-One").
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.Success">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.Description">
             <summary>
-            Gets or sets a value indicating whether the analysis was successful.
+            Gets or sets the description of the relationship (for admin use).
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.ErrorMessage">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.IsEnforced">
             <summary>
-            Gets or sets the error message if the analysis failed.
+            Gets or sets a value indicating whether the relationship is enforced by a database constraint.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.RawLLMResponse">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.CreatedAt">
             <summary>
-            Gets or sets the raw LLM response for debugging.
+            Gets or sets the timestamp for when the relationship was created.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisResult.AnalysisData">
+        <member name="P:DynamicDashboardCommon.Models.Relationship.CreatedBy">
             <summary>
-            Gets or sets the analysis data.
+            Gets or sets the user who created the relationship.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisData">
+        <member name="P:DynamicDashboardCommon.Models.SuggestedQuestions.Questions">
             <summary>
-            Contains the data from a schema analysis operation.
+            List of example questions for the database.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.TableDescriptions">
+        <member name="P:DynamicDashboardCommon.Models.SuggestedQuestions.Categories">
             <summary>
-            Gets or sets the suggested descriptions for tables.
+            Optional category grouping for the questions.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.ColumnDescriptions">
+        <member name="T:DynamicDashboardCommon.Models.Table">
             <summary>
-            Gets or sets the suggested descriptions for columns.
+            Represents a table in the dynamic dashboard system.
+            This class holds metadata about a database table, including its ID, 
+            the database it belongs to, its actual name in the database, 
+            a user-friendly name, and an admin-provided description.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.PotentialConflicts">
+        <member name="P:DynamicDashboardCommon.Models.Table.TableID">
             <summary>
-            Gets or sets the potential conflicts detected in the schema.
+            Gets or sets the unique identifier for the table.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.SuggestedRelationships">
+        <member name="P:DynamicDashboardCommon.Models.Table.DatabaseID">
             <summary>
-            Gets or sets the suggested relationships between tables.
+            Gets or sets the identifier of the database this table belongs to.
+            This is a foreign key to the Database table.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SchemaAnalysisData.UnclearElements">
+        <member name="P:DynamicDashboardCommon.Models.Table.DBTableName">
             <summary>
-            Gets or sets the unclear elements detected in the schema.
+            Gets or sets the actual name of the table in the database.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.ExceptionDetails">
+        <member name="P:DynamicDashboardCommon.Models.Table.AdminTableName">
             <summary>
-            Represents the details of an exception that occurs within the application.
+            Gets or sets the user-friendly name for the table.
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.ErrorCode">
+        <member name="P:DynamicDashboardCommon.Models.Table.AdminDescription">
             <summary>
-            Gets or sets a unique code for the error.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Message">
-            <summary>
-            Gets or sets a human-readable error message.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Details">
-            <summary>
-            Gets or sets additional details about the error (optional).
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.ExceptionDetails.Timestamp">
-            <summary>
-            Gets or sets the timestamp of when the error occurred.
+            Gets or sets the description provided by the admin for the table.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.LLM.ExplanationResponse">
@@ -266,6 +418,7 @@
             Represents a response from the LLM containing an explanation of how it understood a natural language query,
             along with any detected ambiguities or adjustable parameters.
             </summary>
+            TODO To remove this  //Temp
         </member>
         <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.Explanation">
             <summary>
@@ -302,31 +455,6 @@
         <member name="P:DynamicDashboardCommon.Models.LLM.ExplanationResponse.TermMapping">
             <summary>
             Dictionary mapping technical terms to admin-friendly terms for reference
-            </summary>
-        </member>
-        <member name="T:DynamicDashboardCommon.Models.LLM.ParameterOptions">
-            <summary>
-            Represents options for an adjustable parameter
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.DefaultValue">
-            <summary>
-            The current/default value of the parameter
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.Description">
-            <summary>
-            User-friendly description of the parameter
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.Alternatives">
-            <summary>
-            List of alternative values for the parameter
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.LLM.ParameterOptions.ParameterType">
-            <summary>
-            The type of the parameter (date, number, category, etc.)
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse">
@@ -375,6 +503,36 @@
             Dictionary mapping technical terms to friendly terms
             </summary>
         </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.IsSchemaRelated">
+            <summary>
+            Flag indicating whether the question is related to the database schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.SchemaRelevanceMessage">
+            <summary>
+            Message explaining why the question is not related to the schema (if applicable)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.SuggestedTopics">
+            <summary>
+            List of suggested topics the user can ask about based on the schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.SuggestedQuestions">
+            <summary>
+            List of suggested questions related to the schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.HasPartiallyUnrelatedContent">
+            <summary>
+            Flag indicating if part of the question (but not all) is unrelated to the schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.SqlExplanationResponse.UnrelatedQuestionParts">
+            <summary>
+            Parts of the question that are not related to the schema
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.LLM.AdjustableParameter">
             <summary>
             Represents an adjustable parameter with default value and alternatives
@@ -388,6 +546,31 @@
         <member name="P:DynamicDashboardCommon.Models.LLM.AdjustableParameter.Alternatives">
             <summary>
             List of alternative values for the parameter
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.LLM.QueryParameterOptions">
+            <summary>
+            Represents options for an adjustable parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.QueryParameterOptions.DefaultValue">
+            <summary>
+            The current/default value of the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.QueryParameterOptions.Description">
+            <summary>
+            User-friendly description of the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.QueryParameterOptions.Alternatives">
+            <summary>
+            List of alternative values for the parameter
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.LLM.QueryParameterOptions.ParameterType">
+            <summary>
+            The type of the parameter (date, number, category, etc.)
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse">
@@ -463,6 +646,36 @@
         <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.ErrorMessage">
             <summary>
             Error message if SQL generation failed
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.IsSchemaRelated">
+            <summary>
+            Flag indicating whether the question is related to the database schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.SchemaRelevanceMessage">
+            <summary>
+            Message explaining why the question is not related to the schema (if applicable)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.SuggestedTopics">
+            <summary>
+            List of suggested topics the user can ask about based on the schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.SuggestedQuestions">
+            <summary>
+            List of suggested questions related to the schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.UnrelatedQuestionParts">
+            <summary>
+            Parts of the question that are not related to the schema
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.HasPartiallyUnrelatedContent">
+            <summary>
+            Flag indicating if part of the question (but not all) is unrelated to the schema
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.AnalysisResponse">
@@ -749,19 +962,19 @@
             Gets or sets a value indicating whether the DeepSeek result is compared with the DeepSeek Chat result.
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.QueryRequest">
+        <member name="P:DynamicDashboardCommon.Models.QueryReferencedObjects.Tables">
             <summary>
-            Represents a request to query a specific schema with a given question.
+            Tables referenced in the script
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.QueryRequest.Schema">
+        <member name="P:DynamicDashboardCommon.Models.QueryReferencedObjects.TableColumns">
             <summary>
-            Gets or sets the schema to be queried.
+            Columns referenced by table
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.QueryRequest.Question">
+        <member name="P:DynamicDashboardCommon.Models.QueryReferencedObjects.Relations">
             <summary>
-            Gets or sets the question to be asked against the schema.
+            Relations referenced in join conditions
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.NlQueryResponse.RecommendedDataViewingTypeID">
@@ -779,165 +992,19 @@
             Formatted result for label-type viewing
             </summary>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.Relationship">
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResult.IsValid">
             <summary>
-            Represents a relationship between tables in a dynamic dashboard system.
+            Indicates whether the SQL is valid
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.RelationshipID">
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResult.ErrorMessage">
             <summary>
-            Gets or sets the primary key of the relationship.
+            Error message if validation failed
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.TableID">
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResult.ReferencedObjects">
             <summary>
-            Gets or sets the foreign key to the source table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.ColumnID">
-            <summary>
-            Gets or sets the foreign key to the column in the source table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.RelatedTableID">
-            <summary>
-            Gets or sets the foreign key to the related table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.RelatedColumnID">
-            <summary>
-            Gets or sets the foreign key to the column in the related table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.RelationshipType">
-            <summary>
-            Gets or sets the type of relationship (e.g., "One-to-Many", "Many-to-Many", "One-to-One").
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.Description">
-            <summary>
-            Gets or sets the description of the relationship (for admin use).
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.IsEnforced">
-            <summary>
-            Gets or sets a value indicating whether the relationship is enforced by a database constraint.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.CreatedAt">
-            <summary>
-            Gets or sets the timestamp for when the relationship was created.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Relationship.CreatedBy">
-            <summary>
-            Gets or sets the user who created the relationship.
-            </summary>
-        </member>
-        <member name="T:DynamicDashboardCommon.Models.Result">
-            <summary>
-            Represents the result of an operation or a process.
-            This class can be used to encapsulate the outcome of a method or function,
-            including any relevant data or status information.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.SuggestedQuestions.Questions">
-            <summary>
-            List of example questions for the database.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.SuggestedQuestions.Categories">
-            <summary>
-            Optional category grouping for the questions.
-            </summary>
-        </member>
-        <member name="T:DynamicDashboardCommon.Models.Table">
-            <summary>
-            Represents a table in the dynamic dashboard system.
-            This class holds metadata about a database table, including its ID, 
-            the database it belongs to, its actual name in the database, 
-            a user-friendly name, and an admin-provided description.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Table.TableID">
-            <summary>
-            Gets or sets the unique identifier for the table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Table.DatabaseID">
-            <summary>
-            Gets or sets the identifier of the database this table belongs to.
-            This is a foreign key to the Database table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Table.DBTableName">
-            <summary>
-            Gets or sets the actual name of the table in the database.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Table.AdminTableName">
-            <summary>
-            Gets or sets the user-friendly name for the table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.Table.AdminDescription">
-            <summary>
-            Gets or sets the description provided by the admin for the table.
-            </summary>
-        </member>
-        <member name="T:DynamicDashboardCommon.Models.TableMetadata">
-            <summary>
-            Represents metadata information for a database table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBTableName">
-            <summary>
-            Gets or sets the name of the database table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdminTableName">
-            <summary>
-            Gets or sets the name of the admin table.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBColumnName">
-            <summary>
-            Gets or sets the name of the database column.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.AdminName">
-            <summary>
-            Gets or sets the name of the admin column.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DataType">
-            <summary>
-            Gets or sets the data type of the column.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsNullable">
-            <summary>
-            Gets or sets a value indicating whether the column is nullable.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsPrimary">
-            <summary>
-            Gets or sets a value indicating whether the column is a primary key.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsFK">
-            <summary>
-            Gets or sets a value indicating whether the column is a foreign key.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.IsUnique">
-            <summary>
-            Gets or sets a value indicating whether the column is unique.
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TableMetadata.DBDescription">
-            <summary>
-            Gets or sets the description of the database column.
+            Objects referenced in the SQL script
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.User">

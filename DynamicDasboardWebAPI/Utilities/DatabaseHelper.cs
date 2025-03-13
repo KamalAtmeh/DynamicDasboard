@@ -40,7 +40,7 @@ namespace DynamicDasboardWebAPI.Utilities
                 }
                 catch (Exception ex)
                 {
-                    throw new DatabaseException($"Error executing query: {ex.Message}", ex);
+                    throw;
                 }
             }
         }
@@ -60,7 +60,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error executing command: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -79,7 +79,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -98,7 +98,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error executing query: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -246,7 +246,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error executing query as dictionaries: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -380,7 +380,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error getting database ID for name '{databaseName}'", ex);
+                throw;
             }
         }
 
@@ -400,7 +400,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error checking if database exists: {databaseId}", ex);
+                throw;
             }
         }
 
@@ -427,7 +427,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error getting database by ID: {databaseId}", ex);
+                throw;
             }
         }
 
@@ -453,7 +453,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving all databases: {ex.Message}", ex);
+                throw;
             }
         }
         /// <summary>
@@ -479,7 +479,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error getting database by name: {databaseName}", ex);
+                throw;
             }
         }
 
@@ -490,7 +490,7 @@ namespace DynamicDasboardWebAPI.Utilities
 
         #endregion
 
-        #region Metadata Helpers
+            #region Metadata Helpers
 
         /// <summary>
         /// Gets tables for a database by ID
@@ -508,7 +508,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving tables for database: {databaseId}", ex);
+                throw;
             }
         }
 
@@ -528,7 +528,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving columns for table: {tableId}", ex);
+                throw;
             }
         }
 
@@ -548,7 +548,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving relationships for table: {tableId}", ex);
+                throw;
             }
         }
 
@@ -599,7 +599,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving columns for multiple tables: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -666,7 +666,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving relationships for multiple tables: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -802,7 +802,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error performing bulk insert into {tableName}: {ex.Message}", ex);
+                throw;
             }
         }
 
@@ -907,7 +907,7 @@ namespace DynamicDasboardWebAPI.Utilities
             }
             catch (Exception ex)
             {
-                throw new DatabaseException($"Error retrieving database schema: {ex.Message}", ex);
+                throw;
             }
             finally
             {

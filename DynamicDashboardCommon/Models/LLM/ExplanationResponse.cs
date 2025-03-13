@@ -6,6 +6,7 @@ namespace DynamicDashboardCommon.Models.LLM
     /// Represents a response from the LLM containing an explanation of how it understood a natural language query,
     /// along with any detected ambiguities or adjustable parameters.
     /// </summary>
+    /// TODO To remove this  //Temp
     public class ExplanationResponse
     {
         /// <summary>
@@ -28,7 +29,7 @@ namespace DynamicDashboardCommon.Models.LLM
         /// Dictionary of adjustable parameters with default values and possible alternatives
         /// Key = parameter name, Value = parameter details
         /// </summary>
-        public Dictionary<string, ParameterOptions> AdjustableParameters { get; set; } = new Dictionary<string, ParameterOptions>();
+        public Dictionary<string, QueryParameterOptions> AdjustableParameters { get; set; } = new Dictionary<string, QueryParameterOptions>();
 
         /// <summary>
         /// System's confidence in its understanding (0.0 to 1.0)

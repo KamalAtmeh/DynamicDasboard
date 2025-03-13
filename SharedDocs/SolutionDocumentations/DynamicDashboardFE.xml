@@ -25,6 +25,44 @@
             Handles database selection change.
             </summary>
         </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GenerateSqlWithExplanation">
+            <summary>
+            Generates SQL with explanation
+            </summary>
+            <summary>
+            Generates SQL with explanation
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ShowUnrelatedContent(System.String,System.Collections.Generic.List{System.String},System.Collections.Generic.List{System.String})">
+            <summary>
+            Shows dialog for completely unrelated content with suggested schema-based topics and questions
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ShowPartiallyUnrelatedContent(System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Shows message for partially unrelated content
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GetSchemaBasedQuestions">
+            <summary>
+            Generates questions based on the database schema
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ShowSqlDetails">
+            <summary>
+            Shows SQL details in a modal
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.AnalyzeQuestion">
+            <summary>
+            Analyzes user question
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ConfirmSqlExplanation">
+            <summary>
+            Confirms SQL explanation and executes the query
+            </summary>
+        </member>
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.HandleErrorDismiss">
             <summary>
             Dismisses any displayed error messages.
@@ -33,11 +71,6 @@
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.LoadExampleQuestions">
             <summary>
             Loads example questions from the API for the selected database.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.TestDatabaseConnection">
-            <summary>
-            Tests the database connection using the provided credentials.
             </summary>
         </member>
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.FormatColumnName(System.String)">
@@ -95,16 +128,6 @@
             Copies the generated SQL to the clipboard.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ConfirmUnderstanding">
-            <summary>
-            Step 2: Confirms understanding and generates SQL based on user selections.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ExecuteQuery">
-            <summary>
-            Step 3: Executes the generated SQL query and displays results.
-            </summary>
-        </member>
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ResetWorkflow">
             <summary>
             Resets the workflow to start a new query.
@@ -113,11 +136,6 @@
         <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.ExportRequest">
             <summary>
             Internal class for exporting data to Excel.
-            </summary>
-        </member>
-        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.NlQueryConfirmationRequest">
-            <summary>
-            Request model for confirming understanding and generating SQL.
             </summary>
         </member>
         <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.SqlExecutionRequest">

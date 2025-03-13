@@ -45,7 +45,7 @@ namespace DynamicDashboardCommon.Models
             /// Dictionary of adjustable parameters with default values and possible alternatives
             /// Key = parameter name, Value = parameter details
             /// </summary>
-            public Dictionary<string, ParameterOptions> AdjustableParameters { get; set; } = new Dictionary<string, ParameterOptions>();
+            public Dictionary<string, QueryParameterOptions> AdjustableParameters { get; set; } = new Dictionary<string, QueryParameterOptions>();
 
             /// <summary>
             /// Preview of the SQL that would be generated (for reference only)

@@ -122,7 +122,7 @@ namespace DynamicDasboardWebAPI.Utilities
                 using var connection = await CreateOpenConnectionAsync(databaseId);
                 return true;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 throw;
             }
@@ -133,7 +133,7 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public async Task<bool> TestConnectionAsync(Database database, string connectionString)
         {
-            if (database == null)
+            if (database == null || string.IsNullOrEmpty(connectionString))
                 return false;
 
             int DBType = database.TypeID;
@@ -144,22 +144,24 @@ namespace DynamicDasboardWebAPI.Utilities
                     connectionString = BuildConnectionString(database);
                 }
 
-                IDbConnection connection = BuildConnection((EnumDatabaseType)DBType, connectionString);
-
-                // Check if connection is closed before opening it
-                if (connection.State != ConnectionState.Open)
+                // Use "await using" for async disposal (if supported)
+                using (IDbConnection connection = BuildConnection((EnumDatabaseType)DBType, connectionString))
                 {
-                    if (connection is DbConnection dbConnection)
+                    // Check if connection is closed before opening it
+                    if (connection.State != ConnectionState.Open)
                     {
-                        await dbConnection.OpenAsync();
+                        if (connection is DbConnection dbConnection)
+                        {
+                            await dbConnection.OpenAsync();
+                        }
+                        else
+                        {
+                            await Task.Run(() => connection.Open());
+                        }
                     }
-                    else
-                    {
-                        await Task.Run(() => connection.Open());
-                    }
-                }
 
-                return true;
+                    return true;
+                }
             }
             catch
             {
@@ -194,7 +196,7 @@ namespace DynamicDasboardWebAPI.Utilities
                     _ => string.Empty
                 };
             }
-            catch(Exception)
+            catch (Exception)
             {
                 throw;
             }

@@ -9,7 +9,7 @@ namespace DynamicDashboardCommon.Models.LLM
     /// <summary>
     /// Represents options for an adjustable parameter
     /// </summary>
-    public class ParameterOptions
+    public class QueryParameterOptions
     {
         /// <summary>
         /// The current/default value of the parameter

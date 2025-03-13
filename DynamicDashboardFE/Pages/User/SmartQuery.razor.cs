@@ -22,8 +22,6 @@ namespace DynamicDashboardFE.Pages.User
         /// <summary>
         /// Defines the current step in the query workflow.
         /// </summary>
-
-        // Update enum
         private enum QueryStep
         {
             Input,
@@ -35,7 +33,6 @@ namespace DynamicDashboardFE.Pages.User
             Results
         }
 
-
         // Current workflow state
         private QueryStep currentStep = QueryStep.Input;
         private string userQuestion = "";
@@ -44,6 +41,18 @@ namespace DynamicDashboardFE.Pages.User
         private string loadingMessage = "Processing your request...";
         private List<string> suggestedQuestions = new List<string>();
         private string errorMessage;
+
+        // UI control flags
+        private bool showSqlModal = false;
+        private bool showUnrelatedDialog = false;
+        private string unrelatedMessage = "";
+        private List<string> suggestedSchemaQuestions = new List<string>();
+
+        // Schema relevance UI elements
+        private bool showPartiallyUnrelatedBanner = false;
+        private string partiallyUnrelatedMessage = "";
+        private List<string> partialRelatedQuestions = new List<string>();
+        private List<string> schemaTopics = new List<string>();
 
         // Analysis step
         private AnalysisResponse analysisResponse;
@@ -68,19 +77,11 @@ namespace DynamicDashboardFE.Pages.User
         private int endPage => Math.Min(totalPages, startPage + 4);
 
         // Database connection
-        private string dbServer = "";
-        private string dbName = "";
-        private string FriendlyName = "";
-        private string dbAuthType = "windows";
-        private string dbUsername = "";
-        private string dbPassword = "";
-        private string connectionStatus = "";
-        private bool connectionSuccessful = false;
         private int databaseId = 0;
+        private Database selectedDatabase;
 
         // Available databases
         private List<Database> availableDatabases = new List<Database>();
-        private Database selectedDatabase;
 
         /// <summary>
         /// Initializes the component, loads configuration settings, available databases, and example questions.
@@ -134,11 +135,6 @@ namespace DynamicDashboardFE.Pages.User
                 {
                     selectedDatabase = null;
                     databaseId = 0;
-                    connectionSuccessful = false;
-                    dbServer = "";
-                    dbName = "";
-                    FriendlyName = "";
-                    connectionStatus = "";
                     suggestedQuestions.Clear();
                     return;
                 }
@@ -151,21 +147,12 @@ namespace DynamicDashboardFE.Pages.User
                     return;
                 }
 
-                // Update UI fields with database information
+                // Update database ID
                 databaseId = selectedDatabase.DatabaseID;
-                dbServer = selectedDatabase.ServerAddress;
-                dbName = selectedDatabase.Name;
-                FriendlyName = selectedDatabase.FriendlyName ?? selectedDatabase.Name;
 
-                // Test the connection automatically
-                await TestDatabaseConnection();
-
-                // If connection is successful, load example questions
-                if (connectionSuccessful)
-                {
-                    await LoadExampleQuestions();
-                    Notifications.ShowSuccess($"Connected to database: {FriendlyName}");
-                }
+                // Load example questions
+                await LoadExampleQuestions();
+                Notifications.ShowSuccess($"Connected to database: {selectedDatabase.FriendlyName ?? selectedDatabase.Name}");
             }
             catch (Exception)
             {
@@ -173,7 +160,12 @@ namespace DynamicDashboardFE.Pages.User
             }
         }
 
-        // Add this method to generate SQL with explanation
+        /// <summary>
+        /// Generates SQL with explanation
+        /// </summary>
+        /// <summary>
+        /// Generates SQL with explanation
+        /// </summary>
         private async Task GenerateSqlWithExplanation()
         {
             if (string.IsNullOrWhiteSpace(userQuestion))
@@ -183,17 +175,6 @@ namespace DynamicDashboardFE.Pages.User
             {
                 Notifications.ShowWarning("Please select a database first.");
                 return;
-            }
-
-            // Check if connection is established
-            if (!connectionSuccessful)
-            {
-                await TestDatabaseConnection();
-                if (!connectionSuccessful)
-                {
-                    Notifications.ShowError("Database connection failed. Please check your settings.");
-                    return;
-                }
             }
 
             // Reset state
@@ -207,7 +188,7 @@ namespace DynamicDashboardFE.Pages.User
             try
             {
                 isLoading = true;
-                loadingMessage = "Thinking ^_^ ...";
+                loadingMessage = "Analyzing your question...";
 
                 var request = new NlQueryRequest
                 {
@@ -220,6 +201,29 @@ namespace DynamicDashboardFE.Pages.User
                 if (response.IsSuccessStatusCode)
                 {
                     sqlExplanationResponse = await response.Content.ReadFromJsonAsync<SqlGenerationWithExplanationResponse>();
+
+                    // Handle unrelated questions determined by the LLM
+                    if (sqlExplanationResponse != null && !sqlExplanationResponse.IsSchemaRelated)
+                    {
+                        // Question is completely unrelated to the database schema
+                        ShowUnrelatedContent(
+                            sqlExplanationResponse.SchemaRelevanceMessage,
+                            sqlExplanationResponse.SuggestedTopics,
+                            sqlExplanationResponse.SuggestedQuestions);
+                        currentStep = QueryStep.Input;
+                        return;
+                    }
+
+                    // Handle partially unrelated content
+                    if (sqlExplanationResponse.HasPartiallyUnrelatedContent &&
+                        sqlExplanationResponse.UnrelatedQuestionParts != null &&
+                        sqlExplanationResponse.UnrelatedQuestionParts.Count > 0)
+                    {
+                        var unrelatedParts = string.Join(", ", sqlExplanationResponse.UnrelatedQuestionParts);
+                        ShowPartiallyUnrelatedContent(
+                            $"Parts of your question ({unrelatedParts}) are not related to the database schema.",
+                            sqlExplanationResponse.SuggestedQuestions);
+                    }
 
                     // Initialize resolved ambiguities with default values
                     if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities != null)
@@ -251,15 +255,20 @@ namespace DynamicDashboardFE.Pages.User
                 }
                 else
                 {
-                    Notifications.ShowError("Error. Please try again, with different question");
-                    //todo i need to suggest questions to the user.
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    ShowUnrelatedContent(
+                        "I couldn't understand your question in relation to the database schema. Please try rephrasing or ask something related to the available data.",
+                        new List<string> { "Customer data", "Orders", "Products", "Inventory" },
+                        suggestedQuestions.Count > 0 ? suggestedQuestions.Take(3).ToList() : null);
                     currentStep = QueryStep.Input;
                 }
             }
             catch (Exception ex)
             {
-                Notifications.ShowError("Errpr, Please try again. you can use suggested questions");
-                //todo i need to suggest questions to the user.
+                ShowUnrelatedContent(
+                    "An error occurred while processing your question. Please try again with a different question related to the database.",
+                    null,
+                    null);
                 currentStep = QueryStep.Input;
             }
             finally
@@ -268,14 +277,91 @@ namespace DynamicDashboardFE.Pages.User
             }
         }
 
-        // Update AnalyzeQuestion method to use the new flow
+        /// <summary>
+        /// Shows dialog for completely unrelated content with suggested schema-based topics and questions
+        /// </summary>
+        private void ShowUnrelatedContent(string message, List<string> suggestedTopics = null, List<string> schemaQuestions = null)
+        {
+            unrelatedMessage = message;
+
+            // Use provided topics or default ones
+            schemaTopics = suggestedTopics ?? new List<string>
+    {
+        "Customer data",
+        "Order information",
+        "Product details",
+        "Inventory management",
+        "Sales analytics"
+    };
+
+            // Use provided questions or fetch from available suggestions
+            suggestedSchemaQuestions = schemaQuestions ??
+                (suggestedQuestions.Count > 0
+                    ? suggestedQuestions.Take(3).ToList()
+                    : new List<string>
+                    {
+                "Show me all customers",
+                "What are the top 5 products by sales?",
+                "How many orders were placed last month?"
+                    });
+
+            showUnrelatedDialog = true;
+        }
+
+        /// <summary>
+        /// Shows message for partially unrelated content
+        /// </summary>
+        private void ShowPartiallyUnrelatedContent(string message, List<string> schemaQuestions = null)
+        {
+            partiallyUnrelatedMessage = message;
+
+            // Use provided questions or fetch from available suggestions
+            partialRelatedQuestions = schemaQuestions ??
+                (suggestedQuestions.Count > 0
+                    ? suggestedQuestions.Take(3).ToList()
+                    : new List<string>());
+
+            showPartiallyUnrelatedBanner = true;
+        }
+
+     
+
+        /// <summary>
+        /// Generates questions based on the database schema
+        /// </summary>
+        private List<string> GetSchemaBasedQuestions()
+        {
+            // This could be enhanced to use API, but for now we'll use static suggestions or available examples
+            return suggestedQuestions.Count > 0
+                ? suggestedQuestions.Take(3).ToList()
+                : new List<string>
+                {
+                    "Show me all customers",
+                    "What are the top 5 products by sales?",
+                    "How many orders were placed last month?"
+                };
+        }
+
+        /// <summary>
+        /// Shows SQL details in a modal
+        /// </summary>
+        private void ShowSqlDetails()
+        {
+            showSqlModal = true;
+        }
+
+        /// <summary>
+        /// Analyzes user question
+        /// </summary>
         private async Task AnalyzeQuestion()
         {
             // Skip analysis step and go directly to SQL generation with explanation
             await GenerateSqlWithExplanation();
         }
 
-        // Add confirmation method
+        /// <summary>
+        /// Confirms SQL explanation and executes the query
+        /// </summary>
         private async Task ConfirmSqlExplanation()
         {
             if (sqlExplanationResponse == null || string.IsNullOrWhiteSpace(sqlExplanationResponse.GeneratedSql))
@@ -284,7 +370,7 @@ namespace DynamicDashboardFE.Pages.User
             try
             {
                 isLoading = true;
-                loadingMessage = "Loading your data ^_^ ...";
+                loadingMessage = "Executing query...";
                 errorMessage = null;
 
                 var request = new SqlExecutionRequest
@@ -313,24 +399,20 @@ namespace DynamicDashboardFE.Pages.User
                 }
                 else
                 {
-                    Notifications.ShowError("Error executing query. Please check your database connection.");
-                    currentStep = QueryStep.SqlExplanation;
+                    Notifications.ShowError("Error executing query. Please try a different question.");
+                    currentStep = QueryStep.Input;
                 }
             }
             catch (Exception)
             {
                 Notifications.ShowError("An unexpected error occurred. Please try again.");
-                currentStep = QueryStep.SqlExplanation;
+                currentStep = QueryStep.Input;
             }
             finally
             {
                 isLoading = false;
             }
         }
-
-
-
-
 
         /// <summary>
         /// Dismisses any displayed error messages.
@@ -361,85 +443,34 @@ namespace DynamicDashboardFE.Pages.User
                 {
                     suggestedQuestions = response;
                 }
-            }
-            catch (Exception ex)
-            {
-                Notifications.ShowWarning("Could not load example questions. Default examples will be used. ");
-                Console.WriteLine(ex.Message + ex.StackTrace);
-            }
-            finally
-            {
-                isExamplesLoading = false;
-            }
-        }
-
-        /// <summary>
-        /// Tests the database connection using the provided credentials.
-        /// </summary>
-        private async Task TestDatabaseConnection()
-        {
-            try
-            {
-                isLoading = true;
-                loadingMessage = "Testing database connection...";
-                connectionStatus = "";
-
-                // If using an existing database from the dropdown
-                Database database;
-                if (selectedDatabase != null && databaseId > 0)
-                {
-                    database = new Database
-                    {
-                        DatabaseID = databaseId,
-                        ServerAddress = selectedDatabase.ServerAddress,
-                        Name = selectedDatabase.Name,
-                        FriendlyName = selectedDatabase.FriendlyName,
-                        TypeID = selectedDatabase.TypeID,
-                        Username = dbAuthType == "sql" ? dbUsername : selectedDatabase.Username,
-                        EncryptedCredentials = dbAuthType == "sql" ? dbPassword : selectedDatabase.EncryptedCredentials
-                    };
-                }
                 else
                 {
-                    // For manual connection
-                    database = new Database
+                    // Fallback to default questions
+                    suggestedQuestions = new List<string>
                     {
-                        ServerAddress = dbServer,
-                        Name = dbName,
-                        FriendlyName = FriendlyName,
-                        TypeID = 1,   // Default to SQL Server
-                        Username = dbAuthType == "sql" ? dbUsername : "",
-                        EncryptedCredentials = dbAuthType == "sql" ? dbPassword : "",
-                        DatabaseID = 0 // 0 indicates a new connection test
+                        "Show me the top 10 customers by total order value",
+                        "What is the average order value by product category?",
+                        "How many orders were placed last month?",
+                        "List all products with less than 10 items in stock",
+                        "Which employees had the highest sales in the last quarter?"
                     };
-                }
-
-                var response = await Http.PostAsJsonAsync("api/databases/test-connection", database);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    connectionStatus = "Connection successful";
-                    connectionSuccessful = true;
-                    Notifications.ShowSuccess("Database connection successful!");
-                }
-                else
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    connectionStatus = "Connection failed";
-                    connectionSuccessful = false;
-                    Notifications.ShowError("Database connection failed. Please check your settings.");
                 }
             }
             catch (Exception)
             {
-                connectionStatus = "Connection failed";
-                connectionSuccessful = false;
-                Notifications.ShowError("Error testing database connection. Please try again.");
+                // Use default questions if API call fails
+                suggestedQuestions = new List<string>
+                {
+                    "Show me the top 10 customers by total order value",
+                    "What is the average order value by product category?",
+                    "How many orders were placed last month?",
+                    "List all products with less than 10 items in stock",
+                    "Which employees had the highest sales in the last quarter?"
+                };
             }
             finally
             {
-                isLoading = false;
-                StateHasChanged();
+                isExamplesLoading = false;
             }
         }
 
@@ -584,7 +615,7 @@ namespace DynamicDashboardFE.Pages.User
         /// </summary>
         private async Task OnKeyPress(KeyboardEventArgs e)
         {
-            if (e.Key == "Enter" && currentStep == QueryStep.Input)
+            if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(userQuestion) && !isLoading)
             {
                 await AnalyzeQuestion();
             }
@@ -596,6 +627,7 @@ namespace DynamicDashboardFE.Pages.User
         private async Task UseExample(string example)
         {
             userQuestion = example;
+            showUnrelatedDialog = false; // Close the dialog if open
             await AnalyzeQuestion();
         }
 
@@ -604,7 +636,7 @@ namespace DynamicDashboardFE.Pages.User
         /// </summary>
         private async Task CopySqlToClipboard()
         {
-            var sql = sqlResponse?.GeneratedSql;
+            var sql = sqlExplanationResponse?.GeneratedSql;
             if (string.IsNullOrEmpty(sql)) return;
 
             try
@@ -619,201 +651,6 @@ namespace DynamicDashboardFE.Pages.User
         }
 
         /// <summary>
-        /// Step 1: Analyzes the natural language question and generates an explanation.
-        /// </summary>
-        //private async Task AnalyzeQuestion_OLD()
-        //{
-        //    if (string.IsNullOrWhiteSpace(userQuestion))
-        //        return;
-
-        //    if (databaseId <= 0)
-        //    {
-        //        Notifications.ShowWarning("Please select a database first.");
-        //        return;
-        //    }
-
-        //    // Check if connection is established
-        //    if (!connectionSuccessful)
-        //    {
-        //        await TestDatabaseConnection();
-        //        if (!connectionSuccessful)
-        //        {
-        //            Notifications.ShowError("Database connection failed. Please check your settings.");
-        //            return;
-        //        }
-        //    }
-
-        //    // Reset state
-        //    errorMessage = null;
-        //    analysisResponse = null;
-        //    sqlResponse = null;
-        //    executionResponse = null;
-        //    resolvedAmbiguities.Clear();
-        //    adjustedParameters.Clear();
-
-        //    try
-        //    {
-        //        currentStep = QueryStep.Analysis;
-        //        isLoading = true;
-        //        loadingMessage = "Analyzing your question...";
-
-        //        var request = new NlQueryRequest
-        //        {
-        //            Question = userQuestion,
-        //            DatabaseId = databaseId
-        //        };
-
-        //        var response = await Http.PostAsJsonAsync("api/Query/analyze", request);
-
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            analysisResponse = await response.Content.ReadFromJsonAsync<AnalysisResponse>();
-
-        //            // Initialize resolved ambiguities with default values
-        //            if (analysisResponse.HasAmbiguities && analysisResponse.DetectedAmbiguities != null)
-        //            {
-        //                foreach (var ambiguity in analysisResponse.DetectedAmbiguities)
-        //                {
-        //                    if (ambiguity.Value.Count > 0)
-        //                    {
-        //                        resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
-        //                    }
-        //                }
-        //            }
-
-        //            // Initialize adjusted parameters with default values
-        //            if (analysisResponse.AdjustableParameters != null)
-        //            {
-        //                foreach (var param in analysisResponse.AdjustableParameters)
-        //                {
-        //                    adjustedParameters[param.Key] = param.Value.DefaultValue;
-        //                }
-        //            }
-
-        //            currentStep = QueryStep.Confirmation;
-        //        }
-        //        else
-        //        {
-        //            Notifications.ShowError("Error analyzing your question. Please try again.");
-        //            currentStep = QueryStep.Input;
-        //        }
-        //    }
-        //    catch (Exception)
-        //    {
-        //        Notifications.ShowError("An unexpected error occurred. Please try again.");
-        //        currentStep = QueryStep.Input;
-        //    }
-        //    finally
-        //    {
-        //        isLoading = false;
-        //    }
-        //}
-
-        /// <summary>
-        /// Step 2: Confirms understanding and generates SQL based on user selections.
-        /// </summary>
-        private async Task ConfirmUnderstanding()
-        {
-            if (analysisResponse == null)
-                return;
-
-            try
-            {
-                currentStep = QueryStep.SqlGeneration;
-                isLoading = true;
-                loadingMessage = "Generating SQL query...";
-                errorMessage = null;
-
-                var request = new NlQueryConfirmationRequest
-                {
-                    OriginalQuestion = userQuestion,
-                    DatabaseId = databaseId,
-                    ConfirmedUnderstanding = analysisResponse.Explanation,
-                    ResolvedAmbiguities = resolvedAmbiguities,
-                    AdjustedParameters = adjustedParameters
-                };
-
-                var response = await Http.PostAsJsonAsync("api/Query/generate", request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    sqlResponse = await response.Content.ReadFromJsonAsync<SqlGenerationResponse>();
-                    Notifications.ShowSuccess("SQL generated successfully.");
-                }
-                else
-                {
-                    Notifications.ShowError("Error generating SQL query. Please try again.");
-                    currentStep = QueryStep.Confirmation;
-                }
-            }
-            catch (Exception)
-            {
-                Notifications.ShowError("An unexpected error occurred. Please try again.");
-                currentStep = QueryStep.Confirmation;
-            }
-            finally
-            {
-                isLoading = false;
-            }
-        }
-
-        /// <summary>
-        /// Step 3: Executes the generated SQL query and displays results.
-        /// </summary>
-        private async Task ExecuteQuery()
-        {
-            if (sqlResponse == null || string.IsNullOrWhiteSpace(sqlResponse.GeneratedSql))
-                return;
-
-            try
-            {
-                currentStep = QueryStep.Execution;
-                isLoading = true;
-                loadingMessage = "Executing query...";
-                errorMessage = null;
-
-                var request = new SqlExecutionRequest
-                {
-                    OriginalQuestion = userQuestion,
-                    DatabaseId = databaseId,
-                    Sql = sqlResponse.GeneratedSql
-                };
-
-                var response = await Http.PostAsJsonAsync("api/Query/execute", request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    executionResponse = await response.Content.ReadFromJsonAsync<QueryExecutionResponse>();
-                    currentStep = QueryStep.Results;
-                    currentPage = 1; // Reset pagination
-
-                    if (executionResponse.Results != null && executionResponse.Results.Count > 0)
-                    {
-                        Notifications.ShowSuccess("Query executed successfully.");
-                    }
-                    else
-                    {
-                        Notifications.ShowWarning("Query executed successfully, but no results were found.");
-                    }
-                }
-                else
-                {
-                    Notifications.ShowError("Error executing query. Please check your database connection.");
-                    currentStep = QueryStep.SqlGeneration;
-                }
-            }
-            catch (Exception)
-            {
-                Notifications.ShowError("An unexpected error occurred. Please try again.");
-                currentStep = QueryStep.SqlGeneration;
-            }
-            finally
-            {
-                isLoading = false;
-            }
-        }
-
-        /// <summary>
         /// Resets the workflow to start a new query.
         /// </summary>
         private void ResetWorkflow()
@@ -824,8 +661,11 @@ namespace DynamicDashboardFE.Pages.User
             analysisResponse = null;
             sqlResponse = null;
             executionResponse = null;
+            sqlExplanationResponse = null;
             resolvedAmbiguities.Clear();
             adjustedParameters.Clear();
+            showSqlModal = false;
+            showUnrelatedDialog = false;
         }
 
         /// <summary>
@@ -835,18 +675,6 @@ namespace DynamicDashboardFE.Pages.User
         {
             public List<Dictionary<string, object>> Data { get; set; }
             public string FileName { get; set; }
-        }
-
-        /// <summary>
-        /// Request model for confirming understanding and generating SQL.
-        /// </summary>
-        private class NlQueryConfirmationRequest
-        {
-            public string OriginalQuestion { get; set; }
-            public int DatabaseId { get; set; }
-            public string ConfirmedUnderstanding { get; set; }
-            public Dictionary<string, string> ResolvedAmbiguities { get; set; }
-            public Dictionary<string, string> AdjustedParameters { get; set; }
         }
 
         /// <summary>

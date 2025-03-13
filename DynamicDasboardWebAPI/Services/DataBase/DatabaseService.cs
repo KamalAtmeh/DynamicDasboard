@@ -11,6 +11,7 @@ using DynamicDasboardWebAPI.Utilities;
 using System.Linq;
 using DynamicDashboardCommon.Enums;
 using Microsoft.AspNetCore.Mvc;
+using DynamicDashboardCommon.Helper;
 
 
 namespace DynamicDasboardWebAPI.Services
@@ -76,6 +77,31 @@ namespace DynamicDasboardWebAPI.Services
         }
 
         /// <summary>
+        /// Gets a database by ID.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database to retrieve.</param>
+        /// <returns>The database with the specified ID, or null if not found.</returns>
+        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
+        {
+            try
+            {
+                // Check cache first
+                var cacheKey = $"Database_{databaseId}";
+                var cached = CacheHelper.Get<Database>(cacheKey);
+                if (cached != null)
+                {
+                    return cached;
+                }
+                var database = await objDataBaseRepository.GetDatabaseByIdAsync(databaseId);
+                return database;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Adds a new database to the system.
         /// </summary>
         /// <param name="database">The database to add.</param>
@@ -90,11 +116,16 @@ namespace DynamicDasboardWebAPI.Services
                 // Validate required fields
                 if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.FriendlyName))
                 {
+                    
                     // Set initial values for new database
                     database.CreatedAt = DateTime.UtcNow;
                     database.IsActive = true;
 
+
+
                     int databaseId = await objDataBaseRepository.AddDatabaseAsync(database);
+
+                    await CacheHelper.AddOrUpdateAsync($"Database_{database.DatabaseID}", database);
 
                     return databaseId;
                 }
@@ -124,6 +155,9 @@ namespace DynamicDasboardWebAPI.Services
                 if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.FriendlyName))
                 {     // Validate required fields
                     int result = await objDataBaseRepository.UpdateDatabaseAsync(database);
+
+                    await CacheHelper.AddOrUpdateAsync($"Database_{database.DatabaseID}", database);
+
                     return result;
                 }
                 else
@@ -236,23 +270,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        /// <summary>
-        /// Gets a database by ID.
-        /// </summary>
-        /// <param name="databaseId">The ID of the database to retrieve.</param>
-        /// <returns>The database with the specified ID, or null if not found.</returns>
-        public async Task<Database> GetDatabaseByIdAsync(int databaseId)
-        {
-            try
-            {
-                var database = await objDataBaseRepository.GetDatabaseByIdAsync(databaseId);
-                return database;
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+
 
         /// <summary>
         /// Gets all database types.

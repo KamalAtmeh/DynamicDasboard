@@ -46,7 +46,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         // Add these methods to the ClaudeLLMService class
 
         /// <inheritdoc/>
-        public async Task<SqlExplanationResponse> GenerateSqlWithExplanationAsync(
+        public async Task<SqlGenerationWithExplanationResponse> GenerateSqlWithExplanationAsync(
             string question,
             string databaseSchema,
             Dictionary<string, string> dbDescriptions = null)
@@ -71,7 +71,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
-        private SqlExplanationResponse ParseSqlExplanationResponse(string jsonResponse)
+        private SqlGenerationWithExplanationResponse ParseSqlExplanationResponse(string jsonResponse)
         {
             try
             {
@@ -82,7 +82,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 if (jsonStart >= 0 && jsonEnd > jsonStart)
                 {
                     var json = jsonResponse.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                    var response = System.Text.Json.JsonSerializer.Deserialize<SqlExplanationResponse>(json,
+                    var response = System.Text.Json.JsonSerializer.Deserialize<SqlGenerationWithExplanationResponse>(json,
                         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                     if (response != null)
@@ -90,11 +90,18 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 }
 
                 // If we couldn't parse as JSON or the response is null, create a simple response
-                return new SqlExplanationResponse
+                return new SqlGenerationWithExplanationResponse
                 {
-                    SqlQuery = ExtractSqlFromText(jsonResponse),
+                    GeneratedSql = ExtractSqlFromText(jsonResponse),
                     BusinessExplanation = jsonResponse,
-                    //DbType = 
+                    IsSchemaRelated = false,
+                    SchemaRelevanceMessage = "Unable to parse the response properly. The question may not be related to the database schema.",
+                    SuggestedTopics = new List<string> { "Customer data", "Orders", "Products", "Inventory" },
+                    SuggestedQuestions = new List<string> {
+                "Show me all customers",
+                "What are the top selling products?",
+                "How many orders were placed last month?"
+            },
                     HasAmbiguities = false
                 };
             }
@@ -146,16 +153,26 @@ namespace DynamicDasboardWebAPI.Services.LLM
             {
                 var prompt = new StringBuilder();
                 prompt.AppendLine("You are an AI assistant that generates SQL queries from natural language questions and explains them in business terms. " +
-                                "Your primary task is to FIRST create a SQL query based on the user's question and schema, THEN explain what it does using friendly business terminology.");
+                                "Your primary task is to analyze if the question is related to the database schema, and if so, create a SQL query and explain what it does.");
 
                 // Primary approach and priorities
-                prompt.AppendLine("\nFollow this approach:");
-                prompt.AppendLine("1. Generate a SQL query that works for the specified database type (or ANSI-standard SQL if no type specified)");
-                prompt.AppendLine("2. Explain the query's business meaning using friendly terminology");
-                prompt.AppendLine("3. Identify adjustable parameters and potential ambiguities");
+                prompt.AppendLine("\nFollowing this approach:");
+                prompt.AppendLine("1. First, determine if the question is related to the provided database schema");
+                prompt.AppendLine("2. If related, generate a SQL query and explain the business meaning");
+                prompt.AppendLine("3. If not related (or partially unrelated), explain why and suggest alternative topics");
+                prompt.AppendLine("4. Identify adjustable parameters and potential ambiguities in related questions");
+
+                // Schema relevance analysis
+                prompt.AppendLine("\nSchema Relevance Analysis:");
+                prompt.AppendLine("- Carefully analyze if the question involves data that exists in the schema");
+                prompt.AppendLine("- If the question is completely unrelated to the schema, set isSchemaRelated: false");
+                prompt.AppendLine("- If only parts of the question are unrelated, set hasPartiallyUnrelatedContent: true");
+                prompt.AppendLine("- For unrelated questions, identify 3-5 topics that the schema actually contains");
+                prompt.AppendLine("- For unrelated questions, suggest 3 specific example questions related to the schema");
+                prompt.AppendLine("- For partially unrelated questions, list the unrelated parts in the unrelatedQuestionParts array");
 
                 // SQL generation requirements
-                prompt.AppendLine("\nSQL Generation Rules:");
+                prompt.AppendLine("\nSQL Generation Rules (for related questions):");
                 prompt.AppendLine("- Use only tables and columns that exist in the provided schema");
                 prompt.AppendLine("- Ensure the SQL is compatible with the specified database type");
                 prompt.AppendLine("- If no database type is specified, use ANSI-standard SQL");
@@ -190,11 +207,17 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     }
                 }
 
-                // Response format
+                // Response format with added fields for schema relevance
                 prompt.AppendLine("\nYour response should be structured as JSON with the following fields:");
-                prompt.AppendLine("- sqlQuery: The generated SQL query that answers the user's question");
+                prompt.AppendLine("- isSchemaRelated: Boolean indicating if the question relates to the schema");
+                prompt.AppendLine("- schemaRelevanceMessage: Explanation if the question is not related to the schema");
+                prompt.AppendLine("- hasPartiallyUnrelatedContent: Boolean indicating if parts of the question are unrelated");
+                prompt.AppendLine("- unrelatedQuestionParts: Array of question parts not related to the schema");
+                prompt.AppendLine("- suggestedTopics: Array of topics the user can ask about (if question is unrelated)");
+                prompt.AppendLine("- suggestedQuestions: Array of example questions related to the schema");
+                prompt.AppendLine("- sqlQuery: The generated SQL query (only if question is related)");
                 prompt.AppendLine("- businessExplanation: A user-friendly explanation of what the query does");
-                prompt.AppendLine("- dbType: The database type this SQL is optimized for (e.g., 'SQL Server', 'MySQL', 'Oracle', 'ANSI-standard')");
+                prompt.AppendLine("- dbType: The database type this SQL is optimized for");
                 prompt.AppendLine("- dbNotes: Notes about database compatibility or adaptation requirements");
                 prompt.AppendLine("- hasAmbiguities: Boolean indicating if any ambiguities were detected");
                 prompt.AppendLine("- detectedAmbiguities: Dictionary of ambiguous terms and their possible interpretations");
@@ -208,39 +231,99 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 prompt.AppendLine("3. All arrays should be properly formatted with square brackets, even for single items.");
                 prompt.AppendLine("4. The SQL query must be properly escaped as a JSON string.");
 
-                // Example with database-specific SQL
-                prompt.AppendLine("\nHere's a complete example of the expected JSON format, in this example it was SQL Server DB Type:");
+                // Example response for unrelated question
+                prompt.AppendLine("\nExample response for UNRELATED question:");
                 prompt.AppendLine("```json");
                 prompt.AppendLine("{");
-                prompt.AppendLine("  \"sqlQuery\": \"SELECT TOP 10\\n  u.name AS customer_name,\\n  u.email AS customer_email,\\n  SUM(o.amount) AS total_spent\\nFROM users u\\nINNER JOIN orders o \\n  ON u.id = o.user_id\\nWHERE \\n  o.order_date >= '2023-08-01' \\n  AND o.order_date < '2023-09-01'\\nGROUP BY \\n  u.id, \\n  u.name, \\n  u.email\\nORDER BY total_spent DESC;\",");
-                prompt.AppendLine("  \"businessExplanation\": \"This query shows you the top 10 customers who spent the most money during August 2023. It includes each customer's name, email address, and their total spending for that month. The results are ordered from highest spender to lowest.\",");
-                prompt.AppendLine("  \"dbType\": \"SQL Server\",");
-                prompt.AppendLine("  \"dbNotes\": \"This query uses SQL Server's TOP syntax for row limiting. For other databases, use: MySQL/PostgreSQL/SQLite: LIMIT 10; Oracle 12c+: FETCH FIRST 10 ROWS ONLY; Oracle before 12c: WHERE ROWNUM <= 10.\",");
-                prompt.AppendLine("  \"hasAmbiguities\": true,");
-                prompt.AppendLine("  \"detectedAmbiguities\": {");
-                prompt.AppendLine("    \"customer spending\": [");
-                prompt.AppendLine("      \"Total amount spent on all orders\",");
-                prompt.AppendLine("      \"Revenue before discounts or returns\"");
-                prompt.AppendLine("    ]");
-                prompt.AppendLine("  },");
+                prompt.AppendLine("  \"isSchemaRelated\": false,");
+                prompt.AppendLine("  \"schemaRelevanceMessage\": \"Your question about weather forecasting doesn't relate to this e-commerce database schema, which contains information about customers, orders, products, and inventory.\",");
+                prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": false,");
+                prompt.AppendLine("  \"unrelatedQuestionParts\": [],");
+                prompt.AppendLine("  \"suggestedTopics\": [\"Customer information\", \"Order details\", \"Product inventory\", \"Sales analytics\", \"Shipping information\"],");
+                prompt.AppendLine("  \"suggestedQuestions\": [");
+                prompt.AppendLine("    \"Who are our top 10 customers by order value?\",");
+                prompt.AppendLine("    \"What products have the lowest inventory levels?\",");
+                prompt.AppendLine("    \"How many orders were shipped last month?\"");
+                prompt.AppendLine("  ],");
+                prompt.AppendLine("  \"sqlQuery\": \"\",");
+                prompt.AppendLine("  \"businessExplanation\": \"\",");
+                prompt.AppendLine("  \"dbType\": \"ANSI-standard\",");
+                prompt.AppendLine("  \"dbNotes\": \"\",");
+                prompt.AppendLine("  \"hasAmbiguities\": false,");
+                prompt.AppendLine("  \"detectedAmbiguities\": {},");
+                prompt.AppendLine("  \"adjustableParameters\": {},");
+                prompt.AppendLine("  \"termMapping\": {}");
+                prompt.AppendLine("}");
+                prompt.AppendLine("```");
+
+                // Example response for partially unrelated question
+                prompt.AppendLine("\nExample response for PARTIALLY UNRELATED question:");
+                prompt.AppendLine("```json");
+                prompt.AppendLine("{");
+                prompt.AppendLine("  \"isSchemaRelated\": true,");
+                prompt.AppendLine("  \"schemaRelevanceMessage\": \"\",");
+                prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": true,");
+                prompt.AppendLine("  \"unrelatedQuestionParts\": [\"weather in the shipping destination\"],");
+                prompt.AppendLine("  \"suggestedTopics\": [],");
+                prompt.AppendLine("  \"suggestedQuestions\": [");
+                prompt.AppendLine("    \"What are the most common shipping destinations for our orders?\",");
+                prompt.AppendLine("    \"Which shipping methods are used most frequently?\",");
+                prompt.AppendLine("    \"What's the average shipping time for each carrier?\"");
+                prompt.AppendLine("  ],");
+                prompt.AppendLine("  \"sqlQuery\": \"SELECT o.ShippingAddress, COUNT(*) AS OrderCount\\nFROM Orders o\\nGROUP BY o.ShippingAddress\\nORDER BY OrderCount DESC\\nLIMIT 10;\",");
+                prompt.AppendLine("  \"businessExplanation\": \"This query shows the top 10 shipping destinations by number of orders. Note that I can't provide information about weather at these destinations as that data isn't in the database.\",");
+                prompt.AppendLine("  \"dbType\": \"MySQL\",");
+                prompt.AppendLine("  \"dbNotes\": \"This query uses MySQL's LIMIT syntax. For SQL Server, use TOP 10 instead.\",");
+                prompt.AppendLine("  \"hasAmbiguities\": false,");
+                prompt.AppendLine("  \"detectedAmbiguities\": {},");
                 prompt.AppendLine("  \"adjustableParameters\": {");
-                prompt.AppendLine("    \"date range\": {");
-                prompt.AppendLine("      \"default\": \"August 2023 (2023-08-01 to 2023-08-31)\",");
-                prompt.AppendLine("      \"alternatives\": [\"Last 30 days\", \"Current month\", \"Year to date\", \"Q3 2023\"]");
-                prompt.AppendLine("    },");
-                prompt.AppendLine("    \"number of customers\": {");
+                prompt.AppendLine("    \"number of destinations\": {");
                 prompt.AppendLine("      \"default\": 10,");
-                prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"50\", \"All customers\"]");
+                prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"All destinations\"]");
                 prompt.AppendLine("    }");
                 prompt.AppendLine("  },");
                 prompt.AppendLine("  \"termMapping\": {");
-                prompt.AppendLine("    \"users\": \"Customers\",");
-                prompt.AppendLine("    \"orders\": \"Purchases\",");
-                prompt.AppendLine("    \"amount\": \"Transaction value\"");
+                prompt.AppendLine("    \"ShippingAddress\": \"Delivery Location\"");
                 prompt.AppendLine("  }");
                 prompt.AppendLine("}");
                 prompt.AppendLine("```");
-                prompt.AppendLine("\nIf a specific database type is provided in the user's question or context, ensure the generated SQL is fully compatible with that database system. If no database type is specified, default to ANSI-standard SQL.");
+
+                // Example for fully related question
+                prompt.AppendLine("\nExample response for FULLY RELATED question:");
+                prompt.AppendLine("```json");
+                prompt.AppendLine("{");
+                prompt.AppendLine("  \"isSchemaRelated\": true,");
+                prompt.AppendLine("  \"schemaRelevanceMessage\": \"\",");
+                prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": false,");
+                prompt.AppendLine("  \"unrelatedQuestionParts\": [],");
+                prompt.AppendLine("  \"suggestedTopics\": [],");
+                prompt.AppendLine("  \"suggestedQuestions\": [],");
+                prompt.AppendLine("  \"sqlQuery\": \"SELECT c.FirstName, c.LastName, SUM(o.TotalAmount) AS TotalSpent\\nFROM Customers c\\nJOIN Orders o ON c.CustomerID = o.CustomerID\\nGROUP BY c.CustomerID, c.FirstName, c.LastName\\nORDER BY TotalSpent DESC\\nLIMIT 10;\",");
+                prompt.AppendLine("  \"businessExplanation\": \"This query retrieves the top 10 customers based on their total purchase amounts. It shows each customer's first and last name along with the total amount they've spent across all their orders.\",");
+                prompt.AppendLine("  \"dbType\": \"MySQL\",");
+                prompt.AppendLine("  \"dbNotes\": \"For SQL Server, replace LIMIT with TOP 10.\",");
+                prompt.AppendLine("  \"hasAmbiguities\": true,");
+                prompt.AppendLine("  \"detectedAmbiguities\": {");
+                prompt.AppendLine("    \"time period\": [");
+                prompt.AppendLine("      \"All time\",");
+                prompt.AppendLine("      \"Last year\",");
+                prompt.AppendLine("      \"Current year\",");
+                prompt.AppendLine("      \"Last 6 months\"");
+                prompt.AppendLine("    ]");
+                prompt.AppendLine("  },");
+                prompt.AppendLine("  \"adjustableParameters\": {");
+                prompt.AppendLine("    \"number of customers\": {");
+                prompt.AppendLine("      \"default\": 10,");
+                prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"50\", \"100\"]");
+                prompt.AppendLine("    }");
+                prompt.AppendLine("  },");
+                prompt.AppendLine("  \"termMapping\": {");
+                prompt.AppendLine("    \"Customers\": \"Client Accounts\",");
+                prompt.AppendLine("    \"Orders\": \"Purchases\",");
+                prompt.AppendLine("    \"TotalAmount\": \"Revenue\"");
+                prompt.AppendLine("  }");
+                prompt.AppendLine("}");
+                prompt.AppendLine("```");
 
                 return prompt.ToString();
             }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DynamicDashboardCommon.Models
 {
-    public class DirectSqlRequest
+    public class QueryRequest
     {
 
         public string SqlQuery { get; set; }

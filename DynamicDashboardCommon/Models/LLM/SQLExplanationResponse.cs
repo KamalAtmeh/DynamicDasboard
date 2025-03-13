@@ -56,6 +56,42 @@ namespace DynamicDashboardCommon.Models.LLM
         /// </summary>
         [JsonPropertyName("termMapping")]
         public Dictionary<string, string> TermMapping { get; set; } = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Flag indicating whether the question is related to the database schema
+        /// </summary>
+        [JsonPropertyName("isSchemaRelated")]
+        public bool IsSchemaRelated { get; set; } = true;
+
+        /// <summary>
+        /// Message explaining why the question is not related to the schema (if applicable)
+        /// </summary>
+        [JsonPropertyName("schemaRelevanceMessage")]
+        public string SchemaRelevanceMessage { get; set; }
+
+        /// <summary>
+        /// List of suggested topics the user can ask about based on the schema
+        /// </summary>
+        [JsonPropertyName("suggestedTopics")]
+        public List<string> SuggestedTopics { get; set; } = new List<string>();
+
+        /// <summary>
+        /// List of suggested questions related to the schema
+        /// </summary>
+        [JsonPropertyName("suggestedQuestions")]
+        public List<string> SuggestedQuestions { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Flag indicating if part of the question (but not all) is unrelated to the schema
+        /// </summary>
+        [JsonPropertyName("hasPartiallyUnrelatedContent")]
+        public bool HasPartiallyUnrelatedContent { get; set; }
+
+        /// <summary>
+        /// Parts of the question that are not related to the schema
+        /// </summary>
+        [JsonPropertyName("unrelatedQuestionParts")]
+        public List<string> UnrelatedQuestionParts { get; set; } = new List<string>();
     }
 
     /// <summary>

@@ -585,55 +585,6 @@
             Gets details of a specific query by ID (default DB).
             </summary>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Services.QueryService">
-            <summary>
-            Enhanced service for processing natural language queries with a two-step confirmation process
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.AnalyzeQuestionAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Step 1: Analyze a natural language question and generate an explanation
-            </summary>
-            <param name="request">The natural language query request</param>
-            <returns>An explanation of how the system understands the question</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
-            <summary>
-            Step 2: Generate SQL based on confirmed understanding
-            </summary>
-            <param name="request">The confirmation request with resolved ambiguities</param>
-            <returns>Generated SQL query</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.SqlExecutionRequest)">
-            <summary>
-            Step 3: Execute the generated SQL and explain the results
-            </summary>
-            <param name="request">The execution request with the SQL query</param>
-            <returns>Query results with explanation</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ProcessNaturalLanguageQueryAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Combined method for backward compatibility: Analyze, generate SQL, and execute in one step
-            </summary>
-            <param name="request">The natural language query request</param>
-            <returns>Complete query response</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlWithExplanationAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
-            <summary>
-            Generates SQL with explanation from a natural language question
-            </summary>
-            <param name="request">The natural language query request</param>
-            <returns>SQL explanation response with validation status</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ValidateSqlAsync(System.String,System.Int32)">
-            <summary>
-            Validates a SQL query against a database without retrieving results
-            </summary>
-            <param name="sql">The SQL query to validate</param>
-            <param name="databaseId">The database ID</param>
-            <returns>Task representing the validation</returns>
-            TODO change the implementation of this method to be more dynamic if applicable
-        </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(System.Int32,DynamicDashboardCommon.Models.Database)">
             <summary>
             Retrieves the database schema from a connected database and saves it in our schema format.
@@ -783,6 +734,13 @@
             </summary>
             <returns>A collection of all databases.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetDatabaseByIdAsync(System.Int32)">
+            <summary>
+            Gets a database by ID.
+            </summary>
+            <param name="databaseId">The ID of the database to retrieve.</param>
+            <returns>The database with the specified ID, or null if not found.</returns>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.AddDatabaseAsync(DynamicDashboardCommon.Models.Database)">
             <summary>
             Adds a new database to the system.
@@ -823,13 +781,6 @@
             </summary>
             <param name="databaseId">The ID of the database.</param>
             <returns>True if metadata was retrieved successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetDatabaseByIdAsync(System.Int32)">
-            <summary>
-            Gets a database by ID.
-            </summary>
-            <param name="databaseId">The ID of the database to retrieve.</param>
-            <returns>The database with the specified ID, or null if not found.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetAllDatabaseTypesAsync">
             <summary>
@@ -1105,6 +1056,80 @@
             <param name="eventType">The type of the event.</param>
             <param name="eventDescription">The description of the event.</param>
             <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.QueryService">
+            <summary>
+            Enhanced service for processing natural language queries with a two-step confirmation process
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.AnalyzeQuestionAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Step 1: Analyze a natural language question and generate an explanation
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>An explanation of how the system understands the question</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlAsync(DynamicDashboardCommon.Models.NlQueryConfirmationRequest)">
+            <summary>
+            Step 2: Generate SQL based on confirmed understanding
+            </summary>
+            <param name="request">The confirmation request with resolved ambiguities</param>
+            <returns>Generated SQL query</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ExecuteQueryAsync(DynamicDashboardCommon.Models.SqlExecutionRequest)">
+            <summary>
+            Step 3: Execute the generated SQL and explain the results
+            </summary>
+            <param name="request">The execution request with the SQL query</param>
+            <returns>Query results with explanation</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ProcessNaturalLanguageQueryAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Combined method for backward compatibility: Analyze, generate SQL, and execute in one step
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>Complete query response</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateSqlWithExplanationAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Generates SQL with explanation from a natural language question
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>SQL explanation response with validation status</returns>
+            <summary>
+            Generates SQL with explanation from a natural language question
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>SQL explanation response with validation status</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ValidateSqlAsync(System.String,System.Int32)">
+            <summary>
+            Validates a SQL query against a database without retrieving results
+            </summary>
+            <param name="sql">The SQL query to validate</param>
+            <param name="databaseId">The database ID</param>
+            <returns>Task representing the validation</returns>
+            TODO change the implementation of this method to be more dynamic if applicable
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ValidateSqlSyntax(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="!:SqlValidationService"/> class
+            </summary>
+            <param name="schemaService">The database schema service</param>
+            <summary>
+            Validates SQL query syntax without checking against the schema
+            </summary>
+            <param name="sqlQuery">The SQL query to validate</param>
+            <returns>Validation result with error details if any</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.ValidateSqlAgainstSchemaAsync(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Validates SQL query against the schema of a specified database
+            </summary>
+            <param name="sqlQuery">The SQL query to validate</param>
+            <param name="databaseId">The database ID</param>
+            <param name="validateRelations">Whether to validate relationship constraints</param>
+            <returns>Validation result with error details if any</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IUserService.GetAllUsersAsync">
             <summary>

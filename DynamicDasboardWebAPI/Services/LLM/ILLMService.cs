@@ -1,4 +1,5 @@
-﻿using DynamicDashboardCommon.Models.LLM;
+﻿using DynamicDashboardCommon.Models;
+using DynamicDashboardCommon.Models.LLM;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -55,7 +56,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         /// <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
         /// <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
         /// <returns>A structured response with SQL query, explanation, and metadata</returns>
-        Task<SqlExplanationResponse> GenerateSqlWithExplanationAsync(
+        Task<SqlGenerationWithExplanationResponse> GenerateSqlWithExplanationAsync(
             string question,
             string databaseSchema,
             Dictionary<string, string> adminDescriptions = null);
