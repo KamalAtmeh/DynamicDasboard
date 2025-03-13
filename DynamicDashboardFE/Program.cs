@@ -12,6 +12,8 @@ namespace DynamicDashboardFE
             // Create a new WebAssemblyHostBuilder instance with default settings.
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
+
+
             builder.Services.AddBlazoredToast();
 
             builder.Services.AddScoped<Notifications>();
@@ -24,7 +26,8 @@ namespace DynamicDashboardFE
             builder.RootComponents.Add<HeadOutlet>("head::after");
 
             // Configure the HttpClient service with the base address of the backend API.
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5000/") });
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5000/"), Timeout= TimeSpan.FromSeconds(500) });
+
 
             // Build and run the WebAssembly host.
             await builder.Build().RunAsync();

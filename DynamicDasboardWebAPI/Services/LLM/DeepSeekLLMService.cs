@@ -156,6 +156,27 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+        // Add this method to the DeepSeekLLMService class
+        /// <inheritdoc/>
+        public async Task<string> GenerateSchemaAnalysisAsync(string prompt)
+        {
+            try
+            {
+                // Use the existing CallDeepSeekApiAsync method with a system prompt for schema analysis
+                var systemPrompt = "You are an expert database analyst helping improve the usability of database schemas.";
+
+                // Call DeepSeek API
+                var response = await CallDeepSeekApiAsync(systemPrompt, prompt);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+
         #region Private Helper Methods
 
         private string BuildExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)

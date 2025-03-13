@@ -115,8 +115,7 @@ namespace DynamicDasboardWebAPI.Repositories
                         ServerAddress = @ServerAddress, 
                         Port = @Port, 
                         Username = @Username, 
-                        EncryptedCredentials = @EncryptedCredentials,
-
+                        EncryptedCredentials = @EncryptedCredentials
                     WHERE DatabaseID = @DatabaseID";
 
                 return await WithConnectionAsync(async conn =>

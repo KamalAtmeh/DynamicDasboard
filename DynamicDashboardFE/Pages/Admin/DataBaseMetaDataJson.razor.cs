@@ -455,13 +455,13 @@ namespace DynamicDashboardFE.Pages.Admin
                     Enforced = false,
                     Source = new RelationshipDetails
                     {
-                        TableID = relationship.SourceTable.Table,
-                        ColumnID = relationship.SourceTable.Column
+                        TableID = relationship.SourceTable.TableID,
+                        ColumnID = relationship.SourceTable.ColumnID
                     },
                     Target = new RelationshipDetails
                     {
-                        TableID = relationship.TargetTable.Table,
-                        ColumnID = relationship.TargetTable.Column
+                        TableID = relationship.TargetTable.TableID,
+                        ColumnID = relationship.TargetTable.ColumnID
                     },
                     Metadata = new RelationshipMetadata
                     {

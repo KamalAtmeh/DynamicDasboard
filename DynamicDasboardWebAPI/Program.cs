@@ -44,6 +44,8 @@ builder.Services.AddCors(options =>
 });
 
 // Register repositories and services
+
+
 builder.Services.AddScoped<LogsRepository>();
 builder.Services.AddScoped<TableRepository>();
 builder.Services.AddScoped<ColumnRepository>();
@@ -64,7 +66,8 @@ builder.Services.AddScoped<RelationshipService>();
 builder.Services.AddScoped<QueryService>();
 // Register LLM services
 builder.Services.AddHttpClient<ILLMService>(); // HttpClient for LLM services
-// Add SchemaAnalysisService
+
+builder.Services.AddScoped<SchemaAnalysisService>();
 builder.Services.AddScoped<LLMServiceFactory>();
 builder.Services.AddScoped<QueryService>();
 builder.Services.AddScoped<QueryService>();
@@ -87,7 +90,7 @@ builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 
         // Read timeout dynamically from configuration
         var timeoutSeconds = configuration.GetValue<int>("LlmService:Timeout");
-        if (timeoutSeconds <= 0) timeoutSeconds = 500; // Default timeout of 100 seconds
+        if (timeoutSeconds <= 0) timeoutSeconds = 500; 
 
         var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);

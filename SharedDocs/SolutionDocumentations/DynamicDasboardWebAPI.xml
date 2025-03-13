@@ -109,6 +109,21 @@
             Placeholder endpoint for analyzing a database schema.
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.SchemaAnalysisController.AnalyzeDatabaseSchema(System.Int32)">
+            <summary>
+            Analyzes database schema using LLM to generate descriptions and identify conflicts
+            </summary>
+            <param name="databaseId">The ID of the database to analyze</param>
+            <returns>Schema analysis result</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.SchemaAnalysisController.ApplySchemaAnalysisResults(System.Int32,DynamicDashboardCommon.Models.SchemaAnalysisData)">
+            <summary>
+            Applies schema analysis results to update database schema metadata
+            </summary>
+            <param name="databaseId">The ID of the database</param>
+            <param name="analysisData">The analysis data to apply</param>
+            <returns>Success indicator</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.ColumnsController">
             <summary>
             API Controller for managing columns in the dynamic dashboard.
@@ -661,7 +676,7 @@
             <summary>
             Builds an optimized schema string from a DatabaseSchema object
             </summary>
-            <param name="schema">The DatabaseSchema object</param>
+            <param name="schema">The DatabaseSchema object, expecting it desarilized</param>
             <returns>Optimized schema string</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.ExtractAdminDescriptions(DynamicDashboardCommon.Models.DatabaseSchema)">
@@ -670,6 +685,38 @@
             </summary>
             <param name="schema">The DatabaseSchema object</param>
             <returns>Dictionary mapping technical terms to friendly terms</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.SchemaAnalysisService">
+            <summary>
+            Service for analyzing database schemas using LLM
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.AnalyzeDatabaseSchemaAsync(System.Int32)">
+            <summary>
+            Analyzes a database schema using LLM to generate descriptions, friendly names, and identify conflicts
+            </summary>
+            <param name="databaseId">The ID of the database to analyze</param>
+            <returns>Schema analysis result with suggestions</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.AnalyzeSchemaWithLLMAsync(System.String,System.String)">
+            <summary>
+            Calls LLM service to analyze database schema
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.BuildSchemaAnalysisPrompt(System.String,System.String)">
+            <summary>
+            Builds a prompt for LLM to analyze database schema
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.ParseLLMSchemaAnalysisResponse(System.String)">
+            <summary>
+            Parses LLM response into a SchemaAnalysisResult object
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.ApplySchemaAnalysisResultsAsync(System.Int32,DynamicDashboardCommon.Models.SchemaAnalysisData)">
+            <summary>
+            Applies analysis results to update the database schema
+            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
             <summary>
@@ -954,6 +1001,9 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
             <inheritdoc/>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSchemaAnalysisAsync(System.String)">
+            <inheritdoc/>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
             <summary>
             Implementation of ILlmService using DeepSeek API
@@ -966,6 +1016,9 @@
             <inheritdoc/>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSchemaAnalysisAsync(System.String)">
             <inheritdoc/>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.ILLMService">
@@ -1010,6 +1063,13 @@
             <param name="databaseSchema">The database schema with tables, columns, and relationships</param>
             <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
             <returns>A structured response with SQL query, explanation, and metadata</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSchemaAnalysisAsync(System.String)">
+            <summary>
+            Generates schema analysis results from a database schema prompt
+            </summary>
+            <param name="prompt">The prompt containing schema and analysis instructions</param>
+            <returns>LLM response with schema analysis</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
             <summary>

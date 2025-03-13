@@ -48,11 +48,6 @@
             Generates questions based on the database schema
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ShowSqlDetails">
-            <summary>
-            Shows SQL details in a modal
-            </summary>
-        </member>
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.AnalyzeQuestion">
             <summary>
             Analyzes user question
@@ -121,11 +116,6 @@
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.UseExample(System.String)">
             <summary>
             Uses an example question as the user's question and initiates analysis.
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.CopySqlToClipboard">
-            <summary>
-            Copies the generated SQL to the clipboard.
             </summary>
         </member>
         <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ResetWorkflow">

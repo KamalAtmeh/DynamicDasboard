@@ -1,0 +1,547 @@
+﻿@page "/admin/database-metadata-analysis/{DatabaseId:int?}"
+@using DynamicDashboardCommon.Models
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid metadata-page">
+    <div class="metadata-header">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="mb-0">Database Schema Analysis</h2>
+                <p class="text-muted">Enhance your database with AI-generated descriptions and insights</p>
+            </div>
+            <div class="database-selector">
+                <select class="form-select" @bind="SelectedDatabaseId" @bind:event="oninput" @onchange="OnDatabaseChange">
+                    <option value="0">-- Select Database --</option>
+                    @foreach (var db in Databases)
+                    {
+                        <option value="@db.DatabaseID">@(db.FriendlyName ?? db.Name)</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (SelectedDatabaseId > 0 && CurrentDatabase != null)
+        {
+            <div class="database-info-card">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>@(CurrentDatabase.FriendlyName ?? CurrentDatabase.Name)</h5>
+                                <p class="text-muted">@CurrentDatabase.Description</p>
+                                <div class="db-stats">
+                                    <div class="stat-item">
+                                        <i class="fas fa-table"></i>
+                                        <span>@(SchemaDetails?.Tables?.Count ?? 0) Tables</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <i class="fas fa-columns"></i>
+                                        <span>@GetTotalColumns() Columns</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <i class="fas fa-link"></i>
+                                        <span>@(SchemaDetails?.Relationships?.Count ?? 0) Relationships</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="action-buttons">
+                                    @if (IsAnalyzing)
+                                    {
+                                        <div class="spinner-container">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <span>Analyzing schema...</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-secondary me-2" @onclick="RefreshSchema">
+                                            <i class="fas fa-sync-alt"></i> Refresh Schema
+                                        </button>
+                                        <button class="btn btn-primary" @onclick="StartAnalysis">
+                                            <i class="fas fa-magic"></i> Analyze with AI
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span>Loading schema details...</span>
+        </div>
+    }
+    else if (SelectedDatabaseId > 0 && SchemaDetails != null)
+    {
+        <div class="metadata-content">
+            @if (AnalysisResult != null && AnalysisResult.Success)
+            {
+                <div class="analysis-results mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">AI Analysis Results</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-success me-2" @onclick="ApplyAnalysisResults">
+                                        <i class="fas fa-check"></i> Apply Changes
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="DismissAnalysisResults">
+                                        <i class="fas fa-times"></i> Dismiss
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @(ActiveTab == "tables" ? "active" : "")"
+                                            @onclick='() => SetActiveTab(" tables")'> Table Suggestions (@(AnalysisResult.AnalysisData.TableDescriptions?.Count ?? 0))
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @(ActiveTab == "columns" ? "active" : "")"
+                                            @onclick='() => SetActiveTab("columns")'>
+                                        Column Suggestions (@(AnalysisResult.AnalysisData.ColumnDescriptions?.Count ?? 0))
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @(ActiveTab == "conflicts" ? "active" : "")"
+                                            @onclick='() => SetActiveTab("conflicts")'>
+                                        Conflicts (@(AnalysisResult.AnalysisData.PotentialConflicts?.Count ?? 0))
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @(ActiveTab == "relationships" ? "active" : "")"
+                                            @onclick='() => SetActiveTab("relationships")'>
+                                        Relationships (@(AnalysisResult.AnalysisData.SuggestedRelationships?.Count ?? 0))
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @(ActiveTab == "unclear" ? "active" : "")"
+                                            @onclick='() => SetActiveTab("unclear")'>
+                                        Unclear Elements (@(AnalysisResult.AnalysisData.UnclearElements?.Count ?? 0))
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content p-3 border border-top-0 rounded-bottom">
+                                @if (ActiveTab == "tables")
+                                {
+                                    <div class="tab-pane fade show active">
+                                        @if (AnalysisResult.AnalysisData.TableDescriptions?.Count > 0)
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Table Name</th>
+                                                            <th>Suggested Name</th>
+                                                            <th>Suggested Description</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var tableDesc in AnalysisResult.AnalysisData.TableDescriptions)
+                                                        {
+                                                            <tr>
+                                                                <td>@tableDesc.TableName</td>
+                                                                <td>
+                                                                    <input type="text" class="form-control"
+                                                                           @bind="tableDesc.SuggestedName" />
+                                                                </td>
+                                                                <td>
+                                                                    <textarea class="form-control" rows="2"
+                                                                              @bind="tableDesc.SuggestedDescription"></textarea>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               @bind="SelectedTables[tableDesc.TableName]" />
+                                                                        <label class="form-check-label">
+                                                                            Apply
+                                                                        </label>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="empty-state">
+                                                <i class="fas fa-table"></i>
+                                                <p>No table suggestions available</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else if (ActiveTab == "columns")
+                                {
+                                    <div class="tab-pane fade show active">
+                                        @if (AnalysisResult.AnalysisData.ColumnDescriptions?.Count > 0)
+                                        {
+                                            <div class="filter-bar mb-3">
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                                                    <input type="text" class="form-control" placeholder="Filter columns..."
+                                                           @bind="ColumnFilter" @bind:event="oninput" />
+                                                    <select class="form-select" @bind="TableFilter">
+                                                        <option value="">All Tables</option>
+                                                        @foreach (var table in GetDistinctTables())
+                                                        {
+                                                            <option value="@table">@table</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Table</th>
+                                                            <th>Column</th>
+                                                            <th>Suggested Name</th>
+                                                            <th>Suggested Description</th>
+                                                            <th>Lookup</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var colDesc in GetFilteredColumns())
+                                                        {
+                                                            <tr>
+                                                                <td>@colDesc.TableName</td>
+                                                                <td>@colDesc.ColumnName</td>
+                                                                <td>
+                                                                    <input type="text" class="form-control"
+                                                                           @bind="colDesc.SuggestedName" />
+                                                                </td>
+                                                                <td>
+                                                                    <textarea class="form-control" rows="2"
+                                                                              @bind="colDesc.SuggestedDescription"></textarea>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               @bind="colDesc.IsLookupColumn" />
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               @bind="SelectedColumns[GetColumnKey(colDesc)]" />
+                                                                        <label class="form-check-label">
+                                                                            Apply
+                                                                        </label>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="empty-state">
+                                                <i class="fas fa-columns"></i>
+                                                <p>No column suggestions available</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else if (ActiveTab == "conflicts")
+                                {
+                                    <div class="tab-pane fade show active">
+                                        @if (AnalysisResult.AnalysisData.PotentialConflicts?.Count > 0)
+                                        {
+                                            <div class="conflicts-container">
+                                                @foreach (var conflict in AnalysisResult.AnalysisData.PotentialConflicts)
+                                                {
+                                                    <div class="conflict-card">
+                                                        <div class="conflict-header">
+                                                            <span class="conflict-type">@conflict.Type</span>
+                                                            <span class="conflict-desc">@conflict.ConflictDescription</span>
+                                                        </div>
+                                                        <div class="conflict-items">
+                                                            @foreach (var item in conflict.Items)
+                                                            {
+                                                                <div class="conflict-item">
+                                                                    <div class="conflict-item-name">
+                                                                        @if (!string.IsNullOrEmpty(item.TableName))
+                                                                        {
+                                                                            <span>@item.TableName.@item.Name</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span>@item.Name</span>
+                                                                        }
+                                                                    </div>
+                                                                    <div class="conflict-item-resolution">
+                                                                        @item.SuggestedResolution
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="empty-state">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <p>No naming conflicts detected</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else if (ActiveTab == "relationships")
+                                {
+                                    <div class="tab-pane fade show active">
+                                        @if (AnalysisResult.AnalysisData.SuggestedRelationships?.Count > 0)
+                                        {
+                                            <div class="relationships-container">
+                                                @foreach (var relationship in AnalysisResult.AnalysisData.SuggestedRelationships)
+                                                {
+                                                    <div class="relationship-card">
+                                                        <div class="relationship-header">
+                                                            <span class="relationship-type">@relationship.RelationshipType</span>
+                                                            <span class="relationship-confidence">
+                                                                Confidence: @(relationship.Confidence.ToString("P0"))
+                                                            </span>
+                                                        </div>
+                                                        <div class="relationship-details">
+                                                            <div class="relationship-mapping">
+                                                                <span>@relationship.SourceTable.@relationship.SourceTable.ColumnName</span>
+                                                                <i class="fas fa-arrow-right"></i>
+                                                                <span>@relationship.TargetTable.@relationship.TargetTable.ColumnName</span>
+                                                            </div>
+                                                            <div class="relationship-reasoning">
+                                                                @relationship.Reasoning
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="empty-state">
+                                                <i class="fas fa-link"></i>
+                                                <p>No relationship suggestions available</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else if (ActiveTab == "unclear")
+                                {
+                                    <div class="tab-pane fade show active">
+                                        @if (AnalysisResult.AnalysisData.UnclearElements?.Count > 0)
+                                        {
+                                            <div class="unclear-container">
+                                                @foreach (var element in AnalysisResult.AnalysisData.UnclearElements)
+                                                {
+                                                    <div class="unclear-card">
+                                                        <div class="unclear-header">
+                                                            <span class="unclear-type">@element.Type</span>
+                                                            <span class="unclear-name">
+                                                                @if (!string.IsNullOrEmpty(element.TableName))
+                                                                {
+                                                                    <span>@element.TableName.@element.Name</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span>@element.Name</span>
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                        <div class="unclear-details">
+                                                            <div class="unclear-issue">
+                                                                <span class="issue-label">Issue:</span>
+                                                                <span>@element.Issue</span>
+                                                            </div>
+                                                            <div class="unclear-suggestion">
+                                                                <span class="suggestion-label">Suggestion:</span>
+                                                                <span>@element.Suggestion</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="empty-state">
+                                                <i class="fas fa-question-circle"></i>
+                                                <p>No unclear elements detected</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="schema-explorer card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Schema Explorer</h5>
+                        <div class="schema-search">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Search schema..."
+                                       @bind="SchemaSearch" @bind:event="oninput" />
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="schemaAccordion">
+                        @foreach (var table in GetFilteredSchemaTables())
+                        {
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading-@table.ID">
+                                    <button class="accordion-button @(ExpandedTables.Contains(table.ID) ? "" : "collapsed")"
+                                            type="button"
+                                            @onclick="() => ToggleTableExpansion(table.ID)">
+                                        <div class="table-header-content">
+                                            <span class="table-name">@table.DBName</span>
+                                            @if (!string.IsNullOrEmpty(table.FriendlyName) && table.FriendlyName != table.DBName)
+                                            {
+                                                <span class="friendly-name">(@table.FriendlyName)</span>
+                                            }
+                                            <span class="column-count">@table.Columns.Count columns</span>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div class="accordion-collapse collapse @(ExpandedTables.Contains(table.ID) ? "show" : "")"
+                                     id="collapse-@table.ID">
+                                    <div class="accordion-body">
+                                        @if (!string.IsNullOrEmpty(table.Description))
+                                        {
+                                            <div class="table-description mb-3">
+                                                <i class="fas fa-info-circle"></i> @table.Description
+                                            </div>
+                                        }
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Column Name</th>
+                                                        <th>Friendly Name</th>
+                                                        <th>Data Type</th>
+                                                        <th>Description</th>
+                                                        <th>Attributes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var column in table.Columns)
+                                                    {
+                                                        <tr>
+                                                            <td>@column.DBName</td>
+                                                            <td>
+                                                                @if (!string.IsNullOrEmpty(column.FriendlyName))
+                                                                {
+                                                                    @column.FriendlyName
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted">-</span>
+                                                                }
+                                                            </td>
+                                                            <td>@column.DataType</td>
+                                                            <td>
+                                                                @if (!string.IsNullOrEmpty(column.Description))
+                                                                {
+                                                                    @column.Description
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted">-</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <div class="column-attributes">
+                                                                    @if (column.IsPrimaryKey)
+                                                                    {
+                                                                        <span class="attribute pk" title="Primary Key">PK</span>
+                                                                    }
+                                                                    @if (column.IsLookup)
+                                                                    {
+                                                                        <span class="attribute fk" title="Foreign Key">FK</span>
+                                                                    }
+                                                                    @if (!column.IsNullable)
+                                                                    {
+                                                                        <span class="attribute required" title="Required">Req</span>
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (SelectedDatabaseId > 0)
+    {
+        <div class="empty-state-large">
+            <i class="fas fa-database"></i>
+            <h4>No Schema Available</h4>
+            <p>Click "Refresh Schema" to load the database schema</p>
+            <button class="btn btn-primary" @onclick="RefreshSchema">
+                <i class="fas fa-sync-alt"></i> Refresh Schema
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state-large">
+            <i class="fas fa-database"></i>
+            <h4>No Database Selected</h4>
+            <p>Select a database to view and analyze its schema</p>
+        </div>
+    }
+</div>
+
+@if (IsApplying)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="applying-modal">
+        <div class="applying-content">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span>Applying changes to database schema...</span>
+        </div>
+    </div>
+}

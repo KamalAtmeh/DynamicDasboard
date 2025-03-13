@@ -154,8 +154,8 @@ namespace DynamicDashboardCommon.Models
     {
         public string RelationshipType { get; set; }
         public double Confidence { get; set; }
-        public TableColumnRef SourceTable { get; set; }
-        public TableColumnRef TargetTable { get; set; }
+        public RelationshipDetails SourceTable { get; set; }
+        public RelationshipDetails TargetTable { get; set; }
         public string Reasoning { get; set; }
     }
 

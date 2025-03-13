@@ -197,42 +197,138 @@
 	</div>
 
 	<!-- SQL Explanation Modal -->
-	@if (showSqlModal && sqlExplanationResponse != null)
-	{
-		<div class="modal-backdrop" @onclick="() => showSqlModal = false"></div>
-		<div class="sql-modal animate__animated animate__fadeInUp">
-			<div class="modal-header">
-				<h5>SQL Details</h5>
-				<button type="button" class="btn-close" @onclick="() => showSqlModal = false"></button>
+
+@if (showSqlModal && (sqlExplanationResponse != null || executionResponse?.Sql != null))
+{
+	<div class="modal-backdrop animate__animated animate__fadeIn" @onclick="() => showSqlModal = false"></div>
+	<div class="sql-modal animate__animated animate__fadeInUp">
+		<div class="modal-header">
+			<h5><i class="fas fa-code me-2"></i>SQL Details</h5>
+			<button type="button" class="btn-close" @onclick="() => showSqlModal = false"></button>
+		</div>
+		<div class="modal-body">
+			<div class="mb-3">
+				<h6>Business Explanation</h6>
+				<div class="explanation-box">
+					@(sqlExplanationResponse?.BusinessExplanation ?? executionResponse?.ResultExplanation ?? "This SQL query retrieves the requested data from the database.")
+				</div>
 			</div>
-			<div class="modal-body">
+			<div class="mb-3">
+				<h6>Generated SQL</h6>
+				<div class="sql-code-box">
+					<pre>@(sqlExplanationResponse?.GeneratedSql ?? executionResponse?.Sql ?? "No SQL query available")</pre>
+					<button class="btn btn-sm btn-outline-secondary copy-btn" @onclick="CopySqlToClipboard">
+						<i class="fas fa-copy"></i>
+					</button>
+				</div>
+			</div>
+			@if (!string.IsNullOrEmpty(sqlExplanationResponse?.DbNotes))
+			{
 				<div class="mb-3">
-					<h6>Business Explanation</h6>
-					<div class="explanation-box">
-						@sqlExplanationResponse.BusinessExplanation
+					<h6>Database Notes</h6>
+					<div class="notes-box">
+						@sqlExplanationResponse.DbNotes
 					</div>
 				</div>
-				<div class="mb-3">
-					<h6>Generated SQL</h6>
-					<div class="sql-code-box">
-						<pre>@sqlExplanationResponse.GeneratedSql</pre>
-						<button class="btn btn-sm btn-outline-secondary copy-btn" @onclick="CopySqlToClipboard">
-							<i class="fas fa-copy"></i>
-						</button>
-					</div>
+			}
+		</div>
+		<div class="dialog-footer">
+			<button class="btn btn-primary" @onclick="() => showSqlModal = false">
+				<i class="fas fa-check me-2"></i>Got it
+			</button>
+		</div>
+	</div>
+}
+
+<!-- Update the Confirmation Dialog section -->
+@if (currentStep == QueryStep.SqlExplanation && sqlExplanationResponse != null)
+{
+	<div class="modal-backdrop animate__animated animate__fadeIn"></div>
+	<div class="confirmation-dialog animate__animated animate__fadeInUp">
+		<div class="dialog-header">
+			<h5><i class="fas fa-lightbulb me-2"></i>Understanding Your Question</h5>
+			<button type="button" class="btn-close" @onclick="() => currentStep = QueryStep.Input"></button>
+		</div>
+		<div class="dialog-body">
+			<div class="question-box">
+				<i class="fas fa-question-circle"></i>
+				<span>@userQuestion</span>
+			</div>
+
+			<div class="explanation-box">
+				<h6>Here's what I understand:</h6>
+				<p>@sqlExplanationResponse.BusinessExplanation</p>
+			</div>
+
+			<div class="sql-preview">
+				<div class="d-flex justify-content-between align-items-center mb-2">
+					<h6>SQL Query:</h6>
+					<button class="btn btn-sm btn-outline-light" @onclick="CopySqlToClipboard">
+						<i class="fas fa-copy me-1"></i> Copy
+					</button>
 				</div>
-				@if (!string.IsNullOrEmpty(sqlExplanationResponse.DbNotes))
+				<pre>@sqlExplanationResponse.GeneratedSql</pre>
+
+				@if (!sqlExplanationResponse.IsValid)
 				{
-					<div class="mb-3">
-						<h6>Database Notes</h6>
-						<div class="notes-box">
-							@sqlExplanationResponse.DbNotes
-						</div>
+					<div class="invalid-warning">
+						<i class="fas fa-exclamation-triangle"></i>
+						<span>@sqlExplanationResponse.ValidationErrorMessage</span>
 					</div>
 				}
 			</div>
+
+			@if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities.Count > 0)
+			{
+				<div class="ambiguities-section">
+					<h6><i class="fas fa-random me-2"></i>I found some ambiguities:</h6>
+
+					@foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
+					{
+						<div class="ambiguity-item">
+							<label>@ambiguity.Key:</label>
+							<select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
+								@foreach (var option in ambiguity.Value)
+								{
+									<option value="@option">@option</option>
+								}
+							</select>
+						</div>
+					}
+				</div>
+			}
+
+			@if (sqlExplanationResponse.AdjustableParameters.Count > 0)
+			{
+				<div class="parameters-section">
+					<h6><i class="fas fa-sliders-h me-2"></i>Adjustable Parameters:</h6>
+
+					@foreach (var param in sqlExplanationResponse.AdjustableParameters)
+					{
+						<div class="parameter-item">
+							<label>@param.Key:</label>
+							<select class="form-select" @bind="adjustedParameters[param.Key]">
+								<option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
+								@foreach (var option in param.Value.Alternatives)
+								{
+									<option value="@option">@option</option>
+								}
+							</select>
+						</div>
+					}
+				</div>
+			}
 		</div>
-	}
+		<div class="dialog-footer">
+			<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Input">
+				<i class="fas fa-times me-2"></i> Cancel
+			</button>
+			<button class="btn btn-primary" @onclick="ConfirmSqlExplanation">
+				<i class="fas fa-check me-2"></i> Execute Query
+			</button>
+		</div>
+	</div>
+}
 
 	<!-- Confirmation Dialog -->
 	@if (currentStep == QueryStep.SqlExplanation && sqlExplanationResponse != null)

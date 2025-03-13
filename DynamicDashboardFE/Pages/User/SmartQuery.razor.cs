@@ -168,6 +168,9 @@ namespace DynamicDashboardFE.Pages.User
         /// <summary>
         /// Generates SQL with explanation
         /// </summary>
+        // File: DynamicDashboardFE/Pages/User/SmartQuery.razor.cs
+        // Update the GenerateSqlWithExplanation method to properly handle SQL retrieval
+
         private async Task GenerateSqlWithExplanation()
         {
             if (string.IsNullOrWhiteSpace(userQuestion))
@@ -186,10 +189,11 @@ namespace DynamicDashboardFE.Pages.User
             executionResponse = null;
             resolvedAmbiguities.Clear();
             adjustedParameters.Clear();
+            showSqlModal = false; // Reset modal state
 
             try
             {
-                isLoading = true;  // Set loading state
+                isLoading = true;
                 loadingMessage = "Analyzing your question...";
 
                 var request = new NlQueryRequest
@@ -204,62 +208,74 @@ namespace DynamicDashboardFE.Pages.User
                 {
                     sqlExplanationResponse = await response.Content.ReadFromJsonAsync<SqlGenerationWithExplanationResponse>();
 
-                    // Handle unrelated questions determined by the LLM
-                    if (sqlExplanationResponse != null && !sqlExplanationResponse.IsSchemaRelated)
+                    if (sqlExplanationResponse != null)
                     {
-                        isLoading = false;  // Important: Reset loading state before showing dialog
-                                            // Question is completely unrelated to the database schema
-                        ShowUnrelatedContent(
-                            sqlExplanationResponse.SchemaRelevanceMessage,
-                            sqlExplanationResponse.SuggestedTopics,
-                            sqlExplanationResponse.SuggestedQuestions);
-                        currentStep = QueryStep.Input;
-                        return;
-                    }
+                        // Log successful SQL generation
+                        await LogToConsole($"SQL Generated: {sqlExplanationResponse.GeneratedSql?.Substring(0, Math.Min(100, sqlExplanationResponse.GeneratedSql?.Length ?? 0))}...");
 
-                    // Handle partially unrelated content
-                    if (sqlExplanationResponse.HasPartiallyUnrelatedContent &&
-                        sqlExplanationResponse.UnrelatedQuestionParts != null &&
-                        sqlExplanationResponse.UnrelatedQuestionParts.Count > 0)
-                    {
-                        var unrelatedParts = string.Join(", ", sqlExplanationResponse.UnrelatedQuestionParts);
-                        ShowPartiallyUnrelatedContent(
-                            $"Parts of your question ({unrelatedParts}) are not related to the database schema.",
-                            sqlExplanationResponse.SuggestedQuestions);
-                    }
-
-                    // Initialize resolved ambiguities with default values
-                    if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities != null)
-                    {
-                        foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
+                        // Handle unrelated questions determined by the LLM
+                        if (!sqlExplanationResponse.IsSchemaRelated)
                         {
-                            if (ambiguity.Value.Count > 0)
+                            isLoading = false;
+                            ShowUnrelatedContent(
+                                sqlExplanationResponse.SchemaRelevanceMessage,
+                                sqlExplanationResponse.SuggestedTopics,
+                                sqlExplanationResponse.SuggestedQuestions);
+                            currentStep = QueryStep.Input;
+                            return;
+                        }
+
+                        // Handle partially unrelated content
+                        if (sqlExplanationResponse.HasPartiallyUnrelatedContent &&
+                            sqlExplanationResponse.UnrelatedQuestionParts != null &&
+                            sqlExplanationResponse.UnrelatedQuestionParts.Count > 0)
+                        {
+                            var unrelatedParts = string.Join(", ", sqlExplanationResponse.UnrelatedQuestionParts);
+                            ShowPartiallyUnrelatedContent(
+                                $"Parts of your question ({unrelatedParts}) are not related to the database schema.",
+                                sqlExplanationResponse.SuggestedQuestions);
+                        }
+
+                        // Initialize resolved ambiguities with default values
+                        if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities != null)
+                        {
+                            foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
                             {
-                                resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
+                                if (ambiguity.Value.Count > 0)
+                                {
+                                    resolvedAmbiguities[ambiguity.Key] = ambiguity.Value[0]; // Default to first option
+                                }
                             }
                         }
-                    }
 
-                    // Initialize adjusted parameters with default values
-                    if (sqlExplanationResponse.AdjustableParameters != null)
-                    {
-                        foreach (var param in sqlExplanationResponse.AdjustableParameters)
+                        // Initialize adjusted parameters with default values
+                        if (sqlExplanationResponse.AdjustableParameters != null)
                         {
-                            adjustedParameters[param.Key] = param.Value.DefaultValue;
+                            foreach (var param in sqlExplanationResponse.AdjustableParameters)
+                            {
+                                adjustedParameters[param.Key] = param.Value.DefaultValue;
+                            }
+                        }
+
+                        currentStep = QueryStep.SqlExplanation;
+
+                        if (!sqlExplanationResponse.IsValid)
+                        {
+                            Notifications.ShowWarning($"Generated SQL may not be valid: {sqlExplanationResponse.ValidationErrorMessage}");
                         }
                     }
-
-                    currentStep = QueryStep.SqlExplanation;
-
-                    if (!sqlExplanationResponse.IsValid)
+                    else
                     {
-                        Notifications.ShowWarning($"Generated SQL may not be valid: {sqlExplanationResponse.ValidationErrorMessage}");
+                        Notifications.ShowError("Couldn't process SQL response. Please try a different question.");
+                        currentStep = QueryStep.Input;
                     }
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    isLoading = false;  // Important: Reset loading state before showing dialog
+                    await LogToConsole($"API Error: {errorContent}");
+
+                    isLoading = false;
                     ShowUnrelatedContent(
                         "I couldn't understand your question in relation to the database schema. Please try rephrasing or ask something related to the available data.",
                         new List<string> { "Customer data", "Orders", "Products", "Inventory" },
@@ -270,17 +286,64 @@ namespace DynamicDashboardFE.Pages.User
             catch (Exception ex)
             {
                 await LogToConsole($"Error in GenerateSqlWithExplanation: {ex.Message}");
-                isLoading = false;  // Important: Reset loading state before showing dialog
+                isLoading = false;
                 ShowUnrelatedContent(
                     "An error occurred while processing your question. Please try again with a different question related to the database.",
                     null,
                     null);
                 currentStep = QueryStep.Input;
-
             }
             finally
             {
-                isLoading = false;  // Ensure loading state is reset in all cases
+                isLoading = false;
+            }
+        }
+
+        // Update the CopySqlToClipboard method
+        private async Task CopySqlToClipboard()
+        {
+            try
+            {
+                string sql = sqlExplanationResponse?.GeneratedSql;
+
+                if (string.IsNullOrEmpty(sql))
+                {
+                    Notifications.ShowWarning("No SQL available to copy.");
+                    return;
+                }
+
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sql);
+                Notifications.ShowSuccess("SQL copied to clipboard!");
+            }
+            catch (Exception ex)
+            {
+                await LogToConsole($"Error copying to clipboard: {ex.Message}");
+                Notifications.ShowError("Failed to copy SQL to clipboard.");
+            }
+        }
+
+        // Update the ShowSqlDetails method to properly display the SQL modal
+        private void ShowSqlDetails()
+        {
+            if (sqlExplanationResponse != null && !string.IsNullOrWhiteSpace(sqlExplanationResponse.GeneratedSql))
+            {
+                showSqlModal = true;
+            }
+            else if (executionResponse != null && !string.IsNullOrWhiteSpace(executionResponse.Sql))
+            {
+                // Fallback to execution SQL if available
+                var tempResponse = new SqlGenerationWithExplanationResponse
+                {
+                    GeneratedSql = executionResponse.Sql,
+                    BusinessExplanation = executionResponse.ResultExplanation ?? "SQL query execution details"
+                };
+
+                sqlExplanationResponse = tempResponse;
+                showSqlModal = true;
+            }
+            else
+            {
+                Notifications.ShowWarning("No SQL query available to display.");
             }
         }
 
@@ -360,14 +423,6 @@ namespace DynamicDashboardFE.Pages.User
                     "What are the top 5 products by sales?",
                     "How many orders were placed last month?"
                 };
-        }
-
-        /// <summary>
-        /// Shows SQL details in a modal
-        /// </summary>
-        private void ShowSqlDetails()
-        {
-            showSqlModal = true;
         }
 
         /// <summary>
@@ -654,25 +709,6 @@ namespace DynamicDashboardFE.Pages.User
             await AnalyzeQuestion();
         }
 
-        /// <summary>
-        /// Copies the generated SQL to the clipboard.
-        /// </summary>
-        private async Task CopySqlToClipboard()
-        {
-            var sql = sqlExplanationResponse?.GeneratedSql;
-            if (string.IsNullOrEmpty(sql)) return;
-
-            try
-            {
-                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sql);
-                Notifications.ShowSuccess("SQL copied to clipboard!");
-            }
-            catch (Exception ex)
-            {
-                await LogToConsole("Error copying SQL to clipboard: " + ex.Message);
-                Notifications.ShowError("Failed to copy SQL to clipboard.");
-            }
-        }
 
         /// <summary>
         /// Resets the workflow to start a new query.

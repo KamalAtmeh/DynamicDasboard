@@ -692,7 +692,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <summary>
         /// Builds an optimized schema string from a DatabaseSchema object
         /// </summary>
-        /// <param name="schema">The DatabaseSchema object</param>
+        /// <param name="schema">The DatabaseSchema object, expecting it desarilized</param>
         /// <returns>Optimized schema string</returns>
         public  string BuildOptimizedSchemaString(DatabaseSchema schema)
         {

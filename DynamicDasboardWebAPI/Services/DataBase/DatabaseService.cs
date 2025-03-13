@@ -93,6 +93,7 @@ namespace DynamicDasboardWebAPI.Services
                     return cached;
                 }
                 var database = await objDataBaseRepository.GetDatabaseByIdAsync(databaseId);
+                await CacheHelper.AddOrUpdateAsync(cacheKey, database);
                 return database;
             }
             catch (Exception ex)

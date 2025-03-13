@@ -61,5 +61,13 @@ namespace DynamicDasboardWebAPI.Services.LLM
             string databaseSchema,
             Dictionary<string, string> adminDescriptions = null);
 
+
+        /// <summary>
+        /// Generates schema analysis results from a database schema prompt
+        /// </summary>
+        /// <param name="prompt">The prompt containing schema and analysis instructions</param>
+        /// <returns>LLM response with schema analysis</returns>
+        Task<string> GenerateSchemaAnalysisAsync(string prompt);
+
     }
 }

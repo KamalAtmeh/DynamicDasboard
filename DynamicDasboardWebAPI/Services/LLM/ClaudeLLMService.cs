@@ -40,7 +40,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
             _model = _configuration["Claude:Model"] ?? "claude-3-sonnet-20240229";
             _apiEndpoint = _configuration["Claude:Endpoint"] ?? "https://api.anthropic.com/v1/messages";
-            timeOutSeconds = _configuration.GetValue<int>("LlmService: Timeout", 150);
+            timeOutSeconds = _configuration.GetValue<int>("LlmService:Timeout", 500);
         }
 
         // Add these methods to the ClaudeLLMService class
@@ -447,7 +447,30 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+
+        // Add this method to the ClaudeLLMService class
+        /// <inheritdoc/>
+        public async Task<string> GenerateSchemaAnalysisAsync(string prompt)
+        {
+            try
+            {
+                // Use the existing CallClaudeApiAsync method with a system prompt for schema analysis
+                var systemPrompt = "You are an expert database analyst helping improve the usability of database schemas.";
+
+                // Call Claude API with the prompt
+                var response = await CallClaudeApiAsync(systemPrompt, prompt);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
         #region Private Helper Methods
+
+
 
         private string BuildSQLScriptwithExplanationSystemPrompt_Old(string databaseSchema, Dictionary<string, string> adminDescriptions)
         {
@@ -597,7 +620,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
 }
                 },
                     temperature = 1,
-                    max_tokens = 2000
+                    max_tokens = 20000
                 };
 
                 var content = new StringContent(
@@ -617,10 +640,9 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
                 }
                 // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");    
-                if (_httpClient.Timeout == TimeSpan.Zero)
-                {
+
                     _httpClient.Timeout = TimeSpan.FromSeconds(timeOutSeconds);
-                }
+                
 
 
 
