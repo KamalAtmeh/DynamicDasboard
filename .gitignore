@@ -13,3 +13,4 @@ obj/
 /PythonApplication1/
 /ClassLibrary1/
 /test/            # If test/ is a local test folder
+/DynamicDasboardWebAPI/appsettings.json
