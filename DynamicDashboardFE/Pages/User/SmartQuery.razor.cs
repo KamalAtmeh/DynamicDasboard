@@ -102,9 +102,10 @@ namespace DynamicDashboardFE.Pages.User
                     await LoadExampleQuestions();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 Notifications.ShowError("Error initializing the application. Please try again.");
+                await LogToConsole($"Error : {ex.Message}");
             }
         }
 
@@ -154,9 +155,10 @@ namespace DynamicDashboardFE.Pages.User
                 await LoadExampleQuestions();
                 Notifications.ShowSuccess($"Connected to database: {selectedDatabase.FriendlyName ?? selectedDatabase.Name}");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 Notifications.ShowError("Error selecting database. Please try again.");
+                await LogToConsole($"Error :  {ex.Message}");
             }
         }
 
@@ -187,7 +189,7 @@ namespace DynamicDashboardFE.Pages.User
 
             try
             {
-                isLoading = true;
+                isLoading = true;  // Set loading state
                 loadingMessage = "Analyzing your question...";
 
                 var request = new NlQueryRequest
@@ -205,7 +207,8 @@ namespace DynamicDashboardFE.Pages.User
                     // Handle unrelated questions determined by the LLM
                     if (sqlExplanationResponse != null && !sqlExplanationResponse.IsSchemaRelated)
                     {
-                        // Question is completely unrelated to the database schema
+                        isLoading = false;  // Important: Reset loading state before showing dialog
+                                            // Question is completely unrelated to the database schema
                         ShowUnrelatedContent(
                             sqlExplanationResponse.SchemaRelevanceMessage,
                             sqlExplanationResponse.SuggestedTopics,
@@ -256,6 +259,7 @@ namespace DynamicDashboardFE.Pages.User
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
+                    isLoading = false;  // Important: Reset loading state before showing dialog
                     ShowUnrelatedContent(
                         "I couldn't understand your question in relation to the database schema. Please try rephrasing or ask something related to the available data.",
                         new List<string> { "Customer data", "Orders", "Products", "Inventory" },
@@ -265,27 +269,38 @@ namespace DynamicDashboardFE.Pages.User
             }
             catch (Exception ex)
             {
+                await LogToConsole($"Error in GenerateSqlWithExplanation: {ex.Message}");
+                isLoading = false;  // Important: Reset loading state before showing dialog
                 ShowUnrelatedContent(
                     "An error occurred while processing your question. Please try again with a different question related to the database.",
                     null,
                     null);
                 currentStep = QueryStep.Input;
+
             }
             finally
             {
-                isLoading = false;
+                isLoading = false;  // Ensure loading state is reset in all cases
             }
+        }
+
+        // Add this method to your SmartQuery.razor.cs file
+        private async Task LogToConsole(string message)
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", message);
         }
 
         /// <summary>
         /// Shows dialog for completely unrelated content with suggested schema-based topics and questions
         /// </summary>
-        private void ShowUnrelatedContent(string message, List<string> suggestedTopics = null, List<string> schemaQuestions = null)
+        private async void ShowUnrelatedContent(string message, List<string> suggestedTopics = null, List<string> schemaQuestions = null)
         {
-            unrelatedMessage = message;
+            try
+            {
+                unrelatedMessage = message;
 
-            // Use provided topics or default ones
-            schemaTopics = suggestedTopics ?? new List<string>
+                // Use provided topics or default ones
+                schemaTopics = suggestedTopics ?? new List<string>
     {
         "Customer data",
         "Order information",
@@ -294,18 +309,23 @@ namespace DynamicDashboardFE.Pages.User
         "Sales analytics"
     };
 
-            // Use provided questions or fetch from available suggestions
-            suggestedSchemaQuestions = schemaQuestions ??
-                (suggestedQuestions.Count > 0
-                    ? suggestedQuestions.Take(3).ToList()
-                    : new List<string>
-                    {
+                // Use provided questions or fetch from available suggestions
+                suggestedSchemaQuestions = schemaQuestions ??
+                    (suggestedQuestions.Count > 0
+                        ? suggestedQuestions.Take(3).ToList()
+                        : new List<string>
+                        {
                 "Show me all customers",
                 "What are the top 5 products by sales?",
                 "How many orders were placed last month?"
-                    });
+                        });
 
-            showUnrelatedDialog = true;
+                showUnrelatedDialog = true;
+            }
+            catch (Exception ex)
+            {
+               await LogToConsole("Error in ShowUnrelatedContent: " + ex.Message);
+            }
         }
 
         /// <summary>
@@ -324,7 +344,7 @@ namespace DynamicDashboardFE.Pages.User
             showPartiallyUnrelatedBanner = true;
         }
 
-     
+
 
         /// <summary>
         /// Generates questions based on the database schema
@@ -403,9 +423,10 @@ namespace DynamicDashboardFE.Pages.User
                     currentStep = QueryStep.Input;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Notifications.ShowError("An unexpected error occurred. Please try again.");
+                await LogToConsole("Error: " + ex.Message);
+               Notifications.ShowError("An unexpected error occurred. Please try again.");
                 currentStep = QueryStep.Input;
             }
             finally
@@ -456,8 +477,9 @@ namespace DynamicDashboardFE.Pages.User
                     };
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await LogToConsole("Error loading example questions: " + ex.Message);
                 // Use default questions if API call fails
                 suggestedQuestions = new List<string>
                 {
@@ -604,8 +626,9 @@ namespace DynamicDashboardFE.Pages.User
                     Notifications.ShowError("Error exporting to Excel. Please try again.");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await LogToConsole("Error exporting to Excel: " + ex.Message);
                 Notifications.ShowError("Error exporting to Excel. Please try again.");
             }
         }
@@ -644,8 +667,9 @@ namespace DynamicDashboardFE.Pages.User
                 await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sql);
                 Notifications.ShowSuccess("SQL copied to clipboard!");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await LogToConsole("Error copying SQL to clipboard: " + ex.Message);
                 Notifications.ShowError("Failed to copy SQL to clipboard.");
             }
         }
