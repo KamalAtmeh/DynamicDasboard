@@ -1,0 +1,439 @@
+﻿@page "/dashboard"
+@using DynamicDashboardCommon.Models
+@using DynamicDashboardCommon.Models.LLM
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-primary text-white py-3">
+                    <h4 class="m-0 font-weight-bold">Natural Language Query</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Connection Settings Panel -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Select Database</label>
+                                <select class="form-select" @onchange="OnDatabaseSelectionChanged">
+                                    <option value="0">-- Select a Database --</option>
+                                    @foreach (var db in availableDatabases)
+                                    {
+                                        <option value="@db.DatabaseID">@(db.FriendlyName ?? db.Name)</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Authentication</label>
+                                <select class="form-select" @bind="dbAuthType">
+                                    <option value="windows">Windows Authentication</option>
+                                    <option value="sql">SQL Authentication</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-outline-primary w-100" @onclick="TestDatabaseConnection" disabled="@isLoading">
+                                @if (isLoading && loadingMessage.Contains("connection"))
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span>Testing...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-plug me-1"></i>
+                                    <span>Test Connection</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light">Server</span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="Server Name" @bind="dbServer" disabled="@(selectedDatabase != null)" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light">Database</span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="Database Name" @bind="dbName" disabled="@(selectedDatabase != null)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(connectionStatus))
+                    {
+                        <div class="alert alert-@(connectionSuccessful ? "success" : "danger") d-flex align-items-center mb-4">
+                            <i class="@(connectionSuccessful ? "fas fa-check-circle" : "fas fa-times-circle") me-2"></i>
+                            @connectionStatus
+                        </div>
+                    }
+
+                    @if (dbAuthType == "sql")
+                    {
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light">Username</span>
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="SQL Username" @bind="dbUsername" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light">Password</span>
+                                    </div>
+                                    <input type="password" class="form-control" placeholder="SQL Password" @bind="dbPassword" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Main Query Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            @if (currentStep == QueryStep.Input)
+                            {
+                                <!-- Input Step -->
+                                <div class="mb-3 animate__animated animate__fadeIn">
+                                    <label for="nlQuery" class="form-label">Ask your question in natural language:</label>
+                                    <div class="input-group mb-3">
+                                        <input type="text" id="nlQuery" class="form-control form-control-lg"
+                                               placeholder="e.g., Show me the top 10 customers by total order value"
+                                               @bind="userQuestion" @bind:event="oninput"
+                                               @onkeypress="OnKeyPress" />
+                                        <button class="btn btn-primary" @onclick="AnalyzeQuestion" disabled="@isLoading">
+                                            @if (isLoading)
+                                            {
+                                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                <span>Analyzing...</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-search"></i>
+                                                <span>Analyze</span>
+                                            }
+                                        </button>
+                                    </div>
+
+                                    @if (!isExamplesLoading && suggestedQuestions.Count > 0)
+                                    {
+                                        <div class="mb-3">
+                                            <label class="form-label">Example questions:</label>
+                                            <div class="d-flex flex-wrap">
+                                                @foreach (var example in suggestedQuestions)
+                                                {
+                                                    <span class="badge bg-light text-dark m-1 p-2 clickable-badge"
+                                                          @onclick="async () => await UseExample(example)">
+                                                        @example
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else if (currentStep == QueryStep.Confirmation && analysisResponse != null)
+                            {
+                                <!-- Understanding Confirmation Step -->
+                                <div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+                                    <div class="card-header bg-light py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="m-0 font-weight-bold">Understanding Your Question</h5>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetWorkflow">
+                                                <i class="fas fa-arrow-left"></i> Back
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Question:</strong> @userQuestion
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <h6>My Understanding:</h6>
+                                            <p>@analysisResponse.Explanation</p>
+
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <span class="badge bg-@(analysisResponse.ConfidenceScore > 0.7 ? "success" : analysisResponse.ConfidenceScore > 0.4 ? "warning" : "danger")">
+                                                        Confidence: @(analysisResponse.ConfidenceScore * 100)%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if (analysisResponse.HasAmbiguities && analysisResponse.DetectedAmbiguities.Count > 0)
+                                        {
+                                            <div class="mb-3">
+                                                <h6>Ambiguities Detected:</h6>
+                                                <p>Please clarify the following ambiguous terms:</p>
+
+                                                <div class="list-group">
+                                                    @foreach (var ambiguity in analysisResponse.DetectedAmbiguities)
+                                                    {
+                                                        <div class="list-group-item">
+                                                            <div class="mb-2"><strong>@ambiguity.Key:</strong></div>
+                                                            <select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
+                                                                @foreach (var option in ambiguity.Value)
+                                                                {
+                                                                    <option value="@option">@option</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (analysisResponse.AdjustableParameters.Count > 0)
+                                        {
+                                            <div class="mb-3">
+                                                <h6>Adjustable Parameters:</h6>
+                                                <p>You can adjust these parameters to refine your query:</p>
+
+                                                <div class="list-group">
+                                                    @foreach (var param in analysisResponse.AdjustableParameters)
+                                                    {
+                                                        <div class="list-group-item">
+                                                            <div class="mb-2">
+                                                                <strong>@param.Key:</strong>
+                                                                <small class="text-muted">@param.Value.Description</small>
+                                                            </div>
+                                                            <select class="form-select" @bind="adjustedParameters[param.Key]">
+                                                                <option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
+                                                                @foreach (var option in param.Value.Alternatives)
+                                                                {
+                                                                    <option value="@option">@option</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(analysisResponse.PreviewSql))
+                                        {
+                                            <div class="mb-3">
+                                                <h6>Preview SQL:</h6>
+                                                <pre class="bg-light p-3 rounded">@analysisResponse.PreviewSql</pre>
+                                            </div>
+                                        }
+
+                                        <div class="d-flex justify-content-end mt-3">
+                                            <button class="btn btn-primary" @onclick="ConfirmUnderstanding" disabled="@isLoading">
+                                                @if (isLoading)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    <span>Processing...</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Confirm & Generate SQL</span>
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (currentStep == QueryStep.SqlGeneration && sqlResponse != null)
+                            {
+                                <!-- SQL Generation Step -->
+                                <div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+                                    <div class="card-header bg-light py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="m-0 font-weight-bold">Generated SQL</h5>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => currentStep = QueryStep.Confirmation">
+                                                <i class="fas fa-arrow-left"></i> Back
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Question:</strong> @userQuestion
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <h6>Generated SQL Query:</h6>
+                                            <div class="d-flex justify-content-end mb-2">
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="CopySqlToClipboard">
+                                                    <i class="fas fa-copy"></i> Copy
+                                                </button>
+                                            </div>
+                                            <pre class="bg-light p-3 rounded">@sqlResponse.GeneratedSql</pre>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end mt-3">
+                                            <button class="btn btn-primary" @onclick="ExecuteQuery" disabled="@isLoading">
+                                                @if (isLoading)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    <span>Executing...</span>
+                                                }
+                                                else
+                                                {
+                                                    <i class="fas fa-play"></i>
+                                                    <span>Execute Query</span>
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (currentStep == QueryStep.Results && executionResponse != null)
+                            {
+                                <!-- Results Step -->
+                                <div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+                                    <div class="card-header bg-light py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="m-0 font-weight-bold">Query Results</h5>
+                                            <div>
+                                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => currentStep = QueryStep.SqlGeneration">
+                                                    <i class="fas fa-arrow-left"></i> Back
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="ExportToExcel">
+                                                    <i class="fas fa-file-excel"></i> Export to Excel
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="ResetWorkflow">
+                                                    <i class="fas fa-redo"></i> New Query
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Question:</strong> @userQuestion
+                                        </div>
+
+                                        @if (!string.IsNullOrEmpty(executionResponse.ResultExplanation))
+                                        {
+                                            <div class="alert alert-success mb-4">
+                                                <i class="fas fa-lightbulb me-2"></i>
+                                                <strong>Explanation:</strong> @executionResponse.ResultExplanation
+                                            </div>
+                                        }
+
+                                        @if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Number)
+                                        {
+                                            <div class="card shadow-sm border-0 mb-4">
+                                                <div class="card-header bg-light py-3">
+                                                    <h5 class="m-0 font-weight-bold">Result</h5>
+                                                </div>
+                                                <div class="card-body text-center">
+                                                    <h1 class="display-4 text-primary">@executionResponse.FormattedResult</h1>
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Label)
+                                        {
+                                            <div class="alert alert-info">
+                                                @executionResponse.FormattedResult
+                                            </div>
+                                        }
+                                        else if (executionResponse.Results != null && executionResponse.Results.Count > 0)
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            @foreach (var column in GetResultColumns(executionResponse.Results))
+                                                            {
+                                                                <th>@FormatColumnName(column)</th>
+                                                            }
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var row in GetPagedResults(executionResponse.Results))
+                                                        {
+                                                            <tr>
+                                                                @foreach (var column in GetResultColumns(executionResponse.Results))
+                                                                {
+                                                                    <td>@FormatValue(row.ContainsKey(column) ? row[column] : null)</td>
+                                                                }
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            @if (totalPages > 1)
+                                            {
+                                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                                    <div>
+                                                        Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, executionResponse.Results.Count)) of @executionResponse.Results.Count results
+                                                    </div>
+                                                    <nav>
+                                                        <ul class="pagination">
+                                                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                                                <a class="page-link" href="javascript:void(0)" @onclick="PreviousPage">
+                                                                    <i class="fas fa-chevron-left"></i>
+                                                                </a>
+                                                            </li>
+
+                                                            @for (int i = startPage; i <= endPage; i++)
+                                                            {
+                                                                var pageNumber = i;
+                                                                <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                                                    <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPage(pageNumber)">
+                                                                        @pageNumber
+                                                                    </a>
+                                                                </li>
+                                                            }
+
+                                                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                                                <a class="page-link" href="javascript:void(0)" @onclick="NextPage">
+                                                                    <i class="fas fa-chevron-right"></i>
+                                                                </a>
+                                                            </li>
+                                                        </ul>
+                                                    </nav>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                No results found for your query.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" aria-label="Close" @onclick="HandleErrorDismiss"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}

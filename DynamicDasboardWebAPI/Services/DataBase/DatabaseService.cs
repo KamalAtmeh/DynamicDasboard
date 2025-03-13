@@ -9,6 +9,8 @@ using DynamicDashboardCommon.Models;
 using DynamicDasboardWebAPI.Repositories;
 using DynamicDasboardWebAPI.Utilities;
 using System.Linq;
+using DynamicDashboardCommon.Enums;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace DynamicDasboardWebAPI.Services
@@ -18,10 +20,10 @@ namespace DynamicDasboardWebAPI.Services
     /// </summary>
     public class DatabaseService : IDatabaseService
     {
-        private readonly DatabaseRepository _DBRepository;
-        private readonly TableRepository _tableRepository;
-        private readonly ColumnRepository _columnRepository;
-        private readonly RelationshipService _relationshipService;
+        private readonly DatabaseRepository objDataBaseRepository;
+        private readonly TableRepository objTablereposiroty;
+        private readonly ColumnRepository objColumnreposiroty;
+        private readonly RelationshipService objRelationshipService;
         private readonly ConcurrentDictionary<string, int> _typeIdCache = new();
 
         /// <summary>
@@ -38,10 +40,10 @@ namespace DynamicDasboardWebAPI.Services
             ColumnRepository columnRepository,
             RelationshipService relationshipService)
         {
-            _DBRepository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _tableRepository = tableRepository ?? throw new ArgumentNullException(nameof(tableRepository));
-            _relationshipService = relationshipService ?? throw new ArgumentNullException(nameof(relationshipService));
-            _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
+            objDataBaseRepository = repository ?? throw new ArgumentNullException(nameof(repository));
+            objTablereposiroty = tableRepository ?? throw new ArgumentNullException(nameof(tableRepository));
+            objRelationshipService = relationshipService ?? throw new ArgumentNullException(nameof(relationshipService));
+            objColumnreposiroty = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
 
 
         }
@@ -54,7 +56,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var databases = await _DBRepository.GetAllDatabasesAsync();
+                var databases = await objDataBaseRepository.GetAllDatabasesAsync();
 
                 // Enrich with type names if needed
                 foreach (var db in databases)
@@ -92,7 +94,7 @@ namespace DynamicDasboardWebAPI.Services
                     database.CreatedAt = DateTime.UtcNow;
                     database.IsActive = true;
 
-                    int databaseId = await _DBRepository.AddDatabaseAsync(database);
+                    int databaseId = await objDataBaseRepository.AddDatabaseAsync(database);
 
                     return databaseId;
                 }
@@ -121,7 +123,7 @@ namespace DynamicDasboardWebAPI.Services
             {
                 if (!string.IsNullOrWhiteSpace(database.Name) && !string.IsNullOrWhiteSpace(database.ServerAddress) && !string.IsNullOrEmpty(database.FriendlyName))
                 {     // Validate required fields
-                    int result = await _DBRepository.UpdateDatabaseAsync(database);
+                    int result = await objDataBaseRepository.UpdateDatabaseAsync(database);
                     return result;
                 }
                 else
@@ -144,7 +146,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                int result = await _DBRepository.DeleteDatabaseAsync(databaseId);
+                int result = await objDataBaseRepository.DeleteDatabaseAsync(databaseId);
                 return result;
             }
             catch (Exception ex)
@@ -187,7 +189,7 @@ namespace DynamicDasboardWebAPI.Services
                     };
                 }
                 // Test connection
-                bool isSuccess = await _DBRepository.TestConnectionAsync(database);
+                bool isSuccess = await objDataBaseRepository.TestConnectionAsync(database);
                 return isSuccess;
             }
             catch (Exception ex)
@@ -206,7 +208,7 @@ namespace DynamicDasboardWebAPI.Services
             {
 
                 // Get types from repository
-                return await _DBRepository.GetSupportedDatabaseTypesAsync();
+                return await objDataBaseRepository.GetSupportedDatabaseTypesAsync();
             }
             catch (Exception ex)
             {
@@ -243,7 +245,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var database = await _DBRepository.GetDatabaseByIdAsync(databaseId);
+                var database = await objDataBaseRepository.GetDatabaseByIdAsync(databaseId);
                 return database;
             }
             catch (Exception ex)
@@ -260,7 +262,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                return await _DBRepository.GetSupportedDatabaseTypesAsync();
+                return await objDataBaseRepository.GetSupportedDatabaseTypesAsync();
             }
             catch (Exception ex)
             {
@@ -288,7 +290,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // If not in cache, get from repository
-                string typeName = await _DBRepository.GetDatabaseTypeNameAsync(typeId);
+                string typeName = await objDataBaseRepository.GetDatabaseTypeNameAsync(typeId);
 
                 // If found, add to cache
                 if (!string.IsNullOrEmpty(typeName))
@@ -357,12 +359,12 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
                 // Get all tables for the database
-                var tables = await _tableRepository.GetTablesByDatabaseIdAsync(databaseId);
+                var tables = await objTablereposiroty.GetTablesByDatabaseIdAsync(databaseId);
 
                 foreach (var table in tables)
                 {
                     // Get all columns for the table
-                    var columns = await _columnRepository.GetColumnsByTableIdAsync(table.TableID);
+                    var columns = await objColumnreposiroty.GetColumnsByTableIdAsync(table.TableID);
 
                     var tableDto = new SchemaTableDto
                     {
@@ -562,7 +564,7 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
                 // Get existing columns
-                var existingColumns = await _columnRepository.GetColumnsByTableIdAsync(tableId);
+                var existingColumns = await objColumnreposiroty.GetColumnsByTableIdAsync(tableId);
                 var existingColumnDict = existingColumns.ToDictionary(c => c.DBColumnName, StringComparer.OrdinalIgnoreCase);
                 var processedColumnIds = new HashSet<int>();
                 var tableDictionary = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -586,7 +588,7 @@ namespace DynamicDasboardWebAPI.Services
                             existingColumn.AdminColumnName = columnDto.AdminColumnName;
                             existingColumn.AdminDescription = columnDto.AdminDescription;
                             existingColumn.IsLookupColumn = columnDto.IsLookupColumn;
-                            await _columnRepository.UpdateColumnAsync(existingColumn);
+                            await objColumnreposiroty.UpdateColumnAsync(existingColumn);
                         }
                     }
                     else
@@ -603,7 +605,7 @@ namespace DynamicDasboardWebAPI.Services
                             IsLookupColumn = columnDto.IsLookupColumn
                         };
 
-                        int newColumnId = await _columnRepository.AddColumnAsync(newColumn);
+                        int newColumnId = await objColumnreposiroty.AddColumnAsync(newColumn);
                         tableDictionary[columnDto.ColumnName] = newColumnId;
                     }
                 }
@@ -613,12 +615,12 @@ namespace DynamicDasboardWebAPI.Services
                 {
                     if (!processedColumnIds.Contains(existingColumn.ColumnID))
                     {
-                        await _columnRepository.DeleteColumnAsync(existingColumn.ColumnID);
+                        await objColumnreposiroty.DeleteColumnAsync(existingColumn.ColumnID);
                     }
                 }
 
                 // Store column mapping for this table
-                var tableInfo = await _tableRepository.GetTableByIdAsync(tableId);
+                var tableInfo = await objTablereposiroty.GetTableByIdAsync(tableId);
                 if (tableInfo != null)
                 {
                     columnMapping[tableInfo.DBTableName] = tableDictionary;
@@ -643,7 +645,7 @@ namespace DynamicDasboardWebAPI.Services
             {
                 foreach (var tableId in tableNameToIdMap.Values)
                 {
-                    var tableRelationships = await _relationshipService.GetRelationshipsByTableIdAsync(tableId);
+                    var tableRelationships = await objRelationshipService.GetRelationshipsByTableIdAsync(tableId);
                     allRelationships.AddRange(tableRelationships);
                 }
 
@@ -699,7 +701,7 @@ namespace DynamicDasboardWebAPI.Services
                                     if (existingRel.RelationshipType != relationType)
                                     {
                                         existingRel.RelationshipType = relationType;
-                                        await _relationshipService.UpdateRelationshipAsync(existingRel);
+                                        await objRelationshipService.UpdateRelationshipAsync(existingRel);
                                     }
                                 }
                                 else
@@ -718,7 +720,7 @@ namespace DynamicDasboardWebAPI.Services
                                         CreatedBy = 3 // System user ID //temp
                                     };
 
-                                    await _relationshipService.AddRelationshipAsync(newRelationship);
+                                    await objRelationshipService.AddRelationshipAsync(newRelationship);
                                 }
                             }
                         }
@@ -730,7 +732,7 @@ namespace DynamicDasboardWebAPI.Services
                 {
                     if (!processedRelationshipIds.Contains(relationship.RelationshipID))
                     {
-                        await _relationshipService.DeleteRelationshipAsync(relationship.RelationshipID);
+                        await objRelationshipService.DeleteRelationshipAsync(relationship.RelationshipID);
                     }
                 }
             }
@@ -748,12 +750,12 @@ namespace DynamicDasboardWebAPI.Services
                 var result = new List<SchemaRelationshipDto>();
 
                 // Get all tables for this database
-                var tables = await _tableRepository.GetTablesByDatabaseIdAsync(databaseId);
+                var tables = await objTablereposiroty.GetTablesByDatabaseIdAsync(databaseId);
 
                 // Get all relationships for each table
                 foreach (var table in tables)
                 {
-                    var relationships = await _relationshipService.GetRelationshipsByTableIdAsync(table.TableID);
+                    var relationships = await objRelationshipService.GetRelationshipsByTableIdAsync(table.TableID);
 
                     // Get table name by ID
                     var tableNameById = tables.ToDictionary(t => t.TableID, t => t.DBTableName);
@@ -769,8 +771,8 @@ namespace DynamicDasboardWebAPI.Services
                         }
 
                         // Get column names
-                        var sourceColumn = await _columnRepository.GetColumnByIdAsync(rel.ColumnID);
-                        var targetColumn = await _columnRepository.GetColumnByIdAsync(rel.RelatedColumnID);
+                        var sourceColumn = await objColumnreposiroty.GetColumnByIdAsync(rel.ColumnID);
+                        var targetColumn = await objColumnreposiroty.GetColumnByIdAsync(rel.RelatedColumnID);
 
                         if (sourceColumn == null || targetColumn == null)
                         {
@@ -799,5 +801,92 @@ namespace DynamicDasboardWebAPI.Services
                 throw;
             }
         }
+
+
+        /// <summary>
+        /// Updates the example questions for a database.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database.</param>
+        /// <param name="exampleQuestions">The example questions to set.</param>
+        /// <returns>True if the update was successful; otherwise, false.</returns>
+        public async Task<bool> UpdateExampleQuestionsAsync(int databaseId, SuggestedQuestions suggestedQuestions)
+        {
+            try
+            {
+                var database = await GetDatabaseByIdAsync(databaseId);
+                if (database == null)
+                    return false;
+
+                await SetExampleQuestions(database, suggestedQuestions);
+                var result = await objDataBaseRepository.UpdateDatabaseAsync(database);
+                return result > 0;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets the example questions for a database.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database.</param>
+        /// <returns>The example questions for the database.</returns>
+        public async Task<SuggestedQuestions> GetExampleQuestionsAsync(int databaseId)
+        {
+            try
+            {
+                var database = await GetDatabaseByIdAsync(databaseId);
+                if (database == null)
+                    return new SuggestedQuestions();
+
+                return await GetExampleQuestions(database);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public Task<SuggestedQuestions> GetExampleQuestions(Database database)
+        {
+            if (string.IsNullOrEmpty(database.SuggestedQuestions))
+            {
+                return Task.FromResult(new SuggestedQuestions());
+            }
+
+            try
+            {
+                var result = System.Text.Json.JsonSerializer.Deserialize<SuggestedQuestions>(
+                    database.SuggestedQuestions,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                ) ?? new SuggestedQuestions();
+                return Task.FromResult(result);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public Task<string> SetExampleQuestions(Database database, SuggestedQuestions questions)
+        {
+            if (questions == null)
+            {
+                database.SuggestedQuestions = "{}";
+                return Task.FromResult(database.SuggestedQuestions);
+            }
+
+            try
+            {
+                database.SuggestedQuestions = System.Text.Json.JsonSerializer.Serialize(questions);
+                return Task.FromResult(database.SuggestedQuestions);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
     }
 }

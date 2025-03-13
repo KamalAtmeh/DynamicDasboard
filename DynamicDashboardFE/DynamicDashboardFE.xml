@@ -4,6 +4,132 @@
         <name>DynamicDashboardFE</name>
     </assembly>
     <members>
+        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery">
+            <summary>
+            Enhanced Natural Language Query component that allows users to ask questions in natural language
+            and receive query results through a multi-step workflow.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.QueryStep">
+            <summary>
+            Defines the current step in the query workflow.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.OnInitializedAsync">
+            <summary>
+            Initializes the component, loads configuration settings, available databases, and example questions.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.OnDatabaseSelectionChanged(Microsoft.AspNetCore.Components.ChangeEventArgs)">
+            <summary>
+            Handles database selection change.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.HandleErrorDismiss">
+            <summary>
+            Dismisses any displayed error messages.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.LoadExampleQuestions">
+            <summary>
+            Loads example questions from the API for the selected database.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.TestDatabaseConnection">
+            <summary>
+            Tests the database connection using the provided credentials.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.FormatColumnName(System.String)">
+            <summary>
+            Formats column names for display by converting from snake_case or camelCase to Title Case.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.FormatValue(System.Object)">
+            <summary>
+            Formats field values for display based on their data type.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GetResultColumns(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Gets the column names from the query results.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GetPagedResults(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Gets a page of results based on the current page and page size.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.PreviousPage">
+            <summary>
+            Navigates to the previous page of results.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.NextPage">
+            <summary>
+            Navigates to the next page of results.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GoToPage(System.Int32)">
+            <summary>
+            Navigates to a specific page of results.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ExportToExcel">
+            <summary>
+            Exports the query results to an Excel file.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.OnKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs)">
+            <summary>
+            Handles key press events, particularly the Enter key to submit questions.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.UseExample(System.String)">
+            <summary>
+            Uses an example question as the user's question and initiates analysis.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.CopySqlToClipboard">
+            <summary>
+            Copies the generated SQL to the clipboard.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.AnalyzeQuestion">
+            <summary>
+            Step 1: Analyzes the natural language question and generates an explanation.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ConfirmUnderstanding">
+            <summary>
+            Step 2: Confirms understanding and generates SQL based on user selections.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ExecuteQuery">
+            <summary>
+            Step 3: Executes the generated SQL query and displays results.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ResetWorkflow">
+            <summary>
+            Resets the workflow to start a new query.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.ExportRequest">
+            <summary>
+            Internal class for exporting data to Excel.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.NlQueryConfirmationRequest">
+            <summary>
+            Request model for confirming understanding and generating SQL.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.SqlExecutionRequest">
+            <summary>
+            Request model for executing SQL queries.
+            </summary>
+        </member>
         <member name="T:DynamicDashboardFE.Services.DatabaseStateService">
             <summary>
             Service to manage the state of databases in the application.

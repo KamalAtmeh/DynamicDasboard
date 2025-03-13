@@ -11,7 +11,7 @@ namespace DynamicDashboardFE.Utilities
             _toastService = toastService;
         }
 
-        public void ShowSuccess(string message, int timeout = 5000)
+        public void ShowSuccess(string message, int timeout = 3000)
         {
             _toastService.ShowSuccess(message, options =>
             {
@@ -20,7 +20,7 @@ namespace DynamicDashboardFE.Utilities
             });
         }
 
-        public void ShowError(string message, int timeout = 5000)
+        public void ShowError(string message, int timeout = 4000)
         {
             _toastService.ShowError(message, options =>
             {
@@ -29,7 +29,7 @@ namespace DynamicDashboardFE.Utilities
             });
         }
 
-        public void ShowInfo(string message, int timeout = 5000)
+        public void ShowInfo(string message, int timeout = 3000)
         {
             _toastService.ShowInfo(message, options =>
             {
@@ -38,7 +38,7 @@ namespace DynamicDashboardFE.Utilities
             });
         }
 
-        public void ShowWarning(string message, int timeout = 5000)
+        public void ShowWarning(string message, int timeout = 4000)
         {
             _toastService.ShowWarning(message, options =>
             {

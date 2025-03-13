@@ -114,7 +114,7 @@ namespace DynamicDashboardFE.Pages.User
                 {
                     try
                     {
-                        var response = await Http.GetFromJsonAsync<List<string>>($"api/enhanced/examples/{databaseId}");
+                        var response = await Http.GetFromJsonAsync<List<string>>($"api/databases/example-questions/{databaseId}");
                         if (response != null && response.Count > 0)
                         {
                             examples = response;

@@ -8,7 +8,7 @@ namespace DynamicDashboardCommon.Models
     public class Database
     {
 
-       
+
 
         /// <summary>
         /// Unique identifier for the database connection
@@ -91,5 +91,11 @@ namespace DynamicDashboardCommon.Models
         /// Type name of the database (not a database column, but useful for display)
         /// </summary>
         public string DatabaseTypeName { get; set; } = string.Empty;
+
+
+        /// <summary>
+        /// JSON string containing example questions for this database.
+        /// </summary>
+        public string SuggestedQuestions { get; set; } = string.Empty;
     }
 }

@@ -52,7 +52,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             try
             {
                 // Build the system prompt
-                var systemPrompt = BuildExplanationSystemPrompt(databaseSchema, adminDescriptions);
+                var systemPrompt = BuildSQLScriptwithExplanationSystemPrompt(databaseSchema, adminDescriptions);
 
                 // Build the user prompt
                 var userPrompt = $"Question: {question}\n\nPlease explain how you understand this question in user-friendly terms, " +
@@ -156,7 +156,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
         #region Private Helper Methods
 
-        private string BuildExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)
+        private string BuildSQLScriptwithExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)
         {
             try
             {

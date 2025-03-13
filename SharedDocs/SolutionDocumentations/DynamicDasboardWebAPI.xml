@@ -146,6 +146,21 @@
             <param name="columnId">The ID of the column to delete.</param>
             <returns>The ID of the deleted column.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabasesController.GetExampleQuestions(System.Int32)">
+            <summary>
+            Gets the example questions for a database.
+            </summary>
+            <param name="id">The ID of the database.</param>
+            <returns>The example questions for the database.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabasesController.UpdateExampleQuestions(System.Int32,DynamicDashboardCommon.Models.SuggestedQuestions)">
+            <summary>
+            Updates the example questions for a database.
+            </summary>
+            <param name="id">The ID of the database.</param>
+            <param name="questions">The example questions to set.</param>
+            <returns>Success status.</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.RelationshipsController">
             <summary>
             API Controller for managing relationships between tables.
@@ -395,6 +410,21 @@
             <summary>
             Get a database type name by its ID (uses default DB).
             </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.UpdateSuggestedQuestionsAsync(System.Int32,System.String)">
+            <summary>
+            Updates the suggested questions for a database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <param name="suggestedQuestions">The JSON string containing suggested questions.</param>
+            <returns>The number of affected rows.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.GetSuggestedQuestionsAsync(System.Int32)">
+            <summary>
+            Gets the suggested questions for a database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <returns>The JSON string containing suggested questions.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.DatabaseRepository.TestConnectionAsync(DynamicDashboardCommon.Models.Database)">
             <summary>
@@ -795,6 +825,21 @@
             <summary>
             Processes relationships between tables and columns.
             </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.UpdateExampleQuestionsAsync(System.Int32,DynamicDashboardCommon.Models.SuggestedQuestions)">
+            <summary>
+            Updates the example questions for a database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <param name="exampleQuestions">The example questions to set.</param>
+            <returns>True if the update was successful; otherwise, false.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseService.GetExampleQuestionsAsync(System.Int32)">
+            <summary>
+            Gets the example questions for a database.
+            </summary>
+            <param name="databaseId">The ID of the database.</param>
+            <returns>The example questions for the database.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDatabaseService.GetAllDatabasesAsync">
             <summary>

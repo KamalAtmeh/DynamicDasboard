@@ -146,6 +146,11 @@
             Type name of the database (not a database column, but useful for display)
             </summary>
         </member>
+        <member name="P:DynamicDashboardCommon.Models.Database.SuggestedQuestions">
+            <summary>
+            JSON string containing example questions for this database.
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.DatabaseException">
             <summary>
             Custom exception for database operations
@@ -698,6 +703,16 @@
             Represents the result of an operation or a process.
             This class can be used to encapsulate the outcome of a method or function,
             including any relevant data or status information.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedQuestions.Questions">
+            <summary>
+            List of example questions for the database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SuggestedQuestions.Categories">
+            <summary>
+            Optional category grouping for the questions.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.Table">

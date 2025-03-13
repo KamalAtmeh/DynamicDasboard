@@ -115,7 +115,8 @@ namespace DynamicDasboardWebAPI.Repositories
                         ServerAddress = @ServerAddress, 
                         Port = @Port, 
                         Username = @Username, 
-                        EncryptedCredentials = @EncryptedCredentials
+                        EncryptedCredentials = @EncryptedCredentials,
+
                     WHERE DatabaseID = @DatabaseID";
 
                 return await WithConnectionAsync(async conn =>
@@ -190,7 +191,68 @@ namespace DynamicDasboardWebAPI.Repositories
             }
         }
 
+        #region EXAMPLE_QUESTIONS_METHODS
+
+        /// <summary>
+        /// Updates the suggested questions for a database.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database.</param>
+        /// <param name="suggestedQuestions">The JSON string containing suggested questions.</param>
+        /// <returns>The number of affected rows.</returns>
+        public async Task<int> UpdateSuggestedQuestionsAsync(int databaseId, string suggestedQuestions)
+        {
+            try
+            {
+                const string query = @"
+                    UPDATE Databases 
+                    SET SuggestedQuestions = @SuggestedQuestions 
+                    WHERE DatabaseID = @DatabaseID";
+
+                return await WithConnectionAsync(async conn =>
+                {
+                    return await conn.ExecuteSafeAsync(query, new
+                    {
+                        DatabaseID = databaseId,
+                        SuggestedQuestions = suggestedQuestions
+                    });
+                });
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets the suggested questions for a database.
+        /// </summary>
+        /// <param name="databaseId">The ID of the database.</param>
+        /// <returns>The JSON string containing suggested questions.</returns>
+        public async Task<string> GetSuggestedQuestionsAsync(int databaseId)
+        {
+            try
+            {
+                const string query = @"
+                    SELECT SuggestedQuestions 
+                    FROM Databases 
+                    WHERE DatabaseID = @DatabaseID";
+
+                return await WithConnectionAsync(async conn =>
+                {
+                    return await conn.QueryFirstOrDefaultSafeAsync<string>(query, new { DatabaseID = databaseId });
+                });
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         #endregion
+
+        #endregion
+
+
 
         #region PUBLIC_METHODS_CONNECTION_FACTORY
 

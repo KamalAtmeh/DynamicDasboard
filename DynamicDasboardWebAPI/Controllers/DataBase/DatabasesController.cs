@@ -187,5 +187,45 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Gets the example questions for a database.
+        /// </summary>
+        /// <param name="id">The ID of the database.</param>
+        /// <returns>The example questions for the database.</returns>
+        [HttpGet("{id}/example-questions")]
+        public async Task<ActionResult<SuggestedQuestions>> GetExampleQuestions(int id)
+        {
+            try
+            {
+                var questions = await _service.GetExampleQuestionsAsync(id);
+                return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Updates the example questions for a database.
+        /// </summary>
+        /// <param name="id">The ID of the database.</param>
+        /// <param name="questions">The example questions to set.</param>
+        /// <returns>Success status.</returns>
+        [HttpPut("{id}/example-questions")]
+        public async Task<ActionResult> UpdateExampleQuestions(int id, [FromBody] SuggestedQuestions questions)
+        {
+            try
+            {
+                var result = await _service.UpdateExampleQuestionsAsync(id, questions);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+
     }
 }
