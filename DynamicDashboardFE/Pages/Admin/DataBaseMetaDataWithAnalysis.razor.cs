@@ -7,7 +7,7 @@ using DynamicDashboardCommon.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
-using DynamicDashboardFE.Utilities;
+
 
 namespace DynamicDashboardFE.Pages.Admin
 {
@@ -15,7 +15,7 @@ namespace DynamicDashboardFE.Pages.Admin
     {
         [Parameter] public int? DatabaseId { get; set; }
 
-        [Inject] private Notifications objNotifications { get; set; }
+
 
         private List<Database> Databases = new List<Database>();
         private DatabaseSchema SchemaDetails;
@@ -52,7 +52,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                objNotifications.ShowError("Error loading databases: " + ex.Message);
+                toastService.ShowError("Error loading databases: " + ex.Message);
                 await LogToConsole("Error: " + ex.Message);
             }
         }
@@ -79,7 +79,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                objNotifications.ShowError("Error changing database: " + ex.Message);
+                toastService.ShowError("Error changing database: " + ex.Message);
                 await LogToConsole("Error: " + ex.Message);
             }
         }
@@ -112,13 +112,13 @@ namespace DynamicDashboardFE.Pages.Admin
                     else
                     {
                         // No schema exists yet - create a minimal one
-                        objNotifications.ShowWarning("No schema found for this database");
+                        toastService.ShowWarning("No schema found for this database");
                     }
                 }
             }
             catch (Exception ex)
             {
-                objNotifications.ShowError("Error loading schema: " + ex.Message);
+                toastService.ShowError("Error loading schema: " + ex.Message);
                 await LogToConsole("Error: " + ex.Message);
             }
             finally
@@ -135,7 +135,7 @@ namespace DynamicDashboardFE.Pages.Admin
             try
             {
                 IsLoading = true;
-                objNotifications.ShowInfo("Refreshing schema from database...");
+                toastService.ShowInfo("Refreshing schema from database...");
 
                 // Force refresh of schema from database
                 var response = await Http.PostAsync($"api/DatabaseSchema/refresh/{SelectedDatabaseId}", null);
@@ -143,17 +143,17 @@ namespace DynamicDashboardFE.Pages.Admin
                 if (response.IsSuccessStatusCode)
                 {
                     await LoadDatabaseSchema();
-                    objNotifications.ShowSuccess("Schema refreshed successfully");
+                    toastService.ShowSuccess("Schema refreshed successfully");
                 }
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    objNotifications.ShowError("Error refreshing schema: " + errorMessage);
+                    toastService.ShowError("Error refreshing schema: " + errorMessage);
                 }
             }
             catch (Exception ex)
             {
-                objNotifications.ShowError("Error refreshing schema: " + ex.Message);
+                toastService.ShowError("Error refreshing schema: " + ex.Message);
                 await LogToConsole("Error: " + ex.Message);
             }
             finally
@@ -170,7 +170,7 @@ namespace DynamicDashboardFE.Pages.Admin
             try
             {
                 IsAnalyzing = true;
-                objNotifications.ShowInfo("Analyzing schema with AI...");
+                toastService.ShowInfo("Analyzing schema with AI...");
 
                 // Call schema analysis API
                 var response = await Http.GetAsync($"api/schema-analysis/analyze/{SelectedDatabaseId}");
@@ -181,7 +181,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
                     if (AnalysisResult?.Success == true)
                     {
-                        objNotifications.ShowSuccess("Schema analysis completed successfully");
+                        toastService.ShowSuccess("Schema analysis completed successfully");
 
                         // Pre-select all items
                         PreSelectAllItems();
@@ -191,18 +191,18 @@ namespace DynamicDashboardFE.Pages.Admin
                     }
                     else
                     {
-                        objNotifications.ShowError("Schema analysis failed: " + AnalysisResult?.ErrorMessage);
+                        toastService.ShowError("Schema analysis failed: " + AnalysisResult?.ErrorMessage);
                     }
                 }
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    objNotifications.ShowError("Error analyzing schema: " + errorMessage);
+                    toastService.ShowError("Error analyzing schema: " + errorMessage);
                 }
             }
             catch (Exception ex)
             {
-                objNotifications.ShowError("Error during schema analysis: " + ex.Message);
+                toastService.ShowError("Error during schema analysis: " + ex.Message);
                 await LogToConsole("Error: " + ex.Message);
             }
             finally
@@ -239,7 +239,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
                     if (success)
                     {
-                        objNotifications.ShowSuccess("Successfully applied schema changes");
+                        toastService.ShowSuccess("Successfully applied schema changes");
 
                         // Reload schema to show changes
                         await LoadDatabaseSchema();
@@ -249,18 +249,18 @@ namespace DynamicDashboardFE.Pages.Admin
                     }
                     else
                     {
-                        objNotifications.ShowError("Failed to apply schema changes");
+                        toastService.ShowError("Failed to apply schema changes");
                     }
                 }
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    objNotifications.ShowError("Error applying changes: " + errorMessage);
+                    toastService.ShowError("Error applying changes: " + errorMessage);
                 }
             }
             catch (Exception ex)
             {
-                objNotifications.ShowError("Error applying changes: " + ex.Message);
+                toastService.ShowError("Error applying changes: " + ex.Message);
                 await LogToConsole("Error: " + ex.Message);
             }
             finally

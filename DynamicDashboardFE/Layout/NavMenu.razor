@@ -1,60 +1,57 @@
-﻿@* 
-    NavMenu.razor
-    This component represents the navigation menu for the DynamicDashboardFE application.
-    It includes links to different pages such as Home, Counter, Generate SQL Query, and Comparison.
-    The navigation menu can be toggled between collapsed and expanded states.
-*@
-<div class="top-row ps-3 navbar navbar-dark">
-	<div class="container-fluid">
-		<a class="navbar-brand" href="">DynamicDashboardFE</a>
-		<button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-			<span class="navbar-toggler-icon"></span>
-		</button>
-	</div>
-</div>
+﻿@inject NavigationManager NavigationManager
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-	<nav class="flex-column">
+<div class="nav-menu @(IsCollapsed ? "collapsed" : "")">
+    <nav>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="admin/database-management" Match="NavLinkMatch.All">
+                <div class="icon-container">
+                    <i class="fas fa-database"></i>
+                </div>
+                <span class="nav-text">Database Management</span>
+            </NavLink>
+        </div>
 
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="admin/database-management">
-				<span class="oi oi-list-rich" aria-hidden="true"></span> Database Management
-			</NavLink>
-		</div>
-		<div class="nav-item">
-			<NavLink class="nav-link" href="admin/database-metadata-analysis">
-				<i class="fas fa-database-config"></i> Database Analysis
-			</NavLink>
-		</div>
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="dashboard">
-				<span class="oi oi-magnifying-glass" aria-hidden="true"></span> Smart Query
-			</NavLink>
-		</div>
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="QueryGenerator">
-				<span class="oi oi-list-rich" aria-hidden="true"></span> Generate SQL Query
-			</NavLink>
-		</div>
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="comparisonautomation">
-				<span class="oi oi-list-rich" aria-hidden="true"></span> Comparison
-			</NavLink>
-		</div>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="admin/database-metadata-analysis">
+                <div class="icon-container">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <span class="nav-text">Database Analysis</span>
+            </NavLink>
+        </div>
 
-	</nav>
+        <div class="nav-item">
+            <NavLink class="nav-link" href="dashboard">
+                <div class="icon-container">
+                    <i class="fas fa-search"></i>
+                </div>
+                <span class="nav-text">Smart Query</span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item">
+            <NavLink class="nav-link" href="QueryGenerator">
+                <div class="icon-container">
+                    <i class="fas fa-code"></i>
+                </div>
+                <span class="nav-text">Generate SQL Query</span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item">
+            <NavLink class="nav-link" href="comparisonautomation">
+                <div class="icon-container">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <span class="nav-text">Comparison</span>
+            </NavLink>
+        </div>
+    </nav>
 </div>
 
 @code {
-	// Boolean flag to track the collapsed state of the navigation menu
-	private bool collapseNavMenu = true;
+    [Parameter]
+    public bool IsCollapsed { get; set; }
 
-	// CSS class to apply based on the collapsed state of the navigation menu
-	private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-	// Method to toggle the collapsed state of the navigation menu
-	private void ToggleNavMenu()
-	{
-		collapseNavMenu = !collapseNavMenu;
-	}
+    private string CurrentPath => NavigationManager.Uri;
 }

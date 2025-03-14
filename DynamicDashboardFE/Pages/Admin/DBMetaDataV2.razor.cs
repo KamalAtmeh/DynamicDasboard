@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using DynamicDashboardCommon.Models;
-using DynamicDashboardFE.Utilities;
+
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
@@ -70,7 +70,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error loading databases: {ex.Message}");
+                toastService.ShowError($"Error loading databases: {ex.Message}");
             }
         }
 
@@ -94,7 +94,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error loading database: {ex.Message}");
+                toastService.ShowError($"Error loading database: {ex.Message}");
             }
             finally
             {
@@ -114,7 +114,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error loading schema: {ex.Message}");
+                toastService.ShowError($"Error loading schema: {ex.Message}");
             }
         }
 
@@ -127,11 +127,11 @@ namespace DynamicDashboardFE.Pages.Admin
             {
                 await Http.PostAsync($"api/databaseschema/refresh/{DatabaseId}", null);
                 await LoadDatabaseSchema();
-                Notifications.ShowSuccess("Schema refreshed successfully.");
+                toastService.ShowSuccess("Schema refreshed successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error refreshing schema: {ex.Message}");
+                toastService.ShowError($"Error refreshing schema: {ex.Message}");
             }
             finally
             {
@@ -172,11 +172,11 @@ namespace DynamicDashboardFE.Pages.Admin
                                    JsonContent.Create(tableUpdate));
 
                 // No need to reload the entire schema - the UI already has the updated data
-                Notifications.ShowSuccess("Table changes saved successfully.");
+                toastService.ShowSuccess("Table changes saved successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error saving table changes: {ex.Message}");
+                toastService.ShowError($"Error saving table changes: {ex.Message}");
             }
         }
 
@@ -192,11 +192,11 @@ namespace DynamicDashboardFE.Pages.Admin
                                     JsonContent.Create(isActive));
 
                 selectedTable.IsActive = isActive;
-                Notifications.ShowSuccess($"Table {(isActive ? "activated" : "deactivated")} successfully.");
+                toastService.ShowSuccess($"Table {(isActive ? "activated" : "deactivated")} successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error updating table status: {ex.Message}");
+                toastService.ShowError($"Error updating table status: {ex.Message}");
             }
         }
 
@@ -256,11 +256,11 @@ namespace DynamicDashboardFE.Pages.Admin
                 await Http.PutAsync($"api/databaseschema/columns/{DatabaseId}/{selectedTable.ID}",
                                    JsonContent.Create(columnUpdates));
 
-                Notifications.ShowSuccess("Column changes saved successfully.");
+                toastService.ShowSuccess("Column changes saved successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error saving column changes: {ex.Message}");
+                toastService.ShowError($"Error saving column changes: {ex.Message}");
             }
         }
 
@@ -276,11 +276,11 @@ namespace DynamicDashboardFE.Pages.Admin
                                     JsonContent.Create(newStatus));
 
                 column.IsActive = newStatus;
-                Notifications.ShowSuccess($"Column {(newStatus ? "activated" : "deactivated")} successfully.");
+                toastService.ShowSuccess($"Column {(newStatus ? "activated" : "deactivated")} successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error updating column status: {ex.Message}");
+                toastService.ShowError($"Error updating column status: {ex.Message}");
             }
         }
 
@@ -464,7 +464,7 @@ namespace DynamicDashboardFE.Pages.Admin
                 // Reload the schema to reflect changes
                 await LoadDatabaseSchema();
 
-                Notifications.ShowSuccess($"Relationship {(isNewRelationship ? "created" : "updated")} successfully.");
+                toastService.ShowSuccess($"Relationship {(isNewRelationship ? "created" : "updated")} successfully.");
                 CloseRelationshipEditor();
             }
             catch (Exception ex)
@@ -568,11 +568,11 @@ namespace DynamicDashboardFE.Pages.Admin
                 // Reload the schema to reflect changes
                 await LoadDatabaseSchema();
 
-                Notifications.ShowSuccess("Relationship deleted successfully.");
+                toastService.ShowSuccess("Relationship deleted successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error deleting relationship: {ex.Message}");
+                toastService.ShowError($"Error deleting relationship: {ex.Message}");
             }
         }
 
@@ -588,11 +588,11 @@ namespace DynamicDashboardFE.Pages.Admin
                                     JsonContent.Create(newStatus));
 
                 relationship.IsActive = newStatus;
-                Notifications.ShowSuccess($"Relationship {(newStatus ? "activated" : "deactivated")} successfully.");
+                toastService.ShowSuccess($"Relationship {(newStatus ? "activated" : "deactivated")} successfully.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error updating relationship status: {ex.Message}");
+                toastService.ShowError($"Error updating relationship status: {ex.Message}");
             }
         }
 
@@ -607,19 +607,19 @@ namespace DynamicDashboardFE.Pages.Admin
 
                 if (analysisResult?.Success == true)
                 {
-                    Notifications.ShowSuccess("Schema analysis completed successfully.");
+                    toastService.ShowSuccess("Schema analysis completed successfully.");
 
                     // Set active tab to analysis results
                     activeTab = "analysis";
                 }
                 else
                 {
-                    Notifications.ShowError($"Schema analysis failed: {analysisResult?.ErrorMessage}");
+                    toastService.ShowError($"Schema analysis failed: {analysisResult?.ErrorMessage}");
                 }
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error analyzing schema: {ex.Message}");
+                toastService.ShowError($"Error analyzing schema: {ex.Message}");
             }
             finally
             {
@@ -641,16 +641,16 @@ namespace DynamicDashboardFE.Pages.Admin
                 if (result.IsSuccessStatusCode)
                 {
                     await LoadDatabaseSchema();
-                    Notifications.ShowSuccess("All suggestions applied successfully.");
+                    toastService.ShowSuccess("All suggestions applied successfully.");
                 }
                 else
                 {
-                    Notifications.ShowError("Failed to apply suggestions.");
+                    toastService.ShowError("Failed to apply suggestions.");
                 }
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error applying suggestions: {ex.Message}");
+                toastService.ShowError($"Error applying suggestions: {ex.Message}");
             }
             finally
             {
@@ -690,11 +690,11 @@ namespace DynamicDashboardFE.Pages.Admin
                     selectedTable.Description = suggestion.SuggestedDescription;
                 }
 
-                Notifications.ShowSuccess("Table suggestion applied. Don't forget to save your changes.");
+                toastService.ShowSuccess("Table suggestion applied. Don't forget to save your changes.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error applying table suggestion: {ex.Message}");
+                toastService.ShowError($"Error applying table suggestion: {ex.Message}");
             }
         }
 
@@ -723,11 +723,11 @@ namespace DynamicDashboardFE.Pages.Admin
                 column.Description = suggestion.SuggestedDescription;
                 column.IsLookup = suggestion.IsLookupColumn;
 
-                Notifications.ShowSuccess("Column suggestion applied. Don't forget to save your changes.");
+                toastService.ShowSuccess("Column suggestion applied. Don't forget to save your changes.");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error applying column suggestion: {ex.Message}");
+                toastService.ShowError($"Error applying column suggestion: {ex.Message}");
             }
         }
 
@@ -746,7 +746,7 @@ namespace DynamicDashboardFE.Pages.Admin
                     if (table != null)
                     {
                         table.FriendlyName = item.SuggestedResolution;
-                        Notifications.ShowSuccess("Table conflict resolution applied. Don't forget to save your changes.");
+                        toastService.ShowSuccess("Table conflict resolution applied. Don't forget to save your changes.");
                     }
                 }
                 else if (type == "Column")
@@ -762,14 +762,14 @@ namespace DynamicDashboardFE.Pages.Admin
                         if (column != null)
                         {
                             column.FriendlyName = item.SuggestedResolution;
-                            Notifications.ShowSuccess("Column conflict resolution applied. Don't forget to save your changes.");
+                            toastService.ShowSuccess("Column conflict resolution applied. Don't forget to save your changes.");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error applying conflict resolution: {ex.Message}");
+                toastService.ShowError($"Error applying conflict resolution: {ex.Message}");
             }
         }
 
@@ -788,7 +788,7 @@ namespace DynamicDashboardFE.Pages.Admin
                     if (table != null)
                     {
                         table.Description = element.Suggestion;
-                        Notifications.ShowSuccess("Table description updated. Don't forget to save your changes.");
+                        toastService.ShowSuccess("Table description updated. Don't forget to save your changes.");
                     }
                 }
                 else if (element.Type == "Column")
@@ -804,14 +804,14 @@ namespace DynamicDashboardFE.Pages.Admin
                         if (column != null)
                         {
                             column.Description = element.Suggestion;
-                            Notifications.ShowSuccess("Column description updated. Don't forget to save your changes.");
+                            toastService.ShowSuccess("Column description updated. Don't forget to save your changes.");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error applying suggestion: {ex.Message}");
+                toastService.ShowError($"Error applying suggestion: {ex.Message}");
             }
         }
 
@@ -882,14 +882,14 @@ namespace DynamicDashboardFE.Pages.Admin
                 // Reload the schema to reflect changes
                 await LoadDatabaseSchema();
 
-                Notifications.ShowSuccess("Suggested relationship added successfully.");
+                toastService.ShowSuccess("Suggested relationship added successfully.");
 
                 // Switch to relationships tab
                 activeTab = "relationships";
             }
             catch (Exception ex)
             {
-                Notifications.ShowError($"Error adding relationship: {ex.Message}");
+                toastService.ShowError($"Error adding relationship: {ex.Message}");
             }
         }
 

@@ -4,6 +4,7 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
+@inject IToastService toastService
 
 <div class="container-fluid">
     <div class="row mb-4">
@@ -832,10 +833,7 @@
 {
     [Parameter] public int? DatabaseId { get; set; }
 
-   // [Inject] private HttpClient Http { get; set; }
-   // [Inject] private NavigationManager NavigationManager { get; set; }
-   // [Inject] private IJSRuntime JSRuntime { get; set; }
-    [Inject] private Notifications Notifications { get; set; }
+
 
     private List<Database> Databases = new List<Database>();
     private DatabaseSchema SchemaDetails;
@@ -883,7 +881,7 @@
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error loading databases: " + ex.Message);
+            toastService.ShowError("Error loading databases: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
     }
@@ -909,7 +907,7 @@
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error changing database: " + ex.Message);
+            toastService.ShowError("Error changing database: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
     }
@@ -943,17 +941,17 @@
                 else
                 {
                     // No schema exists yet - create a minimal one
-                    Notifications.ShowWarning("No schema found for this database. Please refresh the schema.");
+                    toastService.ShowWarning("No schema found for this database. Please refresh the schema.");
                 }
             }
             else
             {
-                Notifications.ShowError("Failed to load database schema.");
+                toastService.ShowError("Failed to load database schema.");
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error loading schema: " + ex.Message);
+            toastService.ShowError("Error loading schema: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
         finally
@@ -970,7 +968,7 @@
         try
         {
             IsRefreshing = true;
-            Notifications.ShowInfo("Refreshing schema from database...");
+            toastService.ShowInfo("Refreshing schema from database...");
 
             // Force refresh of schema from database (using our new endpoint)
             var response = await Http.PostAsync($"api/DatabaseSchema/refresh/{SelectedDatabaseId}", null);
@@ -979,17 +977,17 @@
             {
                 // Reload the schema
                 SchemaDetails = await response.Content.ReadFromJsonAsync<DatabaseSchema>();
-                Notifications.ShowSuccess("Schema refreshed successfully");
+                toastService.ShowSuccess("Schema refreshed successfully");
             }
             else
             {
                 var errorMessage = await response.Content.ReadAsStringAsync();
-                Notifications.ShowError("Error refreshing schema: " + errorMessage);
+                toastService.ShowError("Error refreshing schema: " + errorMessage);
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error refreshing schema: " + ex.Message);
+            toastService.ShowError("Error refreshing schema: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
         finally
@@ -1006,7 +1004,7 @@
         try
         {
             IsAnalyzing = true;
-            Notifications.ShowInfo("Analyzing schema with AI...");
+            toastService.ShowInfo("Analyzing schema with AI...");
 
             // Call schema analysis API
             var response = await Http.GetAsync($"api/schema-analysis/analyze/{SelectedDatabaseId}");
@@ -1017,7 +1015,7 @@
 
                 if (AnalysisResult?.Success == true)
                 {
-                    Notifications.ShowSuccess("Schema analysis completed successfully");
+                    toastService.ShowSuccess("Schema analysis completed successfully");
 
                     // Pre-select all items
                     PreSelectAllItems();
@@ -1027,18 +1025,18 @@
                 }
                 else
                 {
-                    Notifications.ShowError("Schema analysis failed: " + AnalysisResult?.ErrorMessage);
+                    toastService.ShowError("Schema analysis failed: " + AnalysisResult?.ErrorMessage);
                 }
             }
             else
             {
                 var errorMessage = await response.Content.ReadAsStringAsync();
-                Notifications.ShowError("Error analyzing schema: " + errorMessage);
+                toastService.ShowError("Error analyzing schema: " + errorMessage);
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error during schema analysis: " + ex.Message);
+            toastService.ShowError("Error during schema analysis: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
         finally
@@ -1075,7 +1073,7 @@
 
                 if (success)
                 {
-                    Notifications.ShowSuccess("Successfully applied schema changes");
+                    toastService.ShowSuccess("Successfully applied schema changes");
 
                     // Reload schema to show changes
                     await LoadDatabaseSchema();
@@ -1085,18 +1083,18 @@
                 }
                 else
                 {
-                    Notifications.ShowError("Failed to apply schema changes");
+                    toastService.ShowError("Failed to apply schema changes");
                 }
             }
             else
             {
                 var errorMessage = await response.Content.ReadAsStringAsync();
-                Notifications.ShowError("Error applying changes: " + errorMessage);
+                toastService.ShowError("Error applying changes: " + errorMessage);
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error applying changes: " + ex.Message);
+            toastService.ShowError("Error applying changes: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
         finally
@@ -1264,11 +1262,11 @@
             // Save the changes
             await SaveTableChanges(table);
 
-            Notifications.ShowSuccess("Applied suggestions to table " + table.DBName);
+            toastService.ShowSuccess("Applied suggestions to table " + table.DBName);
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error applying table suggestion: " + ex.Message);
+            toastService.ShowError("Error applying table suggestion: " + ex.Message);
         }
     }
 
@@ -1290,11 +1288,11 @@
             // Save the changes
             await SaveColumnChanges(column);
 
-            Notifications.ShowSuccess("Applied suggestions to column " + column.DBName);
+            toastService.ShowSuccess("Applied suggestions to column " + column.DBName);
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error applying column suggestion: " + ex.Message);
+            toastService.ShowError("Error applying column suggestion: " + ex.Message);
         }
     }
 
@@ -1307,11 +1305,11 @@
         {
             // In a real implementation, we would save the changes to the backend
             // For now, we'll just update our local model and simulate a save
-            Notifications.ShowSuccess("Table changes saved successfully");
+            toastService.ShowSuccess("Table changes saved successfully");
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error saving table changes: " + ex.Message);
+            toastService.ShowError("Error saving table changes: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
     }
@@ -1325,11 +1323,11 @@
         {
             // In a real implementation, we would save the changes to the backend
             // For now, we'll just update our local model and simulate a save
-            Notifications.ShowSuccess("Column changes saved successfully");
+            toastService.ShowSuccess("Column changes saved successfully");
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error saving column changes: " + ex.Message);
+            toastService.ShowError("Error saving column changes: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
     }
@@ -1347,7 +1345,7 @@
                 {
                     table.FriendlyName = item.SuggestedResolution;
                     await SaveTableChanges(table);
-                    Notifications.ShowSuccess("Applied table conflict resolution");
+                    toastService.ShowSuccess("Applied table conflict resolution");
                 }
             }
             else if (type == "Column")
@@ -1364,14 +1362,14 @@
                     {
                         column.FriendlyName = item.SuggestedResolution;
                         await SaveColumnChanges(column);
-                        Notifications.ShowSuccess("Applied column conflict resolution");
+                        toastService.ShowSuccess("Applied column conflict resolution");
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error applying conflict resolution: " + ex.Message);
+            toastService.ShowError("Error applying conflict resolution: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
     }
@@ -1389,7 +1387,7 @@
                 {
                     table.Description = element.Suggestion;
                     await SaveTableChanges(table);
-                    Notifications.ShowSuccess("Applied table suggestion");
+                    toastService.ShowSuccess("Applied table suggestion");
                 }
             }
             else if (element.Type == "Column")
@@ -1406,14 +1404,14 @@
                     {
                         column.Description = element.Suggestion;
                         await SaveColumnChanges(column);
-                        Notifications.ShowSuccess("Applied column suggestion");
+                        toastService.ShowSuccess("Applied column suggestion");
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error applying suggestion: " + ex.Message);
+            toastService.ShowError("Error applying suggestion: " + ex.Message);
             await LogToConsole("Error: " + ex.Message);
         }
     }
@@ -1434,18 +1432,18 @@
             if (response.IsSuccessStatusCode)
             {
                 var status = table.IsActive ? "active" : "inactive";
-                Notifications.ShowSuccess($"Table {table.DBName} marked as {status}");
+                toastService.ShowSuccess($"Table {table.DBName} marked as {status}");
             }
             else
             {
-                Notifications.ShowError("Failed to update table status");
+                toastService.ShowError("Failed to update table status");
                 // Revert the change
                 table.IsActive = !table.IsActive;
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error updating table status: " + ex.Message);
+            toastService.ShowError("Error updating table status: " + ex.Message);
             // Revert the change
             table.IsActive = !table.IsActive;
         }
@@ -1469,18 +1467,18 @@
             if (response.IsSuccessStatusCode)
             {
                 var status = column.IsActive ? "active" : "inactive";
-                Notifications.ShowSuccess($"Column {column.DBName} marked as {status}");
+                toastService.ShowSuccess($"Column {column.DBName} marked as {status}");
             }
             else
             {
-                Notifications.ShowError("Failed to update column status");
+                toastService.ShowError("Failed to update column status");
                 // Revert the change
                 column.IsActive = !column.IsActive;
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error updating column status: " + ex.Message);
+            toastService.ShowError("Error updating column status: " + ex.Message);
             // Revert the change
             column.IsActive = !column.IsActive;
         }
@@ -1504,18 +1502,18 @@
             if (response.IsSuccessStatusCode)
             {
                 var status = relationship.IsActive ? "active" : "inactive";
-                Notifications.ShowSuccess($"Relationship marked as {status}");
+                toastService.ShowSuccess($"Relationship marked as {status}");
             }
             else
             {
-                Notifications.ShowError("Failed to update relationship status");
+                toastService.ShowError("Failed to update relationship status");
                 // Revert the change
                 relationship.IsActive = !relationship.IsActive;
             }
         }
         catch (Exception ex)
         {
-            Notifications.ShowError("Error updating relationship status: " + ex.Message);
+            toastService.ShowError("Error updating relationship status: " + ex.Message);
             // Revert the change
             relationship.IsActive = !relationship.IsActive;
         }

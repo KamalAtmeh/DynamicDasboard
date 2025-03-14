@@ -1,24 +1,80 @@
 ﻿@inherits LayoutComponentBase
 @using Blazored.Toast
 @using Blazored.Toast.Configuration
-@using Blazored.Toast.Services
+@inject IToastService toastService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
 
-
-<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <BlazoredToasts Position="ToastPosition.TopRight"
-                Timeout="5"
-                ShowProgressBar="true" />
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+Timeout="3"
+ShowProgressBar="true"  MaxToastCount="3" PauseProgressOnHover="true" />
+
+<div class="app-container @NavMenuCssClass">
+    <div class="sidebar @NavMenuCssClass">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <img src="images/logo.png" alt="Logo" class="logo" />
+                <span class="logo-text">Dynamic Dashboard</span>
+            </div>
+            <button class="toggle-button" @onclick="ToggleNavMenu">
+                <i class="fas fa-chevron-@(collapseNavMenu ? "right" : "left")"></i>
+            </button>
+        </div>
+        <NavMenu IsCollapsed="collapseNavMenu" />
     </div>
 
-    <main>
-        <article class="content px-4">
+    <div class="main">
+        <header class="top-bar">
+            <div class="breadcrumb">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="user-profile">
+                <div class="user-info">
+                    <span class="user-name">Soul On Earth</span>
+                    <span class="user-role">Soul</span>
 
+                </div>
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+        </header>
+        <main class="content">
             @Body
-        </article>
-    </main>
+        </main>
+    </div>
 </div>
 
+@code {
+    private bool collapseNavMenu = false;
+    private string NavMenuCssClass => collapseNavMenu ? "collapsed" : "";
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize sidebar state from local storage
+            var storedState = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "sidebarState");
+            if (!string.IsNullOrEmpty(storedState) && storedState == "collapsed")
+            {
+                collapseNavMenu = true;
+                StateHasChanged();
+            }
+        }
+        // ToastService toastService = new ToastService();
+        // toastService.ShowSuccess("Welcome to Dynamic Dashboard");
+    }
+
+    private async Task ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+        // Save state to local storage
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", "sidebarState", collapseNavMenu ? "collapsed" : "expanded");
+    }
+
+    public void Dispose()
+    {
+        // Clean up any resources
+    }
+}

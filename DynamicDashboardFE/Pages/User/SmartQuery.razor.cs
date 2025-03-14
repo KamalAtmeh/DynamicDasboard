@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Blazored.Toast.Services;
-using DynamicDashboardFE.Utilities;
+
 
 namespace DynamicDashboardFE.Pages.User
 {
@@ -17,7 +17,7 @@ namespace DynamicDashboardFE.Pages.User
     public partial class SmartQuery : ComponentBase
     {
         [Inject] private IConfiguration Configuration { get; set; }
-        [Inject] private Notifications Notifications { get; set; }
+
 
         /// <summary>
         /// Defines the current step in the query workflow.
@@ -104,7 +104,7 @@ namespace DynamicDashboardFE.Pages.User
             }
             catch (Exception ex)
             {
-                Notifications.ShowError("Error initializing the application. Please try again.");
+                toastService.ShowError("Error initializing the application. Please try again.");
                 await LogToConsole($"Error : {ex.Message}");
             }
         }
@@ -144,7 +144,7 @@ namespace DynamicDashboardFE.Pages.User
                 selectedDatabase = availableDatabases.FirstOrDefault(d => d.DatabaseID == DBselectedId);
                 if (selectedDatabase == null)
                 {
-                    Notifications.ShowWarning("Selected database not found. Please select a different database.");
+                    toastService.ShowWarning("Selected database not found. Please select a different database.");
                     return;
                 }
 
@@ -153,11 +153,11 @@ namespace DynamicDashboardFE.Pages.User
 
                 // Load example questions
                 await LoadExampleQuestions();
-                Notifications.ShowSuccess($"Connected to database: {selectedDatabase.FriendlyName ?? selectedDatabase.Name}");
+                toastService.ShowSuccess($"Connected to database: {selectedDatabase.FriendlyName ?? selectedDatabase.Name}");
             }
             catch (Exception ex)
             {
-                Notifications.ShowError("Error selecting database. Please try again.");
+                toastService.ShowError("Error selecting database. Please try again.");
                 await LogToConsole($"Error :  {ex.Message}");
             }
         }
@@ -178,7 +178,7 @@ namespace DynamicDashboardFE.Pages.User
 
             if (databaseId <= 0)
             {
-                Notifications.ShowWarning("Please select a database first.");
+                toastService.ShowWarning("Please select a database first.");
                 return;
             }
 
@@ -261,12 +261,12 @@ namespace DynamicDashboardFE.Pages.User
 
                         if (!sqlExplanationResponse.IsValid)
                         {
-                            Notifications.ShowWarning($"Generated SQL may not be valid: {sqlExplanationResponse.ValidationErrorMessage}");
+                            toastService.ShowWarning($"Generated SQL may not be valid: {sqlExplanationResponse.ValidationErrorMessage}");
                         }
                     }
                     else
                     {
-                        Notifications.ShowError("Couldn't process SQL response. Please try a different question.");
+                        toastService.ShowError("Couldn't process SQL response. Please try a different question.");
                         currentStep = QueryStep.Input;
                     }
                 }
@@ -308,17 +308,17 @@ namespace DynamicDashboardFE.Pages.User
 
                 if (string.IsNullOrEmpty(sql))
                 {
-                    Notifications.ShowWarning("No SQL available to copy.");
+                    toastService.ShowWarning("No SQL available to copy.");
                     return;
                 }
 
                 await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sql);
-                Notifications.ShowSuccess("SQL copied to clipboard!");
+                toastService.ShowSuccess("SQL copied to clipboard!");
             }
             catch (Exception ex)
             {
                 await LogToConsole($"Error copying to clipboard: {ex.Message}");
-                Notifications.ShowError("Failed to copy SQL to clipboard.");
+                toastService.ShowError("Failed to copy SQL to clipboard.");
             }
         }
 
@@ -343,7 +343,7 @@ namespace DynamicDashboardFE.Pages.User
             }
             else
             {
-                Notifications.ShowWarning("No SQL query available to display.");
+                toastService.ShowWarning("No SQL query available to display.");
             }
         }
 
@@ -465,23 +465,23 @@ namespace DynamicDashboardFE.Pages.User
 
                     if (executionResponse.Results != null && executionResponse.Results.Count > 0)
                     {
-                        Notifications.ShowSuccess("Query executed successfully.");
+                        toastService.ShowSuccess("Query executed successfully.");
                     }
                     else
                     {
-                        Notifications.ShowWarning("Query executed successfully, but no results were found.");
+                        toastService.ShowWarning("Query executed successfully, but no results were found.");
                     }
                 }
                 else
                 {
-                    Notifications.ShowError("Error executing query. Please try a different question.");
+                    toastService.ShowError("Error executing query. Please try a different question.");
                     currentStep = QueryStep.Input;
                 }
             }
             catch (Exception ex)
             {
                 await LogToConsole("Error: " + ex.Message);
-               Notifications.ShowError("An unexpected error occurred. Please try again.");
+               toastService.ShowError("An unexpected error occurred. Please try again.");
                 currentStep = QueryStep.Input;
             }
             finally
@@ -674,17 +674,17 @@ namespace DynamicDashboardFE.Pages.User
                     var fileBytes = await response.Content.ReadAsByteArrayAsync();
                     var base64 = Convert.ToBase64String(fileBytes);
                     await JSRuntime.InvokeVoidAsync("saveAsFile", "QueryResults.xlsx", base64);
-                    Notifications.ShowSuccess("Data exported to Excel successfully.");
+                    toastService.ShowSuccess("Data exported to Excel successfully.");
                 }
                 else
                 {
-                    Notifications.ShowError("Error exporting to Excel. Please try again.");
+                    toastService.ShowError("Error exporting to Excel. Please try again.");
                 }
             }
             catch (Exception ex)
             {
                 await LogToConsole("Error exporting to Excel: " + ex.Message);
-                Notifications.ShowError("Error exporting to Excel. Please try again.");
+                toastService.ShowError("Error exporting to Excel. Please try again.");
             }
         }
 

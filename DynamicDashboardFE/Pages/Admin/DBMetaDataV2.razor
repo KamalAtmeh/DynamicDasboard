@@ -4,9 +4,9 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
-@inject DynamicDashboardFE.Utilities.Notifications Notifications
+@inject IToastService toastService
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-0">
     <!-- Enhanced Header with Database Selection -->
     <div class="row mb-4 align-items-center">
         <div class="col-md-6">
@@ -144,7 +144,7 @@
                                 </button>
                             }
                         </div>
-                        <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                        <div class="list-group list-group-flush" style="overflow-y: auto;">
                             @if (schemaObj?.Tables?.Any() == true)
                             {
                                 @foreach (var table in FilteredTables)
