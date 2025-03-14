@@ -53,6 +53,8 @@ namespace DynamicDashboardCommon.Models
         public List<IndexSchema> Indexes { get; set; }
 
         public List<string> Synonyms { get; set; } = new List<string>();
+
+        public bool IsActive { get; set; } = true;
     }
 
     public class ColumnSchema
@@ -68,6 +70,8 @@ namespace DynamicDashboardCommon.Models
         public UiConfig UIConfig { get; set; }
         public List<ConstraintSchema> Constraints { get; set; }
         public List<string> Synonyms { get; set; } = new List<string>();
+
+        public bool IsActive { get; set; } = true;
     }
 
     public class UiConfig
@@ -100,6 +104,8 @@ namespace DynamicDashboardCommon.Models
         public RelationshipDetails Target { get; set; }
         public bool Enforced { get; set; }
         public RelationshipMetadata Metadata { get; set; }
+
+        public bool IsActive { get; set; } = true;
     }
 
     public class RelationshipDetails

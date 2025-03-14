@@ -13,13 +13,14 @@ namespace DynamicDasboardWebAPI.Controllers
     public class DatabaseSchemaController : AppControllerBase
     {
         private readonly DatabaseSchemaService _dbSchemaService;
+        private readonly DatabaseService _databaseService;
 
         public DatabaseSchemaController(
-            DatabaseSchemaService service,
-            ILogsService logsService)
+            DatabaseSchemaService service, DatabaseService databaseService, ILogsService logsService)
             : base(logsService)
         {
             _dbSchemaService = service;
+            _databaseService = databaseService;
         }
 
         /// <summary>
@@ -113,6 +114,87 @@ namespace DynamicDasboardWebAPI.Controllers
 
                 // Currently returns a simple BadRequest as in your snippet:
                 return BadRequest(string.Empty);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the database schema while preserving metadata
+        /// </summary>
+        [HttpPost("refresh/{databaseId}")]
+        public async Task<IActionResult> RefreshDatabaseSchema(int databaseId)
+        {
+            try
+            {
+                var database = await _databaseService.GetDatabaseByIdAsync(databaseId);
+                if (database == null)
+                    return NotFound("Database not found");
+
+                var schema = await _dbSchemaService.RefreshAndGetDatabaseSchemaFromConnectedDBAsync(databaseId, database);
+                return Ok(schema);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Updates the active status of a table
+        /// </summary>
+        [HttpPut("tables/{databaseId}/{tableId}/active")]
+        public async Task<IActionResult> UpdateTableActiveStatus(int databaseId, string tableId, [FromBody] bool isActive)
+        {
+            try
+            {
+                var result = await _dbSchemaService.UpdateTableActiveStatusAsync(databaseId, tableId, isActive);
+                if (!result)
+                    return NotFound("Table not found");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Updates the active status of a column
+        /// </summary>
+        [HttpPut("columns/{databaseId}/{tableId}/{columnId}/active")]
+        public async Task<IActionResult> UpdateColumnActiveStatus(int databaseId, string tableId, string columnId, [FromBody] bool isActive)
+        {
+            try
+            {
+                var result = await _dbSchemaService.UpdateColumnActiveStatusAsync(databaseId, tableId, columnId, isActive);
+                if (!result)
+                    return NotFound("Column not found");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Updates the active status of a relationship
+        /// </summary>
+        [HttpPut("relationships/{databaseId}/{relationshipId}/active")]
+        public async Task<IActionResult> UpdateRelationshipActiveStatus(int databaseId, string relationshipId, [FromBody] bool isActive)
+        {
+            try
+            {
+                var result = await _dbSchemaService.UpdateRelationshipActiveStatusAsync(databaseId, relationshipId, isActive);
+                if (!result)
+                    return NotFound("Relationship not found");
+
+                return Ok(result);
             }
             catch (Exception ex)
             {

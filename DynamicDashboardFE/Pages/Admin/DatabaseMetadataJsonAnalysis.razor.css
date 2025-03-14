@@ -1,0 +1,237 @@
+﻿.schema-explorer {
+    height: 100%;
+}
+
+.table-header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.table-name {
+    font-weight: 600;
+}
+
+.friendly-name {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.column-count {
+    background-color: rgba(var(--bs-primary-rgb), 0.2);
+    color: var(--bs-primary);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+}
+
+.table-description {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 4px;
+    font-style: italic;
+}
+
+.column-attributes {
+    display: flex;
+    gap: 4px;
+}
+
+.attribute {
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+    .attribute.pk {
+        background-color: #ffeeba;
+        color: #856404;
+    }
+
+    .attribute.fk {
+        background-color: #b8daff;
+        color: #004085;
+    }
+
+    .attribute.required {
+        background-color: #f5c6cb;
+        color: #721c24;
+    }
+
+/* Analysis results styling */
+.conflict-card,
+.relationship-card,
+.unclear-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+}
+
+    .conflict-card:hover,
+    .relationship-card:hover,
+    .unclear-card:hover {
+        transform: translateY(-2px);
+    }
+
+.conflict-header,
+.relationship-header,
+.unclear-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    font-weight: 500;
+}
+
+.conflict-items,
+.relationship-details,
+.unclear-details {
+    padding: 12px 16px;
+}
+
+.conflict-item {
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.conflict-item-name {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.conflict-item-resolution {
+    font-style: italic;
+    color: #6c757d;
+}
+
+.relationship-mapping {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.relationship-reasoning,
+.unclear-issue,
+.unclear-suggestion {
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.issue-label,
+.suggestion-label {
+    font-weight: 500;
+    margin-right: 6px;
+}
+
+/* Status indicators */
+.inactive-element {
+    opacity: 0.6;
+}
+
+/* Search and filter controls */
+.search-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: #6c757d;
+}
+
+.search-input {
+    padding-left: 30px;
+}
+
+/* Card and section styling */
+.card {
+    transition: box-shadow 0.3s;
+}
+
+    .card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+.card-header {
+    font-weight: 500;
+}
+
+/* Navigation styling */
+.nav-tabs .nav-link {
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 0;
+    color: #495057;
+}
+
+    .nav-tabs .nav-link.active {
+        color: var(--bs-primary);
+        border-bottom: 2px solid var(--bs-primary);
+        font-weight: 600;
+    }
+
+/* Switch control for active/inactive */
+.form-switch .form-check-input {
+    height: 1.2rem;
+    width: 2.5rem;
+}
+
+/* List group item styling for tables */
+.list-group-item-action {
+    transition: background-color 0.2s;
+    border-left: 3px solid transparent;
+}
+
+    .list-group-item-action.active {
+        border-left: 3px solid var(--bs-primary);
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary);
+    }
+
+/* Table striping - custom colors for better readability */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Help cursor for elements with tooltips */
+[data-bs-toggle="tooltip"] {
+    cursor: help;
+}
+
+/* Improve table responsiveness */
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.table th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* Loading and processing indicators */
+.processing-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255,255,255,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}

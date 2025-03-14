@@ -257,26 +257,36 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+        /// <summary>
+        /// Refreshes the database schema while preserving user-defined metadata
+        /// </summary>
         public async Task<DatabaseSchema> RefreshAndGetDatabaseSchemaFromConnectedDBAsync(int databaseId, Database objDataBase)
         {
             try
             {
-
-                // Get database connection details
-
                 if (objDataBase == null)
                     throw new ArgumentException($"Database with ID {databaseId} not found");
 
-                // Create schema structure
-                var schemaDetail = new DatabaseSchema
+                // Get existing schema if available
+                var existingSchema = await GetSchemaByDataBaseIdAsync(databaseId);
+                bool hasExistingSchema = existingSchema != null && !string.IsNullOrEmpty(existingSchema.SchemaData);
+
+                DatabaseSchema existingSchemaObj = null;
+                if (hasExistingSchema)
+                {
+                    existingSchemaObj = DeserializeSchema(existingSchema.SchemaData);
+                }
+
+                // Create new schema structure
+                var newSchemaObj = new DatabaseSchema
                 {
                     ID = databaseId,
                     Name = objDataBase.Name,
                     Version = new VersionInfo
                     {
-                        Number = "1.0.0", //temp
-                        Description = string.Empty,
-                        Created = DateTime.UtcNow,
+                        Number = existingSchemaObj?.Version?.Number ?? "1.0.0",
+                        Description = existingSchemaObj?.Version?.Description ?? string.Empty,
+                        Created = existingSchemaObj?.Version?.Created ?? DateTime.UtcNow,
                         Modified = DateTime.UtcNow
                     },
                     Tables = new List<TableSchema>(),
@@ -297,15 +307,24 @@ namespace DynamicDasboardWebAPI.Services
                     tableIdMap[table.TABLE_NAME] = tableId;
                     columnIdMap[table.TABLE_NAME] = new Dictionary<string, string>();
 
+                    // Look for existing table metadata
+                    TableSchema existingTable = null;
+                    if (existingSchemaObj?.Tables != null)
+                    {
+                        existingTable = existingSchemaObj.Tables.FirstOrDefault(t =>
+                            string.Equals(t.DBName, table.TABLE_NAME, StringComparison.OrdinalIgnoreCase));
+                    }
+
                     var tableSchema = new TableSchema
                     {
-                        ID = tableId,
-                        Status = EnumDataBaseStatus.Active.ToString(),
+                        ID = existingTable?.ID ?? tableId,
+                        Status = existingTable?.Status ?? EnumDataBaseStatus.Active.ToString(),
                         DBName = table.TABLE_NAME,
-                        FriendlyName = table.TABLE_NAME, // Default to DB name
-                        Description = string.Empty,
+                        FriendlyName = existingTable?.FriendlyName ?? table.TABLE_NAME, // Preserve friendly name
+                        Description = existingTable?.Description ?? string.Empty, // Preserve description
+                        IsActive = existingTable?.IsActive ?? true, // Preserve active state
                         Columns = new List<ColumnSchema>(),
-                        Synonyms = new List<string>()
+                        Synonyms = existingTable?.Synonyms ?? new List<string>()
                     };
 
                     // Get columns for this table
@@ -316,34 +335,40 @@ namespace DynamicDasboardWebAPI.Services
                         var columnId = Guid.NewGuid().ToString();
                         columnIdMap[table.TABLE_NAME][column.COLUMN_NAME] = columnId;
 
+                        // Look for existing column metadata
+                        ColumnSchema existingColumn = null;
+                        if (existingTable?.Columns != null)
+                        {
+                            existingColumn = existingTable.Columns.FirstOrDefault(c =>
+                                string.Equals(c.DBName, column.COLUMN_NAME, StringComparison.OrdinalIgnoreCase));
+                        }
+
                         tableSchema.Columns.Add(new ColumnSchema
                         {
-                            ID = columnId,
+                            ID = existingColumn?.ID ?? columnId,
                             DBName = column.COLUMN_NAME,
-                            FriendlyName = column.COLUMN_NAME, // Default to DB name
+                            FriendlyName = existingColumn?.FriendlyName ?? column.COLUMN_NAME, // Preserve friendly name
                             DataType = column.DATA_TYPE,
                             IsNullable = column.IS_NULLABLE.Equals("YES", StringComparison.OrdinalIgnoreCase),
                             IsPrimaryKey = column.IsPrimaryKey,
-                            IsLookup = false,
-                            Description = string.Empty,
-                            Synonyms = new List<string>(),
-                            UIConfig = new UiConfig
+                            IsLookup = existingColumn?.IsLookup ?? false, // Preserve lookup flag
+                            Description = existingColumn?.Description ?? string.Empty, // Preserve description
+                            IsActive = existingColumn?.IsActive ?? true, // Preserve active state
+                            Synonyms = existingColumn?.Synonyms ?? new List<string>(),
+                            UIConfig = existingColumn?.UIConfig ?? new UiConfig
                             {
                                 Visible = true,
                                 Order = column.ORDINAL_POSITION
                             },
-                            Constraints = new List<ConstraintSchema>()
+                            Constraints = existingColumn?.Constraints ?? new List<ConstraintSchema>()
                         });
                     }
 
-                    schemaDetail.Tables.Add(tableSchema);
+                    newSchemaObj.Tables.Add(tableSchema);
                 }
 
                 // Get relationships
                 var relationships = await _DBschemaMetadataRepository.GetRelationshipsAsync(objDataBase);
-
-
-
 
                 foreach (var rel in relationships)
                 {
@@ -358,11 +383,11 @@ namespace DynamicDasboardWebAPI.Services
                     }
 
                     // Get the source table and column objects
-                    var sourceTable = schemaDetail.Tables.FirstOrDefault(t => t.ID == sourceTableId);
+                    var sourceTable = newSchemaObj.Tables.FirstOrDefault(t => t.ID == sourceTableId);
                     var sourceColumn = sourceTable?.Columns?.FirstOrDefault(c => c.ID == sourceColumnId);
 
                     // Get the target table and column objects
-                    var targetTable = schemaDetail.Tables.FirstOrDefault(t => t.ID == targetTableId);
+                    var targetTable = newSchemaObj.Tables.FirstOrDefault(t => t.ID == targetTableId);
                     var targetColumn = targetTable?.Columns?.FirstOrDefault(c => c.ID == targetColumnId);
 
                     // Skip if any object is missing
@@ -371,12 +396,25 @@ namespace DynamicDasboardWebAPI.Services
                         continue;
                     }
 
-                    schemaDetail.Relationships.Add(new RelationshipSchema
+                    // Look for existing relationship metadata
+                    RelationshipSchema existingRelationship = null;
+                    if (existingSchemaObj?.Relationships != null)
                     {
-                        ID = Guid.NewGuid().ToString(),
-                        Name = $"FK_{rel.FK_TABLE}_{rel.FK_COLUMN}_TO_{rel.PK_TABLE}_{rel.PK_COLUMN}",
-                        Type = EnumRelationShipType.OneToMany.ToString(),
-                        Status = EnumDataBaseStatus.Active.ToString(),
+                        existingRelationship = existingSchemaObj.Relationships.FirstOrDefault(r =>
+                            string.Equals(r.Source?.TableName, sourceTable.DBName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(r.Source?.ColumnName, sourceColumn.DBName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(r.Target?.TableName, targetTable.DBName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(r.Target?.ColumnName, targetColumn.DBName, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    var relationshipId = Guid.NewGuid().ToString();
+                    newSchemaObj.Relationships.Add(new RelationshipSchema
+                    {
+                        ID = existingRelationship?.ID ?? relationshipId,
+                        Name = existingRelationship?.Name ?? $"FK_{rel.FK_TABLE}_{rel.FK_COLUMN}_TO_{rel.PK_TABLE}_{rel.PK_COLUMN}",
+                        Type = existingRelationship?.Type ?? EnumRelationShipType.OneToMany.ToString(),
+                        Status = existingRelationship?.Status ?? EnumDataBaseStatus.Active.ToString(),
+                        IsActive = existingRelationship?.IsActive ?? true, // Preserve active state
                         Source = new RelationshipDetails
                         {
                             TableID = sourceTableId,
@@ -391,8 +429,8 @@ namespace DynamicDasboardWebAPI.Services
                             ColumnID = targetColumnId,
                             ColumnName = !string.IsNullOrEmpty(targetColumn.FriendlyName) ? targetColumn.FriendlyName : targetColumn.DBName
                         },
-                        Enforced = true,
-                        Metadata = new RelationshipMetadata
+                        Enforced = existingRelationship?.Enforced ?? true,
+                        Metadata = existingRelationship?.Metadata ?? new RelationshipMetadata
                         {
                             Confidence = 1.0,
                             DiscoveredAt = DateTime.UtcNow,
@@ -401,21 +439,145 @@ namespace DynamicDasboardWebAPI.Services
                     });
                 }
 
+                // Preserve analysis results if they exist
+                if (existingSchemaObj?.AnalysisResults != null)
+                {
+                    newSchemaObj.AnalysisResults = existingSchemaObj.AnalysisResults;
+                }
+
                 // Serialize the schema
-                string schemaJson = SerializeSchema(schemaDetail);
+                string schemaJson = SerializeSchema(newSchemaObj);
 
-                var existingSchema = await GetSchemaByDataBaseIdAsync(databaseId);
-
+                // Update schema in database
                 if (existingSchema != null)
                 {
                     existingSchema.SchemaData = schemaJson;
                     existingSchema.ModifiedAt = DateTime.UtcNow;
                     await UpdateSchemaAsync(existingSchema);
                 }
+                else
+                {
+                    var newSchema = new DatabaseSchema
+                    {
+                        DataBaseID = databaseId,
+                        Name = objDataBase.Name,
+                        Status = (int)EnumDataBaseStatus.Active,
+                        SchemaData = schemaJson,
+                        CreatedAt = DateTime.UtcNow,
+                        ModifiedAt = DateTime.UtcNow
+                    };
+                    await CreateSchemaAsync(newSchema);
+                }
 
-                return schemaDetail;
+                return newSchemaObj;
             }
             catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Updates the active status of a table
+        /// </summary>
+        public async Task<bool> UpdateTableActiveStatusAsync(int databaseId, string tableId, bool isActive)
+        {
+            try
+            {
+                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                if (schema == null)
+                    return false;
+
+                var schemaObj = DeserializeSchema(schema.SchemaData);
+                if (schemaObj == null || schemaObj.Tables == null)
+                    return false;
+
+                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableId);
+                if (table == null)
+                    return false;
+
+                table.IsActive = isActive;
+
+                // Update schema in database
+                schema.SchemaData = SerializeSchema(schemaObj);
+                schema.ModifiedAt = DateTime.UtcNow;
+                await UpdateSchemaAsync(schema);
+
+                return true;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Updates the active status of a column
+        /// </summary>
+        public async Task<bool> UpdateColumnActiveStatusAsync(int databaseId, string tableId, string columnId, bool isActive)
+        {
+            try
+            {
+                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                if (schema == null)
+                    return false;
+
+                var schemaObj = DeserializeSchema(schema.SchemaData);
+                if (schemaObj == null || schemaObj.Tables == null)
+                    return false;
+
+                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableId);
+                if (table == null || table.Columns == null)
+                    return false;
+
+                var column = table.Columns.FirstOrDefault(c => c.ID == columnId);
+                if (column == null)
+                    return false;
+
+                column.IsActive = isActive;
+
+                // Update schema in database
+                schema.SchemaData = SerializeSchema(schemaObj);
+                schema.ModifiedAt = DateTime.UtcNow;
+                await UpdateSchemaAsync(schema);
+
+                return true;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Updates the active status of a relationship
+        /// </summary>
+        public async Task<bool> UpdateRelationshipActiveStatusAsync(int databaseId, string relationshipId, bool isActive)
+        {
+            try
+            {
+                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                if (schema == null)
+                    return false;
+
+                var schemaObj = DeserializeSchema(schema.SchemaData);
+                if (schemaObj == null || schemaObj.Relationships == null)
+                    return false;
+
+                var relationship = schemaObj.Relationships.FirstOrDefault(r => r.ID == relationshipId);
+                if (relationship == null)
+                    return false;
+
+                relationship.IsActive = isActive;
+
+                // Update schema in database
+                schema.SchemaData = SerializeSchema(schemaObj);
+                schema.ModifiedAt = DateTime.UtcNow;
+                await UpdateSchemaAsync(schema);
+
+                return true;
+            }
+            catch (Exception)
             {
                 throw;
             }

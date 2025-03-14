@@ -109,6 +109,26 @@
             Placeholder endpoint for analyzing a database schema.
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.RefreshDatabaseSchema(System.Int32)">
+            <summary>
+            Refreshes the database schema while preserving metadata
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateTableActiveStatus(System.Int32,System.String,System.Boolean)">
+            <summary>
+            Updates the active status of a table
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateColumnActiveStatus(System.Int32,System.String,System.String,System.Boolean)">
+            <summary>
+            Updates the active status of a column
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateRelationshipActiveStatus(System.Int32,System.String,System.Boolean)">
+            <summary>
+            Updates the active status of a relationship
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.SchemaAnalysisController.AnalyzeDatabaseSchema(System.Int32)">
             <summary>
             Analyzes database schema using LLM to generate descriptions and identify conflicts
@@ -603,6 +623,26 @@
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(System.Int32,DynamicDashboardCommon.Models.Database)">
             <summary>
             Retrieves the database schema from a connected database and saves it in our schema format.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.RefreshAndGetDatabaseSchemaFromConnectedDBAsync(System.Int32,DynamicDashboardCommon.Models.Database)">
+            <summary>
+            Refreshes the database schema while preserving user-defined metadata
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpdateTableActiveStatusAsync(System.Int32,System.String,System.Boolean)">
+            <summary>
+            Updates the active status of a table
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpdateColumnActiveStatusAsync(System.Int32,System.String,System.String,System.Boolean)">
+            <summary>
+            Updates the active status of a column
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.UpdateRelationshipActiveStatusAsync(System.Int32,System.String,System.Boolean)">
+            <summary>
+            Updates the active status of a relationship
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.DeserializeSchema(System.String)">

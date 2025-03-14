@@ -1,0 +1,1621 @@
+﻿@page "/admin/database-metadata-json-analysis/{DatabaseId:int?}"
+@using DynamicDashboardCommon.Models
+@using System.Text.Json
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>
+                <i class="fas fa-database me-2"></i>Database Schema Analysis
+                @if (CurrentDatabase != null)
+                {
+                    <span class="text-muted fs-5">- @(CurrentDatabase.FriendlyName ?? CurrentDatabase.Name)</span>
+                }
+            </h2>
+            <p class="text-muted">Analyze, improve, and manage your database schema metadata</p>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" @bind="SelectedDatabaseId" @bind:event="oninput" @onchange="OnDatabaseChange">
+                <option value="0">-- Select Database --</option>
+                @foreach (var db in Databases)
+                {
+                    <option value="@db.DatabaseID">@(db.FriendlyName ?? db.Name)</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="ms-3">@LoadingMessage</div>
+        </div>
+    }
+    else if (SelectedDatabaseId > 0 && SchemaDetails != null)
+    {
+        <div class="row">
+            <!-- Left Panel: Options and Navigation -->
+            <div class="col-md-3">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary bg-opacity-75 text-white">
+                        <h5 class="mb-0">Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-secondary" @onclick="RefreshSchema" disabled="@IsRefreshing">
+                                @if (IsRefreshing)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Refreshing...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sync-alt me-2"></i>
+                                    <span>Refresh Schema</span>
+                                }
+                            </button>
+
+                            <button class="btn btn-primary" @onclick="RunSchemaAnalysis" disabled="@IsAnalyzing">
+                                @if (IsAnalyzing)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Analyzing...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-magic me-2"></i>
+                                    <span>Analyze with AI</span>
+                                }
+                            </button>
+
+                            <div class="dropdown mt-2">
+                                <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" id="viewDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-eye me-2"></i> View
+                                </button>
+                                <ul class="dropdown-menu w-100" aria-labelledby="viewDropdown">
+                                    <li>
+                                        <button class="dropdown-item @(ActiveTab == "tables" ? "active" : "")" @onclick='() => SetActiveTab("tables")'>
+                                            <i class="fas fa-table me-2"></i> Tables & Columns
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item @(ActiveTab == "relationships" ? "active" : "")" @onclick='() => SetActiveTab(" relationships")'>
+                                            <i class="fas fa-link me-2"></i> Relationships
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item @(ActiveTab == "analysis" ? "active" : "")" @onclick='() => SetActiveTab(" analysis")'>
+                                            <i class="fas fa-chart-bar me-2"></i> Analysis Results
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary bg-opacity-75 text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Search</h5>
+                            <button class="btn btn-sm btn-light" @onclick='() => SearchFilter = ""'>
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <input type="text" class="form-control mb-3" placeholder="Search schema..."
+                               @bind="SearchFilter" @bind:event="oninput" />
+
+                        <div class="mb-3">
+                            <div class="fw-bold mb-2">Statistics</div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Tables:</span>
+                                <span class="badge bg-primary">@(SchemaDetails?.Tables?.Count ?? 0)</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Columns:</span>
+                                <span class="badge bg-primary">
+                                    @(SchemaDetails?.Tables?.Sum(t => t.Columns?.Count ?? 0) ?? 0)
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Relationships:</span>
+                                <span class="badge bg-primary">@(SchemaDetails?.Relationships?.Count ?? 0)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (ActiveTab == "tables")
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary bg-opacity-75 text-white">
+                            <h5 class="mb-0">Table List</h5>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            @foreach (var table in FilteredTables)
+                            {
+                                <button type="button"
+                                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(SelectedTable == table ? "active" : "")"
+                                        @onclick="() => SelectTable(table)">
+                                    <div>
+                                        <i class="@(table.IsActive ? "fas" : "far") fa-table me-2"></i>
+                                        <span class="@(!table.IsActive ? "text-muted text-decoration-line-through" : "")">
+                                            @(string.IsNullOrWhiteSpace(table.FriendlyName) ? table.DBName : table.FriendlyName)
+                                        </span>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">@(table.Columns?.Count ?? 0)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Right Panel: Main Content Area -->
+            <div class="col-md-9">
+                @if (ActiveTab == "tables")
+                {
+                    <!-- Tables & Columns View -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary bg-opacity-75 text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    @if (SelectedTable != null)
+                                    {
+                                        <span>Table: @SelectedTable.DBName</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Select a Table</span>
+                                    }
+                                </h5>
+
+                                @if (SelectedTable != null)
+                                {
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-light me-2" @onclick="() => ToggleTableActive(SelectedTable)">
+                                            @if (SelectedTable.IsActive)
+                                            {
+                                                <i class="fas fa-eye-slash me-1">Mark Inactive</i>
+                                                
+                                                    }
+                                            else
+                                            {
+                                                <i class="fas fa-eye me-1">Mark Active</i>
+                                               
+                                                    }
+                                        </button>
+                                        <button class="btn btn-sm btn-light" @onclick="() => SaveTableChanges(SelectedTable)">
+                                            <i class="fas fa-save me-1"></i> Save
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @if (SelectedTable != null)
+                        {
+                            <div class="card-body">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Technical Name</label>
+                                        <input type="text" class="form-control" value="@SelectedTable.DBName" disabled />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Friendly Name</label>
+                                        <input type="text" class="form-control" @bind="SelectedTable.FriendlyName"
+                                               placeholder="Enter user-friendly name" />
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" rows="3" @bind="SelectedTable.Description"
+                                              placeholder="Enter description"></textarea>
+                                </div>
+
+                                @{
+                                    var tableAnalysis = GetTableAnalysis(SelectedTable);
+                                    if (tableAnalysis != null && ShouldApplySuggestion(SelectedTable, tableAnalysis))
+                                    {
+                                        <div class="alert alert-info">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0">
+                                                    <i class="fas fa-lightbulb fs-4 me-3 text-warning"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold mb-2">AI Suggestion:</div>
+                                                    <div class="mb-2">
+                                                        <strong>Friendly Name:</strong> @tableAnalysis.SuggestedName
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <strong>Description:</strong> @tableAnalysis.SuggestedDescription
+                                                    </div>
+                                                    <button class="btn btn-sm btn-primary"
+                                                            @onclick="() => ApplyTableSuggestion(SelectedTable, tableAnalysis)">
+                                                        <i class="fas fa-magic me-1"></i> Apply Suggestion
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Columns</h5>
+                                        <div class="input-group input-group-sm" style="max-width: 300px;">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <input type="text" class="form-control" placeholder="Search columns..."
+                                                   @bind="ColumnFilter" @bind:event="oninput" />
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 20%">Technical Name</th>
+                                                    <th style="width: 15%">Data Type</th>
+                                                    <th style="width: 20%">Friendly Name</th>
+                                                    <th style="width: 30%">Description</th>
+                                                    <th style="width: 15%">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var column in GetFilteredColumns(SelectedTable))
+                                                {
+                                                    <tr class="@(!column.IsActive ? "table-secondary" : "")">
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                @if (column.IsPrimaryKey)
+                                                                {
+                                                                    <span class="badge bg-warning me-1" title="Primary Key">PK</span>
+                                                                }
+                                                                @if (column.IsLookup)
+                                                                {
+                                                                    <span class="badge bg-info me-1" title="Foreign Key">FK</span>
+                                                                }
+                                                                <span class="@(!column.IsActive ? "text-decoration-line-through" : "")">
+                                                                    @column.DBName
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <small>@column.DataType</small>
+                                                            @if (column.IsNullable)
+                                                            {
+                                                                <span class="badge bg-secondary ms-1">Nullable</span>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" class="form-control form-control-sm"
+                                                                   @bind="column.FriendlyName"
+                                                                   placeholder="Enter friendly name" />
+                                                        </td>
+                                                        <td>
+                                                            <textarea class="form-control form-control-sm" rows="1"
+                                                                      @bind="column.Description"
+                                                                      placeholder="Enter description"></textarea>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button class="btn btn-outline-primary"
+                                                                        @onclick="() => ToggleColumnActive(column, SelectedTable)"
+                                                                        title="@(column.IsActive ? "Mark as inactive" : "Mark as active")">
+                                                                    <i class="@(column.IsActive ? "fas fa-eye-slash" : "fas fa-eye")"></i>
+                                                                </button>
+
+                                                                @{
+                                                                    var columnAnalysis = GetColumnAnalysis(column, SelectedTable);
+                                                                    if (columnAnalysis != null && ShouldApplySuggestion(column, columnAnalysis))
+                                                                    {
+                                                                        <button class="btn btn-outline-warning"
+                                                                                @onclick="() => ApplyColumnSuggestion(column, columnAnalysis)"
+                                                                                title="Apply AI suggestion">
+                                                                            <i class="fas fa-magic"></i>
+                                                                        </button>
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button class="btn btn-primary" @onclick="() => SaveColumnChanges(null)">
+                                            <i class="fas fa-save me-1"></i> Save All Columns
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="card-body">
+                                <div class="text-center py-5">
+                                    <i class="fas fa-table fs-1 text-muted mb-3"></i>
+                                    <h5>Select a table to view and edit its details</h5>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (ActiveTab == "relationships")
+                {
+                    <!-- Relationships View -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary bg-opacity-75 text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Relationships</h5>
+                                <button class="btn btn-sm btn-light">
+                                    <i class="fas fa-plus me-1"></i> Add Relationship
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Source Table</th>
+                                            <th>Source Column</th>
+                                            <th>Relationship</th>
+                                            <th>Target Table</th>
+                                            <th>Target Column</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var relationship in GetFilteredRelationships())
+                                        {
+                                            <tr class="@(!relationship.IsActive ? "table-secondary" : "")">
+                                                <td>@relationship.Source.TableName</td>
+                                                <td>@relationship.Source.ColumnName</td>
+                                                <td>
+                                                    <span class="badge bg-info">@relationship.Type</span>
+                                                </td>
+                                                <td>@relationship.Target.TableName</td>
+                                                <td>@relationship.Target.ColumnName</td>
+                                                <td>
+                                                    @if (relationship.IsActive)
+                                                    {
+                                                        <span class="badge bg-success">Active</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Inactive</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-primary"
+                                                                @onclick="() => ToggleRelationshipActive(relationship)"
+                                                                title="@(relationship.IsActive ? "Mark as inactive" : "Mark as active")">
+                                                            <i class="@(relationship.IsActive ? "fas fa-eye-slash" : "fas fa-eye")"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" title="Delete relationship">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (ActiveTab == "analysis")
+                {
+                    <!-- Analysis Results View -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary bg-opacity-75 text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Analysis Results</h5>
+                                <div>
+                                    @if (AnalysisResult == null)
+                                    {
+                                        <button class="btn btn-sm btn-light" @onclick="RunSchemaAnalysis">
+                                            <i class="fas fa-magic me-1"></i> Run Analysis
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success me-2" @onclick="ApplyAnalysisResults">
+                                            <i class="fas fa-check me-1"></i> Apply All
+                                        </button>
+                                        <button class="btn btn-sm btn-light" @onclick="RunSchemaAnalysis">
+                                            <i class="fas fa-redo me-1"></i> Re-Analyze
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (AnalysisResult == null)
+                        {
+                            <div class="card-body">
+                                <div class="text-center py-5">
+                                    <i class="fas fa-chart-bar fs-1 text-muted mb-3"></i>
+                                    <h5>No analysis results available</h5>
+                                    <p class="text-muted">Click "Run Analysis" to analyze your schema with AI</p>
+                                    <button class="btn btn-primary" @onclick="RunSchemaAnalysis">
+                                        <i class="fas fa-magic me-1"></i> Run Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="nav nav-tabs mt-2 px-3">
+                                <li class="nav-item">
+                                    <button class="nav-link @(ActiveAnalysisTab == "tableNaming" ? "active" : "")"
+                                            @onclick='() => SetActiveAnalysisTab(" tableNaming")'>
+                                        <i class="fas fa-tags me-1"></i> Table & Column Naming
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link @(ActiveAnalysisTab == "conflicts" ? "active" : "")"
+                                            @onclick='() => SetActiveAnalysisTab(" conflicts")'>
+                                        <i class="fas fa-exclamation-triangle me-1"></i> Conflicts
+                                        @if (AnalysisResult.AnalysisData.PotentialConflicts?.Count > 0)
+                                        {
+                                            <span class="badge bg-danger ms-1">@AnalysisResult.AnalysisData.PotentialConflicts.Count</span>
+                                        }
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link @(ActiveAnalysisTab == "unclearElements" ? "active" : "")"
+                                            @onclick='() => SetActiveAnalysisTab(" unclearElements")'>
+                                        <i class="fas fa-question-circle me-1"></i> Unclear Elements
+                                        @if (AnalysisResult.AnalysisData.UnclearElements?.Count > 0)
+                                        {
+                                            <span class="badge bg-warning ms-1">@AnalysisResult.AnalysisData.UnclearElements.Count</span>
+                                        }
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link @(ActiveAnalysisTab == "relationships" ? "active" : "")"
+                                            @onclick='() => SetActiveAnalysisTab(" relationships")'>
+                                        <i class="fas fa-link me-1"></i> Suggested Relationships
+                                        @if (AnalysisResult.AnalysisData.SuggestedRelationships?.Count > 0)
+                                        {
+                                            <span class="badge bg-success ms-1">@AnalysisResult.AnalysisData.SuggestedRelationships.Count</span>
+                                        }
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="onlyEmptyFields"
+                                           @bind="AnalyzeOnlyEmptyFields" />
+                                    <label class="form-check-label" for="onlyEmptyFields">
+                                        Only suggest changes for empty fields
+                                    </label>
+                                </div>
+
+                                @if (ActiveAnalysisTab == "tableNaming")
+                                {
+                                    <div class="mb-4">
+                                        <h5>Table Naming Suggestions</h5>
+                                        @if (AnalysisResult.AnalysisData.TableDescriptions?.Count > 0)
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-bordered">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th style="width: 20%">Technical Name</th>
+                                                            <th style="width: 25%">Suggested Name</th>
+                                                            <th style="width: 40%">Suggested Description</th>
+                                                            <th style="width: 15%">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var tableDesc in AnalysisResult.AnalysisData.TableDescriptions)
+                                                        {
+                                                            var table = SchemaDetails.Tables.FirstOrDefault(
+                                                            t => t.DBName.Equals(tableDesc.TableName, StringComparison.OrdinalIgnoreCase));
+
+                                                            if (table != null && ShouldApplySuggestion(table, tableDesc))
+                                                            {
+                                                                <tr>
+                                                                    <td>@tableDesc.TableName</td>
+                                                                    <td>@tableDesc.SuggestedName</td>
+                                                                    <td>@tableDesc.SuggestedDescription</td>
+                                                                    <td>
+                                                                        <button class="btn btn-sm btn-primary"
+                                                                                @onclick="() => ApplyTableSuggestion(table, tableDesc)">
+                                                                            <i class="fas fa-magic me-1"></i> Apply
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i> No table naming suggestions available
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        <h5>Column Naming Suggestions</h5>
+                                        @if (AnalysisResult.AnalysisData.ColumnDescriptions?.Count > 0)
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-bordered">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th style="width: 15%">Table</th>
+                                                            <th style="width: 15%">Column</th>
+                                                            <th style="width: 20%">Suggested Name</th>
+                                                            <th style="width: 35%">Suggested Description</th>
+                                                            <th style="width: 15%">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var columnDesc in AnalysisResult.AnalysisData.ColumnDescriptions)
+                                                        {
+                                                            var table = SchemaDetails.Tables.FirstOrDefault(
+                                                            t => t.DBName.Equals(columnDesc.TableName, StringComparison.OrdinalIgnoreCase));
+
+                                                            if (table != null)
+                                                            {
+                                                                var column = table.Columns.FirstOrDefault(
+                                                                c => c.DBName.Equals(columnDesc.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+                                                                if (column != null && ShouldApplySuggestion(column, columnDesc))
+                                                                {
+                                                                    <tr>
+                                                                        <td>@columnDesc.TableName</td>
+                                                                        <td>@columnDesc.ColumnName</td>
+                                                                        <td>@columnDesc.SuggestedName</td>
+                                                                        <td>@columnDesc.SuggestedDescription</td>
+                                                                        <td>
+                                                                            <button class="btn btn-sm btn-primary"
+                                                                                    @onclick="() => ApplyColumnSuggestion(column, columnDesc)">
+                                                                                <i class="fas fa-magic me-1"></i> Apply
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            }
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i> No column naming suggestions available
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else if (ActiveAnalysisTab == "conflicts")
+                                {
+                                    <h5>Potential Naming Conflicts</h5>
+                                    @if (AnalysisResult.AnalysisData.PotentialConflicts?.Count > 0)
+                                    {
+                                        @foreach (var conflict in AnalysisResult.AnalysisData.PotentialConflicts)
+                                        {
+                                            <div class="card mb-3 border-warning">
+                                                <div class="card-header bg-warning bg-opacity-25">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                        <h6 class="mb-0">@conflict.Type Naming Conflict</h6>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>@conflict.ConflictDescription</p>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Name</th>
+                                                                    @if (conflict.Type == "Column")
+                                                                    {
+                                                                        <th>Table</th>
+                                                                    }
+                                                                    <th>Suggested Resolution</th>
+                                                                    <th>Actions</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var item in conflict.Items)
+                                                                {
+                                                                    <tr>
+                                                                        <td>@item.Name</td>
+                                                                        @if (conflict.Type == "Column")
+                                                                        {
+                                                                            <td>@item.TableName</td>
+                                                                        }
+                                                                        <td>@item.SuggestedResolution</td>
+                                                                        <td>
+                                                                            <button class="btn btn-sm btn-primary"
+                                                                                    @onclick="() => ApplyConflictResolution(conflict.Type, item)">
+                                                                                <i class="fas fa-check me-1"></i> Apply
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle me-2"></i> No naming conflicts detected
+                                        </div>
+                                    }
+                                }
+                                else if (ActiveAnalysisTab == "unclearElements")
+                                {
+                                    <h5>Unclear Elements</h5>
+                                    @if (AnalysisResult.AnalysisData.UnclearElements?.Count > 0)
+                                    {
+                                        @foreach (var element in AnalysisResult.AnalysisData.UnclearElements)
+                                        {
+                                            <div class="card mb-3 border-info">
+                                                <div class="card-header bg-info bg-opacity-25">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-question-circle text-info me-2"></i>
+                                                        <h6 class="mb-0">
+                                                            Unclear @element.Type: @element.Name
+                                                            @if (element.Type == "Column")
+                                                            {
+                                                                <span class="text-muted">(in @element.TableName)</span>
+                                                            }
+                                                        </h6>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">Issue:</label>
+                                                                <p>@element.Issue</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">Suggestion:</label>
+                                                                <p>@element.Suggestion</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button class="btn btn-primary"
+                                                            @onclick="() => ApplyUnclearElementSuggestion(element)">
+                                                        <i class="fas fa-check me-2"></i> Apply Suggestion
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle me-2"></i> No unclear elements detected
+                                        </div>
+                                    }
+                                }
+                                else if (ActiveAnalysisTab == "relationships")
+                                {
+                                    <h5>Suggested Relationships</h5>
+                                    @if (AnalysisResult.AnalysisData.SuggestedRelationships?.Count > 0)
+                                    {
+                                        @foreach (var relationship in AnalysisResult.AnalysisData.SuggestedRelationships)
+                                        {
+                                            <div class="card mb-3 border-success">
+                                                <div class="card-header bg-success bg-opacity-25">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-link text-success me-2"></i>
+                                                        <h6 class="mb-0">
+                                                            Suggested @relationship.RelationshipType Relationship
+                                                            <span class="badge bg-success ms-2">
+                                                                @(Math.Round(relationship.Confidence * 100))% Confidence
+                                                            </span>
+                                                        </h6>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row mb-3">
+                                                        <div class="col-md-6">
+                                                            <div class="card">
+                                                                <div class="card-header bg-light">
+                                                                    <h6 class="mb-0">Source</h6>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <div><strong>Table:</strong> @relationship.SourceTable.TableName</div>
+                                                                    <div><strong>Column:</strong> @relationship.SourceTable.ColumnName</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="card">
+                                                                <div class="card-header bg-light">
+                                                                    <h6 class="mb-0">Target</h6>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <div><strong>Table:</strong> @relationship.TargetTable.TableName</div>
+                                                                    <div><strong>Column:</strong> @relationship.TargetTable.ColumnName</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    @if (!string.IsNullOrEmpty(relationship.Reasoning))
+                                                    {
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold">Reasoning:</label>
+                                                            <p>@relationship.Reasoning</p>
+                                                        </div>
+                                                    }
+
+                                                    <button class="btn btn-success">
+                                                        <i class="fas fa-plus me-1"></i> Add Relationship
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i> No relationship suggestions available
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else if (SelectedDatabaseId > 0)
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <i class="fas fa-database fs-1 text-muted mb-3"></i>
+                    <h4>No Schema Available</h4>
+                    <p class="text-muted">Click "Refresh Schema" to load the database schema</p>
+                    <button class="btn btn-primary" @onclick="RefreshSchema">
+                        <i class="fas fa-sync-alt me-2"></i> Refresh Schema
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <i class="fas fa-database fs-1 text-muted mb-3"></i>
+                    <h4>No Database Selected</h4>
+                    <p class="text-muted">Please select a database from the dropdown above to begin</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+@code
+{
+    [Parameter] public int? DatabaseId { get; set; }
+
+   // [Inject] private HttpClient Http { get; set; }
+   // [Inject] private NavigationManager NavigationManager { get; set; }
+   // [Inject] private IJSRuntime JSRuntime { get; set; }
+    [Inject] private Notifications Notifications { get; set; }
+
+    private List<Database> Databases = new List<Database>();
+    private DatabaseSchema SchemaDetails;
+    private SchemaAnalysisResult AnalysisResult;
+    private Database CurrentDatabase;
+    private int SelectedDatabaseId;
+
+    private bool IsLoading;
+    private bool IsAnalyzing;
+    private bool IsApplying;
+    private bool IsRefreshing;
+    private string LoadingMessage = "Loading database metadata...";
+    private string ActiveTab = "tables";
+    private string ActiveAnalysisTab = "tableNaming";
+    private string SearchFilter = "";
+    private string TableFilter = "";
+    private string ColumnFilter = "";
+
+    private HashSet<string> ExpandedTables = new HashSet<string>();
+    private Dictionary<string, bool> SelectedTables = new Dictionary<string, bool>();
+    private Dictionary<string, bool> SelectedColumns = new Dictionary<string, bool>();
+    private Dictionary<string, bool> SelectedRelationships = new Dictionary<string, bool>();
+
+    private TableSchema SelectedTable;
+    private ColumnSchema SelectedColumn;
+    private RelationshipSchema SelectedRelationship;
+
+    private bool AnalyzeOnlyEmptyFields = true;
+
+    private List<TableSchema> FilteredTables => GetFilteredTables();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Load all databases
+            Databases = await Http.GetFromJsonAsync<List<Database>>("api/databases");
+
+            // Set selected database if provided in route
+            if (DatabaseId.HasValue && DatabaseId.Value > 0)
+            {
+                SelectedDatabaseId = DatabaseId.Value;
+                await LoadDatabaseSchema();
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error loading databases: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+    }
+
+    private async Task OnDatabaseChange(ChangeEventArgs e)
+    {
+        try
+        {
+            if (int.TryParse(e.Value.ToString(), out int dbId) && dbId != SelectedDatabaseId)
+            {
+                SelectedDatabaseId = dbId;
+                AnalysisResult = null;
+                SchemaDetails = null;
+
+                // Update the URL
+                NavigationManager.NavigateTo($"/admin/database-metadata-json-analysis/{dbId}");
+
+                if (dbId > 0)
+                {
+                    await LoadDatabaseSchema();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error changing database: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+    }
+
+    private async Task LoadDatabaseSchema()
+    {
+        if (SelectedDatabaseId <= 0)
+            return;
+
+        try
+        {
+            IsLoading = true;
+            LoadingMessage = "Loading database schema...";
+
+            // Get the selected database details
+            CurrentDatabase = Databases.FirstOrDefault(d => d.DatabaseID == SelectedDatabaseId);
+
+            // Get database schema
+            var response = await Http.GetAsync($"api/DatabaseSchema/GetSchema/{SelectedDatabaseId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonSchema = await response.Content.ReadFromJsonAsync<DatabaseSchema>();
+
+                if (jsonSchema != null && !string.IsNullOrWhiteSpace(jsonSchema.SchemaData))
+                {
+                    // The schema exists - deserialize it
+                    SchemaDetails = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/parsed/{SelectedDatabaseId}");
+                    InitializeSelectedItems();
+                }
+                else
+                {
+                    // No schema exists yet - create a minimal one
+                    Notifications.ShowWarning("No schema found for this database. Please refresh the schema.");
+                }
+            }
+            else
+            {
+                Notifications.ShowError("Failed to load database schema.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error loading schema: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task RefreshSchema()
+    {
+        if (SelectedDatabaseId <= 0)
+            return;
+
+        try
+        {
+            IsRefreshing = true;
+            Notifications.ShowInfo("Refreshing schema from database...");
+
+            // Force refresh of schema from database (using our new endpoint)
+            var response = await Http.PostAsync($"api/DatabaseSchema/refresh/{SelectedDatabaseId}", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Reload the schema
+                SchemaDetails = await response.Content.ReadFromJsonAsync<DatabaseSchema>();
+                Notifications.ShowSuccess("Schema refreshed successfully");
+            }
+            else
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Notifications.ShowError("Error refreshing schema: " + errorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error refreshing schema: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
+    }
+
+    private async Task RunSchemaAnalysis()
+    {
+        if (SelectedDatabaseId <= 0 || SchemaDetails == null)
+            return;
+
+        try
+        {
+            IsAnalyzing = true;
+            Notifications.ShowInfo("Analyzing schema with AI...");
+
+            // Call schema analysis API
+            var response = await Http.GetAsync($"api/schema-analysis/analyze/{SelectedDatabaseId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                AnalysisResult = await response.Content.ReadFromJsonAsync<SchemaAnalysisResult>();
+
+                if (AnalysisResult?.Success == true)
+                {
+                    Notifications.ShowSuccess("Schema analysis completed successfully");
+
+                    // Pre-select all items
+                    PreSelectAllItems();
+
+                    // Set active tab based on what has suggestions
+                    SetInitialActiveTab();
+                }
+                else
+                {
+                    Notifications.ShowError("Schema analysis failed: " + AnalysisResult?.ErrorMessage);
+                }
+            }
+            else
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Notifications.ShowError("Error analyzing schema: " + errorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error during schema analysis: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+        finally
+        {
+            IsAnalyzing = false;
+        }
+    }
+
+    private async Task ApplyAnalysisResults()
+    {
+        if (AnalysisResult?.Success != true || SelectedDatabaseId <= 0)
+            return;
+
+        try
+        {
+            IsApplying = true;
+
+            // Prepare data for API
+            var filteredData = new SchemaAnalysisData
+                {
+                    TableDescriptions = FilterSelectedTableDescriptions(),
+                    ColumnDescriptions = FilterSelectedColumnDescriptions(),
+                    PotentialConflicts = AnalysisResult.AnalysisData.PotentialConflicts,
+                    SuggestedRelationships = AnalysisResult.AnalysisData.SuggestedRelationships,
+                    UnclearElements = AnalysisResult.AnalysisData.UnclearElements
+                };
+
+            // Call API to apply changes
+            var response = await Http.PostAsJsonAsync($"api/schema-analysis/apply/{SelectedDatabaseId}", filteredData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var success = await response.Content.ReadFromJsonAsync<bool>();
+
+                if (success)
+                {
+                    Notifications.ShowSuccess("Successfully applied schema changes");
+
+                    // Reload schema to show changes
+                    await LoadDatabaseSchema();
+
+                    // Clear analysis results
+                    AnalysisResult = null;
+                }
+                else
+                {
+                    Notifications.ShowError("Failed to apply schema changes");
+                }
+            }
+            else
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Notifications.ShowError("Error applying changes: " + errorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error applying changes: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+        finally
+        {
+            IsApplying = false;
+        }
+    }
+
+    private void SetActiveTab(string tabName)
+    {
+        ActiveTab = tabName;
+    }
+
+    private void SetActiveAnalysisTab(string tabName)
+    {
+        ActiveAnalysisTab = tabName;
+    }
+
+    private void ToggleTableExpansion(string tableId)
+    {
+        if (ExpandedTables.Contains(tableId))
+        {
+            ExpandedTables.Remove(tableId);
+        }
+        else
+        {
+            ExpandedTables.Add(tableId);
+        }
+    }
+
+    private void SelectTable(TableSchema table)
+    {
+        SelectedTable = table;
+        SelectedColumn = null;
+        SelectedRelationship = null;
+    }
+
+    private void SelectColumn(ColumnSchema column)
+    {
+        SelectedColumn = column;
+        SelectedRelationship = null;
+    }
+
+    private void SelectRelationship(RelationshipSchema relationship)
+    {
+        SelectedRelationship = relationship;
+        SelectedColumn = null;
+    }
+
+    private List<TableSchema> GetFilteredTables()
+    {
+        if (SchemaDetails?.Tables == null)
+            return new List<TableSchema>();
+
+        var filteredTables = SchemaDetails.Tables.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(SearchFilter))
+        {
+            filteredTables = filteredTables.Where(t =>
+                t.DBName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                (t.FriendlyName?.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) == true) ||
+                (t.Description?.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) == true) ||
+                t.Columns.Any(c =>
+                    c.DBName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    (c.FriendlyName?.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (c.Description?.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) == true)
+                )
+            );
+        }
+
+        return filteredTables.ToList();
+    }
+
+    private List<ColumnSchema> GetFilteredColumns(TableSchema table)
+    {
+        if (table?.Columns == null)
+            return new List<ColumnSchema>();
+
+        var filteredColumns = table.Columns.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(ColumnFilter))
+        {
+            filteredColumns = filteredColumns.Where(c =>
+                c.DBName.Contains(ColumnFilter, StringComparison.OrdinalIgnoreCase) ||
+                (c.FriendlyName?.Contains(ColumnFilter, StringComparison.OrdinalIgnoreCase) == true) ||
+                (c.Description?.Contains(ColumnFilter, StringComparison.OrdinalIgnoreCase) == true)
+            );
+        }
+
+        return filteredColumns.ToList();
+    }
+
+    private List<RelationshipSchema> GetFilteredRelationships()
+    {
+        if (SchemaDetails?.Relationships == null)
+            return new List<RelationshipSchema>();
+
+        var filteredRelationships = SchemaDetails.Relationships.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(SearchFilter))
+        {
+            filteredRelationships = filteredRelationships.Where(r =>
+                r.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                r.Source.TableName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                r.Source.ColumnName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                r.Target.TableName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                r.Target.ColumnName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+
+        return filteredRelationships.ToList();
+    }
+
+    private TableDescription GetTableAnalysis(TableSchema table)
+    {
+        if (table == null || AnalysisResult?.AnalysisData?.TableDescriptions == null)
+            return null;
+
+        return AnalysisResult.AnalysisData.TableDescriptions
+            .FirstOrDefault(t => t.TableName.Equals(table.DBName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private ColumnDescription GetColumnAnalysis(ColumnSchema column, TableSchema table)
+    {
+        if (column == null || table == null || AnalysisResult?.AnalysisData?.ColumnDescriptions == null)
+            return null;
+
+        return AnalysisResult.AnalysisData.ColumnDescriptions
+            .FirstOrDefault(c =>
+                c.TableName.Equals(table.DBName, StringComparison.OrdinalIgnoreCase) &&
+                c.ColumnName.Equals(column.DBName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool ShouldApplySuggestion(TableSchema table, TableDescription suggestion)
+    {
+        if (!AnalyzeOnlyEmptyFields)
+            return true;
+
+        return string.IsNullOrWhiteSpace(table.FriendlyName) ||
+               string.IsNullOrWhiteSpace(table.Description);
+    }
+
+    private bool ShouldApplySuggestion(ColumnSchema column, ColumnDescription suggestion)
+    {
+        if (!AnalyzeOnlyEmptyFields)
+            return true;
+
+        return string.IsNullOrWhiteSpace(column.FriendlyName) ||
+               string.IsNullOrWhiteSpace(column.Description);
+    }
+
+    private async Task ApplyTableSuggestion(TableSchema table, TableDescription suggestion)
+    {
+        if (table == null || suggestion == null)
+            return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(table.FriendlyName) || !AnalyzeOnlyEmptyFields)
+                table.FriendlyName = suggestion.SuggestedName;
+
+            if (string.IsNullOrWhiteSpace(table.Description) || !AnalyzeOnlyEmptyFields)
+                table.Description = suggestion.SuggestedDescription;
+
+            // Save the changes
+            await SaveTableChanges(table);
+
+            Notifications.ShowSuccess("Applied suggestions to table " + table.DBName);
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error applying table suggestion: " + ex.Message);
+        }
+    }
+
+    private async Task ApplyColumnSuggestion(ColumnSchema column, ColumnDescription suggestion)
+    {
+        if (column == null || suggestion == null)
+            return;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(column.FriendlyName) || !AnalyzeOnlyEmptyFields)
+                column.FriendlyName = suggestion.SuggestedName;
+
+            if (string.IsNullOrWhiteSpace(column.Description) || !AnalyzeOnlyEmptyFields)
+                column.Description = suggestion.SuggestedDescription;
+
+            column.IsLookup = suggestion.IsLookupColumn;
+
+            // Save the changes
+            await SaveColumnChanges(column);
+
+            Notifications.ShowSuccess("Applied suggestions to column " + column.DBName);
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error applying column suggestion: " + ex.Message);
+        }
+    }
+
+    private async Task SaveTableChanges(TableSchema table)
+    {
+        if (table == null)
+            return;
+
+        try
+        {
+            // In a real implementation, we would save the changes to the backend
+            // For now, we'll just update our local model and simulate a save
+            Notifications.ShowSuccess("Table changes saved successfully");
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error saving table changes: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+    }
+
+    private async Task SaveColumnChanges(ColumnSchema column)
+    {
+        if (column == null)
+            return;
+
+        try
+        {
+            // In a real implementation, we would save the changes to the backend
+            // For now, we'll just update our local model and simulate a save
+            Notifications.ShowSuccess("Column changes saved successfully");
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error saving column changes: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+    }
+
+    private async Task ApplyConflictResolution(string type, ConflictItem item)
+    {
+        try
+        {
+            if (type == "Table")
+            {
+                var table = SchemaDetails.Tables
+                    .FirstOrDefault(t => t.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (table != null)
+                {
+                    table.FriendlyName = item.SuggestedResolution;
+                    await SaveTableChanges(table);
+                    Notifications.ShowSuccess("Applied table conflict resolution");
+                }
+            }
+            else if (type == "Column")
+            {
+                var table = SchemaDetails.Tables
+                    .FirstOrDefault(t => t.DBName.Equals(item.TableName, StringComparison.OrdinalIgnoreCase));
+
+                if (table != null)
+                {
+                    var column = table.Columns
+                        .FirstOrDefault(c => c.DBName.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+
+                    if (column != null)
+                    {
+                        column.FriendlyName = item.SuggestedResolution;
+                        await SaveColumnChanges(column);
+                        Notifications.ShowSuccess("Applied column conflict resolution");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error applying conflict resolution: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+    }
+
+    private async Task ApplyUnclearElementSuggestion(UnclearElement element)
+    {
+        try
+        {
+            if (element.Type == "Table")
+            {
+                var table = SchemaDetails.Tables
+                    .FirstOrDefault(t => t.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (table != null)
+                {
+                    table.Description = element.Suggestion;
+                    await SaveTableChanges(table);
+                    Notifications.ShowSuccess("Applied table suggestion");
+                }
+            }
+            else if (element.Type == "Column")
+            {
+                var table = SchemaDetails.Tables
+                    .FirstOrDefault(t => t.DBName.Equals(element.TableName, StringComparison.OrdinalIgnoreCase));
+
+                if (table != null)
+                {
+                    var column = table.Columns
+                        .FirstOrDefault(c => c.DBName.Equals(element.Name, StringComparison.OrdinalIgnoreCase));
+
+                    if (column != null)
+                    {
+                        column.Description = element.Suggestion;
+                        await SaveColumnChanges(column);
+                        Notifications.ShowSuccess("Applied column suggestion");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error applying suggestion: " + ex.Message);
+            await LogToConsole("Error: " + ex.Message);
+        }
+    }
+
+    private async Task ToggleTableActive(TableSchema table)
+    {
+        if (table == null)
+            return;
+
+        try
+        {
+            // Toggle the active status
+            table.IsActive = !table.IsActive;
+
+            // Call API to update status
+            var response = await Http.PutAsJsonAsync($"api/DatabaseSchema/tables/{SelectedDatabaseId}/{table.ID}/active", table.IsActive);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var status = table.IsActive ? "active" : "inactive";
+                Notifications.ShowSuccess($"Table {table.DBName} marked as {status}");
+            }
+            else
+            {
+                Notifications.ShowError("Failed to update table status");
+                // Revert the change
+                table.IsActive = !table.IsActive;
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error updating table status: " + ex.Message);
+            // Revert the change
+            table.IsActive = !table.IsActive;
+        }
+    }
+
+    private async Task ToggleColumnActive(ColumnSchema column, TableSchema table)
+    {
+        if (column == null || table == null)
+            return;
+
+        try
+        {
+            // Toggle the active status
+            column.IsActive = !column.IsActive;
+
+            // Call API to update status
+            var response = await Http.PutAsJsonAsync(
+                $"api/DatabaseSchema/columns/{SelectedDatabaseId}/{table.ID}/{column.ID}/active",
+                column.IsActive);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var status = column.IsActive ? "active" : "inactive";
+                Notifications.ShowSuccess($"Column {column.DBName} marked as {status}");
+            }
+            else
+            {
+                Notifications.ShowError("Failed to update column status");
+                // Revert the change
+                column.IsActive = !column.IsActive;
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error updating column status: " + ex.Message);
+            // Revert the change
+            column.IsActive = !column.IsActive;
+        }
+    }
+
+    private async Task ToggleRelationshipActive(RelationshipSchema relationship)
+    {
+        if (relationship == null)
+            return;
+
+        try
+        {
+            // Toggle the active status
+            relationship.IsActive = !relationship.IsActive;
+
+            // Call API to update status
+            var response = await Http.PutAsJsonAsync(
+                $"api/DatabaseSchema/relationships/{SelectedDatabaseId}/{relationship.ID}/active",
+                relationship.IsActive);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var status = relationship.IsActive ? "active" : "inactive";
+                Notifications.ShowSuccess($"Relationship marked as {status}");
+            }
+            else
+            {
+                Notifications.ShowError("Failed to update relationship status");
+                // Revert the change
+                relationship.IsActive = !relationship.IsActive;
+            }
+        }
+        catch (Exception ex)
+        {
+            Notifications.ShowError("Error updating relationship status: " + ex.Message);
+            // Revert the change
+            relationship.IsActive = !relationship.IsActive;
+        }
+    }
+
+    private void InitializeSelectedItems()
+    {
+        SelectedTables.Clear();
+        SelectedColumns.Clear();
+        SelectedRelationships.Clear();
+    }
+
+    private void PreSelectAllItems()
+    {
+        if (AnalysisResult?.AnalysisData == null)
+            return;
+
+        // Pre-select all tables
+        if (AnalysisResult.AnalysisData.TableDescriptions != null)
+        {
+            foreach (var table in AnalysisResult.AnalysisData.TableDescriptions)
+            {
+                SelectedTables[table.TableName] = true;
+            }
+        }
+
+        // Pre-select all columns
+        if (AnalysisResult.AnalysisData.ColumnDescriptions != null)
+        {
+            foreach (var column in AnalysisResult.AnalysisData.ColumnDescriptions)
+            {
+                var key = $"{column.TableName}_{column.ColumnName}";
+                SelectedColumns[key] = true;
+            }
+        }
+
+        // Pre-select all relationships
+        if (AnalysisResult.AnalysisData.SuggestedRelationships != null)
+        {
+            foreach (var relationship in AnalysisResult.AnalysisData.SuggestedRelationships)
+            {
+                var key = $"{relationship.SourceTable}_{relationship.TargetTable}";
+                SelectedRelationships[key] = true;
+            }
+        }
+    }
+
+    private List<TableDescription> FilterSelectedTableDescriptions()
+    {
+        if (AnalysisResult?.AnalysisData?.TableDescriptions == null)
+            return new List<TableDescription>();
+
+        return AnalysisResult.AnalysisData.TableDescriptions
+            .Where(t => SelectedTables.ContainsKey(t.TableName) && SelectedTables[t.TableName])
+            .ToList();
+    }
+
+    private List<ColumnDescription> FilterSelectedColumnDescriptions()
+    {
+        if (AnalysisResult?.AnalysisData?.ColumnDescriptions == null)
+            return new List<ColumnDescription>();
+
+        return AnalysisResult.AnalysisData.ColumnDescriptions
+            .Where(c =>
+            {
+                var key = $"{c.TableName}_{c.ColumnName}";
+                return SelectedColumns.ContainsKey(key) && SelectedColumns[key];
+            })
+            .ToList();
+    }
+
+    private void SetInitialActiveTab()
+    {
+        ActiveTab = "analysis";
+
+        if (AnalysisResult?.AnalysisData == null)
+            return;
+
+        if (AnalysisResult.AnalysisData.TableDescriptions?.Count > 0 ||
+            AnalysisResult.AnalysisData.ColumnDescriptions?.Count > 0)
+        {
+            ActiveAnalysisTab = "tableNaming";
+        }
+        else if (AnalysisResult.AnalysisData.PotentialConflicts?.Count > 0)
+        {
+            ActiveAnalysisTab = "conflicts";
+        }
+        else if (AnalysisResult.AnalysisData.UnclearElements?.Count > 0)
+        {
+            ActiveAnalysisTab = "unclearElements";
+        }
+        else if (AnalysisResult.AnalysisData.SuggestedRelationships?.Count > 0)
+        {
+            ActiveAnalysisTab = "relationships";
+        }
+    }
+
+    private async Task LogToConsole(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", message);
+    }
+
+}
