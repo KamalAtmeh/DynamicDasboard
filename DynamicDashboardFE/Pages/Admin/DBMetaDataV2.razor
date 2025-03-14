@@ -1,0 +1,1114 @@
+﻿@page "/admin/DBMetaDataV2/{DatabaseId:int}"
+@using DynamicDashboardCommon.Models
+@using Microsoft.AspNetCore.Components
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject DynamicDashboardFE.Utilities.Notifications Notifications
+
+<div class="container-fluid py-4">
+    <!-- Enhanced Header with Database Selection -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center">
+                <h3 class="mb-0 me-3">
+                    <i class="fas fa-database me-2 text-primary"></i>
+                    Database Structure
+                </h3>
+                @if (!string.IsNullOrEmpty(selectedDatabase?.FriendlyName))
+                {
+                    <h2 class="mb-0 fw-bold text-primary">@selectedDatabase.FriendlyName</h2>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(selectedDatabase?.Description))
+            {
+                <p class="text-muted mb-0 mt-1">@selectedDatabase.Description</p>
+            }
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex justify-content-end">
+                <div class="dropdown me-2">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="databaseDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-database me-2"></i>
+                        @(selectedDatabase?.Name ?? "Select Database")
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="databaseDropdown" style="max-height: 300px; overflow-y: auto;">
+                        @if (databases?.Any() == true)
+                        {
+                            @foreach (var db in databases)
+                            {
+                                <li>
+                                    <a class="dropdown-item @(selectedDatabase?.DatabaseID == db.DatabaseID ? "active" : "")"
+                                    href="/admin/database-metadata/@db.DatabaseID">
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">@db.Name</span>
+                                            @if (!string.IsNullOrEmpty(db.FriendlyName) && db.FriendlyName != db.Name)
+                                            {
+                                                <span class="text-muted small">(@db.FriendlyName)</span>
+                                            }
+                                        </div>
+                                    </a>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li><span class="dropdown-item disabled">No databases available</span></li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" @onclick="RunSchemaAnalysis" disabled="@(isLoading || isAnalyzing)">
+                        @if (isAnalyzing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Analyzing...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-magic me-2"></i>
+                            <span>Analyze Schema</span>
+                        }
+                    </button>
+                    <button class="btn btn-outline-primary" @onclick="RefreshSchema" disabled="@(isLoading)">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="ms-3 h5 mb-0">@loadingMessage</div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Left sidebar for navigation -->
+            <div class="col-md-3">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0">Navigation</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- View options -->
+                        <div class="list-group list-group-flush">
+                            <button class="list-group-item list-group-item-action d-flex align-items-center @(activeTab == "tables" ? "active" : "")"
+                            @onclick='() => SetActiveTab("tables")'>
+                                <i class="fas fa-table me-3"></i>
+                                <span>Tables & Columns</span>
+                            </button>
+                            <button class="list-group-item list-group-item-action d-flex align-items-center @(activeTab == "relationships" ? "active" : "")"
+                            @onclick='() => SetActiveTab("relationships")'>
+                                <i class="fas fa-link me-3"></i>
+                                <span>Relationships</span>
+                            </button>
+                            <button class="list-group-item list-group-item-action d-flex align-items-center @(activeTab == "analysis" ? "active" : "")"
+                            @onclick='() => SetActiveTab("analysis")'>
+                                <i class="fas fa-chart-bar me-3"></i>
+                                <span>Analysis Results</span>
+                                @if (analysisResult?.Success == true)
+                                {
+                                    <span class="badge bg-success ms-auto">Available</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table list -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0">Database Tables</h5>
+                        <span class="badge bg-primary">@(schemaObj?.Tables?.Count ?? 0)</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="input-group p-2">
+                            <span class="input-group-text bg-light border-light">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-light" placeholder="Search tables..."
+                            @bind="tableSearchTerm" @bind:event="oninput" />
+                            @if (!string.IsNullOrEmpty(tableSearchTerm))
+                            {
+                                <button class="btn btn-outline-secondary border-light" @onclick="() => tableSearchTerm = string.Empty">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            }
+                        </div>
+                        <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                            @if (schemaObj?.Tables?.Any() == true)
+                            {
+                                @foreach (var table in FilteredTables)
+                                {
+                                    <button class="list-group-item list-group-item-action @(selectedTable?.ID == table.ID ? "active" : "")"
+                                    @onclick="() => SelectTable(table)">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-table me-2 @(table.IsActive ? "text-primary" : "text-muted")"></i>
+                                                <span class="@(!table.IsActive ? "text-muted text-decoration-line-through" : "")">
+                                                    @(!string.IsNullOrEmpty(table.FriendlyName) ? table.FriendlyName : table.DBName)
+                                                </span>
+                                            </div>
+                                            <span class="badge rounded-pill bg-light text-dark">
+                                                @(table.Columns?.Count ?? 0)
+                                            </span>
+                                        </div>
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <div class="list-group-item text-center text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No tables available
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content area -->
+            <div class="col-md-9">
+                @if (activeTab == "tables")
+                {
+                    <!-- Table Details Tab -->
+                    if (selectedTable != null)
+                    {
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-table me-2"></i>
+                                    Table: @selectedTable.DBName
+                                </h5>
+                                <div>
+                                    <div class="form-check form-switch d-flex align-items-center">
+                                        <input class="form-check-input me-2" type="checkbox" id="tableActiveSwitch"
+                                        checked="@selectedTable.IsActive"
+                                        @onchange="async (e) => await UpdateTableActiveStatus(e.Value)">
+                                        <label class="form-check-label" for="tableActiveSwitch">
+                                            @(selectedTable.IsActive ? "Active" : "Inactive")
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Database Table Name</label>
+                                            <input type="text" class="form-control" value="@selectedTable.DBName" disabled />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Friendly Name</label>
+                                            <input type="text" class="form-control" @bind="selectedTable.FriendlyName"
+                                            placeholder="Enter user-friendly name" />
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Description</label>
+                                        <textarea class="form-control" rows="3" @bind="selectedTable.Description"
+                                        placeholder="Enter description"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Synonyms (comma-separated)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" @bind="tableSynonymsInput"
+                                            placeholder="Enter synonyms separated by commas" />
+                                            <button class="btn btn-outline-primary" type="button" @onclick="UpdateTableSynonyms">
+                                                Update Synonyms
+                                            </button>
+                                        </div>
+                                        @if (selectedTable.Synonyms?.Any() == true)
+                                        {
+                                            <div class="mt-2">
+                                                @foreach (var synonym in selectedTable.Synonyms)
+                                                {
+                                                    <span class="badge bg-light text-dark me-1 mb-1 p-2">
+                                                        @synonym
+                                                        <button type="button" class="btn-close btn-close-sm ms-1"
+                                                        @onclick="() => RemoveTableSynonym(synonym)"></button>
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @if (tableAnalysis != null)
+                                    {
+                                        <div class="alert alert-info">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-lightbulb fs-4 me-3"></i>
+                                                <div class="flex-grow-1">
+                                                    <strong>AI Suggestion:</strong>
+                                                    <div class="mt-1">
+                                                        <div><strong>Name:</strong> @tableAnalysis.SuggestedName</div>
+                                                        <div><strong>Description:</strong> @tableAnalysis.SuggestedDescription</div>
+                                                    </div>
+                                                    <button class="btn btn-sm btn-outline-primary mt-2" @onclick="() => ApplyTableSuggestion()">
+                                                        <i class="fas fa-magic me-1"></i> Apply Suggestion
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-primary" @onclick="SaveTableChanges">
+                                            <i class="fas fa-save me-2"></i> Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Columns Table -->
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-columns me-2"></i>
+                                    Columns
+                                </h5>
+                                <span class="badge bg-primary">@(selectedTable.Columns?.Count ?? 0)</span>
+                            </div>
+                            <div class="card-body">
+                                <!-- Column Search and Filter Controls -->
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-light">
+                                                <i class="fas fa-search text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-light" placeholder="Search columns..."
+                                            @bind="columnSearchTerm" @bind:event="oninput" />
+                                            @if (!string.IsNullOrEmpty(columnSearchTerm))
+                                            {
+                                                <button class="btn btn-outline-secondary border-light" @onclick="() => columnSearchTerm = string.Empty">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" @bind="columnFilter">
+                                            <option value="all">All Columns</option>
+                                            <option value="primary">Primary Keys</option>
+                                            <option value="lookup">Lookup Columns</option>
+                                            <option value="active">Active Only</option>
+                                            <option value="inactive">Inactive Only</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Columns Table -->
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 20%">DB Column Name</th>
+                                                <th style="width: 15%">Data Type</th>
+                                                <th style="width: 20%">Friendly Name</th>
+                                                <th style="width: 25%">Description</th>
+                                                <th style="width: 10%">Attributes</th>
+                                                <th style="width: 10%">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (selectedTable.Columns?.Any() == true)
+                                            {
+                                                @foreach (var column in FilteredColumns)
+                                                {
+                                                    <tr class="@(!column.IsActive ? "table-secondary" : "")">
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="fas fa-column me-2 @(column.IsActive ? "text-primary" : "text-muted")"></i>
+                                                                <span class="@(!column.IsActive ? "text-muted text-decoration-line-through" : "")">
+                                                                    @column.DBName
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-light text-dark">
+                                                                @column.DataType
+                                                            </span>
+                                                            @if (!column.IsNullable)
+                                                            {
+                                                                <span class="badge bg-danger ms-1">Required</span>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" class="form-control form-control-sm"
+                                                            @bind="column.FriendlyName" placeholder="Friendly name" />
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" class="form-control form-control-sm"
+                                                            @bind="column.Description" placeholder="Description" />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <div class="form-check form-switch d-flex justify-content-center mb-1">
+                                                                <input class="form-check-input" type="checkbox" id="column-lookup-@column.ID"
+                                                                checked="@column.IsLookup"
+                                                                @onchange="(e) => column.IsLookup = (bool)e.Value">
+                                                            </div>
+                                                            <label class="form-check-label small" for="column-lookup-@column.ID">
+                                                                Lookup
+                                                            </label>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button type="button" class="btn btn-outline-primary"
+                                                                @onclick="() => AddEditColumnSynonyms(column)"
+                                                                title="Edit Synonyms">
+                                                                    <i class="fas fa-tags"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-outline-@(column.IsActive ? "danger" : "success")"
+                                                                @onclick="() => ToggleColumnActive(column)"
+                                                                title="@(column.IsActive ? "Deactivate" : "Activate")">
+                                                                    <i class="fas fa-@(column.IsActive ? "eye-slash" : "eye")"></i>
+                                                                </button>
+                                                                @{
+                                                                    var columnAnalysis = GetColumnAnalysis(column);
+                                                                }
+                                                                @if (columnAnalysis != null)
+                                                                {
+                                                                    <button type="button" class="btn btn-outline-info"
+                                                                    @onclick="() => ShowColumnSuggestion(column, columnAnalysis)"
+                                                                    title="View AI Suggestions">
+                                                                        <i class="fas fa-lightbulb"></i>
+                                                                    </button>
+                                                                }
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-3">
+                                                        <i class="fas fa-info-circle me-2"></i>
+                                                        No columns available for this table
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="button" class="btn btn-primary" @onclick="SaveColumnChanges">
+                                        <i class="fas fa-save me-2"></i> Save Column Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- No table selected message -->
+                        <div class="card shadow-sm">
+                            <div class="card-body text-center py-5">
+                                <i class="fas fa-table fa-3x text-muted mb-3"></i>
+                                <h5>No Table Selected</h5>
+                                <p class="text-muted">Please select a table from the list to view and edit its details.</p>
+                            </div>
+                        </div>
+                    }
+                }
+                else if (activeTab == "relationships")
+                {
+                    <!-- Relationships Tab -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-link me-2"></i>
+                                Database Relationships
+                            </h5>
+                            <button class="btn btn-primary btn-sm" @onclick="CreateNewRelationship">
+                                <i class="fas fa-plus me-2"></i>New Relationship
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            @if (isLoading && relationships == null)
+                            {
+                                <div class="d-flex justify-content-center my-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading relationships...</span>
+                                    </div>
+                                    <div class="ms-3">Loading database relationships...</div>
+                                </div>
+                            }
+                            else if (editingRelationship == null)
+                            {
+                                <!-- Relationship filter and search -->
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-light">
+                                                <i class="fas fa-search text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-light" placeholder="Search relationships..."
+                                            @bind="relationshipSearchTerm" @bind:event="oninput" />
+                                            @if (!string.IsNullOrEmpty(relationshipSearchTerm))
+                                            {
+                                                <button class="btn btn-outline-secondary border-light" @onclick="() => relationshipSearchTerm = string.Empty">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" @bind="relationshipFilter">
+                                            <option value="all">All Relationships</option>
+                                            <option value="onetomany">One-to-Many</option>
+                                            <option value="manytoone">Many-to-One</option>
+                                            <option value="onetoone">One-to-One</option>
+                                            <option value="manytomany">Many-to-Many</option>
+                                            <option value="active">Active Only</option>
+                                            <option value="inactive">Inactive Only</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Relationships Table -->
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Source Table</th>
+                                                <th>Source Column</th>
+                                                <th>Relationship</th>
+                                                <th>Target Table</th>
+                                                <th>Target Column</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (relationships?.Any() == true)
+                                            {
+                                                @foreach (var relationship in FilteredRelationships)
+                                                {
+                                                    <tr class="@(!relationship.IsActive ? "table-secondary" : "")">
+                                                        <td>@GetTableName(relationship.Source?.TableID)</td>
+                                                        <td>@GetColumnName(relationship.Source?.TableID, relationship.Source?.ColumnID)</td>
+                                                        <td>
+                                                            <span class="badge bg-info">@relationship.Type</span>
+                                                        </td>
+                                                        <td>@GetTableName(relationship.Target?.TableID)</td>
+                                                        <td>@GetColumnName(relationship.Target?.TableID, relationship.Target?.ColumnID)</td>
+                                                        <td>
+                                                            @if (relationship.IsActive)
+                                                            {
+                                                                <span class="badge bg-success">Active</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-secondary">Inactive</span>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button type="button" class="btn btn-outline-primary"
+                                                                @onclick="() => EditRelationship(relationship)"
+                                                                title="Edit">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-outline-@(relationship.IsActive ? "danger" : "success")"
+                                                                @onclick="() => ToggleRelationshipActive(relationship)"
+                                                                title="@(relationship.IsActive ? "Deactivate" : "Activate")">
+                                                                    <i class="fas fa-@(relationship.IsActive ? "eye-slash" : "eye")"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-outline-danger"
+                                                                @onclick="() => DeleteRelationship(relationship.ID)"
+                                                                title="Delete">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td colspan="7" class="text-center py-3">
+                                                        <i class="fas fa-info-circle me-2"></i>
+                                                        No relationships defined in this database
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Relationship Editor -->
+                                <div class="card border">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">@(isNewRelationship ? "Create New Relationship" : "Edit Relationship")</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Source Table</label>
+                                                <select class="form-select" @bind="editingRelationship.Source.TableID" @bind:after="() => UpdateSourceColumnOptions()">
+                                                    <option value="">-- Select Table --</option>
+                                                    @foreach (var table in schemaObj.Tables.Where(t => t.IsActive))
+                                                    {
+                                                        <option value="@table.ID">@(!string.IsNullOrEmpty(table.FriendlyName) ? table.FriendlyName : table.DBName)</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Source Column</label>
+                                                <select class="form-select" @bind="editingRelationship.Source.ColumnID">
+                                                    <option value="">-- Select Column --</option>
+                                                    @if (sourceColumnOptions?.Count > 0)
+                                                    {
+                                                        @foreach (var option in sourceColumnOptions)
+                                                        {
+                                                            <option value="@option.Key">@option.Value</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Target Table</label>
+                                                <select class="form-select" @bind="editingRelationship.Target.TableID" @bind:after="() => UpdateTargetColumnOptions()">
+                                                    <option value="">-- Select Table --</option>
+                                                    @foreach (var table in schemaObj.Tables.Where(t => t.IsActive))
+                                                    {
+                                                        <option value="@table.ID">@(!string.IsNullOrEmpty(table.FriendlyName) ? table.FriendlyName : table.DBName)</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Target Column</label>
+                                                <select class="form-select" @bind="editingRelationship.Target.ColumnID">
+                                                    <option value="">-- Select Column --</option>
+                                                    @if (targetColumnOptions?.Count > 0)
+                                                    {
+                                                        @foreach (var option in targetColumnOptions)
+                                                        {
+                                                            <option value="@option.Key">@option.Value</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Relationship Type</label>
+                                                <select class="form-select" @bind="editingRelationship.Type">
+                                                    <option value="One-to-One">One-to-One</option>
+                                                    <option value="One-to-Many">One-to-Many</option>
+                                                    <option value="Many-to-One">Many-to-One</option>
+                                                    <option value="Many-to-Many">Many-to-Many</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Name (Optional)</label>
+                                                <input type="text" class="form-control" @bind="editingRelationship.Name"
+                                                placeholder="Enter relationship name" />
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-12">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" @bind="editingRelationship.Enforced" id="isEnforced" />
+                                                    <label class="form-check-label" for="isEnforced">
+                                                        Is Enforced
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(relationshipErrorMessage))
+                                        {
+                                            <div class="alert alert-danger">
+                                                @relationshipErrorMessage
+                                            </div>
+                                        }
+                                        <div class="d-flex justify-content-end">
+                                            <button class="btn btn-secondary me-2" @onclick="CloseRelationshipEditor">Cancel</button>
+                                            <button class="btn btn-primary" @onclick="SaveRelationship" disabled="@isSavingRelationship">
+                                                @if (isSavingRelationship)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                }
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (activeTab == "analysis")
+                {
+                    <!-- Analysis Results Tab -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Analysis Results
+                            </h5>
+                            @if (analysisResult?.Success == true)
+                            {
+                                <button class="btn btn-success btn-sm" @onclick="ApplyAllSuggestions">
+                                    <i class="fas fa-magic me-2"></i>Apply All Suggestions
+                                </button>
+                            }
+                        </div>
+                        <div class="card-body">
+                            @if (analysisResult == null)
+                            {
+                                <div class="text-center py-5">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h5>No Analysis Available</h5>
+                                    <p class="text-muted">Click the "Analyze Schema" button to analyze your database structure.</p>
+                                    <button class="btn btn-primary mt-2" @onclick="RunSchemaAnalysis">
+                                        <i class="fas fa-magic me-2"></i>Analyze Schema
+                                    </button>
+                                </div>
+                            }
+                            else if (!analysisResult.Success)
+                            {
+                                <div class="alert alert-danger">
+                                    <h5><i class="fas fa-exclamation-circle me-2"></i>Analysis Failed</h5>
+                                    <p>@analysisResult.ErrorMessage</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Analysis Results Navigation Tabs -->
+                                <ul class="nav nav-tabs mb-3" id="analysisResultsTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link @(analysisTab == "tables" ? "active" : "")"
+                                        @onclick='() => analysisTab = "tables"'>
+                                            <i class="fas fa-table me-2"></i>
+                                            Table Suggestions
+                                            <span class="badge rounded-pill bg-primary ms-1">
+                                                @(analysisResult.AnalysisData?.TableDescriptions?.Count ?? 0)
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link @(analysisTab == "columns" ? "active" : "")"
+                                        @onclick='() => analysisTab = "columns"'>
+                                            <i class="fas fa-columns me-2"></i>
+                                            Column Suggestions
+                                            <span class="badge rounded-pill bg-primary ms-1">
+                                                @(analysisResult.AnalysisData?.ColumnDescriptions?.Count ?? 0)
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link @(analysisTab == "conflicts" ? "active" : "")"
+                                        @onclick='() => analysisTab = "conflicts"'>
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Conflicts
+                                            <span class="badge rounded-pill bg-warning text-dark ms-1">
+                                                @(analysisResult.AnalysisData?.PotentialConflicts?.Count ?? 0)
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link @(analysisTab == "relationships" ? "active" : "")"
+                                        @onclick='() => analysisTab = "relationships"'>
+                                            <i class="fas fa-link me-2"></i>
+                                            Suggested Relationships
+                                            <span class="badge rounded-pill bg-success ms-1">
+                                                @(analysisResult.AnalysisData?.SuggestedRelationships?.Count ?? 0)
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link @(analysisTab == "unclear" ? "active" : "")"
+                                        @onclick='() => analysisTab = "unclear"'>
+                                            <i class="fas fa-question-circle me-2"></i>
+                                            Unclear Elements
+                                            <span class="badge rounded-pill bg-info ms-1">
+                                                @(analysisResult.AnalysisData?.UnclearElements?.Count ?? 0)
+                                            </span>
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <!-- Analysis Tab Content -->
+                                <div class="tab-content" id="analysisResultsTabContent">
+                                    @if (analysisTab == "tables")
+                                    {
+                                        <!-- Table Suggestions Tab -->
+                                        <div class="tab-pane fade show active">
+                                            @if (analysisResult.AnalysisData?.TableDescriptions?.Any() != true)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No table suggestions available.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Table Name</th>
+                                                                <th>Suggested Name</th>
+                                                                <th>Suggested Description</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var suggestion in analysisResult.AnalysisData.TableDescriptions)
+                                                            {
+                                                                <tr>
+                                                                    <td>@suggestion.TableName</td>
+                                                                    <td>@suggestion.SuggestedName</td>
+                                                                    <td>@suggestion.SuggestedDescription</td>
+                                                                    <td>
+                                                                        <button class="btn btn-sm btn-outline-primary"
+                                                                        @onclick="() => ApplyTableSuggestion(suggestion)">
+                                                                            <i class="fas fa-check me-1"></i> Apply
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else if (analysisTab == "columns")
+                                    {
+                                        <!-- Column Suggestions Tab -->
+                                        <div class="tab-pane fade show active">
+                                            @if (analysisResult.AnalysisData?.ColumnDescriptions?.Any() != true)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No column suggestions available.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Table</th>
+                                                                <th>Column</th>
+                                                                <th>Suggested Name</th>
+                                                                <th>Suggested Description</th>
+                                                                <th>Lookup</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var suggestion in analysisResult.AnalysisData.ColumnDescriptions)
+                                                            {
+                                                                <tr>
+                                                                    <td>@suggestion.TableName</td>
+                                                                    <td>@suggestion.ColumnName</td>
+                                                                    <td>@suggestion.SuggestedName</td>
+                                                                    <td>@suggestion.SuggestedDescription</td>
+                                                                    <td>
+                                                                        @if (suggestion.IsLookupColumn)
+                                                                        {
+                                                                            <i class="fas fa-check text-success"></i>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <i class="fas fa-times text-danger"></i>
+                                                                        }
+                                                                    </td>
+                                                                    <td>
+                                                                        <button class="btn btn-sm btn-outline-primary"
+                                                                        @onclick="() => ApplyColumnSuggestion(suggestion)">
+                                                                            <i class="fas fa-check me-1"></i> Apply
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else if (analysisTab == "conflicts")
+                                    {
+                                        <!-- Conflicts Tab -->
+                                        <div class="tab-pane fade show active">
+                                            @if (analysisResult.AnalysisData?.PotentialConflicts?.Any() != true)
+                                            {
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-check-circle me-2"></i>
+                                                    No potential conflicts detected in the schema.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var conflict in analysisResult.AnalysisData.PotentialConflicts)
+                                                {
+                                                    <div class="card mb-3 border-warning">
+                                                        <div class="card-header bg-warning bg-opacity-25">
+                                                            <h6 class="mb-0">
+                                                                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                                                                @conflict.Type Conflict
+                                                            </h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <p>@conflict.ConflictDescription</p>
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Name</th>
+                                                                            @if (conflict.Type == "Column")
+                                                                            {
+                                                                                <th>Table</th>
+                                                                            }
+                                                                            <th>Suggested Resolution</th>
+                                                                            <th>Actions</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @foreach (var item in conflict.Items)
+                                                                        {
+                                                                            <tr>
+                                                                                <td>@item.Name</td>
+                                                                                @if (conflict.Type == "Column")
+                                                                                {
+                                                                                    <td>@item.TableName</td>
+                                                                                }
+                                                                                <td>@item.SuggestedResolution</td>
+                                                                                <td>
+                                                                                    <button class="btn btn-sm btn-primary"
+                                                                                    @onclick="() => ApplyConflictResolution(conflict.Type, item)">
+                                                                                        <i class="fas fa-check me-1"></i> Apply
+                                                                                    </button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        }
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                    else if (analysisTab == "relationships")
+                                    {
+                                        <!-- Suggested Relationships Tab -->
+                                        <div class="tab-pane fade show active">
+                                            @if (analysisResult.AnalysisData?.SuggestedRelationships?.Any() != true)
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    No relationship suggestions available.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var relationship in analysisResult.AnalysisData.SuggestedRelationships)
+                                                {
+                                                    <div class="card mb-3 border-success">
+                                                        <div class="card-header bg-success bg-opacity-25">
+                                                            <h6 class="mb-0">
+                                                                <i class="fas fa-link me-2 text-success"></i>
+                                                                Suggested @relationship.RelationshipType Relationship
+                                                                <span class="badge bg-success ms-2">@(relationship.Confidence * 100)% Confidence</span>
+                                                            </h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="mb-3">
+                                                                <div class="relationship-mapping bg-light p-3 rounded">
+                                                                    <strong>@relationship.SourceTable.TableName.@relationship.SourceTable.ColumnName</strong>
+                                                                    <i class="fas fa-arrow-right mx-3"></i>
+                                                                    <strong>@relationship.TargetTable.TableName.@relationship.TargetTable.ColumnName</strong>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Reasoning</label>
+                                                                <p class="p-2 bg-light rounded">@relationship.Reasoning</p>
+                                                            </div>
+                                                            <button class="btn btn-primary" @onclick="() => AddSuggestedRelationship(relationship)">
+                                                                <i class="fas fa-plus me-2"></i> Add Relationship
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                    else if (analysisTab == "unclear")
+                                    {
+                                        <!-- Unclear Elements Tab -->
+                                        <div class="tab-pane fade show active">
+                                            @if (analysisResult.AnalysisData?.UnclearElements?.Any() != true)
+                                            {
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-check-circle me-2"></i>
+                                                    No unclear elements detected in the schema.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var element in analysisResult.AnalysisData.UnclearElements)
+                                                {
+                                                    <div class="card mb-3 border-info">
+                                                        <div class="card-header bg-info bg-opacity-25">
+                                                            <h6 class="mb-0">
+                                                                <i class="fas fa-question-circle me-2 text-info"></i>
+                                                                Unclear @element.Type: @element.Name
+                                                                @if (element.Type == "Column")
+                                                                {
+                                                                    <span class="text-muted"> (in @element.TableName)</span>
+                                                                }
+                                                            </h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Issue</label>
+                                                                <p class="p-2 bg-light rounded">@element.Issue</p>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Suggestion</label>
+                                                                <p class="p-2 bg-light rounded">@element.Suggestion</p>
+                                                            </div>
+                                                            <button class="btn btn-primary" @onclick="() => ApplyUnclearElementSuggestion(element)">
+                                                                <i class="fas fa-check me-2"></i> Apply Suggestion
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Column Synonyms Modal -->
+<div class="modal fade @(isColumnSynonymsModalOpen ? "show" : "")" tabindex="-1"
+style="display: @(isColumnSynonymsModalOpen ? "block" : "none")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Column Synonyms</h5>
+                <button type="button" class="btn-close" @onclick="CloseColumnSynonymsModal"></button>
+            </div>
+            <div class="modal-body">
+                @if (editingColumnSynonyms != null)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Column: @editingColumnSynonyms.DBName</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" @bind="columnSynonymsInput"
+                            placeholder="Enter synonym" />
+                            <button class="btn btn-outline-primary" type="button" @onclick="AddColumnSynonym">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (editingColumnSynonyms.Synonyms?.Any() == true)
+                    {
+                        <div class="mt-3">
+                            <label class="form-label">Current Synonyms:</label>
+                            <div>
+                                @foreach (var synonym in editingColumnSynonyms.Synonyms)
+                                {
+                                    <span class="badge bg-light text-dark me-1 mb-1 p-2">
+                                        @synonym
+                                        <button type="button" class="btn-close btn-close-sm ms-1"
+                                        @onclick="() => RemoveColumnSynonym(synonym)"></button>
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No synonyms added yet. Synonyms help improve natural language query understanding.
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseColumnSynonymsModal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveColumnSynonyms">Save Synonyms</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade @(isColumnSynonymsModalOpen ? "show" : "")"
+style="display: @(isColumnSynonymsModalOpen ? "block" : "none")"></div>
+
+<!-- Column Suggestion Modal -->
+<div class="modal fade @(isColumnSuggestionModalOpen ? "show" : "")" tabindex="-1"
+style="display: @(isColumnSuggestionModalOpen ? "block" : "none")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Column Suggestion</h5>
+                <button type="button" class="btn-close" @onclick="CloseColumnSuggestionModal"></button>
+            </div>
+            <div class="modal-body">
+                @if (selectedColumnAnalysis != null && selectedColumn != null)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Database Column</label>
+                        <input type="text" class="form-control" value="@selectedColumn.DBName" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Suggested Name</label>
+                        <input type="text" class="form-control" value="@selectedColumnAnalysis.SuggestedName" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Suggested Description</label>
+                        <textarea class="form-control" rows="3" disabled>@selectedColumnAnalysis.SuggestedDescription</textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" value="" disabled checked="@selectedColumnAnalysis.IsLookupColumn" />
+                        <label class="form-check-label">
+                            Suggested as Lookup Column
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseColumnSuggestionModal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="ApplyColumnSuggestion">Apply Suggestion</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade @(isColumnSuggestionModalOpen ? "show" : "")"
+style="display: @(isColumnSuggestionModalOpen ? "block" : "none")"></div>
+

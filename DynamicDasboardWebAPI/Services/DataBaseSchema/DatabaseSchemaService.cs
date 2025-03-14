@@ -9,6 +9,8 @@ using System.Data;
 using DynamicDasboardWebAPI.Utilities;
 using System.Linq.Expressions;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DynamicDasboardWebAPI.Services
 {
@@ -350,7 +352,7 @@ namespace DynamicDasboardWebAPI.Services
                             FriendlyName = existingColumn?.FriendlyName ?? column.COLUMN_NAME, // Preserve friendly name
                             DataType = column.DATA_TYPE,
                             IsNullable = column.IS_NULLABLE.Equals("YES", StringComparison.OrdinalIgnoreCase),
-                            IsPrimaryKey = column.IsPrimaryKey,
+                            IsPrimaryKey = column.IsPrimaryKey == 1,
                             IsLookup = existingColumn?.IsLookup ?? false, // Preserve lookup flag
                             Description = existingColumn?.Description ?? string.Empty, // Preserve description
                             IsActive = existingColumn?.IsActive ?? true, // Preserve active state
@@ -578,6 +580,42 @@ namespace DynamicDasboardWebAPI.Services
                 return true;
             }
             catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateSchemaTable(int databaseId, string tableId, [FromBody] TableSchema tableUpdate)
+        {
+            try
+            {
+                // Get existing schema
+                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                if (schema == null)
+                    return false;
+
+                // Parse schema to object
+                var schemaObj = DeserializeSchema(schema.SchemaData);
+
+                // Find and update only the specific table
+                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableId);
+                if (table == null)
+                    return false;
+
+                // Update only the fields sent from client
+                table.FriendlyName = tableUpdate.FriendlyName;
+                table.Description = tableUpdate.Description;
+                table.Synonyms = tableUpdate.Synonyms;
+                table.IsActive = tableUpdate.IsActive;
+
+                // Serialize and save
+                schema.SchemaData = SerializeSchema(schemaObj);
+                await UpdateSchemaAsync(schema);
+
+                return true;
+
+            }
+            catch (Exception ex)
             {
                 throw;
             }

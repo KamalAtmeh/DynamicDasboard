@@ -202,6 +202,26 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
+        // In DatabaseSchemaController.cs
+        [HttpPut("table/Update/{databaseId}/{tableId}")]
+        public async Task<IActionResult> UpdateSchemaTable(int databaseId, string tableId, [FromBody] TableSchema tableUpdate)
+        {
+            try
+            {
+                var result = await _dbSchemaService.UpdateSchemaTable(databaseId, tableId, tableUpdate);
+                if (!result)
+                    return NotFound("Table not found");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        // Similar endpoints for columns and relationships
+
         #endregion
 
 
