@@ -60,7 +60,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get existing schema if available
-                var schemaObj = await _schemaService.GetSchemaByDataBaseIdAsync(databaseId);
+                var schemaObj = await _schemaService.GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schemaObj == null || string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
                     _logger.LogInformation($"No existing schema found for database ID: {databaseId}. Generating new schema.");
@@ -280,7 +280,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get existing schema
-                var schemaObj = await _schemaService.GetSchemaByDataBaseIdAsync(databaseId);
+                var schemaObj = await _schemaService.GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schemaObj == null)
                 {
                     return false;

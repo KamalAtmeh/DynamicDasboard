@@ -220,7 +220,8 @@ namespace DynamicDasboardWebAPI.Services
                         TypeID = database.TypeID,
                         Port = database.Port,
                         Username = database.Username,
-                        EncryptedCredentials = database.EncryptedCredentials // Note: In production, this should be encrypted //temp
+                        EncryptedCredentials = database.EncryptedCredentials, //TODO  In production, this should be encrypted //temp
+                        ConnectionString = database.ConnectionString
                     };
                 }
                 // Test connection

@@ -275,7 +275,7 @@ namespace DynamicDasboardWebAPI.Services
                 var adminDescriptions = new Dictionary<string, string>();
 
                 // Try to get schema from database
-                var schemaObj = await objSchemaService.GetSchemaByDataBaseIdAsync(request.DatabaseId);
+                var schemaObj = await objSchemaService.GetJsonSchemaByDataBaseIdAsync(request.DatabaseId);
                 if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
                     // Parse the schema
@@ -481,7 +481,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get database schema
-                var schema = await objSchemaService.GetSchemaByDataBaseIdAsync(databaseId);
+                var schema = await objSchemaService.GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schema == null || string.IsNullOrEmpty(schema.SchemaData))
                 {
                     return new QueryValidationResult

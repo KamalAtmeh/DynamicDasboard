@@ -14,8 +14,9 @@ namespace DynamicDashboardFE.Pages.User
     /// Enhanced Natural Language Query component that allows users to ask questions in natural language
     /// and receive query results through a multi-step workflow.
     /// </summary>
-    public partial class SmartQuery : ComponentBase
+    public partial class Dashboard : ComponentBase
     {
+        #region Variables
         [Inject] private IConfiguration Configuration { get; set; }
 
 
@@ -83,6 +84,10 @@ namespace DynamicDashboardFE.Pages.User
         // Available databases
         private List<Database> availableDatabases = new List<Database>();
 
+        #endregion
+
+        #region Page Initialization
+
         /// <summary>
         /// Initializes the component, loads configuration settings, available databases, and example questions.
         /// </summary>
@@ -108,6 +113,11 @@ namespace DynamicDashboardFE.Pages.User
                 await LogToConsole($"Error : {ex.Message}");
             }
         }
+
+
+        #endregion
+
+
 
         private async Task LoadAvailableDatabases()
         {

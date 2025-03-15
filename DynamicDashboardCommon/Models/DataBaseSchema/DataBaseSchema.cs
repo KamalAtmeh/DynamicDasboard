@@ -55,6 +55,8 @@ namespace DynamicDashboardCommon.Models
         public List<string> Synonyms { get; set; } = new List<string>();
 
         public bool IsActive { get; set; } = true;
+
+        public int TotalColumns { get; set; } = 0;
     }
 
     public class ColumnSchema

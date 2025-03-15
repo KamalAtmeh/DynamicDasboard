@@ -133,7 +133,7 @@ namespace DynamicDasboardWebAPI.Utilities
         /// </summary>
         public async Task<bool> TestConnectionAsync(Database database, string connectionString)
         {
-            if (database == null || string.IsNullOrEmpty(connectionString))
+            if (database == null)
                 return false;
 
             int DBType = database.TypeID;

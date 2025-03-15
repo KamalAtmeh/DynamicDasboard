@@ -11,20 +11,22 @@ using System.Linq.Expressions;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.ComponentModel;
+using DynamicDashboardCommon.Helper;
 
 namespace DynamicDasboardWebAPI.Services
 {
     public class DatabaseSchemaService
     {
-        private readonly DatabaseSchemaRepository _DBschemaMetadataRepository;
-        private readonly DatabaseService _databaseService;
+        private readonly DatabaseSchemaRepository objDBschemaMetadataRepository;
+        private readonly DatabaseService objDataDaseService;
 
         public DatabaseSchemaService(
             DatabaseSchemaRepository repository,
             DatabaseService databaseService)
         {
-            _DBschemaMetadataRepository = repository;
-            _databaseService = databaseService;
+            objDBschemaMetadataRepository = repository;
+            objDataDaseService = databaseService;
         }
 
         #region DB Schema CRUD Operations
@@ -33,7 +35,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                return await _DBschemaMetadataRepository.InsertDatabaseJsonSchemaAsync(schema);
+                return await objDBschemaMetadataRepository.InsertDatabaseJsonSchemaAsync(schema);
             }
             catch (Exception ex)
             {
@@ -45,7 +47,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                return await _DBschemaMetadataRepository.UpdateDatabaseJsonSchemaAsync(schema);
+                return await objDBschemaMetadataRepository.UpdateDatabaseJsonSchemaAsync(schema);
             }
             catch (Exception ex)
             {
@@ -53,16 +55,16 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<DatabaseSchema> GetSchemaByDataBaseIdAsync(int databaseID)
+        public async Task<DatabaseSchema> GetJsonSchemaByDataBaseIdAsync(int databaseID)
         {
             try
             {
-                Database objDataBase = await _databaseService.GetDatabaseByIdAsync(databaseID);
+                Database objDataBase = await objDataDaseService.GetDatabaseByIdAsync(databaseID);
                 if (objDataBase == null || objDataBase.DatabaseID == 0)
                 {
                     return null;
                 }
-                DatabaseSchema schema = await _DBschemaMetadataRepository.GetDatabaseJsonSchemaByIdAsync(databaseID);
+                DatabaseSchema schema = await objDBschemaMetadataRepository.GetDatabaseJsonSchemaByIdAsync(databaseID);
                 if ((schema == null || schema.ID == 0 || string.IsNullOrEmpty(schema.SchemaData)) && databaseID > 0)
                 {
                     return await GenerateAndGetDatabaseSchemaFromConnectedDBAsync(databaseID, objDataBase);
@@ -82,7 +84,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                return await _DBschemaMetadataRepository.DeactivateDatabaseJsonSchemaAsync(databaseID);
+                return await objDBschemaMetadataRepository.DeactivateDatabaseJsonSchemaAsync(databaseID);
             }
             catch (Exception ex)
             {
@@ -120,7 +122,7 @@ namespace DynamicDasboardWebAPI.Services
                 };
 
                 // Get tables
-                var tables = await _DBschemaMetadataRepository.GetTablesAsync(objDataBase);
+                var tables = await objDBschemaMetadataRepository.GetTablesAsync(objDataBase);
 
                 // Create ID mapping dictionaries
                 var tableIdMap = new Dictionary<string, string>();
@@ -145,13 +147,18 @@ namespace DynamicDasboardWebAPI.Services
                     };
 
                     // Get columns for this table
-                    var columns = await _DBschemaMetadataRepository.GetColumnsAsync(objDataBase, table.TABLE_NAME);
+                    var columns = await objDBschemaMetadataRepository.GetColumnsAsync(objDataBase, table.TABLE_NAME);
+                    tableSchema.TotalColumns = columns.Count;
 
                     foreach (var column in columns)
                     {
                         var columnId = Guid.NewGuid().ToString();
                         columnIdMap[table.TABLE_NAME][column.COLUMN_NAME] = columnId;
-
+                        int order = 0;
+                        if (column.ORDINAL_POSITION != null)
+                        {
+                            int.TryParse( Convert.ToString(column.ORDINAL_POSITION), out order);
+                        }
                         tableSchema.Columns.Add(new ColumnSchema
                         {
                             ID = columnId,
@@ -166,7 +173,7 @@ namespace DynamicDasboardWebAPI.Services
                             UIConfig = new UiConfig
                             {
                                 Visible = true,
-                                Order = column.ORDINAL_POSITION
+                                Order = order
                             },
                             Constraints = new List<ConstraintSchema>()
                         });
@@ -176,7 +183,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get relationships
-                var relationships = await _DBschemaMetadataRepository.GetRelationshipsAsync(objDataBase);
+                var relationships = await objDBschemaMetadataRepository.GetRelationshipsAsync(objDataBase);
 
 
                 foreach (var rel in relationships)
@@ -270,7 +277,7 @@ namespace DynamicDasboardWebAPI.Services
                     throw new ArgumentException($"Database with ID {databaseId} not found");
 
                 // Get existing schema if available
-                var existingSchema = await GetSchemaByDataBaseIdAsync(databaseId);
+                var existingSchema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
                 bool hasExistingSchema = existingSchema != null && !string.IsNullOrEmpty(existingSchema.SchemaData);
 
                 DatabaseSchema existingSchemaObj = null;
@@ -296,7 +303,7 @@ namespace DynamicDasboardWebAPI.Services
                 };
 
                 // Get tables
-                var tables = await _DBschemaMetadataRepository.GetTablesAsync(objDataBase);
+                var tables = await objDBschemaMetadataRepository.GetTablesAsync(objDataBase);
 
                 // Create ID mapping dictionaries
                 var tableIdMap = new Dictionary<string, string>();
@@ -330,7 +337,8 @@ namespace DynamicDasboardWebAPI.Services
                     };
 
                     // Get columns for this table
-                    var columns = await _DBschemaMetadataRepository.GetColumnsAsync(objDataBase, table.TABLE_NAME);
+                    var columns = await objDBschemaMetadataRepository.GetColumnsAsync(objDataBase, table.TABLE_NAME);
+                    tableSchema.TotalColumns = columns.Count;
 
                     foreach (var column in columns)
                     {
@@ -360,7 +368,7 @@ namespace DynamicDasboardWebAPI.Services
                             UIConfig = existingColumn?.UIConfig ?? new UiConfig
                             {
                                 Visible = true,
-                                Order = column.ORDINAL_POSITION
+                                Order = int.TryParse(column.ORDINAL_POSITION, out int order) ? order : 0
                             },
                             Constraints = existingColumn?.Constraints ?? new List<ConstraintSchema>()
                         });
@@ -370,7 +378,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get relationships
-                var relationships = await _DBschemaMetadataRepository.GetRelationshipsAsync(objDataBase);
+                var relationships = await objDBschemaMetadataRepository.GetRelationshipsAsync(objDataBase);
 
                 foreach (var rel in relationships)
                 {
@@ -486,7 +494,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schema == null)
                     return false;
 
@@ -520,7 +528,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schema == null)
                     return false;
 
@@ -558,7 +566,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schema == null)
                     return false;
 
@@ -590,7 +598,7 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
                 // Get existing schema
-                var schema = await GetSchemaByDataBaseIdAsync(databaseId);
+                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
                 if (schema == null)
                     return false;
 
@@ -868,7 +876,7 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="schemaJson">The full schema JSON</param>
         /// <returns>Optimized schema string</returns>
-        public  string OptimizeSchemaForLlm(string schemaJson)
+        public string OptimizeSchemaForLlm(string schemaJson)
         {
             try
             {
@@ -894,7 +902,7 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="schema">The DatabaseSchema object, expecting it desarilized</param>
         /// <returns>Optimized schema string</returns>
-        public  string BuildOptimizedSchemaString(DatabaseSchema schema)
+        public string BuildOptimizedSchemaString(DatabaseSchema schema)
         {
             if (schema == null || schema.Tables == null || !schema.Tables.Any())
                 return string.Empty;
@@ -965,7 +973,7 @@ namespace DynamicDasboardWebAPI.Services
         /// </summary>
         /// <param name="schema">The DatabaseSchema object</param>
         /// <returns>Dictionary mapping technical terms to friendly terms</returns>
-        public  Dictionary<string, string> ExtractAdminDescriptions(DatabaseSchema schema)
+        public Dictionary<string, string> ExtractAdminDescriptions(DatabaseSchema schema)
         {
             var descriptions = new Dictionary<string, string>();
 
@@ -1007,6 +1015,86 @@ namespace DynamicDasboardWebAPI.Services
             return descriptions;
         }
 
-        #endregion
+        public async Task<List<TableSchema>> GetSchemaBasicTablesList(int databaseID)
+        {
+            try
+            {
+                DatabaseSchema objDBSchema = await GetSchemaDeserialized(databaseID);
+
+                if (objDBSchema == null || objDBSchema.ID == 0)
+                {
+                    return null;
+                }
+
+                List<TableSchema> lstSchemaTables = new List<TableSchema>();
+
+                foreach (var table in objDBSchema.Tables)
+                {
+                    TableSchema objTable = new TableSchema
+                    {
+                        ID = table.ID,
+                        FriendlyName = table.FriendlyName,
+                        TotalColumns = table.TotalColumns
+                    };
+                    lstSchemaTables.Add(objTable);
+                }
+
+                return lstSchemaTables;
+
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task<TableSchema> GetSchemaTableDetailsByID(int databaseID, string tableID)
+        {
+            try
+            {
+                DatabaseSchema objDBSchema = await GetSchemaDeserialized(databaseID);
+                if (objDBSchema == null || objDBSchema.ID == 0)
+                {
+                    return null;
+                }
+                TableSchema objTable = objDBSchema.Tables.FirstOrDefault(t => t.ID == tableID);
+                return objTable;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task<DatabaseSchema> GetSchemaDeserialized(int databaseID)
+        {
+            try
+            {
+                var cacheKey = $"DatabaseSchema_{databaseID}";
+                var cached = CacheHelper.Get<DatabaseSchema>(cacheKey);
+                if (cached != null)
+                {
+                    return cached;
+                }
+
+                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseID);
+                if (schema == null)
+                    return null;
+
+                DatabaseSchema objSchemaDetail = DeserializeSchema(schema.SchemaData);
+
+                await CacheHelper.AddOrUpdateAsync(cacheKey, objSchemaDetail);
+
+                return schema;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+
+            #endregion
+        }
     }
 }

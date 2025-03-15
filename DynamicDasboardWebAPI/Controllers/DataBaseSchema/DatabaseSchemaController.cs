@@ -5,6 +5,7 @@ using DynamicDasboardWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using DynamicDashboardCommon.Enums;
+using DynamicDashboardCommon.Helper;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -12,14 +13,14 @@ namespace DynamicDasboardWebAPI.Controllers
     [Route("api/[controller]")]
     public class DatabaseSchemaController : AppControllerBase
     {
-        private readonly DatabaseSchemaService _dbSchemaService;
+        private readonly DatabaseSchemaService objDBSchemaService;
         private readonly DatabaseService _databaseService;
 
         public DatabaseSchemaController(
             DatabaseSchemaService service, DatabaseService databaseService, ILogsService logsService)
             : base(logsService)
         {
-            _dbSchemaService = service;
+            objDBSchemaService = service;
             _databaseService = databaseService;
         }
 
@@ -31,7 +32,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var id = await _dbSchemaService.CreateSchemaAsync(schema);
+                var id = await objDBSchemaService.CreateSchemaAsync(schema);
                 return Ok(id);
             }
             catch (Exception ex)
@@ -51,7 +52,7 @@ namespace DynamicDasboardWebAPI.Controllers
 
             try
             {
-                var result = await _dbSchemaService.UpdateSchemaAsync(schema);
+                var result = await objDBSchemaService.UpdateSchemaAsync(schema);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -68,7 +69,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var schema = await _dbSchemaService.GetSchemaByDataBaseIdAsync(databaseID);
+                var schema = await objDBSchemaService.GetJsonSchemaByDataBaseIdAsync(databaseID);
                 if (schema == null || schema.ID == 0)
                 {
                     return null; //temp Service need to handle the return and validations
@@ -89,7 +90,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var result = await _dbSchemaService.DeactivateSchemaAsync(id);
+                var result = await objDBSchemaService.DeactivateSchemaAsync(id);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -133,7 +134,7 @@ namespace DynamicDasboardWebAPI.Controllers
                 if (database == null)
                     return NotFound("Database not found");
 
-                var schema = await _dbSchemaService.RefreshAndGetDatabaseSchemaFromConnectedDBAsync(databaseId, database);
+                var schema = await objDBSchemaService.RefreshAndGetDatabaseSchemaFromConnectedDBAsync(databaseId, database);
                 return Ok(schema);
             }
             catch (Exception ex)
@@ -150,7 +151,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var result = await _dbSchemaService.UpdateTableActiveStatusAsync(databaseId, tableId, isActive);
+                var result = await objDBSchemaService.UpdateTableActiveStatusAsync(databaseId, tableId, isActive);
                 if (!result)
                     return NotFound("Table not found");
 
@@ -170,7 +171,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var result = await _dbSchemaService.UpdateColumnActiveStatusAsync(databaseId, tableId, columnId, isActive);
+                var result = await objDBSchemaService.UpdateColumnActiveStatusAsync(databaseId, tableId, columnId, isActive);
                 if (!result)
                     return NotFound("Column not found");
 
@@ -190,7 +191,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var result = await _dbSchemaService.UpdateRelationshipActiveStatusAsync(databaseId, relationshipId, isActive);
+                var result = await objDBSchemaService.UpdateRelationshipActiveStatusAsync(databaseId, relationshipId, isActive);
                 if (!result)
                     return NotFound("Relationship not found");
 
@@ -208,7 +209,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var result = await _dbSchemaService.UpdateSchemaTable(databaseId, tableId, tableUpdate);
+                var result = await objDBSchemaService.UpdateSchemaTable(databaseId, tableId, tableUpdate);
                 if (!result)
                     return NotFound("Table not found");
 
@@ -220,33 +221,63 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
-        // Similar endpoints for columns and relationships
-
-        #endregion
-
-
-        #region Json Schema CRUD Operations
-
-
-
-        // Get parsed schema
-        [HttpGet("parsed/{databaseID}")]
-        public async Task<IActionResult> GetParsedSchema(int databaseID)
+        //TODO Similar endpoints for columns and relationships
+        [HttpGet("TableListBasicInfo/{databaseID}")]
+        public async Task<IActionResult> GetSchemaBasicTablesList(int databaseID)
         {
             try
             {
-                var schema = await _dbSchemaService.GetSchemaByDataBaseIdAsync(databaseID);
-                if (schema == null)
-                    return NotFound();
-
-                var schemaDetail = _dbSchemaService.DeserializeSchema(schema.SchemaData);
-                return Ok(schemaDetail);
+                var lstTableBasicInfo = await objDBSchemaService.GetSchemaBasicTablesList(databaseID);
+                if (lstTableBasicInfo == null || lstTableBasicInfo.Count == 0)
+                {
+                    return null;
+                }
+                return Ok(lstTableBasicInfo);
             }
             catch (Exception ex)
             {
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
+
+       
+        [HttpGet("GetTableDetails/{databaseID}/{tableID}")]
+        public async Task<IActionResult> GetSchemaTableDetailsByID(int databaseID,string tableID)
+        {
+            try
+            {
+                var objSchemaTable = await objDBSchemaService.GetSchemaTableDetailsByID(databaseID, tableID);
+                if (objSchemaTable == null)
+                {
+                    return null;
+                }
+                return Ok(objSchemaTable);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
         #endregion
+
+
+
+        // Get parsed schema
+        [HttpGet("parsed/{databaseID}")]
+        public async Task<IActionResult> GetSchemaDeserialized(int databaseID)
+        {
+            try
+            {
+                var objSchemaDetail = await objDBSchemaService.GetSchemaDeserialized(databaseID);   
+
+                return Ok(objSchemaDetail);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+      
     }
 }

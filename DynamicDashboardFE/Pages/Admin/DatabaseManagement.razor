@@ -1,4 +1,4 @@
-﻿@page "/admin/database-management"
+﻿@page "/"
 @using DynamicDashboardCommon.Models
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
@@ -6,383 +6,426 @@
 @inject IToastService toastService
 
 <div class="container-fluid">
-    <h3 class="mb-4">
-        <i class="fas fa-database me-2"></i>Database Management
-    </h3>
+	<h3 class="mb-4">
+		<i class="fas fa-database me-2"></i>Database Management
+	</h3>
 
-    @if (isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="ms-3">Loading databases...</div>
-        </div>
-    }
-    else
-    {
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Connected Databases</h5>
-                <button class="btn btn-primary" @onclick="ShowDatabaseForm">
-                    <i class="fas fa-plus me-2"></i>Add Database
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Description</th>
-                                <th>Created By</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var db in databases)
-                            {
-                                <tr>
-                                    <td>@db.FriendlyName</td>
-                                    <td>@db.DatabaseTypeName</td>
-                                    <td>@(db.Description?.Length > 50 ? db.Description.Substring(0, 47) + "..." : db.Description)</td>
+	@if (isLoading)
+	{
+		<div class="d-flex justify-content-center my-5">
+			<div class="spinner-border text-primary" role="status">
+				<span class="visually-hidden">Loading...</span>
+			</div>
+			<div class="ms-3">Loading databases...</div>
+		</div>
+	}
+	else
+	{
+		<div class="card shadow-sm mb-4">
+			<div class="card-header bg-light d-flex justify-content-between align-items-center">
+				<h5 class="mb-0">Connected Databases</h5>
+				<button class="btn btn-primary" @onclick="ShowDatabaseForm">
+					<i class="fas fa-plus me-2"></i>Add Database
+				</button>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-striped table-hover">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Type</th>
+								<th>Description</th>
+								<th>Created By</th>
+								<th>Status</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach (var db in databases)
+							{
+								<tr>
+									<td>@db.FriendlyName</td>
+									<td>@db.DatabaseTypeName</td>
+									<td>@(db.Description?.Length > 50 ? db.Description.Substring(0, 47) + "..." : db.Description)</td>
 									<td>@db.CreatedBy</td> <!-- temp -->
-                                    <td>
-                                        @if (db.IsActive == true)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Inactive</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <button class="btn btn-sm btn-primary" @onclick="() => NavigateToMetadataManager(db.DatabaseID)">
-                                                <i class="fas fa-cogs me-1"></i> Manage Metadata
-                                            </button>
-                                            <button class="btn btn-sm btn-info" @onclick="() => TestConnection(db)">
-                                                <i class="fas fa-plug me-1"></i> Test
-                                            </button>
-                                            <button class="btn btn-sm btn-warning" @onclick="() => EditDatabase(db)">
-                                                <i class="fas fa-edit me-1"></i> Edit
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteDatabase(db.DatabaseID)">
-                                                <i class="fas fa-trash me-1"></i> Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    }
+									<td>
+										@if (db.IsActive == true)
+										{
+											<span class="badge bg-success">Active</span>
+										}
+										else
+										{
+											<span class="badge bg-danger">Inactive</span>
+										}
+									</td>
+									<td>
+										<div class="btn-group" role="group">
+											<button class="btn btn-sm btn-primary" @onclick="() => NavigateToMetadataManager(db.DatabaseID)">
+												<i class="fas fa-cogs me-1"></i> Manage Metadata
+											</button>
+											<button class="btn btn-sm btn-info" @onclick="() => TestConnection(db)">
+												<i class="fas fa-plug me-1"></i> Test
+											</button>
+											<button class="btn btn-sm btn-warning" @onclick="() => EditDatabase(db)">
+												<i class="fas fa-edit me-1"></i> Edit
+											</button>
+											<button class="btn btn-sm btn-danger" @onclick="() => DeleteDatabase(db.DatabaseID)">
+												<i class="fas fa-trash me-1"></i> Delete
+											</button>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	}
 
-    <!-- Database Form Modal -->
-    <div class="modal fade @(showDatabaseForm ? "show" : "")" tabindex="-1" style="display: @(showDatabaseForm ? "block" : "none")">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(isEditMode ? "Edit Database" : "Add Database")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseDatabaseForm"></button>
-                </div>
-                <div class="modal-body">
-                    <EditForm Model="databaseModel" OnValidSubmit="SaveDatabase">
-                        <DataAnnotationsValidator />
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Database Name</label>
-                                <InputText @bind-Value="databaseModel.Name" class="form-control" />
-                                <ValidationMessage For="@(() => databaseModel.FriendlyName)" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Database Type</label>
-                                <InputSelect @bind-Value="databaseModel.TypeID" class="form-select">
-                                    <option value="1">SQL Server</option>
-                                    <option value="2">MySQL</option>
-                                    <option value="3">Oracle</option>
-                                </InputSelect>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Server</label>
-                                <InputText @bind-Value="databaseModel.ServerAddress" class="form-control" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Database Name</label>
-                                <InputText @bind-Value="databaseModel.FriendlyName" class="form-control" />
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Port</label>
-                                <InputNumber @bind-Value="databaseModel.Port" class="form-control" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Username</label>
-                                <InputText @bind-Value="databaseModel.Username" class="form-control" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Password</label>
-                                <InputText @bind-Value="databaseModel.EncryptedCredentials" type="password" class="form-control" />
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <InputTextArea @bind-Value="databaseModel.Description" class="form-control" rows="3" />
-                        </div>
-                        <div class="form-check mb-3">
-                            <InputCheckbox @bind-Value="IsActiveBool" class="form-check-input" id="isActive" />
-                            <label class="form-check-label" for="isActive">
-                                Active
-                            </label>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">DB Creation Script (Optional)</label>
-                            <InputTextArea @bind-Value="databaseModel.DBCreationScript" class="form-control" rows="5" />
-                        </div>
-                    </EditForm>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseDatabaseForm">Cancel</button>
-                    <button type="button" class="btn btn-success me-2" @onclick="TestConnectionFromForm">
-                        <i class="fas fa-plug me-1"></i> Test Connection
-                    </button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveDatabase">
-                        <i class="fas fa-save me-1"></i> Save
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade @(showDatabaseForm ? "show" : "")" style="display: @(showDatabaseForm ? "block" : "none")"></div>
+	<!-- Database Form Modal -->
+	<div class="modal fade @(showDatabaseForm ? "show" : "")" tabindex="-1" style="display: @(showDatabaseForm ? "block" : "none")">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">@(isEditMode ? "Edit Database" : "Add Database")</h5>
+					<button type="button" class="btn-close" @onclick="CloseDatabaseForm"></button>
+				</div>
+				<div class="modal-body">
+					<EditForm Model="databaseModel" OnValidSubmit="SaveDatabase">
+						<DataAnnotationsValidator />
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<label class="form-label">Database Name</label>
+								<InputText @bind-Value="databaseModel.Name" class="form-control" />
+								<ValidationMessage For="@(() => databaseModel.FriendlyName)" />
+							</div>
+							<div class="col-md-6">
+								<label class="form-label">Database Type</label>
+								<InputSelect @bind-Value="databaseModel.TypeID" class="form-select">
+									<option value="1">SQL Server</option>
+									<option value="2">MySQL</option>
+									<option value="3">Oracle</option>
+								</InputSelect>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<label class="form-label">Server</label>
+								<InputText @bind-Value="databaseModel.ServerAddress" class="form-control" />
+							</div>
+							<div class="col-md-6">
+								<label class="form-label">Database Friendly Name</label>
+								<InputText @bind-Value="databaseModel.FriendlyName" class="form-control" />
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-md-4">
+								<label class="form-label">Port</label>
+								<InputNumber @bind-Value="databaseModel.Port" class="form-control" />
+							</div>
+							<div class="col-md-4">
+								<label class="form-label">Username</label>
+								<InputText @bind-Value="databaseModel.Username" class="form-control" />
+							</div>
+							<div class="col-md-4">
+								<label class="form-label">Password</label>
+								<InputText @bind-Value="databaseModel.EncryptedCredentials" type="password" class="form-control" />
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Description</label>
+							<InputTextArea @bind-Value="databaseModel.Description" class="form-control" rows="3" />
+						</div>
+
+						<div class="form-check mb-3" style="@((isEditMode) ? "display: block;" : "display: none;")">
+							<InputCheckbox @bind-Value="IsActiveBool" class="form-check-input" id="isActive" />
+							<label class="form-check-label" for="isActive">
+								Active
+							</label>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">DB Creation Script (Optional)</label>
+							<InputTextArea @bind-Value="databaseModel.DBCreationScript" class="form-control" rows="5" />
+						</div>
+					</EditForm>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" @onclick="CloseDatabaseForm">Cancel</button>
+					<button type="button" class="btn btn-success me-2" @onclick="TestConnectionFromForm">
+						<i class="fas fa-plug me-1"></i> Test Connection
+					</button>
+					<button type="button" class="btn btn-primary" @onclick="SaveDatabase">
+						<i class="fas fa-save me-1"></i> Save
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal-backdrop fade @(showDatabaseForm ? "show" : "")" style="display: @(showDatabaseForm ? "block" : "none")"></div>
 </div>
 
 @code {
-    private List<Database> databases = new List<Database>();
-    private bool isLoading = true;
-    private bool showDatabaseForm = false;
-    private bool isEditMode = false;
-    private Database databaseModel = new Database();
+	private List<Database> databases = new List<Database>();
+	private bool isLoading = true;
+	private bool showDatabaseForm = false;
+	private bool isEditMode = false;
+	private Database databaseModel = new Database();
 
-    private bool IsActiveBool
-    {
-        get => databaseModel.IsActive;
-        set => databaseModel.IsActive = value;
-    }
+	private bool IsActiveBool
+	{
+		get => databaseModel.IsActive;
+		set => databaseModel.IsActive = value;
+	}
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadDatabases();
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadDatabases();
+	}
 
-    private async Task LoadDatabases()
-    {
-        isLoading = true;
+	private async Task LoadDatabases()
+	{
+		isLoading = true;
 
-        try
-        {
-            databases = await Http.GetFromJsonAsync<List<Database>>("api/databases") ?? new List<Database>();
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error loading databases: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
+		try
+		{
+			databases = await Http.GetFromJsonAsync<List<Database>>("api/databases") ?? new List<Database>();
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error loading databases: {ex.Message}");
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
 
-    private void ShowDatabaseForm()
-    {
-        databaseModel = new Database
-            {
-                IsActive = true,
-                TypeID = 1, // Default to SQL Server //temp
-                CreatedBy = 3, // Default to current user (would be dynamic in real implementation) //temp
-                Port = 0
-            };
-        isEditMode = false;
-        showDatabaseForm = true;
-    }
+	private void ShowDatabaseForm()
+	{
+		databaseModel = new Database
+			{
+				IsActive = true,
+				TypeID = 1, // Default to SQL Server //temp
+				CreatedBy = 3, // Default to current user (would be dynamic in real implementation) //temp
+				Port = 0
+			};
+		isEditMode = false;
+		showDatabaseForm = true;
+	}
 
-    private void EditDatabase(Database db)
-    {
-        databaseModel = new Database
-            {
+	private void EditDatabase(Database db)
+	{
+		databaseModel = new Database
+			{
 				Name = db.Name,
-                DatabaseID = db.DatabaseID,
-                TypeID = db.TypeID,
-                ServerAddress = db.ServerAddress,
-                FriendlyName = db.FriendlyName,
-                Port = db.Port,
-                Username = db.Username,
-                EncryptedCredentials = db.EncryptedCredentials,
-                Description = db.Description,
-                IsActive = db.IsActive,
-                CreatedBy = db.CreatedBy,
-                DBCreationScript = db.DBCreationScript,
-                ConnectionString = db.ConnectionString
-            };
-        isEditMode = true;
-        showDatabaseForm = true;
-    }
+				DatabaseID = db.DatabaseID,
+				TypeID = db.TypeID,
+				ServerAddress = db.ServerAddress,
+				FriendlyName = db.FriendlyName,
+				Port = db.Port,
+				Username = db.Username,
+				EncryptedCredentials = db.EncryptedCredentials,
+				Description = db.Description,
+				IsActive = db.IsActive,
+				CreatedBy = db.CreatedBy,
+				DBCreationScript = db.DBCreationScript,
+				ConnectionString = db.ConnectionString
+			};
+		isEditMode = true;
+		showDatabaseForm = true;
+	}
 
-    private void CloseDatabaseForm()
-    {
-        showDatabaseForm = false;
-    }
+	private void CloseDatabaseForm()
+	{
+		showDatabaseForm = false;
+	}
 
-    private async Task SaveDatabase()
-    {
-        try
-        {
-            if (isEditMode)
-            {
-                // Update existing database 
-                await Http.PutAsJsonAsync($"api/databases/{databaseModel.DatabaseID}", databaseModel);
+	private async Task SaveDatabase()
+	{
+		try
+		{
+			if (isEditMode)
+			{
+				bool testconnection = await TestConnection(databaseModel);
+				if (!testconnection)
+				{
+					toastService.ShowWarning("Connection Failed, please make sure connection information is correct");
+					return;
+				}
 
-                try
-                {
-                    var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{databaseModel.DatabaseID}");
+				// Update existing database
+				await Http.PutAsJsonAsync($"api/databases/{databaseModel.DatabaseID}", databaseModel);
 
-                    if (schemaResponse != null && schemaResponse.ID != 0)
-                    {
-                        await JSRuntime.InvokeVoidAsync("alert", "DataBase been updated successfully");
-                    }
-                    else
-                    {
-                        // var error = await schemaResponse.Content.ReadAsStringAsync();
-                        await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
-                    }
-                }
-                catch (Exception schemaEx)
-                {
-                    await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
-                }
-            }
-            else
-            {
-                // Create new database and retrieve schema
-                var response = await Http.PostAsJsonAsync("api/databases", databaseModel);
+				try
+				{
+					var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{databaseModel.DatabaseID}");
 
-                if (response.IsSuccessStatusCode)
-                {
-                    // Get the ID of the newly created database
-                    var newDatabaseId = await response.Content.ReadFromJsonAsync<int>();
+					if (schemaResponse != null && schemaResponse.ID != 0)
+					{
+						await JSRuntime.InvokeVoidAsync("alert", "DataBase been updated successfully");
+					}
+					else
+					{
+						// var error = await schemaResponse.Content.ReadAsStringAsync();
+						await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
+					}
+				}
+				catch (Exception schemaEx)
+				{
+					await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
+				}
+			}
+			else
+			{
+				bool testconnection = await TestConnection(databaseModel);
+				if (!testconnection)
+				{
+					toastService.ShowWarning("Connection Failed, please try again");
+					return;
+				}
+				// Create new database and retrieve schema
+				var response = await Http.PostAsJsonAsync("api/databases", databaseModel);
 
-                    // Show initial success message
-                    await JSRuntime.InvokeVoidAsync("alert", "Database added successfully! Retrieving schema...");
+				if (response.IsSuccessStatusCode)
+				{
+					// Get the ID of the newly created database
+					var newDatabaseId = await response.Content.ReadFromJsonAsync<int>();
 
-                    // Call schema retrieval endpoint
-                    try
-                    {
-                        var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{newDatabaseId}");
+					if (newDatabaseId == 0)
+					{
+						toastService.ShowWarning("Database was not created, please try again");
+						return;
+					}
+					// Show initial success message
+					toastService.ShowSuccess("Database was not created, please try again");
 
-                        if (schemaResponse != null && schemaResponse.ID != 0)
-                        {
-                            await JSRuntime.InvokeVoidAsync("alert", "Schema successfully retrieved and saved.");
-                        }
-                        else
-                        {
-                            // var error = await schemaResponse.Content.ReadAsStringAsync();
-                            await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed:");
-                        }
-                    }
-                    catch (Exception schemaEx)
-                    {
-                        await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed");
-                    }
-                }
-                else
-                {
-                    await JSRuntime.InvokeVoidAsync("alert", "Failed to create database.");
-                }
-            }
+					// Call schema retrieval endpoint
+					try
+					{
+						var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{newDatabaseId}");
 
-            showDatabaseForm = false;
-            await LoadDatabases();
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error saving database: {ex.Message}");
-        }
-    }
+						if (schemaResponse != null && schemaResponse.ID != 0)
+						{
+							await JSRuntime.InvokeVoidAsync("alert", "Schema successfully retrieved and saved.");
+						}
+						else
+						{
+							// var error = await schemaResponse.Content.ReadAsStringAsync();
+							await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed:");
+						}
+					}
+					catch (Exception schemaEx)
+					{
+						await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed");
+					}
+				}
+				else
+				{
+					await JSRuntime.InvokeVoidAsync("alert", "Failed to create database.");
+				}
+			}
 
-    private async Task DeleteDatabase(int databaseId)
-    {
-        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this database?"))
-            return;
+			showDatabaseForm = false;
+			await LoadDatabases();
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error saving database: {ex.Message}");
+		}
+	}
 
-        try
-        {
-            await Http.DeleteAsync($"api/databases/{databaseId}");
-            await JSRuntime.InvokeVoidAsync("alert", "Database deleted successfully!");
-            await LoadDatabases();
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error deleting database: {ex.Message}");
-        }
-    }
+	private async Task DeleteDatabase(int databaseId)
+	{
+		if (!await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this database?"))
+			return;
 
-    private async Task TestConnection(Database db)
-    {
-        try
-        {
-            var response = await Http.PostAsJsonAsync("api/databases/test-connection", db);
+		try
+		{
+			await Http.DeleteAsync($"api/databases/{databaseId}");
+			await JSRuntime.InvokeVoidAsync("alert", "Database deleted successfully!");
+			await LoadDatabases();
+		}
+		catch (Exception ex)
+		{
+			await JSRuntime.InvokeVoidAsync("alert", $"Error deleting database: {ex.Message}");
+		}
+	}
 
-            if (response.IsSuccessStatusCode)
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Connection successful!");
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                await JSRuntime.InvokeVoidAsync("alert", $"Connection failed: {error}");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error testing connection: {ex.Message}");
-        }
-    }
+	private async Task<bool> TestConnection(Database db)
+	{
+		var isSuccessConnection = false;
+		try
+		{
 
-    private async Task TestConnectionFromForm()
-    {
-        try
-        {
-            var response = await Http.PostAsJsonAsync("api/databases/test-connection", databaseModel);
+			var response = await Http.PostAsJsonAsync("api/databases/test-connection", db);
 
-            if (response.IsSuccessStatusCode)
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Connection successful!");
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                await JSRuntime.InvokeVoidAsync("alert", $"Connection failed: {error}");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error testing connection: {ex.Message}");
-        }
-    }
+			if (response.IsSuccessStatusCode)
+			{
+				isSuccessConnection = await response.Content.ReadFromJsonAsync<bool>();
+				if (isSuccessConnection)
+				{
+					toastService.ShowSuccess("Connection successful!");
+				}
+				else
+				{
+					toastService.ShowWarning("Connection Failed!");
+				}
+			}
+			else
+			{
+				toastService.ShowWarning("Connection Failed!");
+			}
+			return isSuccessConnection;
+		}
+		catch (Exception)
+		{
+			toastService.ShowWarning("Connection Failed!");
+			return isSuccessConnection;
+		}
+	}
 
-    private void NavigateToMetadataManager(int databaseId)
-    {
-       // NavigationManager.NavigateTo($"/admin/database-metadata/{databaseId}");
-        // NavigationManager.NavigateTo($"/admin/database-metadata-json-analysis/{databaseId}");
-        NavigationManager.NavigateTo($"/admin/DBMetaDataV2/{databaseId}");
-        
-    }
+	private async Task<bool> TestConnectionFromForm()
+	{
+		var isSuccessConnection = false;
+		try
+		{
+
+			var response = await Http.PostAsJsonAsync("api/databases/test-connection", databaseModel);
+
+			if (response.IsSuccessStatusCode)
+			{
+				isSuccessConnection = await response.Content.ReadFromJsonAsync<bool>();
+				if (isSuccessConnection)
+				{
+					toastService.ShowSuccess("Connection successful!");
+
+				}
+				else
+				{
+					toastService.ShowWarning("Connection Failed!");
+
+				}
+			}
+			else
+			{
+				toastService.ShowWarning("Connection Failed!");
+			}
+			return isSuccessConnection;
+		}
+		catch (Exception)
+		{
+			toastService.ShowWarning("Connection Failed!");
+			return isSuccessConnection;
+		}
+	}
+
+	private void NavigateToMetadataManager(int databaseId)
+	{
+		// NavigationManager.NavigateTo($"/admin/database-metadata/{databaseId}");
+		// NavigationManager.NavigateTo($"/admin/database-metadata-json-analysis/{databaseId}");
+		NavigationManager.NavigateTo($"/admin/DBMetaDataV2/{databaseId}");
+
+	}
 }
