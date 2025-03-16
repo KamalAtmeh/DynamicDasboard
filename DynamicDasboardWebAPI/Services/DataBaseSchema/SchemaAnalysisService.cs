@@ -60,7 +60,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get existing schema if available
-                var schemaObj = await _schemaService.GetJsonSchemaByDataBaseIdAsync(databaseId);
+                var schemaObj = await _schemaService.GetSchemaObject(databaseId);
                 if (schemaObj == null || string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
                     _logger.LogInformation($"No existing schema found for database ID: {databaseId}. Generating new schema.");
@@ -75,7 +75,7 @@ namespace DynamicDasboardWebAPI.Services
                         };
                     }
                 }
-                 schemaObj =  _schemaService.DeserializeSchema(schemaObj.SchemaData);
+
                 // Format schema for LLM analysis
                 var schemaForAnalysis = _schemaService.BuildOptimizedSchemaString(schemaObj);
 
@@ -199,7 +199,7 @@ namespace DynamicDasboardWebAPI.Services
             prompt.AppendLine("1. Provide business-oriented, non-technical friendly names and descriptions");
             prompt.AppendLine("2. For lookup columns (foreign keys), indicate isLookupColumn as true");
             prompt.AppendLine("3. Identify naming conflicts where similar names between tables or columns in same table might cause confusion");
-           // prompt.AppendLine("4. Suggest logical relationships based on column names and data types");
+            // prompt.AppendLine("4. Suggest logical relationships based on column names and data types");
             prompt.AppendLine("5. Focus on clarity and usability for non-technical users");
             prompt.AppendLine("6. Keep your response in pure JSON format with no additional text");
 
@@ -280,18 +280,14 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get existing schema
-                var schemaObj = await _schemaService.GetJsonSchemaByDataBaseIdAsync(databaseId);
-                if (schemaObj == null)
+                var schema = await _schemaService.GetSchemaObject(databaseId);
+                if (schema == null)
                 {
                     return false;
                 }
 
                 // Deserialize existing schema
-                var schema = _schemaService.DeserializeSchema(schemaObj.SchemaData);
-                if (schema == null)
-                {
-                    return false;
-                }
+                
 
                 // Apply table descriptions
                 if (analysisData.TableDescriptions != null)
@@ -330,10 +326,10 @@ namespace DynamicDasboardWebAPI.Services
                 var updatedSchemaJson = _schemaService.SerializeSchema(schema);
 
                 // Update schema in database
-                schemaObj.SchemaData = updatedSchemaJson;
-                schemaObj.ModifiedAt = DateTime.UtcNow;
+                schema.SchemaData = updatedSchemaJson;
+                schema.ModifiedAt = DateTime.UtcNow;
 
-                await _schemaService.UpdateSchemaAsync(schemaObj);
+                await _schemaService.UpdateSchemaAsync(schema);
 
                 return true;
             }

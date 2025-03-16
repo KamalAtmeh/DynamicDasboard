@@ -21,7 +21,7 @@ namespace DynamicDashboardCommon.Models
         /// <summary>
         /// The generated SQL query
         /// </summary>
-        public string GeneratedSql { get; set; }
+        public string SqlQuery { get; set; }
 
         /// <summary>
         /// A user-friendly explanation of what the query does

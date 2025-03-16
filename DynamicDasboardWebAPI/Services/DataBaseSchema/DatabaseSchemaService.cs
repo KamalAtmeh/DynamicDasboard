@@ -100,7 +100,13 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
 
-                // Get database connection details
+                DatabaseSchema dbSchema = await GetSchemaObject(databaseId);
+                if (dbSchema != null && dbSchema.ID > 0 && !string.IsNullOrEmpty(dbSchema.SchemaData))
+
+                {
+                    //No need to generate new schema since its already there
+                    return dbSchema;
+                }
 
                 if (objDataBase == null)
                     throw new ArgumentException($"Database with ID {databaseId} not found");
@@ -157,7 +163,7 @@ namespace DynamicDasboardWebAPI.Services
                         int order = 0;
                         if (column.ORDINAL_POSITION != null)
                         {
-                            int.TryParse( Convert.ToString(column.ORDINAL_POSITION), out order);
+                            int.TryParse(Convert.ToString(column.ORDINAL_POSITION), out order);
                         }
                         tableSchema.Columns.Add(new ColumnSchema
                         {
@@ -277,14 +283,11 @@ namespace DynamicDasboardWebAPI.Services
                     throw new ArgumentException($"Database with ID {databaseId} not found");
 
                 // Get existing schema if available
-                var existingSchema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
-                bool hasExistingSchema = existingSchema != null && !string.IsNullOrEmpty(existingSchema.SchemaData);
 
-                DatabaseSchema existingSchemaObj = null;
-                if (hasExistingSchema)
-                {
-                    existingSchemaObj = DeserializeSchema(existingSchema.SchemaData);
-                }
+                DatabaseSchema existingSchemaObj = await GetSchemaObject(databaseId);
+                bool hasExistingSchema = existingSchemaObj != null && !string.IsNullOrEmpty(existingSchemaObj.SchemaData);
+
+
 
                 // Create new schema structure
                 var newSchemaObj = new DatabaseSchema
@@ -353,6 +356,12 @@ namespace DynamicDasboardWebAPI.Services
                                 string.Equals(c.DBName, column.COLUMN_NAME, StringComparison.OrdinalIgnoreCase));
                         }
 
+                        int order = 0;
+                        if (column.ORDINAL_POSITION != null)
+                        {
+                            int.TryParse(Convert.ToString(column.ORDINAL_POSITION), out order);
+                        }
+
                         tableSchema.Columns.Add(new ColumnSchema
                         {
                             ID = existingColumn?.ID ?? columnId,
@@ -368,7 +377,7 @@ namespace DynamicDasboardWebAPI.Services
                             UIConfig = existingColumn?.UIConfig ?? new UiConfig
                             {
                                 Visible = true,
-                                Order = int.TryParse(column.ORDINAL_POSITION, out int order) ? order : 0
+                                Order = order
                             },
                             Constraints = existingColumn?.Constraints ?? new List<ConstraintSchema>()
                         });
@@ -459,11 +468,11 @@ namespace DynamicDasboardWebAPI.Services
                 string schemaJson = SerializeSchema(newSchemaObj);
 
                 // Update schema in database
-                if (existingSchema != null)
+                if (hasExistingSchema)
                 {
-                    existingSchema.SchemaData = schemaJson;
-                    existingSchema.ModifiedAt = DateTime.UtcNow;
-                    await UpdateSchemaAsync(existingSchema);
+                    existingSchemaObj.SchemaData = schemaJson;
+                    existingSchemaObj.ModifiedAt = DateTime.UtcNow;
+                    await UpdateSchemaAsync(existingSchemaObj);
                 }
                 else
                 {
@@ -494,24 +503,21 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
-                if (schema == null)
-                    return false;
 
-                var schemaObj = DeserializeSchema(schema.SchemaData);
-                if (schemaObj == null || schemaObj.Tables == null)
-                    return false;
 
-                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableId);
+                DatabaseSchema objSchema = await GetSchemaObject(databaseId);
+
+
+                var table = objSchema.Tables.FirstOrDefault(t => t.ID == tableId);
                 if (table == null)
                     return false;
 
                 table.IsActive = isActive;
 
                 // Update schema in database
-                schema.SchemaData = SerializeSchema(schemaObj);
-                schema.ModifiedAt = DateTime.UtcNow;
-                await UpdateSchemaAsync(schema);
+                objSchema.SchemaData = SerializeSchema(objSchema);
+                objSchema.ModifiedAt = DateTime.UtcNow;
+                await UpdateSchemaAsync(objSchema);
 
                 return true;
             }
@@ -528,15 +534,9 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
-                if (schema == null)
-                    return false;
+                DatabaseSchema objSchema = await GetSchemaObject(databaseId);
 
-                var schemaObj = DeserializeSchema(schema.SchemaData);
-                if (schemaObj == null || schemaObj.Tables == null)
-                    return false;
-
-                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableId);
+                var table = objSchema.Tables.FirstOrDefault(t => t.ID == tableId);
                 if (table == null || table.Columns == null)
                     return false;
 
@@ -547,9 +547,9 @@ namespace DynamicDasboardWebAPI.Services
                 column.IsActive = isActive;
 
                 // Update schema in database
-                schema.SchemaData = SerializeSchema(schemaObj);
-                schema.ModifiedAt = DateTime.UtcNow;
-                await UpdateSchemaAsync(schema);
+                objSchema.SchemaData = SerializeSchema(objSchema);
+                objSchema.ModifiedAt = DateTime.UtcNow;
+                await UpdateSchemaAsync(objSchema);
 
                 return true;
             }
@@ -566,24 +566,18 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
-                if (schema == null)
-                    return false;
+                DatabaseSchema objSchema = await GetSchemaObject(databaseId);
 
-                var schemaObj = DeserializeSchema(schema.SchemaData);
-                if (schemaObj == null || schemaObj.Relationships == null)
-                    return false;
-
-                var relationship = schemaObj.Relationships.FirstOrDefault(r => r.ID == relationshipId);
+                var relationship = objSchema.Relationships.FirstOrDefault(r => r.ID == relationshipId);
                 if (relationship == null)
                     return false;
 
                 relationship.IsActive = isActive;
 
                 // Update schema in database
-                schema.SchemaData = SerializeSchema(schemaObj);
-                schema.ModifiedAt = DateTime.UtcNow;
-                await UpdateSchemaAsync(schema);
+                objSchema.SchemaData = SerializeSchema(objSchema);
+                objSchema.ModifiedAt = DateTime.UtcNow;
+                await UpdateSchemaAsync(objSchema);
 
                 return true;
             }
@@ -593,20 +587,22 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<bool> UpdateSchemaTable(int databaseId, string tableId, [FromBody] TableSchema tableUpdate)
+        public async Task<bool> UpdateTableDetailsByTableID(int databaseId, string tableId, [FromBody] TableSchema tableUpdate)
         {
             try
             {
-                // Get existing schema
-                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
-                if (schema == null)
-                    return false;
+                //// Get existing schema
+                //var schema = await GetJsonSchemaByDataBaseIdAsync(databaseId);
+                //if (schema == null)
+                //    return false;
 
-                // Parse schema to object
-                var schemaObj = DeserializeSchema(schema.SchemaData);
+                //// Parse schema to object
+                //var schemaObj = DeserializeSchema(schema.SchemaData);
+                DatabaseSchema objSchema = await GetSchemaObject(databaseId);
+
 
                 // Find and update only the specific table
-                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableId);
+                var table = objSchema.Tables.FirstOrDefault(t => t.ID == tableId);
                 if (table == null)
                     return false;
 
@@ -617,8 +613,59 @@ namespace DynamicDasboardWebAPI.Services
                 table.IsActive = tableUpdate.IsActive;
 
                 // Serialize and save
-                schema.SchemaData = SerializeSchema(schemaObj);
-                await UpdateSchemaAsync(schema);
+                objSchema.SchemaData = SerializeSchema(objSchema);
+                await UpdateSchemaAsync(objSchema);
+
+                var cacheKey = $"DatabaseSchema_{databaseId}";
+
+                await CacheHelper.AddOrUpdateAsync(cacheKey, objSchema);
+
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateColumnsDetailsByColumnID(int databaseId, string tableID, [FromBody] List<ColumnSchema> lstUpdatedColumns)
+        {
+            try
+            {
+                DatabaseSchema schemaObj = await GetSchemaObject(databaseId);
+                if (schemaObj == null)
+                {
+                    return false;
+                }
+
+                var table = schemaObj.Tables.FirstOrDefault(t => t.ID == tableID);
+                if (table == null || table.Columns == null)
+                    return false;
+
+                List<ColumnSchema> lstExistingColumns = table.Columns;
+
+                foreach (ColumnSchema column in lstUpdatedColumns)
+                {
+                    var existingColumn = lstExistingColumns.FirstOrDefault(x => x.ID == column.ID);
+
+                    if (existingColumn != null)
+                    {
+                        existingColumn.FriendlyName = column.FriendlyName;
+                        existingColumn.Description = column.Description;
+                        existingColumn.Synonyms = column.Synonyms;
+                        column.IsActive = column.IsActive;
+                    }
+
+                   
+                }
+                // Serialize and save
+                schemaObj.SchemaData = SerializeSchema(schemaObj);
+                await UpdateSchemaAsync(schemaObj);
+
+                var cacheKey = $"DatabaseSchema_{databaseId}";
+
+                await CacheHelper.AddOrUpdateAsync(cacheKey, schemaObj);
 
                 return true;
 
@@ -908,6 +955,8 @@ namespace DynamicDasboardWebAPI.Services
                 return string.Empty;
 
             var result = new StringBuilder();
+
+
             result.AppendLine("Tables:");
 
             // Add tables and columns
@@ -915,23 +964,54 @@ namespace DynamicDasboardWebAPI.Services
             {
                 if (table == null || string.IsNullOrWhiteSpace(table.DBName))
                     continue;
+                var tablDesc = string.Empty;
+                tablDesc += $" Table Name: '{table.DBName}'";
 
-                result.AppendLine($"- {table.DBName}");
-                if (!string.IsNullOrWhiteSpace(table.FriendlyName) && table.FriendlyName != table.DBName)
-                    result.AppendLine($"  (Friendly name: {table.FriendlyName})");
+                int countTable = 0;
+                foreach (string syn in table.Synonyms)
+                {
+                    if (!string.IsNullOrWhiteSpace(syn))
+                        if (countTable == 0)
+                        {
+                            tablDesc += syn;
+                        }
+                        else
+                        {
+                            tablDesc += ", " + syn;
+                        }
+                    countTable++;
+                }
 
-                if (!string.IsNullOrWhiteSpace(table.Description))
-                    result.AppendLine($"  Description: {table.Description}");
+                result.AppendLine(tablDesc);
+
+                var columnDesc = string.Empty;
+                result.AppendLine($" Columns For '{table.DBName}' table:");
 
                 if (table.Columns != null && table.Columns.Any())
                 {
-                    result.AppendLine("  Columns:");
                     foreach (var column in table.Columns)
                     {
                         if (column == null || string.IsNullOrWhiteSpace(column.DBName))
                             continue;
 
-                        var columnDesc = $"    - {column.DBName} ({column.DataType})";
+                        columnDesc = $" Column Name: '{column.DBName}' Column Type: ({column.DataType})";
+                        //columnDesc += "Table Name " + table.DBName;
+
+                        int countColumns = 0;
+                        foreach (string syn in table.Synonyms)
+                        {
+                            if (!string.IsNullOrWhiteSpace(syn))
+                                if (countColumns == 0)
+                                {
+                                    columnDesc += syn;
+                                }
+                                else
+                                {
+                                    columnDesc += ", " + syn;
+                                }
+                            countColumns++;
+                        }
+
                         if (column.IsPrimaryKey)
                             columnDesc += " (Primary Key)";
                         if (column.IsLookup)
@@ -940,12 +1020,6 @@ namespace DynamicDasboardWebAPI.Services
                             columnDesc += " (Not Null)";
 
                         result.AppendLine(columnDesc);
-
-                        if (!string.IsNullOrWhiteSpace(column.FriendlyName) && column.FriendlyName != column.DBName)
-                            result.AppendLine($"      Friendly name: {column.FriendlyName}");
-
-                        if (!string.IsNullOrWhiteSpace(column.Description))
-                            result.AppendLine($"      Description: {column.Description}");
                     }
                 }
             }
@@ -960,8 +1034,7 @@ namespace DynamicDasboardWebAPI.Services
                         continue;
 
                     result.AppendLine($"- {relationship.Source.TableName}.{relationship.Source.ColumnName} -> " +
-                                     $"{relationship.Target.TableName}.{relationship.Target.ColumnName} " +
-                                     $"({relationship.Type})");
+                                     $"{relationship.Target.TableName}.{relationship.Target.ColumnName} ");
                 }
             }
 
@@ -1019,7 +1092,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                DatabaseSchema objDBSchema = await GetSchemaDeserialized(databaseID);
+                DatabaseSchema objDBSchema = await GetSchemaObject(databaseID);
 
                 if (objDBSchema == null || objDBSchema.ID == 0)
                 {
@@ -1053,7 +1126,7 @@ namespace DynamicDasboardWebAPI.Services
         {
             try
             {
-                DatabaseSchema objDBSchema = await GetSchemaDeserialized(databaseID);
+                DatabaseSchema objDBSchema = await GetSchemaObject(databaseID);
                 if (objDBSchema == null || objDBSchema.ID == 0)
                 {
                     return null;
@@ -1067,26 +1140,32 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<DatabaseSchema> GetSchemaDeserialized(int databaseID)
+        public async Task<DatabaseSchema> GetSchemaObject(int databaseID, bool useCache = false)
         {
             try
             {
-                var cacheKey = $"DatabaseSchema_{databaseID}";
-                var cached = CacheHelper.Get<DatabaseSchema>(cacheKey);
-                if (cached != null)
+                var cacheKey = string.Empty;
+                if (useCache)
                 {
-                    return cached;
+                     cacheKey = $"DatabaseSchema_{databaseID}";
+                    var cached = CacheHelper.Get<DatabaseSchema>(cacheKey);
+                    if (cached != null && useCache)
+                    {
+                        return cached;
+                    }
                 }
-
+               
                 var schema = await GetJsonSchemaByDataBaseIdAsync(databaseID);
                 if (schema == null)
                     return null;
 
                 DatabaseSchema objSchemaDetail = DeserializeSchema(schema.SchemaData);
-
-                await CacheHelper.AddOrUpdateAsync(cacheKey, objSchemaDetail);
-
-                return schema;
+                objSchemaDetail.SchemaData = schema.SchemaData;
+                if (useCache)
+                {
+                    await CacheHelper.AddOrUpdateAsync(cacheKey, objSchemaDetail);
+                }
+                return objSchemaDetail;
             }
             catch (Exception ex)
             {

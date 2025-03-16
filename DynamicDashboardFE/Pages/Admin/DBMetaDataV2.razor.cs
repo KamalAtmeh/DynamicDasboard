@@ -4,6 +4,7 @@ using DynamicDashboardCommon.Models;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
+using System.Reflection;
 
 namespace DynamicDashboardFE.Pages.Admin
 {
@@ -14,7 +15,7 @@ namespace DynamicDashboardFE.Pages.Admin
         [Parameter]
         public int DatabaseId { get; set; }
 
-  
+
 
         // State variables
         private string activeTab = "tables";
@@ -102,12 +103,19 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        private async Task LoadDatabaseSchema()
+        private async Task LoadDatabaseSchema(bool useCache = true)
         {
             try
             {
                 // Get parsed schema
-                schemaObj = await Http.GetFromJsonAsync<DatabaseSchema>($"api/databaseschema/parsed/{DatabaseId}");
+                if (useCache)
+                {
+                    schemaObj = await Http.GetFromJsonAsync<DatabaseSchema>($"api/databaseschema/parsed/{DatabaseId}/1");
+                }
+                else
+                {
+                    schemaObj = await Http.GetFromJsonAsync<DatabaseSchema>($"api/databaseschema/parsed/{DatabaseId}/0");
+                }
 
                 // Load relationships
                 relationships = schemaObj?.Relationships ?? new List<RelationshipSchema>();
@@ -126,7 +134,7 @@ namespace DynamicDashboardFE.Pages.Admin
             try
             {
                 await Http.PostAsync($"api/databaseschema/refresh/{DatabaseId}", null);
-                await LoadDatabaseSchema();
+                await LoadDatabaseSchema(false);
                 toastService.ShowSuccess("Schema refreshed successfully.");
             }
             catch (Exception ex)
@@ -164,15 +172,26 @@ namespace DynamicDashboardFE.Pages.Admin
                     ID = selectedTable.ID,
                     FriendlyName = selectedTable.FriendlyName,
                     Description = selectedTable.Description,
-                    Synonyms = selectedTable.Synonyms
+                    Synonyms = selectedTable.Synonyms,
+                    IsActive = selectedTable.IsActive
+
                 };
 
                 // Use a dedicated endpoint for updating just the table
-                await Http.PutAsync($"api/databaseschema/table/update/{DatabaseId}/{selectedTable.ID}",
+                var result = await Http.PutAsync($"api/databaseschema/UpdateTableDetailsByTableID/{DatabaseId}/{selectedTable.ID}",
                                    JsonContent.Create(tableUpdate));
 
-                // No need to reload the entire schema - the UI already has the updated data
-                toastService.ShowSuccess("Table changes saved successfully.");
+                var success = await result.Content.ReadFromJsonAsync<bool>();
+
+                if (result.IsSuccessStatusCode && success)
+                {
+
+                    toastService.ShowSuccess("Table changes saved successfully.");
+                }
+                else
+                {
+                    toastService.ShowError("Error saving table changes.");
+                }
             }
             catch (Exception ex)
             {
@@ -183,7 +202,7 @@ namespace DynamicDashboardFE.Pages.Admin
         private async Task UpdateTableActiveStatus(object value)
         {
             if (selectedTable == null || !(value is bool))
-                return;
+                toastService.ShowError("Error Happened, Please try again");
 
             bool isActive = (bool)value;
             try
@@ -249,11 +268,16 @@ namespace DynamicDashboardFE.Pages.Admin
                     FriendlyName = c.FriendlyName,
                     Description = c.Description,
                     IsLookup = c.IsLookup,
-                    Synonyms = c.Synonyms
+                    Synonyms = c.Synonyms,
+                    IsActive = c.IsActive,
+                    IsNullable = c.IsNullable,
+                    IsPrimaryKey = c.IsPrimaryKey,
+                    DataType = c.DataType
+
                 }).ToList();
 
                 // Send only the column updates in a batch
-                await Http.PutAsync($"api/databaseschema/columns/{DatabaseId}/{selectedTable.ID}",
+                await Http.PutAsync($"api/databaseschema/UpdateColumnsDetailsByColumnID/{DatabaseId}/{selectedTable.ID}",
                                    JsonContent.Create(columnUpdates));
 
                 toastService.ShowSuccess("Column changes saved successfully.");
@@ -1048,6 +1072,15 @@ namespace DynamicDashboardFE.Pages.Admin
                 return filtered;
             }
         }
-    
-}
+
+        private async Task GetOpimizedDBSchema()
+        {
+            schemaObj = await Http.GetFromJsonAsync<DatabaseSchema>($"api/databaseschema/OptimizedSchemaString/{DatabaseId}");
+
+            toastService.ShowSuccess("Optimized Schema Loaded Successfully.");
+        }
+
+
+
+    }
 }

@@ -5,6 +5,7 @@ using DynamicDasboardWebAPI.Utilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,17 @@ builder.Services.AddCors(options =>
 
 // Register repositories and services
 
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition =
+            JsonIgnoreCondition.WhenWritingNull;
+    });
+
+
+//builder.Services.AddMemoryCache();
+//builder.Services.AddSingleton<ServerCa>();
 
 builder.Services.AddScoped<LogsRepository>();
 builder.Services.AddScoped<TableRepository>();

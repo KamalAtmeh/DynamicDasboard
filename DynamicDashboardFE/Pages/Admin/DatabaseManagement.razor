@@ -256,25 +256,15 @@
 				}
 
 				// Update existing database
-				await Http.PutAsJsonAsync($"api/databases/{databaseModel.DatabaseID}", databaseModel);
+				var response = await Http.PutAsJsonAsync($"api/databases/{databaseModel.DatabaseID}", databaseModel);
 
-				try
+				if (response.IsSuccessStatusCode)
 				{
-					var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{databaseModel.DatabaseID}");
-
-					if (schemaResponse != null && schemaResponse.ID != 0)
-					{
-						await JSRuntime.InvokeVoidAsync("alert", "DataBase been updated successfully");
-					}
-					else
-					{
-						// var error = await schemaResponse.Content.ReadAsStringAsync();
-						await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
-					}
+					toastService.ShowSuccess("Database updated successfully!");
 				}
-				catch (Exception schemaEx)
+				else
 				{
-					await JSRuntime.InvokeVoidAsync("alert", "Error in Creating Schema for the DataBase");
+					toastService.ShowWarning("Database was not updated, please try again");
 				}
 			}
 			else
@@ -300,26 +290,6 @@
 					}
 					// Show initial success message
 					toastService.ShowSuccess("Database was not created, please try again");
-
-					// Call schema retrieval endpoint
-					try
-					{
-						var schemaResponse = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/GetSchema/{newDatabaseId}");
-
-						if (schemaResponse != null && schemaResponse.ID != 0)
-						{
-							await JSRuntime.InvokeVoidAsync("alert", "Schema successfully retrieved and saved.");
-						}
-						else
-						{
-							// var error = await schemaResponse.Content.ReadAsStringAsync();
-							await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed:");
-						}
-					}
-					catch (Exception schemaEx)
-					{
-						await JSRuntime.InvokeVoidAsync("alert", "Database created, but schema retrieval failed");
-					}
 				}
 				else
 				{

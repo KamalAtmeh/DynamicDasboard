@@ -93,7 +93,7 @@ namespace DynamicDasboardWebAPI.Services
                     return cached;
                 }
                 var database = await objDataBaseRepository.GetDatabaseByIdAsync(databaseId);
-                await CacheHelper.AddOrUpdateAsync(cacheKey, database);
+               // await CacheHelper.AddOrUpdateAsync(cacheKey, database);
                 return database;
             }
             catch (Exception ex)
@@ -126,7 +126,7 @@ namespace DynamicDasboardWebAPI.Services
 
                     int databaseId = await objDataBaseRepository.AddDatabaseAsync(database);
 
-                    await CacheHelper.AddOrUpdateAsync($"Database_{database.DatabaseID}", database);
+                   // await CacheHelper.AddOrUpdateAsync($"Database_{database.DatabaseID}", database);
 
                     return databaseId;
                 }
@@ -157,7 +157,7 @@ namespace DynamicDasboardWebAPI.Services
                 {     // Validate required fields
                     int result = await objDataBaseRepository.UpdateDatabaseAsync(database);
 
-                    await CacheHelper.AddOrUpdateAsync($"Database_{database.DatabaseID}", database);
+                    // await CacheHelper.AddOrUpdateAsync($"Database_{database.DatabaseID}", database);
 
                     return result;
                 }

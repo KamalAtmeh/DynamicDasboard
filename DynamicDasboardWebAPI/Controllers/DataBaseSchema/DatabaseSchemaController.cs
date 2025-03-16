@@ -204,12 +204,29 @@ namespace DynamicDasboardWebAPI.Controllers
         }
 
         // In DatabaseSchemaController.cs
-        [HttpPut("table/Update/{databaseId}/{tableId}")]
-        public async Task<IActionResult> UpdateSchemaTable(int databaseId, string tableId, [FromBody] TableSchema tableUpdate)
+        [HttpPut("UpdateTableDetailsByTableID/{databaseId}/{tableId}")]
+        public async Task<IActionResult> UpdateTableDetailsByTableID(int databaseId, string tableId, [FromBody] TableSchema tableUpdate)
         {
             try
             {
-                var result = await objDBSchemaService.UpdateSchemaTable(databaseId, tableId, tableUpdate);
+                var result = await objDBSchemaService.UpdateTableDetailsByTableID(databaseId, tableId, tableUpdate);
+                if (!result)
+                    return NotFound("Table not found");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        [HttpPut("UpdateColumnsDetailsByColumnID/{databaseId}/{tableId}")]
+        public async Task<IActionResult> UpdateColumnsDetailsByColumnID(int databaseId, string tableId, [FromBody] List<ColumnSchema> lstColumns)
+        {
+            try
+            {
+                var result = await objDBSchemaService.UpdateColumnsDetailsByColumnID(databaseId, tableId, lstColumns);
                 if (!result)
                     return NotFound("Table not found");
 
@@ -264,13 +281,20 @@ namespace DynamicDasboardWebAPI.Controllers
 
 
         // Get parsed schema
-        [HttpGet("parsed/{databaseID}")]
-        public async Task<IActionResult> GetSchemaDeserialized(int databaseID)
+        [HttpGet("parsed/{databaseID}/{useCache}")]
+        public async Task<IActionResult> GetSchemaDeserialized(int databaseID, int useCache)
         {
             try
             {
-                var objSchemaDetail = await objDBSchemaService.GetSchemaDeserialized(databaseID);   
-
+                object objSchemaDetail = null;
+                if (useCache == 0)
+                {
+                     objSchemaDetail = await objDBSchemaService.GetSchemaObject(databaseID, false);
+                }
+                else
+                {
+                    objSchemaDetail = await objDBSchemaService.GetSchemaObject(databaseID);
+                }
                 return Ok(objSchemaDetail);
             }
             catch (Exception ex)
@@ -278,6 +302,17 @@ namespace DynamicDasboardWebAPI.Controllers
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
-      
+
+        [HttpGet("OptimizedSchemaString/{databaseID}")]
+        public async Task<IActionResult> BuildOptimizedSchemaString(int databaseID)
+        { 
+            DatabaseSchema objSchema = await objDBSchemaService.GetSchemaObject(databaseID);
+
+            string strOptimizedSchema =  objDBSchemaService.BuildOptimizedSchemaString(objSchema);
+
+            return Ok(strOptimizedSchema);
+        }
+
+
     }
 }

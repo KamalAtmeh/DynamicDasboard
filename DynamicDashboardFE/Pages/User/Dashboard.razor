@@ -216,7 +216,7 @@
 			<div class="mb-3">
 				<h6>Generated SQL</h6>
 				<div class="sql-code-box">
-					<pre>@(sqlExplanationResponse?.GeneratedSql ?? executionResponse?.Sql ?? "No SQL query available")</pre>
+					<pre>@(sqlExplanationResponse?.SqlQuery ?? executionResponse?.Sql ?? "No SQL query available")</pre>
 					<button class="btn btn-sm btn-outline-secondary copy-btn" @onclick="CopySqlToClipboard">
 						<i class="fas fa-copy"></i>
 					</button>
@@ -267,7 +267,7 @@
 						<i class="fas fa-copy me-1"></i> Copy
 					</button>
 				</div>
-				<pre>@sqlExplanationResponse.GeneratedSql</pre>
+				<pre>@sqlExplanationResponse.SqlQuery</pre>
 
 				@if (!sqlExplanationResponse.IsValid)
 				{
@@ -357,7 +357,7 @@
 							<i class="fas fa-copy"></i> Copy
 						</button>
 					</div>
-					<pre>@sqlExplanationResponse.GeneratedSql</pre>
+					<pre>@sqlExplanationResponse.SqlQuery</pre>
 
 					@if (!sqlExplanationResponse.IsValid)
 					{

@@ -84,7 +84,13 @@ namespace DynamicDashboardCommon.Helper
             await _lock.WaitAsync();
             try
             {
-                _cache[key] = value;
+                if (_cache.ContainsKey(key))
+                {
+                    await RemoveAsync(key);
+                }
+                _cache.TryAdd(key, value);
+
+
                 _expiryTimes[key] = DateTime.UtcNow.Add(duration ?? _defaultDuration);
             }
             finally

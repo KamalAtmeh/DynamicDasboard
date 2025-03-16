@@ -49,7 +49,7 @@ SET Name = @Name,
     Status = @Status,
     SchemaData = @SchemaData,
     ModifiedAt = GETUTCDATE()
-WHERE DataBaseID = @Id;";
+WHERE DataBaseID = @DataBaseID;";
 
                 return await WithConnectionAsync(async conn =>
                 {

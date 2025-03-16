@@ -221,7 +221,7 @@ namespace DynamicDashboardFE.Pages.User
                     if (sqlExplanationResponse != null)
                     {
                         // Log successful SQL generation
-                        await LogToConsole($"SQL Generated: {sqlExplanationResponse.GeneratedSql?.Substring(0, Math.Min(100, sqlExplanationResponse.GeneratedSql?.Length ?? 0))}...");
+                        await LogToConsole($"SQL Generated: {sqlExplanationResponse.SqlQuery?.Substring(0, Math.Min(100, sqlExplanationResponse.SqlQuery?.Length ?? 0))}...");
 
                         // Handle unrelated questions determined by the LLM
                         if (!sqlExplanationResponse.IsSchemaRelated)
@@ -314,7 +314,7 @@ namespace DynamicDashboardFE.Pages.User
         {
             try
             {
-                string sql = sqlExplanationResponse?.GeneratedSql;
+                string sql = sqlExplanationResponse?.SqlQuery;
 
                 if (string.IsNullOrEmpty(sql))
                 {
@@ -335,7 +335,7 @@ namespace DynamicDashboardFE.Pages.User
         // Update the ShowSqlDetails method to properly display the SQL modal
         private void ShowSqlDetails()
         {
-            if (sqlExplanationResponse != null && !string.IsNullOrWhiteSpace(sqlExplanationResponse.GeneratedSql))
+            if (sqlExplanationResponse != null && !string.IsNullOrWhiteSpace(sqlExplanationResponse.SqlQuery))
             {
                 showSqlModal = true;
             }
@@ -344,7 +344,7 @@ namespace DynamicDashboardFE.Pages.User
                 // Fallback to execution SQL if available
                 var tempResponse = new SqlGenerationWithExplanationResponse
                 {
-                    GeneratedSql = executionResponse.Sql,
+                    SqlQuery = executionResponse.Sql,
                     BusinessExplanation = executionResponse.ResultExplanation ?? "SQL query execution details"
                 };
 
@@ -449,7 +449,7 @@ namespace DynamicDashboardFE.Pages.User
         /// </summary>
         private async Task ConfirmSqlExplanation()
         {
-            if (sqlExplanationResponse == null || string.IsNullOrWhiteSpace(sqlExplanationResponse.GeneratedSql))
+            if (sqlExplanationResponse == null || string.IsNullOrWhiteSpace(sqlExplanationResponse.SqlQuery))
                 return;
 
             try
@@ -462,7 +462,7 @@ namespace DynamicDashboardFE.Pages.User
                 {
                     OriginalQuestion = userQuestion,
                     DatabaseId = databaseId,
-                    Sql = sqlExplanationResponse.GeneratedSql
+                    Sql = sqlExplanationResponse.SqlQuery
                 };
 
                 var response = await Http.PostAsJsonAsync("api/Query/execute", request);

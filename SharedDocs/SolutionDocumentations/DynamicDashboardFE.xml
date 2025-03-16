@@ -4,28 +4,28 @@
         <name>DynamicDashboardFE</name>
     </assembly>
     <members>
-        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery">
+        <member name="T:DynamicDashboardFE.Pages.User.Dashboard">
             <summary>
             Enhanced Natural Language Query component that allows users to ask questions in natural language
             and receive query results through a multi-step workflow.
             </summary>
         </member>
-        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.QueryStep">
+        <member name="T:DynamicDashboardFE.Pages.User.Dashboard.QueryStep">
             <summary>
             Defines the current step in the query workflow.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.OnInitializedAsync">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.OnInitializedAsync">
             <summary>
             Initializes the component, loads configuration settings, available databases, and example questions.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.OnDatabaseSelectionChanged(Microsoft.AspNetCore.Components.ChangeEventArgs)">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.OnDatabaseSelectionChanged(Microsoft.AspNetCore.Components.ChangeEventArgs)">
             <summary>
             Handles database selection change.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GenerateSqlWithExplanation">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.GenerateSqlWithExplanation">
             <summary>
             Generates SQL with explanation
             </summary>
@@ -33,102 +33,102 @@
             Generates SQL with explanation
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ShowUnrelatedContent(System.String,System.Collections.Generic.List{System.String},System.Collections.Generic.List{System.String})">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ShowUnrelatedContent(System.String,System.Collections.Generic.List{System.String},System.Collections.Generic.List{System.String})">
             <summary>
             Shows dialog for completely unrelated content with suggested schema-based topics and questions
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ShowPartiallyUnrelatedContent(System.String,System.Collections.Generic.List{System.String})">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ShowPartiallyUnrelatedContent(System.String,System.Collections.Generic.List{System.String})">
             <summary>
             Shows message for partially unrelated content
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GetSchemaBasedQuestions">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.GetSchemaBasedQuestions">
             <summary>
             Generates questions based on the database schema
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.AnalyzeQuestion">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.AnalyzeQuestion">
             <summary>
             Analyzes user question
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ConfirmSqlExplanation">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ConfirmSqlExplanation">
             <summary>
             Confirms SQL explanation and executes the query
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.HandleErrorDismiss">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.HandleErrorDismiss">
             <summary>
             Dismisses any displayed error messages.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.LoadExampleQuestions">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.LoadExampleQuestions">
             <summary>
             Loads example questions from the API for the selected database.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.FormatColumnName(System.String)">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.FormatColumnName(System.String)">
             <summary>
             Formats column names for display by converting from snake_case or camelCase to Title Case.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.FormatValue(System.Object)">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.FormatValue(System.Object)">
             <summary>
             Formats field values for display based on their data type.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GetResultColumns(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.GetResultColumns(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
             <summary>
             Gets the column names from the query results.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GetPagedResults(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.GetPagedResults(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
             <summary>
             Gets a page of results based on the current page and page size.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.PreviousPage">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.PreviousPage">
             <summary>
             Navigates to the previous page of results.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.NextPage">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.NextPage">
             <summary>
             Navigates to the next page of results.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.GoToPage(System.Int32)">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.GoToPage(System.Int32)">
             <summary>
             Navigates to a specific page of results.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ExportToExcel">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ExportToExcel">
             <summary>
             Exports the query results to an Excel file.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.OnKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs)">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.OnKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs)">
             <summary>
             Handles key press events, particularly the Enter key to submit questions.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.UseExample(System.String)">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.UseExample(System.String)">
             <summary>
             Uses an example question as the user's question and initiates analysis.
             </summary>
         </member>
-        <member name="M:DynamicDashboardFE.Pages.User.SmartQuery.ResetWorkflow">
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ResetWorkflow">
             <summary>
             Resets the workflow to start a new query.
             </summary>
         </member>
-        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.ExportRequest">
+        <member name="T:DynamicDashboardFE.Pages.User.Dashboard.ExportRequest">
             <summary>
             Internal class for exporting data to Excel.
             </summary>
         </member>
-        <member name="T:DynamicDashboardFE.Pages.User.SmartQuery.SqlExecutionRequest">
+        <member name="T:DynamicDashboardFE.Pages.User.Dashboard.SqlExecutionRequest">
             <summary>
             Request model for executing SQL queries.
             </summary>

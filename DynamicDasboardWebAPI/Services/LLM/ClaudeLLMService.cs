@@ -92,7 +92,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 // If we couldn't parse as JSON or the response is null, create a simple response
                 return new SqlGenerationWithExplanationResponse
                 {
-                    GeneratedSql = ExtractSqlFromText(jsonResponse),
+                    SqlQuery = ExtractSqlFromText(jsonResponse),
                     BusinessExplanation = jsonResponse,
                     IsSchemaRelated = false,
                     SchemaRelevanceMessage = "Unable to parse the response properly. The question may not be related to the database schema.",
@@ -112,6 +112,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+        //TODO Replace this imeplementation
         private string ExtractSqlFromText(string text)
         {
             try
@@ -620,7 +621,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
 }
                 },
                     temperature = 1,
-                    max_tokens = 20000
+                    max_tokens = 50000
                 };
 
                 var content = new StringContent(

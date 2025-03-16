@@ -11,6 +11,7 @@ using DynamicDashboardCommon.Models.LLM;
 using Microsoft.AspNetCore.Connections;
 using System.Text.Json;
 using static DynamicDashboardCommon.Helper.ApplicationHelper;
+using MySqlX.XDevAPI;
 
 
 namespace DynamicDasboardWebAPI.Services
@@ -56,19 +57,22 @@ namespace DynamicDasboardWebAPI.Services
                 var adminDescriptions = new Dictionary<string, string>();
                 var schemaText = string.Empty;
                 // Get database metadata
-                DatabaseMetadataDto metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
+                // DatabaseMetadataDto metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
+
+                DatabaseSchema objSchema = await objSchemaService.GetSchemaObject(request.DatabaseId);
 
                 // Format schema for LLM
-                if (metadata != null)
+                if (objSchema != null)
                 {
-                    schemaText = FormatSchemaForLlm(metadata);
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(objSchema);
+                }
+                else
+                {
+                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                    objSchema = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(request.DatabaseId, objDataBase);
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(objSchema);
                 }
 
-                if (metadata != null && metadata.Tables != null && metadata.Tables.Count > 0)
-                {
-                    adminDescriptions = ExtractAdminDescriptions(metadata.Tables);
-                }
-                // Extract admin descriptions
 
 
                 // Generate explanation using LLM
@@ -105,11 +109,25 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
 
+                var schemaText = string.Empty;
                 // Get database metadata
-                var metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
+                var schemaObj = await objSchemaService.GetSchemaObject(request.DatabaseId);
+                if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
+                {
 
-                // Format schema for LLM
-                var schemaText = FormatSchemaForLlm(metadata);
+                    // Optimize schema for LLM
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(schemaObj);
+
+
+                }
+                else
+                {
+                    // Fallback to metadata if no saved schema
+                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                    schemaObj = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(request.DatabaseId, objDataBase);
+
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(schemaObj);
+                }
 
                 // Generate SQL using LLM
                 var sql = await _llmService.GenerateSqlAsync(
@@ -190,17 +208,22 @@ namespace DynamicDasboardWebAPI.Services
                 var adminDescriptions = new Dictionary<string, string>();
                 var schemaText = string.Empty;
                 // Get database metadata
-                DatabaseMetadataDto metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
-
-                // Format schema for LLM
-                if (metadata != null)
+                var schemaObj = await objSchemaService.GetSchemaObject(request.DatabaseId);
+                if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
-                    schemaText = FormatSchemaForLlm(metadata);
+
+                    // Optimize schema for LLM
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(schemaObj);
+
+
                 }
-
-                if (metadata != null && metadata.Tables != null && metadata.Tables.Count > 0)
+                else
                 {
-                    adminDescriptions = ExtractAdminDescriptions(metadata.Tables);
+                    // Fallback to metadata if no saved schema
+                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                    schemaObj = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(request.DatabaseId, objDataBase);
+
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(schemaObj);
                 }
 
                 // Generate explanation using LLM
@@ -270,32 +293,27 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Check if there's a saved schema
-                DatabaseSchema schema = null;
+
                 var schemaString = "";
                 var adminDescriptions = new Dictionary<string, string>();
 
                 // Try to get schema from database
-                var schemaObj = await objSchemaService.GetJsonSchemaByDataBaseIdAsync(request.DatabaseId);
+                var schemaObj = await objSchemaService.GetSchemaObject(request.DatabaseId);
                 if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
-                    // Parse the schema
-                    schema = JsonSerializer.Deserialize<DatabaseSchema>(schemaObj.SchemaData);
-                    if (schema != null)
-                    {
-                        // Optimize schema for LLM
-                        schemaString = objSchemaService.BuildOptimizedSchemaString(schema);
-                        adminDescriptions = objSchemaService.ExtractAdminDescriptions(schema);
-                    }
+
+                    // Optimize schema for LLM
+                    schemaString = objSchemaService.BuildOptimizedSchemaString(schemaObj);
+
+
                 }
                 else
                 {
                     // Fallback to metadata if no saved schema
-                    var metadata = await _repository.GetDatabaseMetadataAsync(request.DatabaseId);
-                    if (metadata != null)
-                    {
-                        schemaString = FormatSchemaForLlm(metadata);
-                        adminDescriptions = ExtractAdminDescriptions(metadata.Tables);
-                    }
+                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                    schemaObj = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(request.DatabaseId, objDataBase);
+
+                        schemaString = objSchemaService.BuildOptimizedSchemaString(schemaObj);
                 }
 
                 if (string.IsNullOrEmpty(schemaString))
@@ -323,7 +341,8 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // If the question is not related to the schema or SQL is empty, return as is
-                if (!llmResponse.IsSchemaRelated || string.IsNullOrEmpty(llmResponse.GeneratedSql))
+                //TODO To handle this case
+                if (!llmResponse.IsSchemaRelated || string.IsNullOrEmpty(llmResponse.SqlQuery))
                 {
                     return new SqlGenerationWithExplanationResponse
                     {
@@ -338,7 +357,7 @@ namespace DynamicDasboardWebAPI.Services
                         SuggestedQuestions = llmResponse.SuggestedQuestions,
                         BusinessExplanation = llmResponse.BusinessExplanation,
                         DbType = llmResponse.DbType,
-                        GeneratedSql = llmResponse.GeneratedSql
+                        SqlQuery = llmResponse.SqlQuery
                     };
                 }
 
@@ -348,11 +367,11 @@ namespace DynamicDasboardWebAPI.Services
 
                 try
                 {
-                    if (!string.IsNullOrEmpty(llmResponse.GeneratedSql))
+                    if (!string.IsNullOrEmpty(llmResponse.SqlQuery))
                     {
                         // Validate SQL
                         var validationResult = await ValidateSqlAgainstSchemaAsync(
-                            llmResponse.GeneratedSql, request.DatabaseId);
+                            llmResponse.SqlQuery, request.DatabaseId);
 
                         if (!validationResult.IsValid)
                         {
@@ -375,7 +394,7 @@ namespace DynamicDasboardWebAPI.Services
                     {
                         DefaultValue = param.Value.DefaultValue?.ToString(),
                         Alternatives = param.Value.Alternatives,
-                        ParameterType = param.Value.ParameterType 
+                        ParameterType = param.Value.ParameterType
                     };
                 }
 
@@ -384,7 +403,7 @@ namespace DynamicDasboardWebAPI.Services
                 {
                     OriginalQuestion = request.Question,
                     DatabaseId = request.DatabaseId,
-                    GeneratedSql = llmResponse.GeneratedSql,
+                    SqlQuery = llmResponse.SqlQuery,
                     BusinessExplanation = llmResponse.BusinessExplanation,
                     DbType = llmResponse.DbType,
                     DbNotes = llmResponse.DbNotes,
@@ -481,7 +500,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Get database schema
-                var schema = await objSchemaService.GetJsonSchemaByDataBaseIdAsync(databaseId);
+                var schema = await objSchemaService.GetSchemaObject(databaseId);
                 if (schema == null || string.IsNullOrEmpty(schema.SchemaData))
                 {
                     return new QueryValidationResult
@@ -490,10 +509,7 @@ namespace DynamicDasboardWebAPI.Services
                         ErrorMessage = "Database schema not found"
                     };
                 }
-
-                // Parse schema from JSON
-                var parsedSchema = objSchemaService.DeserializeSchema(schema.SchemaData);
-                if (parsedSchema == null || parsedSchema.Tables == null || parsedSchema.Tables.Count == 0)
+                if (schema.Tables == null || schema.Tables.Count == 0)
                 {
                     return new QueryValidationResult
                     {
@@ -503,7 +519,7 @@ namespace DynamicDasboardWebAPI.Services
                 }
 
                 // Validate SQL against schema
-                return SqlValidationHelper.ValidateSqlAgainstSchema(sqlQuery, parsedSchema, validateRelations);
+                return SqlValidationHelper.ValidateSqlAgainstSchema(sqlQuery, schema, validateRelations);
             }
             catch (Exception ex)
             {

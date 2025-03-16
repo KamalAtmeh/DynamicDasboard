@@ -588,7 +588,7 @@
             The database ID
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.GeneratedSql">
+        <member name="P:DynamicDashboardCommon.Models.SqlGenerationWithExplanationResponse.SqlQuery">
             <summary>
             The generated SQL query
             </summary>

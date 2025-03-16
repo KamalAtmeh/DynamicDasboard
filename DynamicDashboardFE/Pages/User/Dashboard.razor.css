@@ -81,14 +81,14 @@
         }
 
     .search-container .form-control {
-        border: none;
+
         padding: 0.85rem 1.5rem;
         font-size: 1.1rem;
     }
 
     .search-container .btn {
         padding: 0.85rem 1.5rem;
-        background: var(--gradient-1);
+        
         border: none;
         color: white;
         font-weight: 500;

@@ -45,12 +45,12 @@ namespace DynamicDashboardCommon.Models
     public class TableSchema
     {
         public string ID { get; set; }
-        public string Status { get; set; }
-        public string DBName { get; set; }
-        public string FriendlyName { get; set; }
-        public string Description { get; set; }
-        public List<ColumnSchema> Columns { get; set; }
-        public List<IndexSchema> Indexes { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string DBName { get; set; } = string.Empty;
+        public string FriendlyName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<ColumnSchema> Columns { get; set; } = new List<ColumnSchema>();
+        public List<IndexSchema> Indexes { get; set; } = new List<IndexSchema>();
 
         public List<string> Synonyms { get; set; } = new List<string>();
 
@@ -62,15 +62,15 @@ namespace DynamicDashboardCommon.Models
     public class ColumnSchema
     {
         public string ID { get; set; }
-        public string DBName { get; set; }
-        public string FriendlyName { get; set; }
-        public string DataType { get; set; }
-        public bool IsNullable { get; set; }
+        public string DBName { get; set; } = string.Empty;
+        public string FriendlyName { get; set; } = string.Empty;
+        public string DataType { get; set; } = string.Empty;
+        public bool IsNullable { get; set; } 
         public bool IsPrimaryKey { get; set; }
         public bool IsLookup { get; set; }
-        public string Description { get; set; }
-        public UiConfig UIConfig { get; set; }
-        public List<ConstraintSchema> Constraints { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public UiConfig UIConfig { get; set; } = new UiConfig();
+        public List<ConstraintSchema> Constraints { get; set; } = new List<ConstraintSchema>();
         public List<string> Synonyms { get; set; } = new List<string>();
 
         public bool IsActive { get; set; } = true;
@@ -78,9 +78,9 @@ namespace DynamicDashboardCommon.Models
 
     public class UiConfig
     {
-        public bool Visible { get; set; }
-        public int Order { get; set; }
-        public string DefaultSort { get; set; }
+        public bool Visible { get; set; } = true;
+        public int Order { get; set; } = 0;
+        public string DefaultSort { get; set; } = string.Empty;
     }
 
     public class ConstraintSchema
