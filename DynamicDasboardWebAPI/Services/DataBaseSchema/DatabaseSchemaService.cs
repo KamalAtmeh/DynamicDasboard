@@ -676,6 +676,42 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+        #region Terms Mapping
+        public async Task<bool> SaveTermMappingsAsync(int databaseId, List<TermMapping> termMappings)
+        {
+            try
+            {
+
+
+                // Get database schema
+                var schemaObj = await GetSchemaObject(databaseId);
+                if (schemaObj == null)
+                {
+
+                    return false;
+                }
+
+                // Update term mappings
+                schemaObj.TermMappings = termMappings ?? new List<TermMapping>();
+
+                // Serialize and save the updated schema
+                var schemaJson = SerializeSchema(schemaObj);
+                schemaObj.SchemaData = schemaJson;
+                schemaObj.ModifiedAt = DateTime.UtcNow;
+
+                await UpdateSchemaAsync(schemaObj);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+
+                return false;
+            }
+        }
+
+        #endregion
+
         #endregion
 
         #region JSON Schema Operations

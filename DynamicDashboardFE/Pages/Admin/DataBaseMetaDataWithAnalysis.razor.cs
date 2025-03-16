@@ -173,7 +173,7 @@ namespace DynamicDashboardFE.Pages.Admin
                 toastService.ShowInfo("Analyzing schema with AI...");
 
                 // Call schema analysis API
-                var response = await Http.GetAsync($"api/schema-analysis/analyze/{SelectedDatabaseId}");
+                var response = await Http.GetAsync($"api/SchemaAnalysis/analyze/{SelectedDatabaseId}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -231,7 +231,7 @@ namespace DynamicDashboardFE.Pages.Admin
                 };
 
                 // Call API to apply changes
-                var response = await Http.PostAsJsonAsync($"api/schema-analysis/apply/{SelectedDatabaseId}", filteredData);
+                var response = await Http.PostAsJsonAsync($"api/SchemaAnalysis/apply/{SelectedDatabaseId}", filteredData);
 
                 if (response.IsSuccessStatusCode)
                 {

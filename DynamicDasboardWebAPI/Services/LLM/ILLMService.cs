@@ -69,5 +69,13 @@ namespace DynamicDasboardWebAPI.Services.LLM
         /// <returns>LLM response with schema analysis</returns>
         Task<string> GenerateSchemaAnalysisAsync(string prompt);
 
+        // Add to DynamicDasboardWebAPI/Services/LLM/ILLMService.cs
+        /// <summary>
+        /// Generates term mapping suggestions for a database schema
+        /// </summary>
+        /// <param name="prompt">The prompt containing schema and instructions</param>
+        /// <returns>LLM response with term suggestions</returns>
+        Task<string> GenerateTermSuggestionsAsync(string prompt);
+
     }
 }

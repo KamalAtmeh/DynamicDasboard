@@ -758,6 +758,14 @@
             Applies analysis results to update the database schema
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.AnalyzeTablesAsync(System.Int32,System.String)">
+            <summary>
+            Saves term mappings to a database schema
+            </summary>
+            <param name="databaseId">The ID of the database</param>
+            <param name="termMappings">The term mappings to save</param>
+            <returns>True if successful, false otherwise</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.ColumnService">
             <summary>
             Service class for managing columns in the database.
@@ -1110,6 +1118,13 @@
             </summary>
             <param name="prompt">The prompt containing schema and analysis instructions</param>
             <returns>LLM response with schema analysis</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateTermSuggestionsAsync(System.String)">
+            <summary>
+            Generates term mapping suggestions for a database schema
+            </summary>
+            <param name="prompt">The prompt containing schema and instructions</param>
+            <returns>LLM response with term suggestions</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
             <summary>

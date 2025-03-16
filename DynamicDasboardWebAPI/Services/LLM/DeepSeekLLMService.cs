@@ -176,6 +176,28 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+        #region Terms Mapping
+
+        //TODO : Need real implementaion if required
+        public async Task<string> GenerateTermSuggestionsAsync(string prompt)
+        {
+            string response = string.Empty;
+            try
+            {
+                // Use the existing CallDeepSeekApiAsync method with a system prompt for term suggestions
+                var systemPrompt = "You are a terminology expert helping improve the clarity of database terms.";
+                // Call DeepSeek API
+                response = await CallDeepSeekApiAsync(systemPrompt, prompt);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        #endregion
+
 
         #region Private Helper Methods
 

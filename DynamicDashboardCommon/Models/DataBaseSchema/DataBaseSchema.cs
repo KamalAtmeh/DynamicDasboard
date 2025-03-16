@@ -16,6 +16,8 @@ namespace DynamicDashboardCommon.Models
         public List<RelationshipSchema> Relationships { get; set; }
         public AnalysisResults AnalysisResults { get; set; }
         public List<VersionHistory> VersionHistory { get; set; }
+
+        public List<TermMapping> TermMappings { get; set; } = new List<TermMapping>();
         public string SchemaData { get; set; }        // JSON data (must be valid JSON)
         public DateTime CreatedAt { get; set; }       // Creation timestamp
         public DateTime ModifiedAt { get; set; }      // Last modified timestamp
@@ -207,5 +209,15 @@ namespace DynamicDashboardCommon.Models
         public Table Table { get; set; }
         public IEnumerable<Column> Columns { get; set; }
         public IEnumerable<Relationship> Relationships { get; set; }
+    }
+
+    /// <summary>
+    /// Model for schema analysis requests
+    /// </summary>
+    public class SchemaAnalysisRequest
+    {
+        public int DatabaseId { get; set; }
+        public string SchemaString { get; set; }
+        public string AnalysisMode { get; set; }
     }
 }

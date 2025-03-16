@@ -67,6 +67,11 @@
             Enum representing predefined data viewing types
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisRequest">
+            <summary>
+            Model for schema analysis requests
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisResult">
             <summary>
             Represents the result of a schema analysis operation.

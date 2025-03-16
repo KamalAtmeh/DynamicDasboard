@@ -722,5 +722,25 @@ namespace DynamicDasboardWebAPI.Services.LLM
         }
 
         #endregion
+
+        #region Terms Mapping
+
+
+        public async Task<string> GenerateTermSuggestionsAsync(string prompt)
+        {
+            try
+            {
+                // Use the existing CallClaudeApiAsync method
+                var systemPrompt = "You are an expert database analyst and business intelligence specialist.";
+                var response = await CallClaudeApiAsync(systemPrompt, prompt);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        #endregion
     }
 }

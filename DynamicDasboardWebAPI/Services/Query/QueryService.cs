@@ -305,6 +305,11 @@ namespace DynamicDasboardWebAPI.Services
                     // Optimize schema for LLM
                     schemaString = objSchemaService.BuildOptimizedSchemaString(schemaObj);
 
+                    if (schemaObj.TermMappings?.Any() == true)
+                    {
+                        schemaString = EnhanceSchemaWithTermMappings(schemaString, schemaObj);
+                    }
+
 
                 }
                 else
@@ -530,6 +535,123 @@ namespace DynamicDasboardWebAPI.Services
                 };
             }
         }
+
+        #region Term Mapping
+
+        // Add to DynamicDasboardWebAPI/Services/Query/QueryService.cs
+        private string EnhanceSchemaWithTermMappings(string schemaText, DatabaseSchema schema)
+        {
+            if (schema?.TermMappings == null || !schema.TermMappings.Any())
+                return string.Empty;
+
+            var additionalInfo = new StringBuilder();
+
+            additionalInfo.AppendLine("\nBusiness Term Mappings:");
+
+            // Add direct column mappings
+            var directMappings = schema.TermMappings
+                .Where(t => t.IsActive && t.Type == TermMappingType.DirectColumn)
+                .ToList();
+
+            if (directMappings.Any())
+            {
+                additionalInfo.AppendLine("  Direct Column Mappings:");
+                foreach (var mapping in directMappings)
+                {
+                    var table = schema.Tables.FirstOrDefault(t => t.ID == mapping.TableId);
+                    var column = table?.Columns?.FirstOrDefault(c => c.ID == mapping.ColumnId);
+
+                    if (table != null && column != null)
+                    {
+                        additionalInfo.AppendLine($"    - '{mapping.BusinessTerm}' refers to '{table.DBName}.{column.DBName}'");
+
+                        if (mapping.Synonyms?.Any() == true)
+                        {
+                            additionalInfo.Append("      Synonyms: ");
+                            additionalInfo.AppendLine(string.Join(", ", mapping.Synonyms.Select(s => $"'{s}'")));
+                        }
+                    }
+                }
+            }
+
+            // Add calculated field mappings
+            var calculatedMappings = schema.TermMappings
+                .Where(t => t.IsActive && t.Type == TermMappingType.CalculatedField)
+                .ToList();
+
+            if (calculatedMappings.Any())
+            {
+                additionalInfo.AppendLine("  Calculated Field Mappings:");
+                foreach (var mapping in calculatedMappings)
+                {
+                    additionalInfo.AppendLine($"    - '{mapping.BusinessTerm}' is calculated as: {mapping.Formula}");
+
+                    if (mapping.Dependencies?.Any() == true)
+                    {
+                        additionalInfo.Append("      Depends on: ");
+                        additionalInfo.AppendLine(string.Join(", ", mapping.Dependencies.Select(d => $"'{d.TableName}.{d.ColumnName}'")));
+                    }
+
+                    if (mapping.Synonyms?.Any() == true)
+                    {
+                        additionalInfo.Append("      Synonyms: ");
+                        additionalInfo.AppendLine(string.Join(", ", mapping.Synonyms.Select(s => $"'{s}'")));
+                    }
+                }
+            }
+
+            // Add filter condition mappings
+            var filterMappings = schema.TermMappings
+                .Where(t => t.IsActive && t.Type == TermMappingType.FilterCondition)
+                .ToList();
+
+            if (filterMappings.Any())
+            {
+                additionalInfo.AppendLine("  Filter Condition Mappings:");
+                foreach (var mapping in filterMappings)
+                {
+                    additionalInfo.AppendLine($"    - '{mapping.BusinessTerm}' means: {mapping.FilterCondition}");
+
+                    if (mapping.Synonyms?.Any() == true)
+                    {
+                        additionalInfo.Append("      Synonyms: ");
+                        additionalInfo.AppendLine(string.Join(", ", mapping.Synonyms.Select(s => $"'{s}'")));
+                    }
+                }
+            }
+
+            // Add aggregate mappings
+            var aggregateMappings = schema.TermMappings
+                .Where(t => t.IsActive && t.Type == TermMappingType.Aggregate)
+                .ToList();
+
+            if (aggregateMappings.Any())
+            {
+                additionalInfo.AppendLine("  Aggregate Mappings:");
+                foreach (var mapping in aggregateMappings)
+                {
+                    additionalInfo.AppendLine($"    - '{mapping.BusinessTerm}' refers to an aggregation");
+
+                    if (mapping.Dependencies?.Any() == true)
+                    {
+                        additionalInfo.Append("      Applies to: ");
+                        additionalInfo.AppendLine(string.Join(", ", mapping.Dependencies.Select(d => $"'{d.TableName}.{d.ColumnName}'")));
+                    }
+
+                    if (mapping.Synonyms?.Any() == true)
+                    {
+                        additionalInfo.Append("      Synonyms: ");
+                        additionalInfo.AppendLine(string.Join(", ", mapping.Synonyms.Select(s => $"'{s}'")));
+                    }
+                }
+            }
+
+            return schemaText + "\n" + additionalInfo.ToString();
+        }
+
+        #endregion
+
+
 
         #region Helper Methods
 
@@ -840,5 +962,6 @@ namespace DynamicDasboardWebAPI.Services
         }
 
         #endregion
+
     }
 }

@@ -276,6 +276,20 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
+        [HttpPost("{databaseId}/termMappings")]
+        public async Task<IActionResult> SaveTermMappings(int databaseId, [FromBody] List<TermMapping> termMappings)
+        {
+            try
+            {
+                var result = await objDBSchemaService.SaveTermMappingsAsync(databaseId, termMappings);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
         #endregion
 
 

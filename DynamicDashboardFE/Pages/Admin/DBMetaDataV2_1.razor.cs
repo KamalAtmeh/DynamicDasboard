@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace DynamicDashboardFE.Pages.Admin
 {
-    public partial class DBMetaDataV2 : ComponentBase
+    public partial class DBMetaDataV2_1 : ComponentBase
     {
 
 
@@ -57,14 +57,13 @@ namespace DynamicDashboardFE.Pages.Admin
         private bool isSavingRelationship = false;
         private string relationshipErrorMessage = string.Empty;
 
-        //Term Mapping
+
+        // Term Mapping
         private bool isSuggestingTerms = false;
         private TermMapping editingTermMapping;
         private bool isTermMappingModalOpen = false;
         private string termSearchTerm = string.Empty;
         private string termTypeFilter = "all";
-
-
         private string synonymInput = string.Empty;
         private TermMappingDependency editingDependency;
         private bool isDependencyModalOpen = false;
@@ -639,7 +638,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
             try
             {
-                analysisResult = await Http.GetFromJsonAsync<SchemaAnalysisResult>($"api/SchemaAnalysis/AnalyzeDatabaseSchema/{DatabaseId}");
+                analysisResult = await Http.GetFromJsonAsync<SchemaAnalysisResult>($"api/SchemaAnalysis/analyze/{DatabaseId}");
 
                 if (analysisResult?.Success == true)
                 {
@@ -672,7 +671,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
             try
             {
-                var result = await Http.PostAsJsonAsync($"api/SchemaAnalysis/ApplySchemaAnalysisResults/{DatabaseId}", analysisResult.AnalysisData);
+                var result = await Http.PostAsJsonAsync($"api/SchemaAnalysis/apply/{DatabaseId}", analysisResult.AnalysisData);
 
                 if (result.IsSuccessStatusCode)
                 {
@@ -691,6 +690,215 @@ namespace DynamicDashboardFE.Pages.Admin
             finally
             {
                 isApplying = false;
+            }
+        }
+
+        // Add to DBMetaDataV2.razor.cs
+
+        /// <summary>
+        /// Analyzes only the tables in the database schema
+        /// </summary>
+        private async Task AnalyzeTablesOnly()
+        {
+            if (DatabaseId <= 0)
+                return;
+
+            isAnalyzing = true;
+            analysisTab = "tables"; // Auto-select tables tab for results
+
+            try
+            {
+                var optimizedSchema = await GetOptimizedSchemaForAnalysis();
+
+                // Create a focused prompt for table analysis only
+                var analysisRequest = new SchemaAnalysisRequest
+                {
+                    DatabaseId = DatabaseId,
+                    SchemaString = optimizedSchema,
+                    AnalysisMode = "tables-only" // Signal to the backend what to analyze
+                };
+
+                var result = await Http.PostAsJsonAsync(
+                    "api/SchemaAnalysis/analyze-tables", analysisRequest);
+
+                analysisResult = await result.Content.ReadFromJsonAsync<SchemaAnalysisResult>();
+
+                if (analysisResult?.Success == true)
+                {
+                    toastService.ShowSuccess("Table analysis completed successfully.");
+                    activeTab = "analysis"; // Switch to analysis tab to show results
+                }
+                else
+                {
+                    toastService.ShowError($"Table analysis failed:");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error analyzing tables: {ex.Message}");
+            }
+            finally
+            {
+                isAnalyzing = false;
+            }
+        }
+
+        /// <summary>
+        /// Analyzes only the columns in the database schema
+        /// </summary>
+        private async Task AnalyzeColumnsOnly()
+        {
+            if (DatabaseId <= 0)
+                return;
+
+            isAnalyzing = true;
+            analysisTab = "columns"; // Auto-select columns tab for results
+
+            try
+            {
+                var optimizedSchema = await GetOptimizedSchemaForAnalysis();
+
+                var analysisRequest = new SchemaAnalysisRequest
+                {
+                    DatabaseId = DatabaseId,
+                    SchemaString = optimizedSchema,
+                    AnalysisMode = "columns-only"
+                };
+
+                var result = await Http.PostAsJsonAsync(
+                    "api/SchemaAnalysis/analyze-columns", analysisRequest);
+
+                analysisResult = await result.Content.ReadFromJsonAsync<SchemaAnalysisResult>();
+
+                if (analysisResult?.Success == true)
+                {
+                    toastService.ShowSuccess("Column analysis completed successfully.");
+                    activeTab = "analysis";
+                }
+                else
+                {
+                    toastService.ShowError($"Column analysis failed: {analysisResult?.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error analyzing columns: {ex.Message}");
+            }
+            finally
+            {
+                isAnalyzing = false;
+            }
+        }
+
+        /// <summary>
+        /// Analyzes only the relationships in the database schema
+        /// </summary>
+        private async Task AnalyzeRelationshipsOnly()
+        {
+            if (DatabaseId <= 0)
+                return;
+
+            isAnalyzing = true;
+            analysisTab = "relationships"; // Auto-select relationships tab for results
+
+            try
+            {
+                var optimizedSchema = await GetOptimizedSchemaForAnalysis();
+
+                var analysisRequest = new SchemaAnalysisRequest
+                {
+                    DatabaseId = DatabaseId,
+                    SchemaString = optimizedSchema,
+                    AnalysisMode = "relationships-only"
+                };
+
+                var result = await Http.PostAsJsonAsync(
+                    "api/SchemaAnalysis/analyze-relationships", analysisRequest);
+
+                analysisResult = await result.Content.ReadFromJsonAsync<SchemaAnalysisResult>();
+
+                if (analysisResult?.Success == true)
+                {
+                    toastService.ShowSuccess("Relationship analysis completed successfully.");
+                    activeTab = "analysis";
+                }
+                else
+                {
+                    toastService.ShowError($"Relationship analysis failed: {analysisResult?.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error analyzing relationships: {ex.Message}");
+            }
+            finally
+            {
+                isAnalyzing = false;
+            }
+        }
+
+        /// <summary>
+        /// Analyzes potential conflicts in the database schema
+        /// </summary>
+        private async Task AnalyzeConflictsOnly()
+        {
+            if (DatabaseId <= 0)
+                return;
+
+            isAnalyzing = true;
+            analysisTab = "conflicts"; // Auto-select conflicts tab for results
+
+            try
+            {
+                var optimizedSchema = await GetOptimizedSchemaForAnalysis();
+
+                var analysisRequest = new SchemaAnalysisRequest
+                {
+                    DatabaseId = DatabaseId,
+                    SchemaString = optimizedSchema,
+                    AnalysisMode = "conflicts-only"
+                };
+
+                var result = await Http.PostAsJsonAsync(
+                    "api/SchemaAnalysis/analyze-conflicts", analysisRequest);
+
+                analysisResult = await result.Content.ReadFromJsonAsync<SchemaAnalysisResult>();
+
+                if (analysisResult?.Success == true)
+                {
+                    toastService.ShowSuccess("Conflict analysis completed successfully.");
+                    activeTab = "analysis";
+                }
+                else
+                {
+                    toastService.ShowError($"Conflict analysis failed: {analysisResult?.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error analyzing conflicts: {ex.Message}");
+            }
+            finally
+            {
+                isAnalyzing = false;
+            }
+        }
+
+        /// <summary>
+        /// Helper method to get optimized schema for analysis
+        /// </summary>
+        private async Task<string> GetOptimizedSchemaForAnalysis()
+        {
+            try
+            {
+                // Get the optimized schema string directly from the API
+                var response = await Http.GetStringAsync($"api/databaseschema/OptimizedSchemaString/{DatabaseId}");
+                return response;
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error getting schema: {ex.Message}");
+                throw;
             }
         }
 
@@ -929,16 +1137,14 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        #region TermMapping
-
+        // Term mapping
         private async Task SuggestTermMappings()
         {
             try
             {
                 isSuggestingTerms = true;
 
-                var suggestions = await Http.GetFromJsonAsync<List<TermMapping>>($"api/SchemaAnalysis/SuggestTerms/{DatabaseId}");
-
+                var suggestions = await Http.GetFromJsonAsync<List<TermMapping>>($"api/databaseschema/suggestTerms/{DatabaseId}");
 
                 if (suggestions?.Any() == true)
                 {
@@ -1118,8 +1324,8 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                
-                throw;
+
+                toastService.ShowError("Failed to save term mappings. Please try again.");
             }
         }
 
@@ -1136,7 +1342,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-               
+
                 toastService.ShowError("Failed to update term mapping. Please try again.");
             }
         }
@@ -1156,6 +1362,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
+
                 toastService.ShowError("Failed to delete term mapping. Please try again.");
             }
         }
@@ -1259,13 +1466,111 @@ namespace DynamicDashboardFE.Pages.Admin
             editingTermMapping.Dependencies.Remove(dependency);
         }
 
+        // Add to DBMetaDataV2.razor.cs
+
+        /// <summary>
+        /// Analyzes and generates term mappings for the database schema
+        /// </summary>
+        private async Task AnalyzeTermMappings()
+        {
+            if (DatabaseId <= 0)
+                return;
+
+            isAnalyzing = true;
+
+            try
+            {
+                var optimizedSchema = await GetOptimizedSchemaForAnalysis();
+
+                var analysisRequest = new SchemaAnalysisRequest
+                {
+                    DatabaseId = DatabaseId,
+                    SchemaString = optimizedSchema,
+                    AnalysisMode = "term-mappings"
+                };
+
+                var result = await Http.PostAsJsonAsync(
+                    "api/SchemaAnalysis/analyze-term-mappings", analysisRequest);
+
+                List<TermMapping> lstTerms = await result.Content.ReadFromJsonAsync<List<TermMapping>>();
+
+                if (lstTerms != null)
+                {
+                    // If schema object doesn't have TermMappings property, add it
+                    if (schemaObj.TermMappings == null)
+                    {
+                        schemaObj.TermMappings = new List<TermMapping>();
+                    }
+                    else
+                    {
+                        schemaObj.TermMappings = lstTerms;
+                    }
+
+                    // Merge new mappings with existing ones
+
+
+                    toastService.ShowSuccess("Term mappings generated successfully.");
+                }
+                else
+                {
+                    toastService.ShowError("Failed to generate term mappings.");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error analyzing term mappings: {ex.Message}");
+            }
+            finally
+            {
+                isAnalyzing = false;
+            }
+        }
+
+        /// <summary>
+        /// Removes a term mapping
+        /// </summary>
+        private void RemoveTermMapping(string termID)
+        {
+            TermMapping objTermMapping = schemaObj.TermMappings.Find(t => t.ID == termID);
+            if (objTermMapping != null)
+            {
+                schemaObj.TermMappings.Remove(objTermMapping);
+            }
+
+        }
+
+        /// <summary>
+        /// Saves term mappings to the database
+        /// </summary>
+        private async Task SaveTermMappings()
+        {
+            if (DatabaseId <= 0 || schemaObj?.TermMappings == null)
+                return;
+
+            try
+            {
+                var result = await Http.PostAsJsonAsync($"api/databaseschema/{DatabaseId}/term-mappings", schemaObj.TermMappings);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    toastService.ShowSuccess("Term mappings saved successfully.");
+                }
+                else
+                {
+                    toastService.ShowError("Failed to save term mappings.");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error saving term mappings: {ex.Message}");
+            }
+        }
+
         private async Task UpdateColumnOptions()
         {
             // This is called when the table selection changes
             StateHasChanged();
         }
-
-        #endregion
 
         // Helper methods
         private TableDescription tableAnalysis => GetTableAnalysis();
