@@ -4,20 +4,22 @@ namespace DynamicDashboardCommon.Models
     public class TermMapping
     {
         public string ID { get; set; } = Guid.NewGuid().ToString();
-        public string BusinessTerm { get; set; }
-        public string Description { get; set; }
-        public TermMappingType Type { get; set; }
+        public string BusinessTerm { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public TermMappingType Type { get; set; } = TermMappingType.DirectColumn;
 
         // For direct column mappings
-        public string TableId { get; set; }
-        public string ColumnId { get; set; }
+        public string TableId { get; set; } = string.Empty;
+        public string ColumnId { get; set; } = string.Empty;
 
         // For calculated fields
-        public string Formula { get; set; }
+        public string Formula { get; set; } = string.Empty;
         public List<TermMappingDependency> Dependencies { get; set; } = new List<TermMappingDependency>();
 
+        public bool IsConfirmed { get; set; } = false;
+
         // For filter conditions
-        public string FilterCondition { get; set; }
+        public string FilterCondition { get; set; } = string.Empty;
 
         public List<string> Synonyms { get; set; } = new List<string>();
         public bool IsActive { get; set; } = true;
@@ -62,5 +64,9 @@ namespace DynamicDashboardCommon.Models
     public class TermMappingResponse
     {
         public Dictionary<string, string> TermMappings { get; set; }
+    }
+    public class FormulaValidationRequest
+    {
+        public string Formula { get; set; }
     }
 }

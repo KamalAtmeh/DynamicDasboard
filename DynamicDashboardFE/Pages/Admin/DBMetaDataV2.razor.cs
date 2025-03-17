@@ -12,10 +12,9 @@ namespace DynamicDashboardFE.Pages.Admin
     {
 
 
-        [Parameter]
-        public int DatabaseId { get; set; }
 
 
+        #region Variables
 
         // State variables
         private string activeTab = "tables";
@@ -63,11 +62,56 @@ namespace DynamicDashboardFE.Pages.Admin
         private bool isTermMappingModalOpen = false;
         private string termSearchTerm = string.Empty;
         private string termTypeFilter = "all";
+        private bool isFormulaModalOpen = false;
+        private bool isEditingFormula = false;
+        private TermMapping currentFormulaTerm;
+        private string formulaText;
+        private bool isValidatingFormula = false;
+        private QueryValidationResult formulaValidationResult;
+        private bool isSavingAllSuggestions = false;
 
 
         private string synonymInput = string.Empty;
         private TermMappingDependency editingDependency;
         private bool isDependencyModalOpen = false;
+
+        #endregion
+
+        #region Properties
+
+        [Parameter]
+        public int DatabaseId { get; set; }
+
+        private IEnumerable<TermMapping> FilteredTermMappings
+        {
+            get
+            {
+                if (schemaObj?.TermMappings == null)
+                    return Enumerable.Empty<TermMapping>();
+
+                var filtered = schemaObj.TermMappings.AsEnumerable();
+
+                // Apply search filter
+                if (!string.IsNullOrEmpty(termSearchTerm))
+                {
+                    filtered = filtered.Where(t =>
+                        t.BusinessTerm.Contains(termSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        t.Description.Contains(termSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        (t.Synonyms?.Any(s => s.Contains(termSearchTerm, StringComparison.OrdinalIgnoreCase)) ?? false)
+                    );
+                }
+
+                // Apply type filter
+                if (termTypeFilter != "all")
+                {
+                    filtered = filtered.Where(t => t.Type.ToString() == termTypeFilter);
+                }
+
+                return filtered.OrderBy(t => t.BusinessTerm);
+            }
+        }
+
+        #endregion
 
         protected override async Task OnInitializedAsync()
         {
@@ -115,7 +159,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        private async Task LoadDatabaseSchema(bool useCache = true)
+        private async Task LoadDatabaseSchema(bool useCache = false)
         {
             try
             {
@@ -131,6 +175,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
                 // Load relationships
                 relationships = schemaObj?.Relationships ?? new List<RelationshipSchema>();
+                
             }
             catch (Exception ex)
             {
@@ -356,6 +401,12 @@ namespace DynamicDashboardFE.Pages.Admin
         private void SaveColumnSynonyms()
         {
             CloseColumnSynonymsModal();
+        }
+
+        private async Task UpdateColumnOptions()
+        {
+            // This is called when the table selection changes
+            StateHasChanged();
         }
 
         private void CloseColumnSynonymsModal()
@@ -978,7 +1029,10 @@ namespace DynamicDashboardFE.Pages.Admin
                 schemaObj.TermMappings.AddRange(newSuggestions);
 
                 // Save the updated schema
-                await SaveTermMappingsAsync();
+                if (!await SaveTermMappingsAsync())
+                {
+                    toastService.ShowError("Failed to save term mapping. Please try again.");
+                }
 
                 toastService.ShowSuccess($"Added {newSuggestions.Count} new term mappings!");
             }
@@ -1095,7 +1149,10 @@ namespace DynamicDashboardFE.Pages.Admin
                 }
 
                 // Save to database
-                await SaveTermMappingsAsync();
+                if (!await SaveTermMappingsAsync())
+                {
+                    toastService.ShowError("Failed to save term mapping. Please try again.");
+                }
 
                 isTermMappingModalOpen = false;
                 editingTermMapping = null;
@@ -1109,12 +1166,13 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        private async Task SaveTermMappingsAsync()
+        private async Task<bool> SaveTermMappingsAsync()
         {
             try
             {
                 // Update the schema with the term mappings
-                await Http.PostAsJsonAsync($"api/databaseschema/{DatabaseId}/termMappings", schemaObj.TermMappings);
+                var result = await Http.PostAsJsonAsync($"api/databaseschema/{DatabaseId}/termMappings", schemaObj.TermMappings);
+                return result.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
@@ -1130,7 +1188,10 @@ namespace DynamicDashboardFE.Pages.Admin
                 mapping.IsActive = !mapping.IsActive;
                 mapping.ModifiedAt = DateTime.UtcNow;
 
-                await SaveTermMappingsAsync();
+                if (!await SaveTermMappingsAsync())
+                {
+                    toastService.ShowError("Failed to save term mapping. Please try again.");
+                }
 
                 toastService.ShowSuccess($"Term mapping {(mapping.IsActive ? "activated" : "deactivated")} successfully.");
             }
@@ -1150,7 +1211,10 @@ namespace DynamicDashboardFE.Pages.Admin
                 if (confirmed)
                 {
                     schemaObj.TermMappings.RemoveAll(t => t.ID == id);
-                    await SaveTermMappingsAsync();
+                    if (!await SaveTermMappingsAsync())
+                    {
+                        toastService.ShowError("Failed to save term mapping. Please try again.");
+                    }
                     toastService.ShowSuccess("Term mapping deleted successfully.");
                 }
             }
@@ -1184,34 +1248,7 @@ namespace DynamicDashboardFE.Pages.Admin
             };
         }
 
-        private IEnumerable<TermMapping> FilteredTermMappings
-        {
-            get
-            {
-                if (schemaObj?.TermMappings == null)
-                    return Enumerable.Empty<TermMapping>();
 
-                var filtered = schemaObj.TermMappings.AsEnumerable();
-
-                // Apply search filter
-                if (!string.IsNullOrEmpty(termSearchTerm))
-                {
-                    filtered = filtered.Where(t =>
-                        t.BusinessTerm.Contains(termSearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        t.Description.Contains(termSearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        (t.Synonyms?.Any(s => s.Contains(termSearchTerm, StringComparison.OrdinalIgnoreCase)) ?? false)
-                    );
-                }
-
-                // Apply type filter
-                if (termTypeFilter != "all")
-                {
-                    filtered = filtered.Where(t => t.Type.ToString() == termTypeFilter);
-                }
-
-                return filtered.OrderBy(t => t.BusinessTerm);
-            }
-        }
 
         private void AddSynonyms()
         {
@@ -1259,11 +1296,247 @@ namespace DynamicDashboardFE.Pages.Admin
             editingTermMapping.Dependencies.Remove(dependency);
         }
 
-        private async Task UpdateColumnOptions()
+
+
+        private async Task SaveAllTermSuggestions()
         {
-            // This is called when the table selection changes
-            StateHasChanged();
+            try
+            {
+                isSavingAllSuggestions = true;
+
+                // Find all unconfirmed LLM-suggested terms
+                //var suggestedTerms = schemaObj.TermMappings
+                //    .Where(t => t.IsLLMSuggested && !t.IsConfirmed)
+                //    .ToList();
+
+                //if (!suggestedTerms.Any())
+                //{
+                //    toastService.ShowInfo("No unconfirmed suggestions to save.");
+                //    return;
+                //}
+
+                //// Mark all as confirmed
+                ////TODO : TO complete this or ignore it
+                //foreach (var term in suggestedTerms)
+                //{
+                //    term.IsConfirmed = true;
+                //}
+
+                // Save to database
+                if (!await SaveTermMappingsAsync())
+                {
+                    toastService.ShowError("Failed to save term mapping. Please try again.");
+                }
+
+                toastService.ShowSuccess($"Successfully accepted & saved {schemaObj.TermMappings.Count} Terms and Formulas");
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError("Failed to save Terms and Formulas. Please try again.");
+            }
+            finally
+            {
+                isSavingAllSuggestions = false;
+            }
         }
+
+        private async Task AcceptTermSuggestion(TermMapping term)
+        {
+            try
+            {
+                term.IsConfirmed = true;
+                if (!await SaveTermMappingsAsync())
+                {
+                    toastService.ShowError("Failed to save term mapping. Please try again.");
+                }
+                toastService.ShowSuccess($"Accepted term: {term.BusinessTerm}");
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError("Failed to accept term suggestion. Please try again.");
+            }
+        }
+
+        private async Task IgnoreTermSuggestion(TermMapping term)
+        {
+            try
+            {
+                // Find index of term
+                var index = schemaObj.TermMappings.FindIndex(t => t.ID == term.ID);
+                if (index >= 0)
+                {
+                    // Remove the term
+                    schemaObj.TermMappings.RemoveAt(index);
+                    if (!await SaveTermMappingsAsync())
+                    {
+                        toastService.ShowError("Failed to save term mapping. Please try again.");
+                    }
+                    toastService.ShowSuccess($"Ignored term: {term.BusinessTerm}");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError("Failed to ignore term suggestion. Please try again.");
+            }
+        }
+
+        private void ShowFormulaViewer(TermMapping term)
+        {
+            currentFormulaTerm = term;
+            formulaText = term.Formula;
+            isEditingFormula = false;
+            isFormulaModalOpen = true;
+            formulaValidationResult = null;
+        }
+
+        private void EnableFormulaEditing()
+        {
+            isEditingFormula = true;
+            ValidateFormula(formulaText);
+        }
+
+        private void CancelFormulaEdit()
+        {
+            isEditingFormula = false;
+            formulaText = currentFormulaTerm.Formula;
+            formulaValidationResult = null;
+        }
+
+        private async Task SaveFormulaChanges()
+        {
+            if (currentFormulaTerm == null) return;
+
+            try
+            {
+                // Validate formula one more time
+                await ValidateFormula(formulaText);
+
+                if (formulaValidationResult == null || !formulaValidationResult.IsValid)
+                {
+                    toastService.ShowWarning("Cannot save invalid formula. Please correct errors first.");
+                    return;
+                }
+
+                // Update the formula
+                currentFormulaTerm.Formula = formulaText;
+
+                // Update dependencies based on validation result
+                if (formulaValidationResult.ReferencedObjects?.TableColumns != null)
+                {
+                    // Clear existing dependencies
+                    currentFormulaTerm.Dependencies.Clear();
+
+                    // Add new dependencies based on references
+                    foreach (var tableCol in formulaValidationResult.ReferencedObjects.TableColumns)
+                    {
+                        string tableName = tableCol.Key;
+                        var tableObj = schemaObj.Tables.FirstOrDefault(t =>
+                            t.DBName.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+
+                        if (tableObj != null)
+                        {
+                            foreach (string colName in tableCol.Value)
+                            {
+                                var colObj = tableObj.Columns.FirstOrDefault(c =>
+                                    c.DBName.Equals(colName, StringComparison.OrdinalIgnoreCase));
+
+                                if (colObj != null)
+                                {
+                                    currentFormulaTerm.Dependencies.Add(new TermMappingDependency
+                                    {
+                                        TableId = tableObj.ID,
+                                        ColumnId = colObj.ID,
+                                        TableName = tableObj.DBName,
+                                        ColumnName = colObj.DBName
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Save changes
+                if (!await SaveTermMappingsAsync())
+                {
+                    toastService.ShowError("Failed to save term mapping. Please try again.");
+                }
+
+                // Close modal
+                isFormulaModalOpen = false;
+                isEditingFormula = false;
+                currentFormulaTerm = null;
+                formulaText = null;
+                formulaValidationResult = null;
+
+                toastService.ShowSuccess("Formula saved successfully!");
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError("Failed to save formula. Please try again.");
+            }
+        }
+
+        private void CloseFormulaModal()
+        {
+            isFormulaModalOpen = false;
+            isEditingFormula = false;
+            currentFormulaTerm = null;
+            formulaText = null;
+            formulaValidationResult = null;
+        }
+
+        private async Task ValidateFormula(string formula)
+        {
+            if (string.IsNullOrWhiteSpace(formula))
+            {
+                formulaValidationResult = new QueryValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Formula cannot be empty"
+                };
+                return;
+            }
+
+            try
+            {
+                isValidatingFormula = true;
+
+                // Create a validation request for the formula
+                // We need to wrap it in a basic SELECT to validate
+                string testQuery = $"SELECT {formula} AS Result FROM (SELECT 1 AS DummyValue) AS Dummy";
+
+                // Call validation endpoint
+                var response = await Http.PostAsJsonAsync(
+                    $"api/query/validate-formula?databaseId={DatabaseId}",
+                    new { Formula = formula });
+
+                if (response.IsSuccessStatusCode)
+                {
+                    formulaValidationResult = await response.Content.ReadFromJsonAsync<QueryValidationResult>();
+                }
+                else
+                {
+                    formulaValidationResult = new QueryValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Failed to validate formula. Server error occurred."
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                formulaValidationResult = new QueryValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = $"Validation error: {ex.Message}"
+                };
+            }
+            finally
+            {
+                isValidatingFormula = false;
+            }
+        }
+
 
         #endregion
 

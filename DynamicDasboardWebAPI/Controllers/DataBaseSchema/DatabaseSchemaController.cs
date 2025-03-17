@@ -69,7 +69,7 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var schema = await objDBSchemaService.GetJsonSchemaByDataBaseIdAsync(databaseID);
+                var schema = await objDBSchemaService.GetSchemaWithJsonByDataBaseIdAsync(databaseID);
                 if (schema == null || schema.ID == 0)
                 {
                     return null; //temp Service need to handle the return and validations

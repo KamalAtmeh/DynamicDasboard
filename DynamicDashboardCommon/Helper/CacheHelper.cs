@@ -88,10 +88,11 @@ namespace DynamicDashboardCommon.Helper
                 {
                     await RemoveAsync(key);
                 }
-                _cache.TryAdd(key, value);
+                //TODO : Removed Temp, Also to check if we need browser cache at all or we need to replace it
+              //  _cache.TryAdd(key, value);
 
 
-                _expiryTimes[key] = DateTime.UtcNow.Add(duration ?? _defaultDuration);
+             //   _expiryTimes[key] = DateTime.UtcNow.Add(duration ?? _defaultDuration);
             }
             finally
             {

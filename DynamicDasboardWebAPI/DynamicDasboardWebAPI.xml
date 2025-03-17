@@ -84,6 +84,11 @@
             Gets example questions for a specific database.
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.ValidateFormula(DynamicDashboardCommon.Models.FormulaValidationRequest,System.Int32)">
+            <summary>
+            Validates a SQL formula expression
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.CreateSchema(DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
             Create a new schema entry.

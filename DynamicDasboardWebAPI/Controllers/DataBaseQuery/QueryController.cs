@@ -216,5 +216,30 @@ namespace DynamicDasboardWebAPI.Controllers
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
+
+        /// <summary>
+        /// Validates a SQL formula expression
+        /// </summary>
+        [HttpPost("validate-formula")]
+        public async Task<IActionResult> ValidateFormula([FromBody] FormulaValidationRequest request, [FromQuery] int databaseId)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Formula))
+                return BadRequest("Formula cannot be empty");
+
+            try
+            {
+                // Create a test query using the formula
+                string testQuery = $"SELECT {request.Formula} AS Result FROM (SELECT 1 AS DummyValue) AS Dummy";
+
+                // Use the existing validation logic
+                var validationResult = await _nlQueryService.ValidateSqlAgainstSchemaAsync(testQuery, databaseId, false);
+
+                return Ok(validationResult);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
     }
 }

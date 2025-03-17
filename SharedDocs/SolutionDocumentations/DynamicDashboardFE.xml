@@ -4,46 +4,6 @@
         <name>DynamicDashboardFE</name>
     </assembly>
     <members>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.AnalyzeTablesOnly">
-            <summary>
-            Analyzes only the tables in the database schema
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.AnalyzeColumnsOnly">
-            <summary>
-            Analyzes only the columns in the database schema
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.AnalyzeRelationshipsOnly">
-            <summary>
-            Analyzes only the relationships in the database schema
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.AnalyzeConflictsOnly">
-            <summary>
-            Analyzes potential conflicts in the database schema
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.GetOptimizedSchemaForAnalysis">
-            <summary>
-            Helper method to get optimized schema for analysis
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.AnalyzeTermMappings">
-            <summary>
-            Analyzes and generates term mappings for the database schema
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.RemoveTermMapping(System.String)">
-            <summary>
-            Removes a term mapping
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2_1.SaveTermMappings">
-            <summary>
-            Saves term mappings to the database
-            </summary>
-        </member>
         <member name="T:DynamicDashboardFE.Pages.User.Dashboard">
             <summary>
             Enhanced Natural Language Query component that allows users to ask questions in natural language

@@ -55,7 +55,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<DatabaseSchema> GetJsonSchemaByDataBaseIdAsync(int databaseID)
+        public async Task<DatabaseSchema> GetSchemaWithJsonByDataBaseIdAsync(int databaseID)
         {
             try
             {
@@ -100,12 +100,13 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
 
-                DatabaseSchema dbSchema = await GetSchemaObject(databaseId);
-                if (dbSchema != null && dbSchema.ID > 0 && !string.IsNullOrEmpty(dbSchema.SchemaData))
+                DatabaseSchema objexistingSchema = await GetSchemaObject(databaseId);
+                bool hasExistingSchema = objexistingSchema != null && !string.IsNullOrEmpty(objexistingSchema.SchemaData);
+                if (objexistingSchema != null && objexistingSchema.ID > 0 && !string.IsNullOrEmpty(objexistingSchema.SchemaData))
 
                 {
                     //No need to generate new schema since its already there
-                    return dbSchema;
+                    return objexistingSchema;
                 }
 
                 if (objDataBase == null)
@@ -114,7 +115,7 @@ namespace DynamicDasboardWebAPI.Services
                 // Create schema structure
                 var schemaDetail = new DatabaseSchema
                 {
-                    ID = databaseId,
+                    DataBaseID = databaseId,
                     Name = objDataBase.Name,
                     Version = new VersionInfo
                     {
@@ -251,19 +252,29 @@ namespace DynamicDasboardWebAPI.Services
                 // Serialize the schema
                 string schemaJson = SerializeSchema(schemaDetail);
 
-                // Create new schema entry or update existing
 
-                var newSchema = new DatabaseSchema
+
+                // Update schema in database
+                if (hasExistingSchema)
                 {
-                    DataBaseID = databaseId,
-                    Name = objDataBase.Name,
-                    Status = (int)EnumDataBaseStatus.Active,
-                    SchemaData = schemaJson,
-                    CreatedAt = DateTime.UtcNow,
-                    ModifiedAt = DateTime.UtcNow
-                };
+                    objexistingSchema.SchemaData = schemaJson;
+                    objexistingSchema.ModifiedAt = DateTime.UtcNow;
+                    await UpdateSchemaAsync(objexistingSchema);
+                }
+                else
+                {
+                    var newSchema = new DatabaseSchema
+                    {
+                        DataBaseID = databaseId,
+                        Name = objDataBase.Name,
+                        Status = (int)EnumDataBaseStatus.Active,
+                        SchemaData = schemaJson,
+                        CreatedAt = DateTime.UtcNow,
+                        ModifiedAt = DateTime.UtcNow
+                    };
 
-                await CreateSchemaAsync(newSchema);
+                    await CreateSchemaAsync(newSchema);
+                }
                 return schemaDetail;
             }
             catch (Exception ex)
@@ -292,7 +303,7 @@ namespace DynamicDasboardWebAPI.Services
                 // Create new schema structure
                 var newSchemaObj = new DatabaseSchema
                 {
-                    ID = databaseId,
+                    DataBaseID = databaseId,
                     Name = objDataBase.Name,
                     Version = new VersionInfo
                     {
@@ -472,7 +483,7 @@ namespace DynamicDasboardWebAPI.Services
                 {
                     existingSchemaObj.SchemaData = schemaJson;
                     existingSchemaObj.ModifiedAt = DateTime.UtcNow;
-                    await UpdateSchemaAsync(existingSchemaObj);
+                   int isUpdate=  await UpdateSchemaAsync(existingSchemaObj);
                 }
                 else
                 {
@@ -644,21 +655,20 @@ namespace DynamicDasboardWebAPI.Services
                     return false;
 
                 List<ColumnSchema> lstExistingColumns = table.Columns;
-
-                foreach (ColumnSchema column in lstUpdatedColumns)
+                //List<ColumnSchema> lstUpdatedColumns = new List<ColumnSchema>();
+                foreach (ColumnSchema existingColumn in lstExistingColumns)
                 {
-                    var existingColumn = lstExistingColumns.FirstOrDefault(x => x.ID == column.ID);
+                    var updatedColumn = lstUpdatedColumns.FirstOrDefault(x => x.ID == existingColumn.ID);
 
                     if (existingColumn != null)
                     {
-                        existingColumn.FriendlyName = column.FriendlyName;
-                        existingColumn.Description = column.Description;
-                        existingColumn.Synonyms = column.Synonyms;
-                        column.IsActive = column.IsActive;
+                        existingColumn.FriendlyName = updatedColumn.FriendlyName;
+                        existingColumn.Description = updatedColumn.Description;
+                        existingColumn.Synonyms = updatedColumn.Synonyms;
+                        existingColumn.IsActive = updatedColumn.IsActive;
                     }
-
-                   
                 }
+
                 // Serialize and save
                 schemaObj.SchemaData = SerializeSchema(schemaObj);
                 await UpdateSchemaAsync(schemaObj);
@@ -1183,15 +1193,15 @@ namespace DynamicDasboardWebAPI.Services
                 var cacheKey = string.Empty;
                 if (useCache)
                 {
-                     cacheKey = $"DatabaseSchema_{databaseID}";
+                    cacheKey = $"DatabaseSchema_{databaseID}";
                     var cached = CacheHelper.Get<DatabaseSchema>(cacheKey);
                     if (cached != null && useCache)
                     {
                         return cached;
                     }
                 }
-               
-                var schema = await GetJsonSchemaByDataBaseIdAsync(databaseID);
+
+                var schema = await GetSchemaWithJsonByDataBaseIdAsync(databaseID);
                 if (schema == null)
                     return null;
 
@@ -1199,7 +1209,7 @@ namespace DynamicDasboardWebAPI.Services
                 objSchemaDetail.SchemaData = schema.SchemaData;
                 if (useCache)
                 {
-                    await CacheHelper.AddOrUpdateAsync(cacheKey, objSchemaDetail);
+                    await CacheHelper.AddOrUpdateAsync(cacheKey, schema);
                 }
                 return objSchemaDetail;
             }

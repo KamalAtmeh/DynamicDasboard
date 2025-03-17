@@ -1035,6 +1035,10 @@
 								Business Term Mappings
 							</h5>
 							<div class="d-flex">
+								<button class="btn btn-success me-2" @onclick="SaveAllTermSuggestions">
+									<i class="fas fa-check-double me-2"></i>
+									<span>Accept All Suggestions</span>
+								</button>
 								<button class="btn btn-primary me-2" @onclick="SuggestTermMappings" disabled="@isSuggestingTerms">
 									@if (isSuggestingTerms)
 									{
@@ -1105,6 +1109,8 @@
 														@if (term.IsLLMSuggested)
 														{
 															<i class="fas fa-magic text-primary me-2" title="AI-suggested term"></i>
+
+																<span class="badge bg-warning text-dark">Suggested</span>
 														}
 														@term.BusinessTerm
 													</td>
@@ -1124,6 +1130,12 @@
 															{
 																<span>@table.DBName.@column.DBName</span>
 															}
+														}
+														else if (term.Type == TermMappingType.CalculatedField && !string.IsNullOrEmpty(term.Formula))
+														{
+															<button class="btn btn-sm btn-outline-info" @onclick="() => ShowFormulaViewer(term)">
+																<i class="fas fa-eye me-1"></i> View Formula
+															</button>
 														}
 														else if (term.Dependencies?.Any() == true)
 														{
@@ -1146,21 +1158,21 @@
 													</td>
 													<td>
 														<div class="btn-group btn-group-sm">
-															<button type="button" class="btn btn-outline-primary"
-																	@onclick="() => EditTermMapping(term)"
-																	title="Edit">
-																<i class="fas fa-edit"></i>
-															</button>
-															<button type="button" class="btn btn-outline-@(term.IsActive ? "danger" : "success")"
-																	@onclick="() => ToggleTermMappingActive(term)"
-																	title="@(term.IsActive ? "Deactivate" : "Activate")">
-																<i class="fas fa-@(term.IsActive ? "eye-slash" : "eye")"></i>
-															</button>
-															<button type="button" class="btn btn-outline-danger"
-																	@onclick="() => DeleteTermMapping(term.ID)"
-																	title="Delete">
-																<i class="fas fa-trash"></i>
-															</button>
+																<button type="button" class="btn btn-outline-primary"
+																		@onclick="() => EditTermMapping(term)"
+																		title="Edit">
+																	<i class="fas fa-edit"></i>
+																</button>
+																<button type="button" class="btn btn-outline-@(term.IsActive ? "danger" : "success")"
+																		@onclick="() => ToggleTermMappingActive(term)"
+																		title="@(term.IsActive ? "Deactivate" : "Activate")">
+																	<i class="fas fa-@(term.IsActive ? "eye-slash" : "eye")"></i>
+																</button>
+																<button type="button" class="btn btn-outline-danger"
+																		@onclick="() => DeleteTermMapping(term.ID)"
+																		title="Delete">
+																	<i class="fas fa-trash"></i>
+																</button>
 														</div>
 													</td>
 												</tr>
@@ -1460,3 +1472,240 @@
 <div class="modal-backdrop fade @(isTermMappingModalOpen ? "show" : "")"
 	 style="display: @(isTermMappingModalOpen ? "block" : "none")"></div>
 
+<!-- Formula Viewer/Editor Modal -->
+<div class="modal fade @(isFormulaModalOpen ? "show" : "")" tabindex="-1"
+	 style="display: @(isFormulaModalOpen ? "block" : "none")">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">
+					@(isEditingFormula ? "Edit Formula" : "Formula Viewer")
+				</h5>
+				<button type="button" class="btn-close" @onclick="CloseFormulaModal"></button>
+			</div>
+			<div class="modal-body">
+				@if (currentFormulaTerm != null)
+				{
+					<div class="mb-3">
+						<label class="form-label">Business Term</label>
+						<div class="form-control bg-light">@currentFormulaTerm.BusinessTerm</div>
+					</div>
+
+					@if (isEditingFormula)
+					{
+						<div class="mb-3">
+							<label class="form-label">Formula</label>
+							<div class="position-relative">
+								<textarea class="form-control font-monospace" rows="5"
+										  @bind="formulaText"
+										  @bind:event="oninput"
+										  style="resize: vertical;"
+										  @onkeyup="() => ValidateFormula(formulaText)"></textarea>
+								@if (isValidatingFormula)
+								{
+									<div class="position-absolute top-0 end-0 m-2">
+										<div class="spinner-border spinner-border-sm text-primary" role="status">
+											<span class="visually-hidden">Validating...</span>
+										</div>
+									</div>
+								}
+							</div>
+
+							@if (formulaValidationResult != null)
+							{
+								@if (formulaValidationResult.IsValid)
+								{
+									<div class="alert alert-success mt-2">
+										<i class="fas fa-check-circle me-2"></i>
+										Formula is valid
+									</div>
+								}
+								else
+								{
+									<div class="alert alert-danger mt-2">
+										<i class="fas fa-exclamation-circle me-2"></i>
+										@formulaValidationResult.ErrorMessage
+									</div>
+								}
+							}
+						</div>
+
+						<div class="mb-3">
+    <label class="form-label">Formula Help</label>
+    <div class="card">
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="formulaHelpTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="functions-tab" data-bs-toggle="tab" 
+                            data-bs-target="#functions" type="button" role="tab">
+                        Functions
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="operators-tab" data-bs-toggle="tab" 
+                            data-bs-target="#operators" type="button" role="tab">
+                        Operators
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="common-mistakes-tab" data-bs-toggle="tab" 
+                            data-bs-target="#common-mistakes" type="button" role="tab">
+                        Common Mistakes
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content pt-3" id="formulaHelpTabContent">
+                <div class="tab-pane fade show active" id="functions" role="tabpanel">
+                    <h6>Available Functions:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><code>SUM(column)</code> - Sum values</li>
+                                <li><code>AVG(column)</code> - Average values</li>
+                                <li><code>COUNT(column)</code> - Count values</li>
+                                <li><code>MIN(column)</code> - Minimum value</li>
+                                <li><code>MAX(column)</code> - Maximum value</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><code>ROUND(number, decimals)</code> - Round number</li>
+                                <li><code>CAST(value AS type)</code> - Convert types</li>
+                                <li><code>CASE WHEN...THEN...END</code> - Conditional logic</li>
+                                <li><code>CONCAT(str1, str2)</code> - Combine strings</li>
+                                <li><code>DATEADD(unit, value, date)</code> - Date arithmetic</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="operators" role="tabpanel">
+                    <h6>Math Operators:</h6>
+                    <ul class="list-unstyled">
+                        <li><code>+</code> - Addition (e.g., <code>[Price] + [Tax]</code>)</li>
+                        <li><code>-</code> - Subtraction (e.g., <code>[Revenue] - [Cost]</code>)</li>
+                        <li><code>*</code> - Multiplication (e.g., <code>[Quantity] * [Price]</code>)</li>
+                        <li><code>/</code> - Division (e.g., <code>[Total] / [Count]</code>)</li>
+                        <li><code>%</code> - Modulo (e.g., <code>[Value] % 2</code>)</li>
+                    </ul>
+                    
+@*                     <h6 class="mt-3">Comparison Operators:</h6>
+                    <ul class="list-unstyled">
+                        <li> <code> = </code> - Equal to</li>
+                        <li><code> > </code> - Greater than</li>
+                        <li><code>  </code> - Less than</li>
+                        <li><code>>=</code> - Greater than or equal to</li>
+                        <li><code><=</code> - Less than or equal to</li>
+                        <li><code><></code> - Not equal to</li>
+                    </ul> *@
+                </div>
+                
+                <div class="tab-pane fade" id="common-mistakes" role="tabpanel">
+                    <h6>Common Mistakes to Avoid:</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Incorrect</th>
+                                <th>Correct</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Table.Column</code></td>
+                                <td><code>[Table].[Column]</code></td>
+                                <td>Column references should use square brackets</td>
+                            </tr>
+                            <tr>
+                                <td><code>Cost--Revenue</code></td>
+                                <td><code>Cost-Revenue</code></td>
+                                <td>Double dash (--) is a SQL comment operator</td>
+                            </tr>
+                            <tr>
+                                <td><code>Price++Tax</code></td>
+                                <td><code>Price+Tax</code></td>
+                                <td>Double plus (++) is not a valid SQL operator</td>
+                            </tr>
+                            <tr>
+                                <td><code>column = NULL</code></td>
+                                <td><code>column IS NULL</code></td>
+                                <td>Use IS NULL instead of = NULL</td>
+                            </tr>
+                            <tr>
+                                <td><code>'text'text'</code></td>
+                                <td><code>'text''text'</code></td>
+                                <td>Double quote inside string needs escaping</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+					}
+					else
+					{
+						<div class="mb-3">
+							<label class="form-label">Formula</label>
+							<pre class="bg-light p-3 rounded font-monospace border">@currentFormulaTerm.Formula</pre>
+						</div>
+					}
+
+					<div class="mb-3">
+						<label class="form-label">Dependencies</label>
+						@if (currentFormulaTerm.Dependencies?.Any() == true)
+						{
+							<div class="table-responsive">
+								<table class="table table-sm table-bordered">
+									<thead class="table-light">
+										<tr>
+											<th>Table</th>
+											<th>Column</th>
+										</tr>
+									</thead>
+									<tbody>
+										@foreach (var dep in currentFormulaTerm.Dependencies)
+										{
+											<tr>
+												<td>@dep.TableName</td>
+												<td>@dep.ColumnName</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							</div>
+						}
+						else
+						{
+							<div class="alert alert-info">
+								No dependencies defined for this formula.
+							</div>
+						}
+					</div>
+				}
+			</div>
+			<div class="modal-footer">
+				@if (isEditingFormula)
+				{
+					<button type="button" class="btn btn-secondary" @onclick="CancelFormulaEdit">Cancel</button>
+					<button type="button" class="btn btn-primary"
+							@onclick="SaveFormulaChanges"
+							disabled="@(formulaValidationResult != null && !formulaValidationResult.IsValid)">
+						Save Changes
+					</button>
+				}
+				else
+				{
+					<button type="button" class="btn btn-secondary" @onclick="CloseFormulaModal">Close</button>
+					<button type="button" class="btn btn-primary" @onclick="EnableFormulaEditing">
+						<i class="fas fa-edit me-2"></i>Edit Formula
+					</button>
+				}
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal-backdrop fade @(isFormulaModalOpen ? "show" : "")"
+	 style="display: @(isFormulaModalOpen ? "block" : "none")"></div>
