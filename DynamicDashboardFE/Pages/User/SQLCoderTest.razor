@@ -1,0 +1,207 @@
+﻿@page "/sqlcodertest"
+@using DynamicDashboardCommon.Models
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IToastService toastService
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3>SQLCoder Test</h3>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="databaseId" class="form-label">Database</label>
+                <select class="form-select" id="databaseId" @bind="databaseId">
+                    <option value="0">-- Select Database --</option>
+                    @foreach (var db in availableDatabases)
+                    {
+                        <option value="@db.DatabaseID">@(db.FriendlyName ?? db.Name)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="question" class="form-label">Natural Language Question</label>
+                <textarea class="form-control" id="question" rows="3" @bind="question" placeholder="What are the top 5 customers by revenue?"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-primary" @onclick="GenerateSQL" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span> Processing...</span>
+                        }
+                        else
+                        {
+                            <span>Generate SQL</span>
+                        }
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ClearForm">Clear</button>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                    <button type="button" class="btn-close float-end" @onclick="() => errorMessage = null"></button>
+                </div>
+            }
+
+            @if (result != null)
+            {
+                <div class="result-section animate__animated animate__fadeIn">
+                    <h4 class="mt-4">Results</h4>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">SQL Query</h5>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="CopySqlToClipboard">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <pre class="sql-code"><code>@result</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Explanation</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>@result</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .sql-code {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .result-section {
+        border-top: 1px solid #dee2e6;
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    /* Animation */
+    .animate__animated {
+        animation-duration: 0.5s;
+    }
+
+    .animate__fadeIn {
+        animation-name: fadeIn;
+    }
+
+    keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+</style>
+
+@code {
+    private int databaseId = 0;
+    private string question = "";
+    private bool isLoading = false;
+    private string errorMessage;
+    private string result;
+    private List<Database> availableDatabases = new List<Database>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            availableDatabases = await Http.GetFromJsonAsync<List<Database>>("api/databases");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading databases: {ex.Message}";
+        }
+    }
+
+    private async Task GenerateSQL()
+    {
+        if (databaseId <= 0)
+        {
+            errorMessage = "Please select a database first.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(question))
+        {
+            errorMessage = "Please enter a question.";
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+
+            var request = new NlQueryRequest
+                {
+                    Question = question,
+                    DatabaseId = databaseId
+                };
+
+            // var response = await Http.PostAsJsonAsync("api/Query/generate-explain", request);
+
+            var response = await Http.GetAsync("api/LLMTest/LLMTestForSQLGeneration");
+
+            if (response.IsSuccessStatusCode)
+            {
+                result = await response.Content.ReadAsStringAsync();
+                toastService.ShowSuccess("SQL generated successfully!");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Error: {error}";
+                toastService.ShowError("Failed to generate SQL.");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            toastService.ShowError("An unexpected error occurred.");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CopySqlToClipboard()
+    {
+    }
+
+    private void ClearForm()
+    {
+        question = "";
+        result = null;
+        errorMessage = null;
+    }
+}

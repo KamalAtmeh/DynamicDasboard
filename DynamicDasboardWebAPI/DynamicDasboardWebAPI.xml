@@ -1142,6 +1142,29 @@
             </summary>
             <returns>An implementation of ILlmService</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService">
+            <summary>
+            Implementation of ILLMService using SQLCoder 7b-2 model via Friendli.ai API
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateSqlWithExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateSchemaAnalysisAsync(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateTermSuggestionsAsync(System.String)">
+            <inheritdoc/>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.ILogsService">
             <summary>
             Provides methods for logging exceptions.

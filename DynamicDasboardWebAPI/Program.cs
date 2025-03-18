@@ -123,6 +123,12 @@ builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
             if (!string.IsNullOrEmpty(apiEndpoint))
                 client.BaseAddress = new Uri(apiEndpoint);
         }
+        else if (clientName.ToLower() == "sqlcoder")
+        {
+            var apiEndpoint = configuration["LlmService:sqlcoderEndpoint"];
+            if (!string.IsNullOrEmpty(apiEndpoint))
+                client.BaseAddress = new Uri(apiEndpoint);
+        }
 
         return client;
     };

@@ -36,6 +36,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 {
                     "claude" => CreateClaudeService(),
                     "deepseek" => CreateDeepSeekService(),
+                    "sqlcoder" => CreateSQLCoderService(), // Add this line
                     _ => throw new NotSupportedException($"LLM provider '{providerName}' is not supported")
                 };
             }
@@ -64,6 +65,19 @@ namespace DynamicDasboardWebAPI.Services.LLM
             {
                 var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
                 return new DeepSeekLLMService(httpClient, _configuration);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        private ILLMService CreateSQLCoderService()
+        {
+            try
+            {
+                var httpClient = _serviceProvider.GetRequiredService<HttpClient>();
+                return new SQLCoderLLMService(httpClient, _configuration);
             }
             catch (Exception ex)
             {
