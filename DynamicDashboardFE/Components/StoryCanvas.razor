@@ -1,0 +1,1218 @@
+﻿@page "/story-canvas"
+@using System.Text.Json
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject IToastService ToastService;
+@implements IDisposable;
+
+<div class="story-container">
+    <header class="story-header">
+        <h1><i class="fas fa-chart-line"></i> Data Storytelling Canvas</h1>
+        <div class="story-controls">
+            <button class="btn btn-primary" @onclick="StartPresentation">
+                <i class="fas fa-play"></i> Start Presentation
+            </button>
+            <button class="btn btn-primary" @onclick="GenerateAIInsights">
+                <i class="fas fa-lightbulb"></i> Generate AI Insights
+            </button>
+            <button class="btn btn-outline-secondary" @onclick="SaveStory">
+                <i class="fas fa-save"></i> Save Story
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="palette">
+            <h2><i class="fas fa-palette"></i> Visualization Palette</h2>
+            @foreach (var vizType in AvailableVisualizations)
+            {
+                <div class="viz-item @(DraggedVizType == vizType.Type ? "dragging" : "")"
+                     draggable="true"
+                     @ondragstart="@(e => HandleDragStart(e, vizType.Type))"
+                     @key="vizType.Type">
+                    <h3><i class="@vizType.Icon"></i> @vizType.Name</h3>
+                    <div class="viz-preview">
+                        @((MarkupString)vizType.PreviewSvg)
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="canvas">
+            <div class="canvas-header">
+                <h2><i class="fas fa-paint-brush"></i> Canvas</h2>
+                <div class="canvas-actions">
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowTitleDialog = true">
+                        <i class="fas fa-heading"></i> Edit Story Title
+                    </button>
+                </div>
+            </div>
+            <div class="scene-tabs">
+                @foreach (var scene in Scenes)
+                {
+                    <div class="scene-tab @(CurrentScene == scene.Id ? "active" : "")"
+                         @onclick="() => SwitchScene(scene.Id)">
+                        <i class="@scene.Icon"></i> @scene.Name
+                    </div>
+                }
+                <div class="scene-tab add-scene" @onclick="AddNewScene">
+                    <i class="fas fa-plus"></i> Add Scene
+                </div>
+            </div>
+            <div class="canvas-content">
+                @for (int i = 0; i < 4; i++)
+                {
+                    int position = i;
+                    <div class="dropzone @(HighlightedDropzone == position ? "highlight" : "")"
+                         data-position="@position"
+                    @ondragover:preventDefault
+                         @ondragover="() => HandleDragOver(position)"
+                         @ondragleave="() => HandleDragLeave(position)"
+                    @ondrop:preventDefault
+                         @ondrop="() => HandleDrop(position)">
+
+                        @if (GetVisualizationAtPosition(position) == null)
+                        {
+                            <div class="viz-placeholder">
+                                <i class="fas fa-plus-circle"></i>
+                                Drag a visualization here
+                            </div>
+                        }
+                        else
+                        {
+                            var viz = GetVisualizationAtPosition(position);
+                            <div class="canvas-viz" id="@viz.Id">
+                                <div class="viz-header">
+                                    <h3>@viz.Title</h3>
+                                    <div class="viz-actions">
+                                        <button @onclick="() => EditVisualization(viz.Id)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button @onclick="() => RemoveVisualization(viz.Id)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="viz-content" id="@($"viz-content-{viz.Id}")"></div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="insights">
+            <h2><i class="fas fa-lightbulb"></i> AI Insights</h2>
+            @foreach (var insight in Insights)
+            {
+                <div class="insight-card @(insight.IsSuggestion ? "suggestion" : "")"
+                     @onclick="() => ApplyInsight(insight)">
+                    <h3><i class="@insight.Icon"></i> @insight.Type</h3>
+                    <p>@insight.Description</p>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+<!-- Presentation Mode -->
+<div class="presentation-mode @(IsPresentationMode ? "active" : "")">
+    <button class="presentation-close" @onclick="EndPresentation">
+        <i class="fas fa-times"></i>
+    </button>
+    <div class="presentation-content">
+        @foreach (var scene in PresentationSlides)
+        {
+            <div class="presentation-slide @(CurrentSlide == scene.SlideIndex ? "active" : scene.SlideIndex < CurrentSlide ? "prev" : "")"
+                 data-slide="@scene.Id">
+                <h2>@scene.Title</h2>
+                <p>@scene.Description</p>
+                <div class="presentation-viz" id="@($"presentation-viz-{scene.SlideIndex}")"></div>
+            </div>
+        }
+    </div>
+    <div class="presentation-controls">
+        <button id="prev-slide" @onclick="PrevSlide">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button id="next-slide" @onclick="NextSlide">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+    <div class="presentation-progress">
+        <div class="presentation-progress-bar" style="width: @ProgressPercentage%"></div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" style="display: @(IsLoading ? "flex" : "none")">
+    <div class="loading-spinner"></div>
+    <div class="loading-message">@LoadingMessage</div>
+</div>
+
+<!-- AI Thinking Indicator -->
+<div class="ai-thinking @(IsAIThinking ? "show" : "")">
+    <div class="ai-thinking-icon">
+        <i class="fas fa-robot"></i>
+    </div>
+    <div class="ai-thinking-content">
+        <p>AI analyzing your data...</p>
+        <div class="ai-thinking-dots">
+            <div class="ai-thinking-dot"></div>
+            <div class="ai-thinking-dot"></div>
+            <div class="ai-thinking-dot"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Title Dialog -->
+@if (ShowTitleDialog)
+{
+    <div class="modal-backdrop" @onclick="() => ShowTitleDialog = false"></div>
+    <div class="title-dialog">
+        <div class="dialog-header">
+            <h3>Story Title</h3>
+            <button @onclick="() => ShowTitleDialog = false">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label for="story-title">Enter a title for your data story:</label>
+                <input type="text" class="form-control" id="story-title"
+                       @bind="StoryTitle" placeholder="e.g., Q2 Sales Analysis" />
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn btn-secondary" @onclick="() => ShowTitleDialog = false">
+                Cancel
+            </button>
+            <button class="btn btn-primary" @onclick="SaveTitle">
+                Save
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Edit Visualization Dialog -->
+@if (ShowVizEditDialog && SelectedVisualization != null)
+{
+    <div class="modal-backdrop" @onclick="() => ShowVizEditDialog = false"></div>
+    <div class="viz-edit-dialog">
+        <div class="dialog-header">
+            <h3>Edit Visualization</h3>
+            <button @onclick="() => ShowVizEditDialog = false">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label for="viz-title">Title:</label>
+                <input type="text" class="form-control" id="viz-title"
+                       @bind="SelectedVisualization.Title" />
+            </div>
+
+            <div class="form-group">
+                <label>Chart Type:</label>
+                <div class="chart-type-selector">
+                    @foreach (var vizType in AvailableVisualizations)
+                    {
+                        <div class="chart-type-option @(SelectedVisualization.Type == vizType.Type ? "selected" : "")"
+                             @onclick="() => SelectedVisualization.Type = vizType.Type">
+                            <i class="@vizType.Icon"></i>
+                            <span>@vizType.Name</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Data Options:</label>
+                <div class="data-options">
+                    <!-- Data options will vary based on visualization type -->
+                    @if (SelectedVisualization.Type == "bar" || SelectedVisualization.Type == "line")
+                    {
+                        <div class="form-group">
+                            <label>X-Axis:</label>
+                            <select class="form-control" @bind="SelectedVisualization.XAxis">
+                                @foreach (var column in AvailableDataColumns)
+                                {
+                                    <option value="@column">@column</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Y-Axis:</label>
+                            <select class="form-control" @bind="SelectedVisualization.YAxis">
+                                @foreach (var column in AvailableDataColumns.Where(c => NumericColumns.Contains(c)))
+                                {
+                                    <option value="@column">@column</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    @if (SelectedVisualization.Type == "pie")
+                    {
+                        <div class="form-group">
+                            <label>Category:</label>
+                            <select class="form-control" @bind="SelectedVisualization.Category">
+                                @foreach (var column in AvailableDataColumns)
+                                {
+                                    <option value="@column">@column</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Value:</label>
+                            <select class="form-control" @bind="SelectedVisualization.Value">
+                                @foreach (var column in AvailableDataColumns.Where(c => NumericColumns.Contains(c)))
+                                {
+                                    <option value="@column">@column</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn btn-secondary" @onclick="() => ShowVizEditDialog = false">
+                Cancel
+            </button>
+            <button class="btn btn-primary" @onclick="SaveVisualizationChanges">
+                Save Changes
+            </button>
+        </div>
+    </div>
+}
+
+                                @code
+                                {
+    private bool _jsInitialized = false;
+    private DotNetObjectReference<StoryCanvas> _objRef;
+    private string _currentSceneId = "intro";
+    private int _visualizationCounter = 0;
+    private string _draggedVizType = string.Empty;
+    private int _highlightedDropzone = -1;
+    private List<Dictionary<string, object>> _currentData = new();
+    private List<string> _numericColumns = new();
+    private List<string> _categoryColumns = new();
+    private List<string> _dateColumns = new();
+
+    // Story state
+    private string _storyTitle = "Data Story";
+    private readonly List<StoryScene> _scenes = new();
+    private readonly List<Visualization> _visualizations = new();
+    private readonly List<Insight> _insights = new();
+    private readonly List<PresentationSlide> _presentationSlides = new();
+
+    // UI state
+    private bool _isLoading = true;
+    private string _loadingMessage = "Loading your data story...";
+    private bool _isAIThinking = false;
+    private bool _showTitleDialog = false;
+    private bool _showVizEditDialog = false;
+    private Visualization _selectedVisualization;
+    private bool _isPresentationMode = false;
+    private int _currentSlide = 0;
+
+    // Animation timers
+    private System.Timers.Timer _insightAnimationTimer;
+
+    // Properties for binding
+    public List<StoryScene> Scenes => _scenes;
+    public List<Visualization> Visualizations => _visualizations;
+    public List<Insight> Insights => _insights;
+    public List<PresentationSlide> PresentationSlides => _presentationSlides;
+    public bool IsLoading { get => _isLoading; set => _isLoading = value; }
+    public string LoadingMessage { get => _loadingMessage; set => _loadingMessage = value; }
+    public bool IsAIThinking { get => _isAIThinking; set => _isAIThinking = value; }
+    public bool ShowTitleDialog { get => _showTitleDialog; set => _showTitleDialog = value; }
+    public bool ShowVizEditDialog { get => _showVizEditDialog; set => _showVizEditDialog = value; }
+    public Visualization SelectedVisualization { get => _selectedVisualization; set => _selectedVisualization = value; }
+    public bool IsPresentationMode { get => _isPresentationMode; set => _isPresentationMode = value; }
+    public int CurrentSlide { get => _currentSlide; set => _currentSlide = value; }
+    public string CurrentScene { get => _currentSceneId; set => _currentSceneId = value; }
+    public int HighlightedDropzone { get => _highlightedDropzone; set => _highlightedDropzone = value; }
+    public string StoryTitle { get => _storyTitle; set => _storyTitle = value; }
+    public string DraggedVizType { get => _draggedVizType; set => _draggedVizType = value; }
+    public double ProgressPercentage => (_currentSlide + 1) * 100.0 / PresentationSlides.Count;
+
+    // Available data columns
+    public List<string> AvailableDataColumns { get; set; } = new();
+    public List<string> NumericColumns => _numericColumns;
+
+    // Visualization palette data
+    public List<VizPaletteItem> AvailableVisualizations { get; set; } = new List<VizPaletteItem>
+        {
+            new VizPaletteItem
+            {
+                Type = "bar",
+                Name = "Bar Chart",
+                Icon = "fas fa-chart-bar",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <rect x=""10"" y=""10"" width=""10"" height=""40"" fill=""#4361ee""></rect>
+                    <rect x=""30"" y=""20"" width=""10"" height=""30"" fill=""#4361ee""></rect>
+                    <rect x=""50"" y=""5"" width=""10"" height=""45"" fill=""#4361ee""></rect>
+                    <rect x=""70"" y=""25"" width=""10"" height=""25"" fill=""#4361ee""></rect>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "line",
+                Name = "Line Chart",
+                Icon = "fas fa-chart-line",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <path d=""M10,50 L30,30 L50,40 L70,20 L90,35"" stroke=""#4361ee"" fill=""none"" stroke-width=""3""></path>
+                    <circle cx=""10"" cy=""50"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""30"" cy=""30"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""50"" cy=""40"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""70"" cy=""20"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""90"" cy=""35"" r=""3"" fill=""#4361ee""></circle>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "pie",
+                Name = "Pie Chart",
+                Icon = "fas fa-chart-pie",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <path d=""M50,30 L50,5 A25,25 0 0,1 73,42 z"" fill=""#4361ee""></path>
+                    <path d=""M50,30 L73,42 A25,25 0 0,1 35,50 z"" fill=""#4895ef""></path>
+                    <path d=""M50,30 L35,50 A25,25 0 0,1 45,5 z"" fill=""#f72585""></path>
+                    <path d=""M50,30 L45,5 A25,25 0 0,1 50,5 z"" fill=""#4cc9f0""></path>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "scatter",
+                Name = "Scatter Plot",
+                Icon = "fas fa-braille",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <circle cx=""20"" cy=""20"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""30"" cy=""40"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""40"" cy=""15"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""50"" cy=""35"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""60"" cy=""25"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""70"" cy=""10"" r=""3"" fill=""#4361ee""></circle>
+                    <circle cx=""80"" cy=""45"" r=""3"" fill=""#4361ee""></circle>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "map",
+                Name = "Map Visualization",
+                Icon = "fas fa-map",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <path d=""M20,20 L40,15 L60,25 L50,40 L30,35 Z"" fill=""#4cc9f0"" stroke=""#4361ee"" stroke-width=""1""></path>
+                    <path d=""M65,15 L85,20 L80,40 L60,35 Z"" fill=""#4cc9f0"" stroke=""#4361ee"" stroke-width=""1""></path>
+                    <circle cx=""35"" cy=""25"" r=""3"" fill=""#f72585""></circle>
+                    <circle cx=""55"" cy=""30"" r=""3"" fill=""#f72585""></circle>
+                    <circle cx=""75"" cy=""25"" r=""3"" fill=""#f72585""></circle>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "text",
+                Name = "Text Block",
+                Icon = "fas fa-font",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <rect x=""10"" y=""10"" width=""80"" height=""10"" fill=""#e9ecef"" rx=""2"" ry=""2""></rect>
+                    <rect x=""10"" y=""25"" width=""60"" height=""10"" fill=""#e9ecef"" rx=""2"" ry=""2""></rect>
+                    <rect x=""10"" y=""40"" width=""70"" height=""10"" fill=""#e9ecef"" rx=""2"" ry=""2""></rect>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "heatmap",
+                Name = "Heat Map",
+                Icon = "fas fa-th",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <rect x=""10"" y=""10"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.3""></rect>
+                    <rect x=""30"" y=""10"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.5""></rect>
+                    <rect x=""50"" y=""10"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.8""></rect>
+                    <rect x=""70"" y=""10"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""1.0""></rect>
+                    <rect x=""10"" y=""30"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.7""></rect>
+                    <rect x=""30"" y=""30"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.2""></rect>
+                    <rect x=""50"" y=""30"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.6""></rect>
+                    <rect x=""70"" y=""30"" width=""15"" height=""15"" fill=""#4361ee"" opacity=""0.4""></rect>
+                </svg>"
+            },
+            new VizPaletteItem
+            {
+                Type = "gauge",
+                Name = "Gauge Chart",
+                Icon = "fas fa-tachometer-alt",
+                PreviewSvg = @"<svg width=""100%"" height=""100%"" viewBox=""0 0 100 60"">
+                    <path d=""M20,50 A30,30 0 0,1 80,50"" stroke=""#e9ecef"" fill=""none"" stroke-width=""5""></path>
+                    <path d=""M20,50 A30,30 0 0,1 65,30"" stroke=""#4361ee"" fill=""none"" stroke-width=""5""></path>
+                    <circle cx=""50"" cy=""50"" r=""3"" fill=""#212529""></circle>
+                    <line x1=""50"" y1=""50"" x2=""65"" y2=""30"" stroke=""#212529"" stroke-width=""2""></line>
+                </svg>"
+            }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize object reference
+        _objRef = DotNetObjectReference.Create(this);
+
+        // Initialize with default scenes
+        _scenes.Add(new StoryScene { Id = "intro", Name = "Introduction", Icon = "fas fa-door-open" });
+        _scenes.Add(new StoryScene { Id = "analysis", Name = "Analysis", Icon = "fas fa-chart-column" });
+        _scenes.Add(new StoryScene { Id = "insights", Name = "Insights", Icon = "fas fa-lightbulb" });
+        _scenes.Add(new StoryScene { Id = "conclusion", Name = "Conclusion", Icon = "fas fa-flag-checkered" });
+
+        // Initialize sample insights
+        InitializeSampleInsights();
+
+        // Initialize presentation slides
+        InitializePresentationSlides();
+
+        // Set up animation timer
+        _insightAnimationTimer = new System.Timers.Timer(8000);
+        _insightAnimationTimer.Elapsed += async (s, e) => await AnimateRandomInsight();
+        _insightAnimationTimer.AutoReset = true;
+        _insightAnimationTimer.Start();
+
+        // Load sample data
+        await LoadSampleData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize the JavaScript interop
+            await JSRuntime.InvokeVoidAsync("storyCanvas.initialize", _objRef);
+            _jsInitialized = true;
+
+            // Add a small delay to simulate loading
+            await Task.Delay(1500);
+
+            // Hide the loading overlay with animation
+            await JSRuntime.InvokeVoidAsync("storyCanvas.hideLoadingOverlay");
+            IsLoading = false;
+
+            // Animate the initial elements
+            await JSRuntime.InvokeVoidAsync("storyCanvas.animateInitialElements");
+        }
+
+        // Re-render visualizations when needed
+        if (_jsInitialized && Visualizations.Any())
+        {
+            foreach (var viz in Visualizations.Where(v => v.SceneId == CurrentScene))
+            {
+                await RenderVisualization(viz);
+            }
+        }
+    }
+
+    private async Task LoadSampleData()
+    {
+        try
+        {
+            // For demo purposes, we'll use sample data
+            // In a real implementation, this would fetch data from the API
+
+            _currentData = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Jan",
+                        ["Sales"] = 54000,
+                        ["Profit"] = 12500,
+                        ["Category"] = "Electronics",
+                        ["Region"] = "North"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Feb",
+                        ["Sales"] = 48000,
+                        ["Profit"] = 10800,
+                        ["Category"] = "Electronics",
+                        ["Region"] = "North"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Mar",
+                        ["Sales"] = 63000,
+                        ["Profit"] = 15000,
+                        ["Category"] = "Electronics",
+                        ["Region"] = "North"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Apr",
+                        ["Sales"] = 59000,
+                        ["Profit"] = 13800,
+                        ["Category"] = "Electronics",
+                        ["Region"] = "North"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Jan",
+                        ["Sales"] = 32000,
+                        ["Profit"] = 8000,
+                        ["Category"] = "Furniture",
+                        ["Region"] = "South"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Feb",
+                        ["Sales"] = 38000,
+                        ["Profit"] = 9500,
+                        ["Category"] = "Furniture",
+                        ["Region"] = "South"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Mar",
+                        ["Sales"] = 41000,
+                        ["Profit"] = 10200,
+                        ["Category"] = "Furniture",
+                        ["Region"] = "South"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Apr",
+                        ["Sales"] = 45000,
+                        ["Profit"] = 11000,
+                        ["Category"] = "Furniture",
+                        ["Region"] = "South"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Jan",
+                        ["Sales"] = 28000,
+                        ["Profit"] = 7200,
+                        ["Category"] = "Office",
+                        ["Region"] = "East"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Feb",
+                        ["Sales"] = 31000,
+                        ["Profit"] = 7900,
+                        ["Category"] = "Office",
+                        ["Region"] = "East"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Mar",
+                        ["Sales"] = 35000,
+                        ["Profit"] = 8800,
+                        ["Category"] = "Office",
+                        ["Region"] = "East"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Apr",
+                        ["Sales"] = 39000,
+                        ["Profit"] = 9700,
+                        ["Category"] = "Office",
+                        ["Region"] = "East"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Jan",
+                        ["Sales"] = 42000,
+                        ["Profit"] = 10000,
+                        ["Category"] = "Tech",
+                        ["Region"] = "West"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Feb",
+                        ["Sales"] = 49000,
+                        ["Profit"] = 12000,
+                        ["Category"] = "Tech",
+                        ["Region"] = "West"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Mar",
+                        ["Sales"] = 55000,
+                        ["Profit"] = 13500,
+                        ["Category"] = "Tech",
+                        ["Region"] = "West"
+                    },
+                    new Dictionary<string, object>
+                    {
+                        ["Month"] = "Apr",
+                        ["Sales"] = 61000,
+                        ["Profit"] = 15200,
+                        ["Category"] = "Tech",
+                        ["Region"] = "West"
+                    }
+                };
+
+            // Determine column types
+            InferColumnTypes();
+
+            // Set available columns for dropdowns
+            AvailableDataColumns = _currentData.FirstOrDefault()?.Keys.ToList() ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading data: {ex.Message}");
+        }
+    }
+
+    private void InferColumnTypes()
+    {
+        _numericColumns.Clear();
+        _categoryColumns.Clear();
+        _dateColumns.Clear();
+
+        if (!_currentData.Any())
+            return;
+
+        var sample = _currentData.First();
+
+        foreach (var key in sample.Keys)
+        {
+            var allValues = _currentData.Select(d => d[key]);
+
+            // Check if values are numeric
+            if (allValues.All(v => v == null || double.TryParse(v.ToString(), out _)))
+            {
+                _numericColumns.Add(key);
+                continue;
+            }
+
+            // Check if values are dates
+            if (allValues.All(v => v == null || DateTime.TryParse(v.ToString(), out _)))
+            {
+                _dateColumns.Add(key);
+                continue;
+            }
+
+            // Check if it's categorical
+            if (allValues.Where(v => v != null).Select(v => v.ToString()).Distinct().Count() <= 20)
+            {
+                _categoryColumns.Add(key);
+                continue;
+            }
+        }
+    }
+
+    private void InitializeSampleInsights()
+    {
+        _insights.Add(new Insight
+            {
+                Type = "Trend",
+                Description = "Revenue has grown by 15% month-over-month for the last quarter.",
+                Icon = "fas fa-arrow-trend-up",
+                IsSuggestion = false
+            });
+
+        _insights.Add(new Insight
+            {
+                Type = "Top Performer",
+                Description = "Product X is the highest performing product with 28% of total sales.",
+                Icon = "fas fa-medal",
+                IsSuggestion = false
+            });
+
+        _insights.Add(new Insight
+            {
+                Type = "Anomaly",
+                Description = "Unusual spike in returned items in the Northwest region in May.",
+                Icon = "fas fa-exclamation-circle",
+                IsSuggestion = false
+            });
+
+        _insights.Add(new Insight
+            {
+                Type = "Correlation",
+                Description = "Strong correlation between marketing spend and customer acquisition.",
+                Icon = "fas fa-link",
+                IsSuggestion = false
+            });
+
+        _insights.Add(new Insight
+            {
+                Type = "AI Suggestion",
+                Description = "Try comparing sales by region to identify market opportunities.",
+                Icon = "fas fa-wand-magic-sparkles",
+                IsSuggestion = true
+            });
+
+        _insights.Add(new Insight
+            {
+                Type = "AI Suggestion",
+                Description = "Add a trend line to your time series to better visualize growth rate.",
+                Icon = "fas fa-wand-magic-sparkles",
+                IsSuggestion = true
+            });
+    }
+
+    private void InitializePresentationSlides()
+    {
+        _presentationSlides.Add(new PresentationSlide
+            {
+                Id = "intro-slide",
+                SlideIndex = 0,
+                Title = "Revenue Trends: Q2 Analysis",
+                Description = "In this analysis, we'll explore the key revenue trends from Q2 and identify growth opportunities.",
+                SceneId = "intro"
+            });
+
+        _presentationSlides.Add(new PresentationSlide
+            {
+                Id = "analysis-slide",
+                SlideIndex = 1,
+                Title = "Regional Performance",
+                Description = "The Western region leads sales with 35% market share, followed by the Eastern region at 28%.",
+                SceneId = "analysis"
+            });
+
+        _presentationSlides.Add(new PresentationSlide
+            {
+                Id = "insights-slide",
+                SlideIndex = 2,
+                Title = "Key Insights",
+                Description = "We've identified three major growth drivers and two areas of concern requiring immediate attention.",
+                SceneId = "insights"
+            });
+
+        _presentationSlides.Add(new PresentationSlide
+            {
+                Id = "conclusion-slide",
+                SlideIndex = 3,
+                Title = "Action Plan",
+                Description = "Based on our analysis, we recommend focusing on product diversification in the Eastern market and addressing inventory issues in the Southern region.",
+                SceneId = "conclusion"
+            });
+    }
+
+    // Drag and drop handlers
+    private void HandleDragStart(DragEventArgs e, string vizType)
+    {
+        DraggedVizType = vizType;
+    }
+
+    private void HandleDragOver(int position)
+    {
+        HighlightedDropzone = position;
+    }
+
+    private void HandleDragLeave(int position)
+    {
+        if (HighlightedDropzone == position)
+            HighlightedDropzone = -1;
+    }
+
+    private async Task HandleDrop(int position)
+    {
+        if (string.IsNullOrEmpty(DraggedVizType))
+            return;
+
+        // Create visualization
+        var viz = new Visualization
+            {
+                Id = $"viz-{++_visualizationCounter}",
+                Type = DraggedVizType,
+                SceneId = CurrentScene,
+                Position = position,
+                Title = GetDefaultTitle(DraggedVizType)
+            };
+
+        // Set default axes based on data
+        if (_numericColumns.Any() && AvailableDataColumns.Any())
+        {
+            if (DraggedVizType == "bar" || DraggedVizType == "line")
+            {
+                viz.XAxis = _categoryColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+                viz.YAxis = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+            }
+            else if (DraggedVizType == "pie")
+            {
+                viz.Category = _categoryColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+                viz.Value = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+            }
+            else if (DraggedVizType == "scatter")
+            {
+                if (_numericColumns.Count >= 2)
+                {
+                    viz.XAxis = _numericColumns[0];
+                    viz.YAxis = _numericColumns[1];
+                }
+                else
+                {
+                    viz.XAxis = AvailableDataColumns.First();
+                    viz.YAxis = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.Last();
+                }
+            }
+        }
+
+        // Remove existing visualization at this position in this scene
+        var existingViz = GetVisualizationAtPosition(position);
+        if (existingViz != null)
+        {
+            _visualizations.Remove(existingViz);
+        }
+
+        // Add the new visualization
+        _visualizations.Add(viz);
+
+        // Reset drag state
+        DraggedVizType = string.Empty;
+        HighlightedDropzone = -1;
+
+        // Refresh UI
+        StateHasChanged();
+
+        // Render the visualization after the UI updates
+        await Task.Delay(10);
+        await RenderVisualization(viz);
+
+        // Animate the new visualization
+        await JSRuntime.InvokeVoidAsync("storyCanvas.animateNewVisualization", viz.Id);
+    }
+
+    private string GetDefaultTitle(string vizType)
+    {
+        return vizType switch
+        {
+            "bar" => "Bar Chart",
+            "line" => "Line Chart",
+            "pie" => "Pie Chart",
+            "scatter" => "Scatter Plot",
+            "map" => "Map Visualization",
+            "text" => "Text Block",
+            "heatmap" => "Heat Map",
+            "gauge" => "Gauge Chart",
+            _ => "Visualization"
+        };
+    }
+
+    private async Task RenderVisualization(Visualization viz)
+    {
+        if (!_jsInitialized)
+            return;
+
+        // Serialize data and visualization config
+        var dataJson = JsonSerializer.Serialize(_currentData);
+        var vizConfig = JsonSerializer.Serialize(viz);
+
+        // Render visualization on the client
+        await JSRuntime.InvokeVoidAsync("storyCanvas.renderVisualization", viz.Id, viz.Type, dataJson, vizConfig);
+    }
+
+    // Scene management
+    private void SwitchScene(string sceneId)
+    {
+        CurrentScene = sceneId;
+
+        // Re-render current scene's visualizations
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(10); // Small delay to allow UI to update
+            await InvokeAsync(StateHasChanged);
+
+            // Re-render visualizations
+            foreach (var viz in Visualizations.Where(v => v.SceneId == CurrentScene))
+            {
+                await RenderVisualization(viz);
+            }
+        });
+    }
+
+    private void AddNewScene()
+    {
+        var sceneId = $"scene-{_scenes.Count + 1}";
+        var sceneName = $"Scene {_scenes.Count + 1}";
+
+        _scenes.Add(new StoryScene
+            {
+                Id = sceneId,
+                Name = sceneName,
+                Icon = "fas fa-palette"
+            });
+
+        SwitchScene(sceneId);
+    }
+
+    // Visualization management
+    private Visualization GetVisualizationAtPosition(int position)
+    {
+        return _visualizations.FirstOrDefault(v => v.SceneId == CurrentScene && v.Position == position);
+    }
+
+    private void EditVisualization(string vizId)
+    {
+        var viz = _visualizations.FirstOrDefault(v => v.Id == vizId);
+        if (viz == null)
+            return;
+
+        SelectedVisualization = viz;
+        ShowVizEditDialog = true;
+    }
+
+    private async Task RemoveVisualization(string vizId)
+    {
+        var viz = _visualizations.FirstOrDefault(v => v.Id == vizId);
+        if (viz == null)
+            return;
+
+        // Animate removal
+        await JSRuntime.InvokeVoidAsync("storyCanvas.animateRemoveVisualization", vizId);
+
+        // Wait for animation to complete
+        await Task.Delay(300);
+
+        _visualizations.Remove(viz);
+        StateHasChanged();
+    }
+
+    private async Task SaveVisualizationChanges()
+    {
+        if (SelectedVisualization == null)
+            return;
+
+        ShowVizEditDialog = false;
+
+        // Re-render visualization with new settings
+        await RenderVisualization(SelectedVisualization);
+    }
+
+    // Title management
+    private void SaveTitle()
+    {
+        ShowTitleDialog = false;
+    }
+
+    // Insight management
+    private async Task AnimateRandomInsight()
+    {
+        if (_insights.Count == 0 || !_jsInitialized)
+            return;
+
+        await InvokeAsync(async () =>
+        {
+            // Pick a random insight to animate
+            var random = new Random();
+            var insightIndex = random.Next(0, _insights.Count);
+
+            // Animate the insight using JavaScript
+            await JSRuntime.InvokeVoidAsync("storyCanvas.pulseInsight", insightIndex);
+        });
+    }
+
+    private void ApplyInsight(Insight insight)
+    {
+        // For demo purposes, just show a toast notification
+        ToastService.ShowInfo($"Applied insight: {insight.Description}");
+    }
+
+    // AI Insights generation
+    private async Task GenerateAIInsights()
+    {
+        IsAIThinking = true;
+
+        try
+        {
+            // Simulate AI processing
+            await Task.Delay(3000);
+
+            // Create new insights
+            var newInsights = new List<Insight>
+                {
+                    new Insight
+                    {
+                        Type = "AI Suggestion",
+                        Description = "Consider adding a breakdown of costs by department to better understand expense distribution.",
+                        Icon = "fas fa-wand-magic-sparkles",
+                        IsSuggestion = true
+                    },
+                    new Insight
+                    {
+                        Type = "Opportunity",
+                        Description = "Based on current trends, Product Y has potential for 18% growth in Q3.",
+                        Icon = "fas fa-bullseye",
+                        IsSuggestion = false
+                    }
+                };
+
+            // Add new insights with animation
+            IsAIThinking = false;
+            await InvokeAsync(StateHasChanged);
+
+            foreach (var insight in newInsights)
+            {
+                _insights.Add(insight);
+
+                await Task.Delay(200);
+                await InvokeAsync(StateHasChanged);
+
+                // Animate the new insight
+                await JSRuntime.InvokeVoidAsync("storyCanvas.animateNewInsight", _insights.Count - 1);
+            }
+
+            ToastService.ShowSuccess("AI analysis complete! New insights generated.");
+        }
+        catch (Exception ex)
+        {
+            IsAIThinking = false;
+            ToastService.ShowError($"Error generating insights: {ex.Message}");
+        }
+    }
+
+    // Presentation mode
+    private void StartPresentation()
+    {
+        IsPresentationMode = true;
+        CurrentSlide = 0;
+
+        // Update presentation slides with current state
+        // TODO: In a real implementation, this would create slides
+        // based on the current visualizations and insights
+
+        // Trigger transition animation
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(10);
+            await JSRuntime.InvokeVoidAsync("storyCanvas.startPresentationMode");
+
+            // Render current slide
+            var slideData = _currentData;
+            var slideDataJson = JsonSerializer.Serialize(slideData);
+
+            await JSRuntime.InvokeVoidAsync("storyCanvas.renderPresentationSlide", CurrentSlide, slideDataJson);
+        });
+    }
+
+    private void EndPresentation()
+    {
+        IsPresentationMode = false;
+
+        // Trigger transition animation
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(10);
+            await JSRuntime.InvokeVoidAsync("storyCanvas.endPresentationMode");
+        });
+    }
+
+    private async Task NextSlide()
+    {
+        if (CurrentSlide >= PresentationSlides.Count - 1)
+            return;
+
+        await JSRuntime.InvokeVoidAsync("storyCanvas.transitionToNextSlide");
+        CurrentSlide++;
+
+        // Render current slide
+        var slideData = _currentData;
+        var slideDataJson = JsonSerializer.Serialize(slideData);
+
+        await JSRuntime.InvokeVoidAsync("storyCanvas.renderPresentationSlide", CurrentSlide, slideDataJson);
+    }
+
+    private async Task PrevSlide()
+    {
+        if (CurrentSlide <= 0)
+            return;
+
+        await JSRuntime.InvokeVoidAsync("storyCanvas.transitionToPrevSlide");
+        CurrentSlide--;
+
+        // Render current slide
+        var slideData = _currentData;
+        var slideDataJson = JsonSerializer.Serialize(slideData);
+
+        await JSRuntime.InvokeVoidAsync("storyCanvas.renderPresentationSlide", CurrentSlide, slideDataJson);
+    }
+
+    // Story save/load
+    private void SaveStory()
+    {
+        // This would save the story to the server
+        // For demo purposes, just show a toast
+        ToastService.ShowSuccess("Story saved successfully!");
+    }
+
+    [JSInvokable]
+    public void HandleKeyDown(string key)
+    {
+        if (IsPresentationMode)
+        {
+            if (key == "ArrowRight" || key == " ")
+            {
+                _ = NextSlide();
+            }
+            else if (key == "ArrowLeft")
+            {
+                _ = PrevSlide();
+            }
+            else if (key == "Escape")
+            {
+                EndPresentation();
+            }
+
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        _objRef?.Dispose();
+        _insightAnimationTimer?.Dispose();
+    }
+
+    // Model classes
+    public class StoryScene
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Icon { get; set; }
+    }
+
+    public class Visualization
+    {
+        public string Id { get; set; }
+        public string Type { get; set; }
+        public string SceneId { get; set; }
+        public int Position { get; set; }
+        public string Title { get; set; }
+
+        // Chart-specific properties
+        public string XAxis { get; set; }
+        public string YAxis { get; set; }
+        public string Category { get; set; }
+        public string Value { get; set; }
+        public bool ShowLegend { get; set; } = true;
+        public bool ShowTooltips { get; set; } = true;
+        public bool ShowGrid { get; set; } = true;
+        public string ColorScheme { get; set; } = "default";
+    }
+
+    public class Insight
+    {
+        public string Type { get; set; }
+        public string Description { get; set; }
+        public string Icon { get; set; }
+        public bool IsSuggestion { get; set; }
+    }
+
+    public class PresentationSlide
+    {
+        public string Id { get; set; }
+        public int SlideIndex { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string SceneId { get; set; }
+    }
+
+    public class VizPaletteItem
+    {
+        public string Type { get; set; }
+        public string Name { get; set; }
+        public string Icon { get; set; }
+        public string PreviewSvg { get; set; }
+    }
+
+                                }

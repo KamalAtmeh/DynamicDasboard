@@ -1249,6 +1249,29 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSchemaAnalysisAsync(System.String)">
             <inheritdoc/>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService">
+            <summary>
+            Implementation of ILLMService using Databricks API
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateSqlWithExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateSchemaAnalysisAsync(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateTermSuggestionsAsync(System.String)">
+            <inheritdoc/>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
             <summary>
             Implementation of ILlmService using DeepSeek API
