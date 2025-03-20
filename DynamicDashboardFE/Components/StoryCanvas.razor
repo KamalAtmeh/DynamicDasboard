@@ -28,9 +28,9 @@
             @foreach (var vizType in AvailableVisualizations)
             {
                 <div class="viz-item @(DraggedVizType == vizType.Type ? "dragging" : "")"
-                     draggable="true"
-                     @ondragstart="@(e => HandleDragStart(e, vizType.Type))"
-                     @key="vizType.Type">
+                draggable="true"
+                @ondragstart="@(e => HandleDragStart(e, vizType.Type))"
+                @key="vizType.Type">
                     <h3><i class="@vizType.Icon"></i> @vizType.Name</h3>
                     <div class="viz-preview">
                         @((MarkupString)vizType.PreviewSvg)
@@ -52,7 +52,7 @@
                 @foreach (var scene in Scenes)
                 {
                     <div class="scene-tab @(CurrentScene == scene.Id ? "active" : "")"
-                         @onclick="() => SwitchScene(scene.Id)">
+                    @onclick="() => SwitchScene(scene.Id)">
                         <i class="@scene.Icon"></i> @scene.Name
                     </div>
                 }
@@ -65,12 +65,12 @@
                 {
                     int position = i;
                     <div class="dropzone @(HighlightedDropzone == position ? "highlight" : "")"
-                         data-position="@position"
+                    data-position="@position"
                     @ondragover:preventDefault
-                         @ondragover="() => HandleDragOver(position)"
-                         @ondragleave="() => HandleDragLeave(position)"
+                    @ondragover="() => HandleDragOver(position)"
+                    @ondragleave="() => HandleDragLeave(position)"
                     @ondrop:preventDefault
-                         @ondrop="() => HandleDrop(position)">
+                    @ondrop="() => HandleDrop(position)">
 
                         @if (GetVisualizationAtPosition(position) == null)
                         {
@@ -107,7 +107,7 @@
             @foreach (var insight in Insights)
             {
                 <div class="insight-card @(insight.IsSuggestion ? "suggestion" : "")"
-                     @onclick="() => ApplyInsight(insight)">
+                @onclick="() => ApplyInsight(insight)">
                     <h3><i class="@insight.Icon"></i> @insight.Type</h3>
                     <p>@insight.Description</p>
                 </div>
@@ -125,7 +125,7 @@
         @foreach (var scene in PresentationSlides)
         {
             <div class="presentation-slide @(CurrentSlide == scene.SlideIndex ? "active" : scene.SlideIndex < CurrentSlide ? "prev" : "")"
-                 data-slide="@scene.Id">
+            data-slide="@scene.Id">
                 <h2>@scene.Title</h2>
                 <p>@scene.Description</p>
                 <div class="presentation-viz" id="@($"presentation-viz-{scene.SlideIndex}")"></div>
@@ -181,7 +181,7 @@
             <div class="form-group">
                 <label for="story-title">Enter a title for your data story:</label>
                 <input type="text" class="form-control" id="story-title"
-                       @bind="StoryTitle" placeholder="e.g., Q2 Sales Analysis" />
+                @bind="StoryTitle" placeholder="e.g., Q2 Sales Analysis" />
             </div>
         </div>
         <div class="dialog-footer">
@@ -210,7 +210,7 @@
             <div class="form-group">
                 <label for="viz-title">Title:</label>
                 <input type="text" class="form-control" id="viz-title"
-                       @bind="SelectedVisualization.Title" />
+                @bind="SelectedVisualization.Title" />
             </div>
 
             <div class="form-group">
@@ -219,7 +219,7 @@
                     @foreach (var vizType in AvailableVisualizations)
                     {
                         <div class="chart-type-option @(SelectedVisualization.Type == vizType.Type ? "selected" : "")"
-                             @onclick="() => SelectedVisualization.Type = vizType.Type">
+                        @onclick="() => SelectedVisualization.Type = vizType.Type">
                             <i class="@vizType.Icon"></i>
                             <span>@vizType.Name</span>
                         </div>
@@ -287,8 +287,8 @@
     </div>
 }
 
-                                @code
-                                {
+@code
+{
     private bool _jsInitialized = false;
     private DotNetObjectReference<StoryCanvas> _objRef;
     private string _currentSceneId = "intro";
@@ -338,6 +338,7 @@
     public string StoryTitle { get => _storyTitle; set => _storyTitle = value; }
     public string DraggedVizType { get => _draggedVizType; set => _draggedVizType = value; }
     public double ProgressPercentage => (_currentSlide + 1) * 100.0 / PresentationSlides.Count;
+    public bool EnableAnimations { get; set; } = true;
 
     // Available data columns
     public List<string> AvailableDataColumns { get; set; } = new();
@@ -455,56 +456,97 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Initialize object reference
-        _objRef = DotNetObjectReference.Create(this);
+        try
+        {
+            // Initialize object reference
+            _objRef = DotNetObjectReference.Create(this);
 
-        // Initialize with default scenes
-        _scenes.Add(new StoryScene { Id = "intro", Name = "Introduction", Icon = "fas fa-door-open" });
-        _scenes.Add(new StoryScene { Id = "analysis", Name = "Analysis", Icon = "fas fa-chart-column" });
-        _scenes.Add(new StoryScene { Id = "insights", Name = "Insights", Icon = "fas fa-lightbulb" });
-        _scenes.Add(new StoryScene { Id = "conclusion", Name = "Conclusion", Icon = "fas fa-flag-checkered" });
+            // Initialize with default scenes
+            _scenes.Add(new StoryScene { Id = "intro", Name = "Introduction", Icon = "fas fa-door-open" });
+            _scenes.Add(new StoryScene { Id = "analysis", Name = "Analysis", Icon = "fas fa-chart-column" });
+            _scenes.Add(new StoryScene { Id = "insights", Name = "Insights", Icon = "fas fa-lightbulb" });
+            _scenes.Add(new StoryScene { Id = "conclusion", Name = "Conclusion", Icon = "fas fa-flag-checkered" });
 
-        // Initialize sample insights
-        InitializeSampleInsights();
+            // Initialize sample insights
+            InitializeSampleInsights();
 
-        // Initialize presentation slides
-        InitializePresentationSlides();
+            // Initialize presentation slides
+            InitializePresentationSlides();
 
-        // Set up animation timer
-        _insightAnimationTimer = new System.Timers.Timer(8000);
-        _insightAnimationTimer.Elapsed += async (s, e) => await AnimateRandomInsight();
-        _insightAnimationTimer.AutoReset = true;
-        _insightAnimationTimer.Start();
+            // Set up animation timer
+            _insightAnimationTimer = new System.Timers.Timer(8000);
+            _insightAnimationTimer.Elapsed += async (s, e) => await AnimateRandomInsight();
+            _insightAnimationTimer.AutoReset = true;
+            _insightAnimationTimer.Start();
 
-        // Load sample data
-        await LoadSampleData();
+            // Load sample data
+            await LoadSampleData();
+        }
+        catch (Exception ex)
+        { 
+            IsLoading = false;
+            LoadingMessage = "Error initializing: " + ex.Message;
+            ToastService.ShowError("Error initializing the visualization component.");
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Initialize the JavaScript interop
-            await JSRuntime.InvokeVoidAsync("storyCanvas.initialize", _objRef);
-            _jsInitialized = true;
+            try
+            {
+                // Check if JS is available
+                var jsAvailable = await JSRuntime.InvokeAsync<bool>("eval", "typeof window.storyCanvas !== 'undefined'");
 
-            // Add a small delay to simulate loading
-            await Task.Delay(1500);
+                if (!jsAvailable)
+                {
+                    IsLoading = false;
+                    LoadingMessage = "JavaScript library not loaded. Please refresh the page.";
+                    ToastService.ShowError("Failed to load visualization libraries.");
+                    return;
+                }
 
-            // Hide the loading overlay with animation
-            await JSRuntime.InvokeVoidAsync("storyCanvas.hideLoadingOverlay");
-            IsLoading = false;
+                // Initialize the JavaScript interop
+                await JSRuntime.InvokeVoidAsync("storyCanvas.initialize", _objRef);
+                _jsInitialized = true;
 
-            // Animate the initial elements
-            await JSRuntime.InvokeVoidAsync("storyCanvas.animateInitialElements");
+                // Set animation preferences based on user settings or device capability
+                await JSRuntime.InvokeVoidAsync("storyCanvas.setAnimationsEnabled", EnableAnimations);
+
+                // Add a small delay to simulate loading
+                await Task.Delay(1500);
+
+                // Hide the loading overlay with animation
+                await JSRuntime.InvokeVoidAsync("storyCanvas.hideLoadingOverlay");
+                IsLoading = false;
+
+                // Animate the initial elements
+                await JSRuntime.InvokeVoidAsync("storyCanvas.animateInitialElements");
+            }
+            catch (Exception ex)
+            {
+                _jsInitialized = false;
+                IsLoading = false;
+                LoadingMessage = "Error initializing: " + ex.Message;
+                ToastService.ShowError("Failed to initialize visualization component.");
+                Console.Error.WriteLine($"StoryCanvas initialization error: {ex.Message}");
+            }
         }
 
-        // Re-render visualizations when needed
+        // Only try to render visualizations if JS is initialized
         if (_jsInitialized && Visualizations.Any())
         {
-            foreach (var viz in Visualizations.Where(v => v.SceneId == CurrentScene))
+            try
             {
-                await RenderVisualization(viz);
+                foreach (var viz in Visualizations.Where(v => v.SceneId == CurrentScene))
+                {
+                    await RenderVisualization(viz);
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Error rendering visualizations: {ex.Message}");
             }
         }
     }
@@ -894,12 +936,20 @@
         if (!_jsInitialized)
             return;
 
-        // Serialize data and visualization config
-        var dataJson = JsonSerializer.Serialize(_currentData);
-        var vizConfig = JsonSerializer.Serialize(viz);
+        try
+        {
+            // Serialize data and visualization config
+            var dataJson = JsonSerializer.Serialize(_currentData);
+            var vizConfig = JsonSerializer.Serialize(viz);
 
-        // Render visualization on the client
-        await JSRuntime.InvokeVoidAsync("storyCanvas.renderVisualization", viz.Id, viz.Type, dataJson, vizConfig);
+            // Render visualization on the client
+            await JSRuntime.InvokeVoidAsync("storyCanvas.renderVisualization", viz.Id, viz.Type, dataJson, vizConfig);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error rendering visualization {viz.Id}: {ex.Message}");
+            // Don't show toast for every visualization to avoid UI clutter
+        }
     }
 
     // Scene management
@@ -1159,8 +1209,42 @@
 
     public void Dispose()
     {
-        _objRef?.Dispose();
-        _insightAnimationTimer?.Dispose();
+        try
+        {
+            // Stop and dispose timer
+            if (_insightAnimationTimer != null)
+            {
+                _insightAnimationTimer.Stop();
+                _insightAnimationTimer.Elapsed -= async (s, e) => await AnimateRandomInsight();
+                _insightAnimationTimer.Dispose();
+            }
+
+            // Clean up charts if possible
+            if (_jsInitialized)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        foreach (var viz in _visualizations)
+                        {
+                            await JSRuntime.InvokeVoidAsync("storyCanvas.cleanupChart", viz.Id);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors during cleanup
+                    }
+                }).Wait(500); // Give it a short time to complete
+            }
+
+            // Dispose .NET object reference
+            _objRef?.Dispose();
+        }
+        catch
+        {
+            // Suppress exceptions in Dispose
+        }
     }
 
     // Model classes

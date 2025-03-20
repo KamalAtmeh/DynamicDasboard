@@ -1,7 +1,64 @@
 ﻿/**
  * StoryCanvas.js
  * JavaScript module for the Data Storytelling Canvas component
+ * Uses ApexCharts for primary visualizations with D3.js for enhanced animations
  */
+// Check if window is defined to avoid errors in server-side environments
+//if (typeof window !== 'undefined') {
+//    // Create the namespace if it doesn't exist
+//    window.storyCanvas = window.storyCanvas || {};
+
+//    // Define the initialize function that is called from Blazor
+//    window.storyCanvas.initialize = function (dotNetHelper) {
+//        console.log("StoryCanvas initialized with .NET helper:", dotNetHelper);
+//        // Store the .NET helper for callbacks
+//        window.storyCanvas._dotNetHelper = dotNetHelper;
+        
+//        // Add a debug statement to confirm initialization
+//        console.log("StoryCanvas initialization complete");
+        
+//        return true;
+//    };
+
+//    // Add the setAnimationsEnabled function
+//    window.storyCanvas.setAnimationsEnabled = function (enabled) {
+//        console.log("Animations enabled:", enabled);
+//        // Implementation will come later
+//        return true;
+//    };
+
+//    // Add the hideLoadingOverlay function
+//    window.storyCanvas.hideLoadingOverlay = function () {
+//        console.log("Hiding loading overlay");
+//        // Find and hide loading overlay
+//        const overlay = document.querySelector('.loading-overlay');
+//        if (overlay) {
+//            overlay.style.opacity = '0';
+//            overlay.style.transition = 'opacity 0.5s ease';
+            
+//            setTimeout(() => {
+//                overlay.style.display = 'none';
+//            }, 500);
+//        }
+//        return true;
+//    };
+
+//    // Add the animateInitialElements function
+//    window.storyCanvas.animateInitialElements = function () {
+//        console.log("Animating initial elements");
+//        // Simple implementation for now
+//        return true;
+//    };
+
+//    // Add the renderVisualization function stub
+//    window.storyCanvas.renderVisualization = function (id, type, dataJson, configJson) {
+//        console.log("Rendering visualization:", id, type);
+//        console.log("Data:", dataJson);
+//        console.log("Config:", configJson);
+//        // Simple implementation for debugging
+//        return true;
+//    };
+//}
 
 // Create a namespace to avoid polluting the global scope
 window.storyCanvas = (function () {
@@ -10,6 +67,7 @@ window.storyCanvas = (function () {
     let chartInstances = {};
     let darkModeEnabled = false;
     let isDragging = false;
+    let d3Animations = {};
 
     // Color schemes for charts
     const colorSchemes = {
@@ -20,21 +78,6 @@ window.storyCanvas = (function () {
         earth: ['#b6c197', '#a3b78e', '#90ad86', '#7da37d', '#6a9975', '#578f6c', '#448564', '#307b5b'],
     };
 
-    // Chart.js defaults
-    function setChartDefaults() {
-        Chart.defaults.font.family = "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-        Chart.defaults.font.size = 12;
-        Chart.defaults.color = darkModeEnabled ? '#e9ecef' : '#495057';
-        Chart.defaults.plugins.tooltip.backgroundColor = darkModeEnabled ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)';
-        Chart.defaults.plugins.tooltip.titleColor = darkModeEnabled ? '#212529' : '#fff';
-        Chart.defaults.plugins.tooltip.bodyColor = darkModeEnabled ? '#495057' : '#fff';
-        Chart.defaults.plugins.tooltip.borderColor = darkModeEnabled ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-        Chart.defaults.plugins.tooltip.borderWidth = 1;
-        Chart.defaults.plugins.tooltip.displayColors = true;
-        Chart.defaults.plugins.tooltip.padding = 10;
-        Chart.defaults.plugins.tooltip.cornerRadius = 6;
-    }
-
     /**
      * Initializes the StoryCanvas
      * @param {object} helper - The .NET helper object for callbacks
@@ -42,25 +85,21 @@ window.storyCanvas = (function () {
     function initialize(helper) {
         dotNetHelper = helper;
 
-        // Load Chart.js library dynamically
-        function waitForChart() {
-            if (typeof Chart !== 'undefined') {
-                setChartDefaults();
+        // Load ApexCharts and D3 libraries dynamically
+        function waitForLibraries() {
+            if (typeof ApexCharts !== 'undefined' && typeof d3 !== 'undefined') {
                 setupDragAndDrop();
                 document.addEventListener('keydown', handleKeyDown);
                 window.addEventListener('resize', handleResize);
-                console.log('StoryCanvas initialized');
+                console.log('StoryCanvas initialized with ApexCharts and D3');
                 return true;
             } else {
-                console.log('Chart not available yet, retrying...');
-                setTimeout(waitForChart, 100);
+                console.log('Libraries not available yet, retrying...');
+                setTimeout(waitForLibraries, 100);
             }
         }
 
-        waitForChart();
-       
-            setChartDefaults();
-        
+        waitForLibraries();
 
         // Set up drag and drop event listeners
         setupDragAndDrop();
@@ -71,10 +110,36 @@ window.storyCanvas = (function () {
         // Set up resize listener for responsive charts
         window.addEventListener('resize', handleResize);
 
-        console.log('StoryCanvas initialized');
+        console.log('StoryCanvas initialization started');
 
         return true;
     }
+
+    function setAnimationsEnabled(enabled) {
+        // This would be added to your JavaScript file
+        const animationSettings = {
+            enabled: enabled,
+            easing: 'easeinout',
+            speed: enabled ? 800 : 10, // Fast speed when disabled (effectively no animation)
+        };
+
+        // Update all existing charts
+        for (const id in chartInstances) {
+            if (chartInstances.hasOwnProperty(id) && chartInstances[id].chart) {
+                chartInstances[id].chart.updateOptions({
+                    chart: {
+                        animations: animationSettings
+                    }
+                });
+            }
+        }
+    }
+
+    // Add to public API
+    return {
+        // Existing methods...
+        setAnimationsEnabled,
+    };
 
     /**
      * Sets up drag and drop event listeners
@@ -100,7 +165,13 @@ window.storyCanvas = (function () {
             // Resize all active charts
             for (const id in chartInstances) {
                 if (chartInstances.hasOwnProperty(id)) {
-                    chartInstances[id].resize();
+                    if (chartInstances[id].chart) {
+                        chartInstances[id].chart.updateOptions({
+                            chart: {
+                                width: '100%'
+                            }
+                        });
+                    }
                 }
             }
         }, 250);
@@ -138,17 +209,21 @@ window.storyCanvas = (function () {
 
         // Destroy existing chart if it exists
         if (chartInstances[id]) {
-            chartInstances[id].destroy();
+            if (chartInstances[id].chart) {
+                chartInstances[id].chart.destroy();
+            }
             delete chartInstances[id];
         }
 
         // Clear container
         container.innerHTML = '';
 
-        // Create canvas element
-        const canvas = document.createElement('canvas');
-        canvas.id = `chart-${id}`;
-        container.appendChild(canvas);
+        // Create chart container element
+        const chartContainer = document.createElement('div');
+        chartContainer.id = `chart-${id}`;
+        chartContainer.style.width = '100%';
+        chartContainer.style.height = '100%';
+        container.appendChild(chartContainer);
 
         // Select chart colors
         const colors = colorSchemes[config.colorScheme || 'default'];
@@ -185,11 +260,10 @@ window.storyCanvas = (function () {
     }
 
     /**
-     * Renders a bar chart
+     * Renders a bar chart using ApexCharts
      */
     function renderBarChart(id, data, config, colors) {
-        const canvas = document.getElementById(`chart-${id}`);
-        const ctx = canvas.getContext('2d');
+        const chartElement = document.getElementById(`chart-${id}`);
 
         // Extract data using config properties
         const xAxis = config.xAxis || Object.keys(data[0])[0];
@@ -214,65 +288,193 @@ window.storyCanvas = (function () {
             chartData = chartData.slice(0, 15);
         }
 
-        // Create chart configuration
-        const chartConfig = {
-            type: 'bar',
-            data: {
-                labels: chartData.map(item => item[xAxis]),
-                datasets: [{
-                    label: yAxis,
-                    data: chartData.map(item => item[yAxis]),
-                    backgroundColor: colors[0],
-                    borderColor: darkenColor(colors[0], 0.2),
-                    borderWidth: 1
-                }]
+        // Create chart options
+        const options = {
+            series: [{
+                name: yAxis,
+                data: chartData.map(item => item[yAxis])
+            }],
+            chart: {
+                type: 'bar',
+                height: '100%',
+                fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 150
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 350
+                    }
+                },
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                },
+                background: 'transparent'
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: config.showLegend !== false,
-                        position: 'top',
-                    },
-                    tooltip: {
-                        enabled: config.showTooltips !== false
-                    },
-                    title: {
-                        display: false,
-                        text: config.title || ''
+            colors: [colors[0]],
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    distributed: false,
+                    dataLabels: {
+                        position: 'top'
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            display: config.showGrid !== false
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeOutQuart'
                 }
+            },
+            dataLabels: {
+                enabled: chartData.length <= 7,
+                formatter: function (val) {
+                    return val.toLocaleString();
+                },
+                offsetY: -20,
+                style: {
+                    fontSize: '12px',
+                    colors: ["#304758"]
+                }
+            },
+            grid: {
+                show: config.showGrid !== false,
+                borderColor: '#e0e0e0',
+                strokeDashArray: 2
+            },
+            xaxis: {
+                categories: chartData.map(item => item[xAxis]),
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    }
+                },
+                axisBorder: {
+                    show: true
+                },
+                axisTicks: {
+                    show: true
+                },
+                title: {
+                    text: xAxis,
+                    style: {
+                        fontSize: '12px',
+                        fontWeight: 600
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    },
+                    style: {
+                        fontSize: '12px'
+                    }
+                },
+                title: {
+                    text: yAxis,
+                    style: {
+                        fontSize: '12px',
+                        fontWeight: 600
+                    }
+                }
+            },
+            tooltip: {
+                enabled: config.showTooltips !== false,
+                y: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                }
+            },
+            legend: {
+                show: config.showLegend !== false,
+                position: 'top',
+                fontSize: '13px'
+            },
+            theme: {
+                mode: darkModeEnabled ? 'dark' : 'light'
             }
         };
 
         // Create and store the chart
-        chartInstances[id] = new Chart(ctx, chartConfig);
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+
+        // Store the chart instance
+        chartInstances[id] = {
+            chart: chart,
+            type: 'bar'
+        };
+
+        // Add D3 animation enhancement
+        enhanceWithD3Animation(id, chartElement, chartData, xAxis, yAxis);
     }
 
     /**
-     * Renders a line chart
+     * Enhances the chart with D3 animations
+     */
+    function enhanceWithD3Animation(id, element, data, xKey, yKey) {
+        // Clean up any existing D3 animations
+        if (d3Animations[id]) {
+            d3Animations[id].cleanup();
+            delete d3Animations[id];
+        }
+
+        // Create hover effect for the bars using D3
+        try {
+            setTimeout(() => {
+                const bars = d3.select(element).selectAll('.apexcharts-bar-series .apexcharts-bar-area');
+
+                const originalColors = [];
+
+                bars.each(function () {
+                    originalColors.push(d3.select(this).attr('fill'));
+                });
+
+                bars.on('mouseenter', function (event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(300)
+                        .attr('filter', 'url(#drop-shadow)')
+                        .attr('stroke-width', 2)
+                        .attr('stroke', '#ffffff');
+                })
+                    .on('mouseleave', function () {
+                        d3.select(this)
+                            .transition()
+                            .duration(300)
+                            .attr('filter', null)
+                            .attr('stroke-width', 0);
+                    });
+
+                // Store animation info for cleanup
+                d3Animations[id] = {
+                    cleanup: function () {
+                        bars.on('mouseenter', null).on('mouseleave', null);
+                    }
+                };
+            }, 1000); // Wait for ApexCharts to finish its rendering
+        } catch (e) {
+            console.log('D3 enhancement skipped', e);
+        }
+    }
+
+    /**
+     * Renders a line chart using ApexCharts
      */
     function renderLineChart(id, data, config, colors) {
-        const canvas = document.getElementById(`chart-${id}`);
-        const ctx = canvas.getContext('2d');
+        const chartElement = document.getElementById(`chart-${id}`);
 
         // Extract data using config properties
         const xAxis = config.xAxis || Object.keys(data[0])[0];
@@ -292,71 +494,178 @@ window.storyCanvas = (function () {
             return String(a[xAxis]).localeCompare(String(b[xAxis]));
         });
 
-        // Create chart configuration
-        const chartConfig = {
-            type: 'line',
-            data: {
-                labels: chartData.map(item => item[xAxis]),
-                datasets: [{
-                    label: yAxis,
-                    data: chartData.map(item => item[yAxis]),
-                    backgroundColor: addAlpha(colors[0], 0.2),
-                    borderColor: colors[0],
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: colors[0],
-                    pointBorderColor: '#fff',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: config.showLegend !== false,
-                        position: 'top',
-                    },
-                    tooltip: {
-                        enabled: config.showTooltips !== false
-                    },
-                    title: {
-                        display: false,
-                        text: config.title || ''
-                    }
+        // Create chart options
+        const options = {
+            series: [{
+                name: yAxis,
+                data: chartData.map(item => item[yAxis])
+            }],
+            chart: {
+                type: 'line',
+                height: '100%',
+                fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                dropShadow: {
+                    enabled: true,
+                    color: colors[0],
+                    top: 3,
+                    left: 2,
+                    blur: 4,
+                    opacity: 0.2
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: {
-                            display: config.showGrid !== false
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
+                toolbar: {
+                    show: true
                 },
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutQuart'
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 1000,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 150
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 550
+                    }
                 }
+            },
+            colors: [colors[0]],
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shade: 'dark',
+                    gradientToColors: [colors[1] || colors[0]],
+                    shadeIntensity: 1,
+                    type: 'horizontal',
+                    opacityFrom: 0.7,
+                    opacityTo: 0.2
+                },
+            },
+            markers: {
+                size: 5,
+                colors: [colors[0]],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 8,
+                }
+            },
+            grid: {
+                show: config.showGrid !== false,
+                borderColor: '#e0e0e0',
+                strokeDashArray: 2,
+                position: 'back'
+            },
+            xaxis: {
+                categories: chartData.map(item => item[xAxis]),
+                title: {
+                    text: xAxis
+                }
+            },
+            yaxis: {
+                title: {
+                    text: yAxis
+                },
+                labels: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                }
+            },
+            tooltip: {
+                enabled: config.showTooltips !== false,
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                }
+            },
+            legend: {
+                show: config.showLegend !== false,
+                position: 'top'
+            },
+            theme: {
+                mode: darkModeEnabled ? 'dark' : 'light'
             }
         };
 
         // Create and store the chart
-        chartInstances[id] = new Chart(ctx, chartConfig);
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+
+        chartInstances[id] = {
+            chart: chart,
+            type: 'line'
+        };
+
+        // Add D3 animation enhancement for line path
+        enhanceLineChartWithD3(id, chartElement, chartData, xAxis, yAxis);
     }
 
     /**
-     * Renders a pie chart
+     * Enhances a line chart with D3 animations
+     */
+    function enhanceLineChartWithD3(id, element, data, xKey, yKey) {
+        // Clean up any existing D3 animations
+        if (d3Animations[id]) {
+            d3Animations[id].cleanup();
+            delete d3Animations[id];
+        }
+
+        // Add path animation
+        setTimeout(() => {
+            try {
+                const linePath = d3.select(element).select('.apexcharts-line-series .apexcharts-series path');
+                const totalLength = linePath.node().getTotalLength();
+
+                // Set up initial state
+                linePath
+                    .attr("stroke-dasharray", totalLength)
+                    .attr("stroke-dashoffset", totalLength)
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easeLinear)
+                    .attr("stroke-dashoffset", 0);
+
+                // Add interactive effects
+                const dots = d3.select(element).selectAll('.apexcharts-series-markers circle');
+
+                dots.on('mouseenter', function () {
+                    d3.select(this)
+                        .transition()
+                        .duration(300)
+                        .attr('r', 8);
+                })
+                    .on('mouseleave', function () {
+                        d3.select(this)
+                            .transition()
+                            .duration(300)
+                            .attr('r', 5);
+                    });
+
+                // Store animation info for cleanup
+                d3Animations[id] = {
+                    cleanup: function () {
+                        dots.on('mouseenter', null).on('mouseleave', null);
+                    }
+                };
+            } catch (e) {
+                console.log('D3 line enhancement skipped', e);
+            }
+        }, 500);
+    }
+
+    /**
+     * Renders a pie chart using ApexCharts
      */
     function renderPieChart(id, data, config, colors) {
-        const canvas = document.getElementById(`chart-${id}`);
-        const ctx = canvas.getContext('2d');
+        const chartElement = document.getElementById(`chart-${id}`);
 
         // Extract data using config properties
         const category = config.category || Object.keys(data[0])[0];
@@ -369,128 +678,317 @@ window.storyCanvas = (function () {
         const labels = Object.keys(grouped);
         const values = Object.values(grouped);
 
-        // Create chart configuration
-        const chartConfig = {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: colors.slice(0, labels.length),
-                    borderColor: 'white',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: config.showLegend !== false,
-                        position: 'right',
-                    },
-                    tooltip: {
-                        enabled: config.showTooltips !== false
-                    },
-                    title: {
-                        display: false,
-                        text: config.title || ''
-                    }
+        // Create chart options
+        const options = {
+            series: values,
+            chart: {
+                type: 'pie',
+                height: '100%',
+                fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                toolbar: {
+                    show: true
                 },
-                animation: {
-                    animateRotate: true,
-                    animateScale: true,
-                    duration: 1500,
-                    easing: 'easeOutQuart'
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 150
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 350
+                    }
                 }
+            },
+            colors: colors,
+            labels: labels,
+            legend: {
+                show: config.showLegend !== false,
+                position: 'right',
+                fontSize: '13px',
+                formatter: function (seriesName, opts) {
+                    return seriesName + ":  " + opts.w.globals.series[opts.seriesIndex].toLocaleString();
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '0%'
+                    },
+                    expandOnClick: true
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val, opts) {
+                    return opts.w.globals.labels[opts.seriesIndex] + ": " + val.toFixed(1) + "%";
+                },
+                style: {
+                    fontSize: '12px',
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 'normal'
+                },
+                dropShadow: {
+                    enabled: true
+                }
+            },
+            tooltip: {
+                enabled: config.showTooltips !== false,
+                y: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                }
+            },
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        height: 300
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }],
+            theme: {
+                mode: darkModeEnabled ? 'dark' : 'light'
             }
         };
 
         // Create and store the chart
-        chartInstances[id] = new Chart(ctx, chartConfig);
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+
+        chartInstances[id] = {
+            chart: chart,
+            type: 'pie'
+        };
+
+        // Add D3 enhancements for pie slices
+        enhancePieChartWithD3(id, chartElement, labels, values);
     }
 
     /**
-     * Renders a scatter chart
+     * Enhances a pie chart with D3 animations
+     */
+    function enhancePieChartWithD3(id, element, labels, values) {
+        // Clean up any existing D3 animations
+        if (d3Animations[id]) {
+            d3Animations[id].cleanup();
+            delete d3Animations[id];
+        }
+
+        setTimeout(() => {
+            try {
+                const pieSlices = d3.select(element).selectAll('.apexcharts-pie-series path');
+
+                pieSlices.on('mouseenter', function () {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('transform', 'translate(5, -5) scale(1.03)');
+                })
+                    .on('mouseleave', function () {
+                        d3.select(this)
+                            .transition()
+                            .duration(200)
+                            .attr('transform', 'translate(0, 0) scale(1)');
+                    });
+
+                // Store animation info for cleanup
+                d3Animations[id] = {
+                    cleanup: function () {
+                        pieSlices.on('mouseenter', null).on('mouseleave', null);
+                    }
+                };
+            } catch (e) {
+                console.log('D3 pie enhancement skipped', e);
+            }
+        }, 1000);
+    }
+
+    /**
+     * Renders a scatter chart using ApexCharts
      */
     function renderScatterChart(id, data, config, colors) {
-        const canvas = document.getElementById(`chart-${id}`);
-        const ctx = canvas.getContext('2d');
+        const chartElement = document.getElementById(`chart-${id}`);
 
         // Extract data using config properties
         const xAxis = config.xAxis || Object.keys(data[0])[0];
         const yAxis = config.yAxis || Object.keys(data[0])[1];
 
-        // Create chart configuration
-        const chartConfig = {
-            type: 'scatter',
-            data: {
-                datasets: [{
-                    label: `${xAxis} vs ${yAxis}`,
-                    data: data.map(item => ({
-                        x: item[xAxis],
-                        y: item[yAxis]
-                    })),
-                    backgroundColor: addAlpha(colors[0], 0.7),
-                    borderColor: colors[0],
-                    borderWidth: 1,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: config.showLegend !== false,
-                        position: 'top',
-                    },
-                    tooltip: {
-                        enabled: config.showTooltips !== false
-                    },
-                    title: {
-                        display: false,
-                        text: config.title || ''
-                    }
+        // Prepare data for scatter plot
+        const series = [{
+            name: `${xAxis} vs ${yAxis}`,
+            data: data.map(item => ({
+                x: item[xAxis],
+                y: item[yAxis]
+            }))
+        }];
+
+        // Create chart options
+        const options = {
+            series: series,
+            chart: {
+                type: 'scatter',
+                height: '100%',
+                zoom: {
+                    enabled: true,
+                    type: 'xy'
                 },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: xAxis
-                        },
-                        grid: {
-                            display: config.showGrid !== false
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: yAxis
-                        },
-                        grid: {
-                            display: config.showGrid !== false
-                        }
-                    }
+                toolbar: {
+                    show: true
                 },
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutQuart'
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 150
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 350
+                    }
                 }
+            },
+            colors: [colors[0]],
+            xaxis: {
+                title: {
+                    text: xAxis
+                },
+                tickAmount: 10
+            },
+            yaxis: {
+                title: {
+                    text: yAxis
+                },
+                tickAmount: 7
+            },
+            markers: {
+                size: 6,
+                strokeWidth: 1,
+                hover: {
+                    size: 8
+                }
+            },
+            tooltip: {
+                enabled: config.showTooltips !== false,
+                x: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                },
+                y: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                }
+            },
+            grid: {
+                show: config.showGrid !== false,
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            legend: {
+                show: config.showLegend !== false,
+                position: 'top'
+            },
+            theme: {
+                mode: darkModeEnabled ? 'dark' : 'light'
             }
         };
 
         // Create and store the chart
-        chartInstances[id] = new Chart(ctx, chartConfig);
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+
+        chartInstances[id] = {
+            chart: chart,
+            type: 'scatter'
+        };
+
+        // Add D3 animation enhancements
+        enhanceScatterChartWithD3(id, chartElement, data, xAxis, yAxis);
     }
 
     /**
-     * Renders a heat map
+     * Enhances a scatter chart with D3 animations
+     */
+    function enhanceScatterChartWithD3(id, element, data, xKey, yKey) {
+        // Clean up any existing D3 animations
+        if (d3Animations[id]) {
+            d3Animations[id].cleanup();
+            delete d3Animations[id];
+        }
+
+        setTimeout(() => {
+            try {
+                const points = d3.select(element).selectAll('.apexcharts-series-markers circle');
+
+                // Add entrance animation with randomized delay
+                points.each(function (d, i) {
+                    const point = d3.select(this);
+                    const delay = Math.random() * 500;
+
+                    // Store original radius
+                    const originalRadius = point.attr('r');
+
+                    point
+                        .attr('opacity', 0)
+                        .attr('r', 0)
+                        .transition()
+                        .delay(delay)
+                        .duration(800)
+                        .attr('opacity', 1)
+                        .attr('r', originalRadius);
+                });
+
+                // Add interactive hover effects
+                points.on('mouseenter', function () {
+                    d3.select(this)
+                        .transition()
+                        .duration(300)
+                        .attr('r', 10)
+                        .attr('stroke-width', 2);
+                })
+                    .on('mouseleave', function () {
+                        d3.select(this)
+                            .transition()
+                            .duration(300)
+                            .attr('r', 6)
+                            .attr('stroke-width', 1);
+                    });
+
+                // Store animation info for cleanup
+                d3Animations[id] = {
+                    cleanup: function () {
+                        points.on('mouseenter', null).on('mouseleave', null);
+                    }
+                };
+            } catch (e) {
+                console.log('D3 scatter enhancement skipped', e);
+            }
+        }, 800);
+    }
+
+    /**
+     * Renders a heat map using ApexCharts
      */
     function renderHeatMap(id, data, config, colors) {
-        const container = document.getElementById(`viz-content-${id}`);
-        container.innerHTML = '';
+        const chartElement = document.getElementById(`chart-${id}`);
 
         // Extract data using config properties
         const xAxis = config.xAxis || Object.keys(data[0])[0];
@@ -501,128 +999,166 @@ window.storyCanvas = (function () {
         const xValues = [...new Set(data.map(item => item[xAxis]))].sort();
         const yValues = [...new Set(data.map(item => item[yAxis]))].sort();
 
-        // Create the heatmap grid
-        const heatmapContainer = document.createElement('div');
-        heatmapContainer.className = 'heatmap-container';
-        heatmapContainer.style.display = 'grid';
-        heatmapContainer.style.gridTemplateColumns = `auto ${new Array(xValues.length).fill('1fr').join(' ')}`;
-        heatmapContainer.style.gridTemplateRows = `auto ${new Array(yValues.length).fill('1fr').join(' ')}`;
-        heatmapContainer.style.gap = '1px';
-        heatmapContainer.style.width = '100%';
-        heatmapContainer.style.height = '100%';
+        // Prepare data for heatmap
+        const series = yValues.map(y => {
+            return {
+                name: y,
+                data: xValues.map(x => {
+                    const matchingItem = data.find(item => item[xAxis] === x && item[yAxis] === y);
+                    return {
+                        x: x,
+                        y: y,
+                        value: matchingItem ? matchingItem[value] : 0
+                    };
+                })
+            };
+        });
 
-        // Add x-axis labels (top row)
-        const topLeft = document.createElement('div');
-        topLeft.className = 'heatmap-header';
-        heatmapContainer.appendChild(topLeft);
-
-        // Add x-axis headers
-        for (const x of xValues) {
-            const xHeader = document.createElement('div');
-            xHeader.className = 'heatmap-header';
-            xHeader.textContent = x;
-            xHeader.style.padding = '8px';
-            xHeader.style.textAlign = 'center';
-            xHeader.style.fontWeight = 'bold';
-            heatmapContainer.appendChild(xHeader);
-        }
-
-        // Find min and max values for color scaling
-        const values = data.map(item => parseFloat(item[value])).filter(v => !isNaN(v));
-        const minValue = Math.min(...values);
-        const maxValue = Math.max(...values);
-
-        // Add y-axis labels and data cells
-        for (const y of yValues) {
-            // Add y-axis header
-            const yHeader = document.createElement('div');
-            yHeader.className = 'heatmap-header';
-            yHeader.textContent = y;
-            yHeader.style.padding = '8px';
-            yHeader.style.fontWeight = 'bold';
-            yHeader.style.display = 'flex';
-            yHeader.style.alignItems = 'center';
-            heatmapContainer.appendChild(yHeader);
-
-            // Add data cells for this row
-            for (const x of xValues) {
-                const cellData = data.find(item => item[xAxis] === x && item[yAxis] === y);
-                const cell = document.createElement('div');
-                cell.className = 'heatmap-cell';
-
-                if (cellData) {
-                    const cellValue = parseFloat(cellData[value]);
-                    if (!isNaN(cellValue)) {
-                        const intensity = (cellValue - minValue) / (maxValue - minValue);
-                        cell.style.backgroundColor = getColorForIntensity(intensity, colors[0]);
-                        cell.textContent = cellValue.toLocaleString();
-                        cell.title = `${x}, ${y}: ${cellValue.toLocaleString()}`;
+        // Create chart options
+        const options = {
+            series: series,
+            chart: {
+                type: 'heatmap',
+                height: '100%',
+                toolbar: {
+                    show: true
+                },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                }
+            },
+            dataLabels: {
+                enabled: series[0].data.length <= 10,
+                formatter: function (val) {
+                    return val !== null ? val.toLocaleString() : '';
+                }
+            },
+            colors: [colors[0]],
+            title: {
+                text: config.title || '',
+                align: 'center',
+                style: {
+                    fontSize: '14px'
+                }
+            },
+            plotOptions: {
+                heatmap: {
+                    shadeIntensity: 0.5,
+                    radius: 0,
+                    colorScale: {
+                        ranges: [{
+                            from: 0,
+                            to: 0,
+                            color: '#EFEFEF',
+                            name: 'No Data'
+                        }]
                     }
                 }
-
-                cell.style.display = 'flex';
-                cell.style.justifyContent = 'center';
-                cell.style.alignItems = 'center';
-                cell.style.color = 'white';
-                cell.style.textShadow = '0 0 2px rgba(0,0,0,0.5)';
-                cell.style.fontWeight = 'bold';
-                cell.style.transition = 'transform 0.2s ease';
-
-                // Add hover effect
-                cell.addEventListener('mouseenter', () => {
-                    cell.style.transform = 'scale(1.05)';
-                    cell.style.zIndex = '1';
-                });
-
-                cell.addEventListener('mouseleave', () => {
-                    cell.style.transform = 'scale(1)';
-                    cell.style.zIndex = '0';
-                });
-
-                heatmapContainer.appendChild(cell);
+            },
+            xaxis: {
+                categories: xValues,
+                title: {
+                    text: xAxis
+                }
+            },
+            yaxis: {
+                title: {
+                    text: yAxis
+                }
+            },
+            tooltip: {
+                enabled: config.showTooltips !== false,
+                custom: function ({ series, seriesIndex, dataPointIndex, w }) {
+                    const x = w.globals.labels[dataPointIndex];
+                    const y = w.globals.seriesNames[seriesIndex];
+                    const value = series[seriesIndex][dataPointIndex];
+                    return `<div class="apexcharts-tooltip-custom">
+                        <span><strong>${xAxis}:</strong> ${x}</span><br>
+                        <span><strong>${yAxis}:</strong> ${y}</span><br>
+                        <span><strong>${config.value || 'Value'}:</strong> ${value.toLocaleString()}</span>
+                    </div>`;
+                }
+            },
+            theme: {
+                mode: darkModeEnabled ? 'dark' : 'light'
             }
-        }
+        };
 
-        // Add legend
-        const legend = document.createElement('div');
-        legend.className = 'heatmap-legend';
-        legend.style.display = 'flex';
-        legend.style.alignItems = 'center';
-        legend.style.justifyContent = 'center';
-        legend.style.marginTop = '10px';
+        // Create and store the chart
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
 
-        const legendGradient = document.createElement('div');
-        legendGradient.style.width = '200px';
-        legendGradient.style.height = '20px';
-        legendGradient.style.background = `linear-gradient(to right, ${getColorForIntensity(0, colors[0])}, ${getColorForIntensity(1, colors[0])})`;
-        legendGradient.style.borderRadius = '3px';
-        legend.appendChild(legendGradient);
+        chartInstances[id] = {
+            chart: chart,
+            type: 'heatmap'
+        };
 
-        const legendMin = document.createElement('div');
-        legendMin.textContent = minValue.toLocaleString();
-        legendMin.style.marginRight = '10px';
-        legend.appendChild(legendMin);
-
-        const legendMax = document.createElement('div');
-        legendMax.textContent = maxValue.toLocaleString();
-        legendMax.style.marginLeft = '10px';
-        legend.appendChild(legendMax);
-
-        // Append the container and legend to the parent
-        container.appendChild(heatmapContainer);
-        container.appendChild(legend);
-
-        // Animated entrance
-        gsapFadeIn(heatmapContainer, { y: 20, duration: 0.8 });
-        gsapFadeIn(legend, { y: 20, duration: 0.8, delay: 0.3 });
+        // Add D3 animation enhancements
+        enhanceHeatmapWithD3(id, chartElement, series);
     }
 
     /**
-     * Renders a gauge chart
+     * Enhances a heatmap with D3 animations
+     */
+    function enhanceHeatmapWithD3(id, element, data) {
+        // Clean up any existing D3 animations
+        if (d3Animations[id]) {
+            d3Animations[id].cleanup();
+            delete d3Animations[id];
+        }
+
+        setTimeout(() => {
+            try {
+                const cells = d3.select(element).selectAll('.apexcharts-heatmap-rect');
+
+                // Add entrance animation
+                cells.each(function (d, i) {
+                    const cell = d3.select(this);
+                    const delay = Math.random() * 800; // Random delay for each cell
+
+                    cell
+                        .attr('opacity', 0)
+                        .transition()
+                        .delay(delay)
+                        .duration(500)
+                        .attr('opacity', 1);
+                });
+
+                // Add hover effect
+                cells.on('mouseenter', function () {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('stroke', '#ffffff')
+                        .attr('stroke-width', 2);
+                })
+                    .on('mouseleave', function () {
+                        d3.select(this)
+                            .transition()
+                            .duration(200)
+                            .attr('stroke', 'none')
+                            .attr('stroke-width', 0);
+                    });
+
+                // Store animation info for cleanup
+                d3Animations[id] = {
+                    cleanup: function () {
+                        cells.on('mouseenter', null).on('mouseleave', null);
+                    }
+                };
+            } catch (e) {
+                console.log('D3 heatmap enhancement skipped', e);
+            }
+        }, 800);
+    }
+
+    /**
+     * Renders a gauge chart using ApexCharts
      */
     function renderGaugeChart(id, data, config, colors) {
-        const canvas = document.getElementById(`chart-${id}`);
-        const ctx = canvas.getContext('2d');
+        const chartElement = document.getElementById(`chart-${id}`);
 
         // Extract data using config properties
         const value = config.value || Object.keys(data[0])[0];
@@ -639,80 +1175,152 @@ window.storyCanvas = (function () {
             gaugeValue = parseFloat(value);
         }
 
-        // Normalize to 0-1 range
-        const normalizedValue = (gaugeValue - min) / (max - min);
-
-        // Create chart configuration
-        const chartConfig = {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [normalizedValue, 1 - normalizedValue],
-                    backgroundColor: [
-                        getColorForIntensity(normalizedValue, colors[0]),
-                        'rgba(200, 200, 200, 0.2)'
-                    ],
-                    borderWidth: 0,
-                    circumference: 180,
-                    rotation: 270
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        enabled: false
-                    }
+        // Create chart options
+        const options = {
+            series: [gaugeValue],
+            chart: {
+                height: '100%',
+                type: 'radialBar',
+                toolbar: {
+                    show: true
                 },
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutQuart'
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: {
+                        enabled: true,
+                        delay: 150
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 350
+                    }
                 }
             },
-            plugins: [{
-                id: 'gaugeText',
-                afterDraw: (chart) => {
-                    const { ctx, width, height } = chart;
-                    ctx.restore();
-
-                    // Draw the value
-                    const fontSize = Math.min(width, height) / 10;
-                    ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
-                    ctx.textBaseline = 'middle';
-                    ctx.textAlign = 'center';
-
-                    const text = `${gaugeValue.toLocaleString()}`;
-                    const textX = width / 2;
-                    const textY = height - height / 3;
-
-                    ctx.fillStyle = darkModeEnabled ? '#e9ecef' : '#495057';
-                    ctx.fillText(text, textX, textY);
-
-                    // Draw the label
-                    const labelFontSize = fontSize * 0.6;
-                    ctx.font = `${labelFontSize}px 'Inter', sans-serif`;
-                    const label = config.title || '';
-                    ctx.fillText(label, textX, textY + fontSize);
-
-                    // Draw the min/max values
-                    const smallFontSize = fontSize * 0.4;
-                    ctx.font = `${smallFontSize}px 'Inter', sans-serif`;
-                    ctx.fillStyle = darkModeEnabled ? '#adb5bd' : '#6c757d';
-                    ctx.fillText(min.toLocaleString(), width * 0.1, height - height / 4);
-                    ctx.fillText(max.toLocaleString(), width * 0.9, height - height / 4);
-
-                    ctx.save();
+            plotOptions: {
+                radialBar: {
+                    startAngle: -135,
+                    endAngle: 135,
+                    hollow: {
+                        margin: 0,
+                        size: '70%',
+                        background: '#fff',
+                        image: undefined,
+                        imageOffsetX: 0,
+                        imageOffsetY: 0,
+                        position: 'front',
+                        dropShadow: {
+                            enabled: true,
+                            top: 3,
+                            left: 0,
+                            blur: 4,
+                            opacity: 0.24
+                        }
+                    },
+                    track: {
+                        background: '#fff',
+                        strokeWidth: '67%',
+                        margin: 0,
+                        dropShadow: {
+                            enabled: true,
+                            top: -3,
+                            left: 0,
+                            blur: 4,
+                            opacity: 0.35
+                        }
+                    },
+                    dataLabels: {
+                        show: true,
+                        name: {
+                            offsetY: -10,
+                            show: true,
+                            color: '#888',
+                            fontSize: '17px'
+                        },
+                        value: {
+                            formatter: function (val) {
+                                return parseFloat(val).toFixed(1) + "%";
+                            },
+                            color: '#111',
+                            fontSize: '36px',
+                            show: true
+                        }
+                    }
                 }
-            }]
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shade: 'dark',
+                    type: 'horizontal',
+                    shadeIntensity: 0.5,
+                    gradientToColors: [colors[1] || colors[0]],
+                    inverseColors: true,
+                    opacityFrom: 1,
+                    opacityTo: 1,
+                    stops: [0, 100]
+                }
+            },
+            stroke: {
+                lineCap: 'round'
+            },
+            labels: [config.title || 'Value'],
+            theme: {
+                mode: darkModeEnabled ? 'dark' : 'light'
+            }
         };
 
         // Create and store the chart
-        chartInstances[id] = new Chart(ctx, chartConfig);
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+
+        chartInstances[id] = {
+            chart: chart,
+            type: 'gauge'
+        };
+
+        // Add D3 animation enhancement
+        enhanceGaugeWithD3(id, chartElement, gaugeValue, min, max);
+    }
+
+    /**
+     * Enhances a gauge chart with D3 animations
+     */
+    function enhanceGaugeWithD3(id, element, value, min, max) {
+        // Clean up any existing D3 animations
+        if (d3Animations[id]) {
+            d3Animations[id].cleanup();
+            delete d3Animations[id];
+        }
+
+        setTimeout(() => {
+            try {
+                // Add a subtle pulse animation to the gauge value
+                const valueText = d3.select(element).select('.apexcharts-radial-series').select('text');
+
+                if (valueText.node()) {
+                    setInterval(() => {
+                        valueText
+                            .transition()
+                            .duration(1000)
+                            .attr('font-size', '38px')
+                            .transition()
+                            .duration(1000)
+                            .attr('font-size', '36px');
+                    }, 2000);
+
+                    // Store animation info for cleanup
+                    d3Animations[id] = {
+                        cleanup: function () {
+                            // No specific cleanup needed
+                        }
+                    };
+                }
+            } catch (e) {
+                console.log('D3 gauge enhancement skipped', e);
+            }
+        }, 1000);
     }
 
     /**
@@ -752,59 +1360,291 @@ window.storyCanvas = (function () {
         // Add to container
         container.appendChild(textContainer);
 
-        // Animate entrance
-        gsapFadeIn(textContainer, { y: 20, duration: 0.8 });
+        // Animate entrance with D3
+        animateTextBlockWithD3(textContainer);
+
+        // Store as a non-chart instance
+        chartInstances[id] = {
+            type: 'text',
+            element: textContainer
+        };
     }
 
     /**
-     * Renders a map visualization (simplified version)
+     * Animates a text block with D3
+     */
+    function animateTextBlockWithD3(element) {
+        try {
+            d3.select(element)
+                .style('opacity', 0)
+                .style('transform', 'translateY(20px)')
+                .transition()
+                .duration(600)
+                .style('opacity', 1)
+                .style('transform', 'translateY(0px)');
+
+            // Apply a staggered animation to text paragraphs
+            const paragraphs = d3.select(element).selectAll('p');
+            paragraphs.each(function (d, i) {
+                d3.select(this)
+                    .style('opacity', 0)
+                    .transition()
+                    .delay(300 + (i * 100))
+                    .duration(500)
+                    .style('opacity', 1);
+            });
+        } catch (e) {
+            console.log('D3 text animation skipped', e);
+            // Fallback to CSS animation
+            element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            setTimeout(() => {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, 50);
+        }
+    }
+
+    /**
+     * Renders a map visualization with D3.js
      */
     function renderMapVisualization(id, data, config, colors) {
         const container = document.getElementById(`viz-content-${id}`);
         container.innerHTML = '';
 
-        // Create placeholder for map (since we can't use actual maps)
-        const mapPlaceholder = document.createElement('div');
-        mapPlaceholder.className = 'map-placeholder';
-        mapPlaceholder.style.width = '100%';
-        mapPlaceholder.style.height = '100%';
-        mapPlaceholder.style.backgroundColor = '#f8f9fa';
-        mapPlaceholder.style.borderRadius = '0.5rem';
-        mapPlaceholder.style.display = 'flex';
-        mapPlaceholder.style.flexDirection = 'column';
-        mapPlaceholder.style.justifyContent = 'center';
-        mapPlaceholder.style.alignItems = 'center';
-        mapPlaceholder.style.padding = '1rem';
-        mapPlaceholder.style.opacity = '0';
-        mapPlaceholder.style.transform = 'scale(0.95)';
+        // For a proper map, we'd use D3's geo capabilities here
+        // This is a simplified version that shows a basic map placeholder
 
-        // Map icon
-        const icon = document.createElement('div');
-        icon.innerHTML = '<i class="fas fa-map-marked-alt"></i>';
-        icon.style.fontSize = '3rem';
-        icon.style.color = colors[0];
-        icon.style.marginBottom = '1rem';
-        mapPlaceholder.appendChild(icon);
+        // Create SVG container for the map
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("width", "100%");
+        svg.setAttribute("height", "100%");
+        svg.style.overflow = "visible";
+        container.appendChild(svg);
 
-        // Map title
-        const title = document.createElement('h3');
-        title.textContent = config.title || 'Map Visualization';
-        title.style.marginBottom = '0.5rem';
-        mapPlaceholder.appendChild(title);
+        // Use D3 to create a simple map visualization
+        try {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
 
-        // Map description
-        const description = document.createElement('p');
-        description.textContent = 'Geographic visualization would be displayed here.';
-        description.style.marginBottom = '1.5rem';
-        description.style.textAlign = 'center';
-        description.style.color = '#6c757d';
-        mapPlaceholder.appendChild(description);
+            const d3svg = d3.select(svg)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .style("font-family", "'Inter', 'Segoe UI', Roboto, sans-serif");
 
-        // Add to container
-        container.appendChild(mapPlaceholder);
+            // Create a sample map with regions
+            const regionData = [
+                { name: "North", x: width * 0.3, y: height * 0.3, radius: 50, value: 75 },
+                { name: "South", x: width * 0.3, y: height * 0.7, radius: 40, value: 55 },
+                { name: "East", x: width * 0.7, y: height * 0.3, radius: 45, value: 65 },
+                { name: "West", x: width * 0.7, y: height * 0.7, radius: 55, value: 85 }
+            ];
 
-        // Animate entrance
-        gsapFadeIn(mapPlaceholder, { scale: 0.95, duration: 0.8 });
+            // Draw background
+            d3svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "#f8f9fa")
+                .attr("rx", 10)
+                .attr("ry", 10);
+
+            // Draw connections
+            d3svg.selectAll(".connection")
+                .data([
+                    { source: regionData[0], target: regionData[1] },
+                    { source: regionData[0], target: regionData[2] },
+                    { source: regionData[1], target: regionData[3] },
+                    { source: regionData[2], target: regionData[3] }
+                ])
+                .enter()
+                .append("line")
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y)
+                .attr("stroke", "#ccc")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,4")
+                .style("opacity", 0)
+                .transition()
+                .delay((d, i) => i * 200)
+                .duration(1000)
+                .style("opacity", 0.5);
+
+            // Draw regions
+            const regions = d3svg.selectAll(".region")
+                .data(regionData)
+                .enter()
+                .append("g")
+                .attr("class", "region")
+                .attr("transform", d => `translate(${d.x}, ${d.y})`)
+                .style("opacity", 0);
+
+            regions.transition()
+                .delay((d, i) => i * 300)
+                .duration(800)
+                .style("opacity", 1);
+
+            regions.append("circle")
+                .attr("r", 0)
+                .attr("fill", (d, i) => colors[i % colors.length])
+                .attr("opacity", 0.7)
+                .transition()
+                .delay((d, i) => i * 300 + 200)
+                .duration(1000)
+                .attr("r", d => d.radius);
+
+            regions.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", "0.3em")
+                .attr("fill", "white")
+                .attr("font-weight", "bold")
+                .text(d => d.name)
+                .style("font-size", "0px")
+                .transition()
+                .delay((d, i) => i * 300 + 500)
+                .duration(500)
+                .style("font-size", "14px");
+
+            regions.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", "1.5em")
+                .attr("fill", "white")
+                .text(d => d.value)
+                .style("font-size", "0px")
+                .transition()
+                .delay((d, i) => i * 300 + 800)
+                .duration(500)
+                .style("font-size", "18px");
+
+            // Add interactions
+            regions
+                .on("mouseenter", function (event, d) {
+                    d3.select(this).select("circle")
+                        .transition()
+                        .duration(300)
+                        .attr("r", d.radius * 1.1)
+                        .attr("opacity", 0.9);
+
+                    d3.select(this).selectAll("text")
+                        .transition()
+                        .duration(300)
+                        .style("font-size", function () {
+                            return parseFloat(d3.select(this).style("font-size")) * 1.2 + "px";
+                        });
+                })
+                .on("mouseleave", function (event, d) {
+                    d3.select(this).select("circle")
+                        .transition()
+                        .duration(300)
+                        .attr("r", d.radius)
+                        .attr("opacity", 0.7);
+
+                    d3.select(this).selectAll("text")
+                        .transition()
+                        .duration(300)
+                        .style("font-size", function () {
+                            return (parseFloat(d3.select(this).style("font-size")) / 1.2) + "px";
+                        });
+                });
+
+            // Add title
+            d3svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 25)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "18px")
+                .attr("font-weight", "bold")
+                .text(config.title || "Regional Distribution")
+                .style("opacity", 0)
+                .transition()
+                .delay(1200)
+                .duration(800)
+                .style("opacity", 1);
+
+            // Add a legend
+            const legend = d3svg.append("g")
+                .attr("transform", `translate(${width - 100}, ${height - 80})`)
+                .style("opacity", 0)
+                .transition()
+                .delay(1500)
+                .duration(800)
+                .style("opacity", 1);
+
+            const legendTitle = d3svg.append("text")
+                .attr("x", width - 100)
+                .attr("y", height - 100)
+                .attr("text-anchor", "start")
+                .attr("font-size", "12px")
+                .attr("font-weight", "bold")
+                .text("Value Legend")
+                .style("opacity", 0)
+                .transition()
+                .delay(1500)
+                .duration(800)
+                .style("opacity", 1);
+
+            // Store chart instance
+            chartInstances[id] = {
+                type: 'map',
+                d3svg: d3svg,
+                element: container
+            };
+        } catch (e) {
+            console.log('D3 map visualization error', e);
+
+            // Fallback to simple placeholder
+            const placeholderDiv = document.createElement('div');
+            placeholderDiv.className = 'map-placeholder';
+            placeholderDiv.style.width = '100%';
+            placeholderDiv.style.height = '100%';
+            placeholderDiv.style.backgroundColor = '#f8f9fa';
+            placeholderDiv.style.borderRadius = '0.5rem';
+            placeholderDiv.style.display = 'flex';
+            placeholderDiv.style.flexDirection = 'column';
+            placeholderDiv.style.justifyContent = 'center';
+            placeholderDiv.style.alignItems = 'center';
+            placeholderDiv.style.padding = '1rem';
+            placeholderDiv.style.opacity = '0';
+            placeholderDiv.style.transform = 'scale(0.95)';
+
+            // Map icon
+            const icon = document.createElement('div');
+            icon.innerHTML = '<i class="fas fa-map-marked-alt"></i>';
+            icon.style.fontSize = '3rem';
+            icon.style.color = colors[0];
+            icon.style.marginBottom = '1rem';
+            placeholderDiv.appendChild(icon);
+
+            // Map title
+            const title = document.createElement('h3');
+            title.textContent = config.title || 'Map Visualization';
+            title.style.marginBottom = '0.5rem';
+            placeholderDiv.appendChild(title);
+
+            // Map description
+            const description = document.createElement('p');
+            description.textContent = 'Geographic visualization would be displayed here.';
+            description.style.marginBottom = '1.5rem';
+            description.style.textAlign = 'center';
+            description.style.color = '#6c757d';
+            placeholderDiv.appendChild(description);
+
+            // Clear container and add fallback
+            container.innerHTML = '';
+            container.appendChild(placeholderDiv);
+
+            // Animate entrance
+            setTimeout(() => {
+                placeholderDiv.style.opacity = '1';
+                placeholderDiv.style.transform = 'scale(1)';
+                placeholderDiv.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            }, 50);
+
+            // Store chart instance
+            chartInstances[id] = {
+                type: 'map',
+                element: placeholderDiv
+            };
+        }
     }
 
     /**
@@ -818,10 +1658,12 @@ window.storyCanvas = (function () {
 
         container.innerHTML = '';
 
-        // Create canvas element
-        const canvas = document.createElement('canvas');
-        canvas.id = `presentation-chart-${slideIndex}`;
-        container.appendChild(canvas);
+        // Create chart container element
+        const chartContainer = document.createElement('div');
+        chartContainer.id = `presentation-chart-${slideIndex}`;
+        chartContainer.style.width = '100%';
+        chartContainer.style.height = '100%';
+        container.appendChild(chartContainer);
 
         // Determine visualization type based on slide index
         const vizTypes = ['bar', 'line', 'pie', 'gauge'];
@@ -869,82 +1711,194 @@ window.storyCanvas = (function () {
     /* ANIMATION FUNCTIONS */
 
     /**
-     * Fades in an element with GSAP-like animation
-     */
-    function gsapFadeIn(element, options = {}) {
-        const { x = 0, y = 0, scale = 1, opacity = 0, duration = 0.5, delay = 0 } = options;
-
-        // Set initial state
-        element.style.opacity = '0';
-        element.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-        element.style.transition = `opacity ${duration}s ease, transform ${duration}s ease`;
-        element.style.transitionDelay = `${delay}s`;
-
-        // Trigger animation
-        setTimeout(() => {
-            element.style.opacity = '1';
-            element.style.transform = 'translate(0, 0) scale(1)';
-        }, 50);
-    }
-
-    /**
      * Animates the initial elements when the component loads
      */
     function animateInitialElements() {
-        // Animate header
-        const header = document.querySelector('.story-header');
-        if (header) {
-            gsapFadeIn(header, { y: -20, duration: 0.5 });
-        }
+        try {
+            // Use D3 for more powerful animations
 
-        // Animate each section with staggered delay
-        const sections = ['.palette', '.canvas', '.insights'];
-        sections.forEach((selector, index) => {
-            const element = document.querySelector(selector);
-            if (element) {
-                gsapFadeIn(element, { y: 20, duration: 0.6, delay: 0.1 * (index + 1) });
+            // Animate header
+            d3.select('.story-header')
+                .style('opacity', 0)
+                .style('transform', 'translateY(-20px)')
+                .transition()
+                .duration(500)
+                .style('opacity', 1)
+                .style('transform', 'translateY(0)');
+
+            // Animate each section with staggered delay
+            const sections = ['.palette', '.canvas', '.insights'];
+            sections.forEach((selector, index) => {
+                d3.select(selector)
+                    .style('opacity', 0)
+                    .style('transform', 'translateY(20px)')
+                    .transition()
+                    .delay(100 * (index + 1))
+                    .duration(600)
+                    .style('opacity', 1)
+                    .style('transform', 'translateY(0)');
+            });
+
+            // Animate viz items with staggered entrance
+            d3.selectAll('.viz-item')
+                .style('opacity', 0)
+                .style('transform', 'translateY(10px)')
+                .each(function (d, i) {
+                    d3.select(this)
+                        .transition()
+                        .delay(50 * (i + 1))
+                        .duration(500)
+                        .style('opacity', 1)
+                        .style('transform', 'translateY(0)');
+                });
+
+            // Animate scene tabs
+            d3.selectAll('.scene-tab')
+                .style('opacity', 0)
+                .style('transform', 'translateY(-10px)')
+                .each(function (d, i) {
+                    d3.select(this)
+                        .transition()
+                        .delay(70 * (i + 1))
+                        .duration(400)
+                        .style('opacity', 1)
+                        .style('transform', 'translateY(0)');
+                });
+
+            // Animate dropzones
+            d3.selectAll('.dropzone')
+                .style('opacity', 0)
+                .each(function (d, i) {
+                    d3.select(this)
+                        .transition()
+                        .delay(100 * (i + 1))
+                        .duration(400)
+                        .style('opacity', 1);
+                });
+
+            // Animate insights with staggered entrances and subtle bounce
+            d3.selectAll('.insight-card')
+                .style('opacity', 0)
+                .style('transform', 'translateY(10px)')
+                .each(function (d, i) {
+                    d3.select(this)
+                        .transition()
+                        .delay(100 * (i + 1))
+                        .duration(500)
+                        .style('opacity', 1)
+                        .style('transform', 'translateY(0)')
+                        .on("end", function () {
+                            // Add subtle bounce
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .style('transform', 'translateY(-3px)')
+                                .transition()
+                                .duration(200)
+                                .style('transform', 'translateY(0)');
+                        });
+                });
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
+
+            // Fallback to CSS animations
+            // Animate header
+            const header = document.querySelector('.story-header');
+            if (header) {
+                header.style.opacity = '0';
+                header.style.transform = 'translateY(-20px)';
+                header.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+                setTimeout(() => {
+                    header.style.opacity = '1';
+                    header.style.transform = 'translateY(0)';
+                }, 50);
             }
-        });
 
-        // Animate viz items
-        const vizItems = document.querySelectorAll('.viz-item');
-        vizItems.forEach((item, index) => {
-            gsapFadeIn(item, { y: 10, duration: 0.5, delay: 0.05 * (index + 1) });
-        });
+            // Animate each section with staggered delay
+            const sections = ['.palette', '.canvas', '.insights'];
+            sections.forEach((selector, index) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.style.opacity = '0';
+                    element.style.transform = 'translateY(20px)';
+                    element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    element.style.transitionDelay = `${0.1 * (index + 1)}s`;
 
-        // Animate scene tabs
-        const sceneTabs = document.querySelectorAll('.scene-tab');
-        sceneTabs.forEach((tab, index) => {
-            gsapFadeIn(tab, { y: -10, duration: 0.4, delay: 0.07 * (index + 1) });
-        });
+                    setTimeout(() => {
+                        element.style.opacity = '1';
+                        element.style.transform = 'translateY(0)';
+                    }, 50);
+                }
+            });
 
-        // Animate dropzones
-        const dropzones = document.querySelectorAll('.dropzone');
-        dropzones.forEach((zone, index) => {
-            gsapFadeIn(zone, { opacity: 0, duration: 0.4, delay: 0.1 * (index + 1) });
-        });
+            // Animate other elements
+            const animateElements = (selector, delay, yOffset) => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach((item, index) => {
+                    item.style.opacity = '0';
+                    item.style.transform = `translateY(${yOffset}px)`;
+                    item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    item.style.transitionDelay = `${delay * (index + 1)}s`;
 
-        // Animate insights
-        const insights = document.querySelectorAll('.insight-card');
-        insights.forEach((insight, index) => {
-            gsapFadeIn(insight, { y: 10, duration: 0.5, delay: 0.1 * (index + 1) });
-        });
+                    setTimeout(() => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    }, 50);
+                });
+            };
+
+            animateElements('.viz-item', 0.05, 10);
+            animateElements('.scene-tab', 0.07, -10);
+            animateElements('.dropzone', 0.1, 0);
+            animateElements('.insight-card', 0.1, 10);
+        }
     }
 
     /**
      * Animates a newly created visualization
      */
     function animateNewVisualization(id) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(20px)';
+        try {
+            const element = document.getElementById(id);
+            if (element) {
+                d3.select(element)
+                    .style('opacity', 0)
+                    .style('transform', 'translateY(20px)')
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 1)
+                    .style('transform', 'translateY(0)')
+                    .transition()
+                    .delay(500)
+                    .duration(200)
+                    .style('transform', 'translateY(-3px)')
+                    .transition()
+                    .duration(200)
+                    .style('transform', 'translateY(0)');
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
 
-            setTimeout(() => {
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
                 element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            }, 50);
+
+                setTimeout(() => {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+
+                    // Add simple bounce effect
+                    setTimeout(() => {
+                        element.style.transform = 'translateY(-3px)';
+                        setTimeout(() => {
+                            element.style.transform = 'translateY(0)';
+                        }, 200);
+                    }, 500);
+                }, 50);
+            }
         }
     }
 
@@ -952,11 +1906,25 @@ window.storyCanvas = (function () {
      * Animates removing a visualization
      */
     function animateRemoveVisualization(id) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.style.opacity = '0';
-            element.style.transform = 'scale(0.95)';
-            element.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        try {
+            const element = document.getElementById(id);
+            if (element) {
+                d3.select(element)
+                    .transition()
+                    .duration(300)
+                    .style('opacity', 0)
+                    .style('transform', 'scale(0.95)')
+                    .remove();
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
+
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.opacity = '0';
+                element.style.transform = 'scale(0.95)';
+                element.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            }
         }
     }
 
@@ -964,17 +1932,44 @@ window.storyCanvas = (function () {
      * Animates a pulsing effect on an insight
      */
     function pulseInsight(index) {
-        const insights = document.querySelectorAll('.insight-card');
-        if (index >= 0 && index < insights.length) {
-            const insight = insights[index];
+        try {
+            const insights = document.querySelectorAll('.insight-card');
+            if (index >= 0 && index < insights.length) {
+                const insight = insights[index];
 
-            // Add pulse class
-            insight.classList.add('insight-pulse');
+                d3.select(insight)
+                    .transition()
+                    .duration(500)
+                    .style('transform', 'scale(1.05)')
+                    .style('box-shadow', '0 8px 16px rgba(0,0,0,0.1)')
+                    .transition()
+                    .duration(500)
+                    .style('transform', 'scale(1)')
+                    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.05)')
+                    .transition()
+                    .duration(500)
+                    .style('transform', 'scale(1.05)')
+                    .style('box-shadow', '0 8px 16px rgba(0,0,0,0.1)')
+                    .transition()
+                    .duration(500)
+                    .style('transform', 'scale(1)')
+                    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.05)');
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
 
-            // Remove pulse class after animation completes
-            setTimeout(() => {
-                insight.classList.remove('insight-pulse');
-            }, 4000);
+            const insights = document.querySelectorAll('.insight-card');
+            if (index >= 0 && index < insights.length) {
+                const insight = insights[index];
+
+                // Add pulse class
+                insight.classList.add('insight-pulse');
+
+                // Remove pulse class after animation completes
+                setTimeout(() => {
+                    insight.classList.remove('insight-pulse');
+                }, 4000);
+            }
         }
     }
 
@@ -982,17 +1977,41 @@ window.storyCanvas = (function () {
      * Animates a new insight being added
      */
     function animateNewInsight(index) {
-        const insights = document.querySelectorAll('.insight-card');
-        if (index >= 0 && index < insights.length) {
-            const insight = insights[index];
+        try {
+            const insights = document.querySelectorAll('.insight-card');
+            if (index >= 0 && index < insights.length) {
+                const insight = insights[index];
 
-            // Add new-insight class for animation
-            insight.classList.add('new-insight');
+                d3.select(insight)
+                    .style('opacity', 0)
+                    .style('transform', 'translateX(-20px)')
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 1)
+                    .style('transform', 'translateX(0)')
+                    .transition()
+                    .delay(500)
+                    .duration(200)
+                    .style('transform', 'translateX(-5px)')
+                    .transition()
+                    .duration(200)
+                    .style('transform', 'translateX(0)');
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
 
-            // Remove class after animation completes
-            setTimeout(() => {
-                insight.classList.remove('new-insight');
-            }, 1000);
+            const insights = document.querySelectorAll('.insight-card');
+            if (index >= 0 && index < insights.length) {
+                const insight = insights[index];
+
+                // Add new-insight class for animation
+                insight.classList.add('new-insight');
+
+                // Remove class after animation completes
+                setTimeout(() => {
+                    insight.classList.remove('new-insight');
+                }, 1000);
+            }
         }
     }
 
@@ -1002,12 +2021,47 @@ window.storyCanvas = (function () {
      * Starts presentation mode
      */
     function startPresentationMode() {
-        document.body.style.overflow = 'hidden';
+        try {
+            document.body.style.overflow = 'hidden';
 
-        // Find active slide
-        const activeSlide = document.querySelector('.presentation-slide.active');
-        if (activeSlide) {
-            gsapFadeIn(activeSlide, { opacity: 0, scale: 0.95, duration: 0.8 });
+            // Add entrance animation with D3
+            d3.select('.presentation-mode')
+                .style('opacity', 0)
+                .style('visibility', 'visible')
+                .transition()
+                .duration(800)
+                .style('opacity', 1);
+
+            // Find active slide
+            const activeSlide = document.querySelector('.presentation-slide.active');
+            if (activeSlide) {
+                d3.select(activeSlide)
+                    .style('opacity', 0)
+                    .style('transform', 'translateY(50px) scale(0.95)')
+                    .style('visibility', 'visible')
+                    .transition()
+                    .delay(400)
+                    .duration(800)
+                    .style('opacity', 1)
+                    .style('transform', 'translateY(0) scale(1)');
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
+
+            document.body.style.overflow = 'hidden';
+
+            // Find active slide
+            const activeSlide = document.querySelector('.presentation-slide.active');
+            if (activeSlide) {
+                activeSlide.style.opacity = '0';
+                activeSlide.style.transform = 'scale(0.95)';
+                activeSlide.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+
+                setTimeout(() => {
+                    activeSlide.style.opacity = '1';
+                    activeSlide.style.transform = 'scale(1)';
+                }, 400);
+            }
         }
     }
 
@@ -1015,37 +2069,93 @@ window.storyCanvas = (function () {
      * Ends presentation mode
      */
     function endPresentationMode() {
-        document.body.style.overflow = '';
+        try {
+            // Add exit animation with D3
+            d3.select('.presentation-mode')
+                .transition()
+                .duration(500)
+                .style('opacity', 0)
+                .on('end', function () {
+                    d3.select(this).style('visibility', 'hidden');
+                    document.body.style.overflow = '';
+                });
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
+
+            const presentationMode = document.querySelector('.presentation-mode');
+            if (presentationMode) {
+                presentationMode.style.opacity = '0';
+                presentationMode.style.transition = 'opacity 0.5s ease';
+
+                setTimeout(() => {
+                    presentationMode.style.visibility = 'hidden';
+                    document.body.style.overflow = '';
+                }, 500);
+            }
+        }
     }
 
     /**
      * Transitions to the next slide
      */
     function transitionToNextSlide() {
-        const currentSlide = document.querySelector('.presentation-slide.active');
-        const nextSlide = currentSlide?.nextElementSibling;
+        try {
+            const currentSlide = document.querySelector('.presentation-slide.active');
+            const nextSlide = currentSlide?.nextElementSibling;
 
-        if (currentSlide && nextSlide && nextSlide.classList.contains('presentation-slide')) {
-            // Animate current slide out
-            currentSlide.style.opacity = '0';
-            currentSlide.style.transform = 'translateX(-50px)';
-            currentSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            if (currentSlide && nextSlide && nextSlide.classList.contains('presentation-slide')) {
+                // Animate current slide out
+                d3.select(currentSlide)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 0)
+                    .style('transform', 'translateX(-50px)')
+                    .on('end', function () {
+                        // Update classes
+                        currentSlide.classList.remove('active');
+                        currentSlide.classList.add('prev');
+                        nextSlide.classList.add('active');
 
-            setTimeout(() => {
-                currentSlide.classList.remove('active');
-                currentSlide.classList.add('prev');
+                        // Animate next slide in
+                        d3.select(nextSlide)
+                            .style('opacity', 0)
+                            .style('transform', 'translateX(50px)')
+                            .style('visibility', 'visible')
+                            .transition()
+                            .delay(100)
+                            .duration(500)
+                            .style('opacity', 1)
+                            .style('transform', 'translateX(0)');
+                    });
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
 
-                // Animate next slide in
-                nextSlide.classList.add('active');
-                nextSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                nextSlide.style.transitionDelay = '0.1s';
+            const currentSlide = document.querySelector('.presentation-slide.active');
+            const nextSlide = currentSlide?.nextElementSibling;
+
+            if (currentSlide && nextSlide && nextSlide.classList.contains('presentation-slide')) {
+                // Animate current slide out
+                currentSlide.style.opacity = '0';
+                currentSlide.style.transform = 'translateX(-50px)';
+                currentSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
 
                 setTimeout(() => {
-                    nextSlide.style.opacity = '1';
-                    nextSlide.style.transform = 'translateX(0)';
+                    currentSlide.classList.remove('active');
+                    currentSlide.classList.add('prev');
+
+                    // Animate next slide in
+                    nextSlide.classList.add('active');
+                    nextSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    nextSlide.style.transitionDelay = '0.1s';
                     nextSlide.style.visibility = 'visible';
-                }, 50);
-            }, 500);
+
+                    setTimeout(() => {
+                        nextSlide.style.opacity = '1';
+                        nextSlide.style.transform = 'translateX(0)';
+                    }, 50);
+                }, 500);
+            }
         }
     }
 
@@ -1053,31 +2163,65 @@ window.storyCanvas = (function () {
      * Transitions to the previous slide
      */
     function transitionToPrevSlide() {
-        const currentSlide = document.querySelector('.presentation-slide.active');
-        const prevSlides = document.querySelectorAll('.presentation-slide.prev');
-        const prevSlide = prevSlides[prevSlides.length - 1];
+        try {
+            const currentSlide = document.querySelector('.presentation-slide.active');
+            const prevSlides = document.querySelectorAll('.presentation-slide.prev');
+            const prevSlide = prevSlides[prevSlides.length - 1];
 
-        if (currentSlide && prevSlide) {
-            // Animate current slide out
-            currentSlide.style.opacity = '0';
-            currentSlide.style.transform = 'translateX(50px)';
-            currentSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            if (currentSlide && prevSlide) {
+                // Animate current slide out
+                d3.select(currentSlide)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 0)
+                    .style('transform', 'translateX(50px)')
+                    .on('end', function () {
+                        // Update classes
+                        currentSlide.classList.remove('active');
+                        prevSlide.classList.remove('prev');
+                        prevSlide.classList.add('active');
 
-            setTimeout(() => {
-                currentSlide.classList.remove('active');
+                        // Animate previous slide in
+                        d3.select(prevSlide)
+                            .style('opacity', 0)
+                            .style('transform', 'translateX(-50px)')
+                            .style('visibility', 'visible')
+                            .transition()
+                            .delay(100)
+                            .duration(500)
+                            .style('opacity', 1)
+                            .style('transform', 'translateX(0)');
+                    });
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
 
-                // Animate previous slide in
-                prevSlide.classList.remove('prev');
-                prevSlide.classList.add('active');
-                prevSlide.style.visibility = 'visible';
-                prevSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                prevSlide.style.transitionDelay = '0.1s';
+            const currentSlide = document.querySelector('.presentation-slide.active');
+            const prevSlides = document.querySelectorAll('.presentation-slide.prev');
+            const prevSlide = prevSlides[prevSlides.length - 1];
+
+            if (currentSlide && prevSlide) {
+                // Animate current slide out
+                currentSlide.style.opacity = '0';
+                currentSlide.style.transform = 'translateX(50px)';
+                currentSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
 
                 setTimeout(() => {
-                    prevSlide.style.opacity = '1';
-                    prevSlide.style.transform = 'translateX(0)';
-                }, 50);
-            }, 500);
+                    currentSlide.classList.remove('active');
+                    prevSlide.classList.remove('prev');
+                    prevSlide.classList.add('active');
+
+                    // Animate previous slide in
+                    prevSlide.style.visibility = 'visible';
+                    prevSlide.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    prevSlide.style.transitionDelay = '0.1s';
+
+                    setTimeout(() => {
+                        prevSlide.style.opacity = '1';
+                        prevSlide.style.transform = 'translateX(0)';
+                    }, 50);
+                }, 500);
+            }
         }
     }
 
@@ -1085,14 +2229,29 @@ window.storyCanvas = (function () {
      * Hides the loading overlay with animation
      */
     function hideLoadingOverlay() {
-        const overlay = document.querySelector('.loading-overlay');
-        if (overlay) {
-            overlay.style.opacity = '0';
-            overlay.style.transition = 'opacity 0.5s ease';
+        try {
+            const overlay = document.querySelector('.loading-overlay');
+            if (overlay) {
+                d3.select(overlay)
+                    .transition()
+                    .duration(500)
+                    .style('opacity', 0)
+                    .on('end', function () {
+                        overlay.style.display = 'none';
+                    });
+            }
+        } catch (e) {
+            console.log('D3 animation error, falling back to CSS transitions', e);
 
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 500);
+            const overlay = document.querySelector('.loading-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.5s ease';
+
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 500);
+            }
         }
     }
 
@@ -1192,12 +2351,15 @@ window.storyCanvas = (function () {
      */
     function toggleDarkMode(enabled) {
         darkModeEnabled = enabled;
-        setChartDefaults();
 
         // Update all charts
         for (const id in chartInstances) {
-            if (chartInstances.hasOwnProperty(id)) {
-                chartInstances[id].update();
+            if (chartInstances.hasOwnProperty(id) && chartInstances[id].chart) {
+                chartInstances[id].chart.updateOptions({
+                    theme: {
+                        mode: darkModeEnabled ? 'dark' : 'light'
+                    }
+                });
             }
         }
     }
