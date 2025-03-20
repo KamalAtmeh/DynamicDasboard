@@ -1,0 +1,449 @@
+﻿@* @page "/datastory/{DatabaseId:int}/{QueryId:int}"
+@using DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService
+@using System.Text.Json;
+
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.JSInterop;
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using System.Net.Http.Json;
+@using System.Threading.Tasks;
+@using static DynamicDashboardFE.Components.DataStoryVisualizer
+
+@using static System.Net.WebRequestMethods;
+
+
+<div class="data-story-container @(isLoading ? "loading" : "")">
+    @if (isLoading)
+    {
+        <div class="loading-overlay">
+            <div class="spinner-container">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Creating your data story...</p>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-container">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">Something went wrong</h4>
+                <p>@errorMessage</p>
+                <hr>
+                <p class="mb-0">Please try again or choose a different query.</p>
+            </div>
+        </div>
+    }
+    else if (dataStory != null && dataStory.Scenes != null && dataStory.Scenes.Any())
+    {
+        <div class="story-header">
+            <h2>Data Story</h2>
+            <p>Based on your question: <span class="question-text">@dataStory.Question</span></p>
+        </div>
+
+        <div class="scene-navigation">
+            <div class="nav-buttons">
+                <button class="btn btn-outline-primary @(currentScene <= 0 ? "disabled" : "")"
+                @onclick="PreviousScene" disabled="@(currentScene <= 0)">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <div class="scene-indicator">
+                    <span>@(currentScene + 1) of @dataStory.Scenes.Count</span>
+                </div>
+                <button class="btn btn-primary @(currentScene >= dataStory.Scenes.Count - 1 ? "disabled" : "")"
+                @onclick="NextScene" disabled="@(currentScene >= dataStory.Scenes.Count - 1)">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="scene-container @($"scene-{currentAnimation}")">
+            @{
+                var scene = dataStory.Scenes[currentScene];
+            }
+            <div class="scene-content">
+                <h3>@scene.Title</h3>
+                <p>@scene.Content</p>
+
+                <div class="visualization-container">
+                    @switch (scene.Visualization)
+                    {
+                        case "bar":
+                            <div id="barChart" class="chart-container"></div>
+                            break;
+                        case "line":
+                            <div id="lineChart" class="chart-container"></div>
+                            break;
+                        case "pie":
+                            <div id="pieChart" class="chart-container"></div>
+                            break;
+                        case "horizontalBar":
+                            <div id="horizontalBarChart" class="chart-container"></div>
+                            break;
+                        case "scatter":
+                            <div id="scatterChart" class="chart-container"></div>
+                            break;
+                        case "insights":
+                            <div class="insights-grid">
+                                @foreach (var insight in dataStory.Insights)
+                                {
+                                    <div class="insight-card">
+                                        <div class="insight-icon">
+                                            @switch (insight.Type)
+                                            {
+                                                case "max":
+                                                    <i class="fas fa-arrow-up text-success"></i>
+                                                    break;
+                                                case "min":
+                                                    <i class="fas fa-arrow-down text-danger"></i>
+                                                    break;
+                                                case "average":
+                                                    <i class="fas fa-equals text-primary"></i>
+                                                    break;
+                                                case "trend":
+                                                    <i class="fas fa-chart-line text-info"></i>
+                                                    break;
+                                                case "outlier":
+                                                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                    break;
+                                                default:
+                                                    <i class="fas fa-info-circle"></i>
+                                                    break;
+                                            }
+                                        </div>
+                                        <div class="insight-content">
+                                            <p>@insight.Description</p>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            break;
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="story-actions">
+            <button class="btn btn-outline-secondary" @onclick="ReturnToDashboard">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+            <button class="btn btn-outline-info" @onclick="RestartStory">
+                <i class="fas fa-redo"></i> Restart Story
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <div class="empty-state-content">
+                <i class="fas fa-chart-pie"></i>
+                <h3>No data story available</h3>
+                <p>There's not enough data to create a story, or the data doesn't contain patterns we can visualize.</p>
+                <button class="btn btn-primary" @onclick="ReturnToDashboard">
+                    Back to Dashboard
+                </button>
+            </div>
+        </div>
+    }
+</div>
+@code
+{
+
+
+    /// <summary>
+    /// The database ID from the route
+    /// </summary>
+    [Parameter]
+    public int DatabaseId { get; set; }
+
+    /// <summary>
+    /// The query ID from the route
+    /// </summary>
+    [Parameter]
+    public int QueryId { get; set; }
+
+    // State variables
+    private bool isLoading = true;
+    private string errorMessage;
+    private DynamicDashboardCommon.Models.DataStory dataStory;
+    private int currentScene = 0;
+    private string currentAnimation = "fadeIn";
+    private readonly string[] animations = { "fadeIn", "slideIn", "expandIn", "bounceIn" };
+    private Random random = new Random();
+
+    /// <summary>
+    /// Initializes the component and loads the data story
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            await LoadDataStory();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data story: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// After the component renders, initialize the visualizations using JavaScript
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InitializeJsInterop();
+        }
+
+        // If we have a valid data story and scene, initialize or update the visualization
+        if (dataStory?.Scenes != null && dataStory.Scenes.Count > currentScene)
+        {
+            var scene = dataStory.Scenes[currentScene];
+
+            // If the scene has a visualization that needs to be rendered
+            if (!string.IsNullOrEmpty(scene.Visualization) && scene.Visualization != "none" && scene.Visualization != "insights")
+            {
+                await RenderVisualization(scene);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Loads the data story from the API
+    /// </summary>
+    private async Task LoadDataStory()
+    {
+        try
+        {
+            // Get the query results
+            var queryResult = await Http.GetFromJsonAsync<QueryExecutionResponse>($"api/Query/execution/{QueryId}");
+
+            if (queryResult == null || !queryResult.Success)
+            {
+                errorMessage = queryResult?.ErrorMessage ?? "Failed to retrieve query results.";
+                return;
+            }
+
+            // Generate the data story
+            var response = await Http.PostAsJsonAsync("api/DataStory/generate", new
+            {
+                DatabaseId = DatabaseId,
+                Question = queryResult.OriginalQuestion,
+                Results = queryResult.Results
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                dataStory = await response.Content.ReadFromJsonAsync<DynamicDashboardCommon.Models.DataStory>();
+
+                if (dataStory == null || !dataStory.Success)
+                {
+                    errorMessage = dataStory?.ErrorMessage ?? "Failed to generate data story.";
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Error from server: {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+            await LogToConsole($"Error in LoadDataStory: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Initialize JavaScript interop for visualizations
+    /// </summary>
+    private async Task InitializeJsInterop()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("dataStoryInterop.initialize");
+        }
+        catch (Exception ex)
+        {
+            await LogToConsole($"Error initializing JS interop: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Renders a visualization for the current scene using JavaScript
+    /// </summary>
+    private async Task RenderVisualization(StoryScene scene)
+    {
+        if (scene is null)
+        {
+            throw new ArgumentNullException(nameof(scene));
+        }
+
+        try
+        {
+            if (string.IsNullOrEmpty(scene.Config))
+            {
+                return;
+            }
+
+            // Get the query data if needed
+            var data = dataStory.Scenes[currentScene].Visualization switch
+            {
+                "bar" or "line" or "scatter" or "horizontalBar" => await Http.GetFromJsonAsync<QueryExecutionResponse>($"api/Query/execution/{QueryId}"),
+                _ => null
+            };
+
+            // Call the appropriate JavaScript function based on the visualization type
+            switch (scene.Visualization)
+            {
+                case "bar":
+                    if (data?.Results != null)
+                    {
+                        var config = JsonSerializer.Deserialize<Dictionary<string, string>>(scene.Config);
+                        await JSRuntime.InvokeVoidAsync("dataStoryInterop.renderBarChart", "barChart", data.Results, config["xKey"], config["yKey"]);
+                    }
+                    break;
+
+                case "line":
+                    if (data?.Results != null)
+                    {
+                        var config = JsonSerializer.Deserialize<Dictionary<string, string>>(scene.Config);
+                        await JSRuntime.InvokeVoidAsync("dataStoryInterop.renderLineChart", "lineChart", data.Results, config["xKey"], config["yKey"]);
+                    }
+                    break;
+
+                case "pie":
+                    var pieConfig = JsonSerializer.Deserialize<PieChartConfig>(scene.Config);
+                    await JSRuntime.InvokeVoidAsync("dataStoryInterop.renderPieChart", "pieChart", pieConfig.data, pieConfig.nameKey, pieConfig.dataKey);
+                    break;
+
+                case "horizontalBar":
+                    if (data?.Results != null)
+                    {
+                        var config = JsonSerializer.Deserialize<HorizontalBarConfig>(scene.Config);
+                        await JSRuntime.InvokeVoidAsync("dataStoryInterop.renderHorizontalBarChart",
+                            "horizontalBarChart",
+                            data.Results,
+                            config.xKey,
+                            config.yKey,
+                            config.limit,
+                            config.sort);
+                    }
+                    break;
+
+                case "scatter":
+                    if (data?.Results != null)
+                    {
+                        var config = JsonSerializer.Deserialize<Dictionary<string, string>>(scene.Config);
+                        await JSRuntime.InvokeVoidAsync("dataStoryInterop.renderScatterChart", "scatterChart", data.Results, config["xKey"], config["yKey"]);
+                    }
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            await LogToConsole($"Error rendering visualization: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Navigates to the next scene
+    /// </summary>
+    private async Task NextScene()
+    {
+        if (dataStory?.Scenes != null && currentScene < dataStory.Scenes.Count - 1)
+        {
+            currentScene++;
+            ChangeAnimation();
+            await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Navigates to the previous scene
+    /// </summary>
+    private async Task PreviousScene()
+    {
+        if (currentScene > 0)
+        {
+            currentScene--;
+            ChangeAnimation();
+            await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Changes the animation randomly for scene transitions
+    /// </summary>
+    private void ChangeAnimation()
+    {
+        currentAnimation = animations[random.Next(animations.Length)];
+    }
+
+    /// <summary>
+    /// Restarts the data story from the first scene
+    /// </summary>
+    private void RestartStory()
+    {
+        currentScene = 0;
+        ChangeAnimation();
+    }
+
+    /// <summary>
+    /// Navigates back to the dashboard
+    /// </summary>
+    private void ReturnToDashboard()
+    {
+        NavigationManager.NavigateTo("/dashboard");
+    }
+
+    /// <summary>
+    /// Logs a message to the browser console for debugging
+    /// </summary>
+    private async Task LogToConsole(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", message);
+    }
+
+    /// <summary>
+    /// Configuration class for pie charts
+    /// </summary>
+    private class PieChartConfig
+    {
+        public string dataKey { get; set; }
+        public string nameKey { get; set; }
+        public List<PieDataItem> data { get; set; }
+    }
+
+    /// <summary>
+    /// Data item for pie charts
+    /// </summary>
+    private class PieDataItem
+    {
+        public string name { get; set; }
+        public double value { get; set; }
+    }
+
+    /// <summary>
+    /// Configuration class for horizontal bar charts
+    /// </summary>
+    private class HorizontalBarConfig
+    {
+        public string xKey { get; set; }
+        public string yKey { get; set; }
+        public int limit { get; set; }
+        public string sort { get; set; }
+    }
+} *@

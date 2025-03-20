@@ -1,0 +1,215 @@
+﻿.databricks-test-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.databricks-card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #5b73e8, #44c7f5);
+    color: white;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+    .card-header h2 {
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+
+.card-body {
+    padding: 1.5rem;
+}
+
+h4 {
+    margin-bottom: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+    h4::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(135deg, #5b73e8, #44c7f5);
+        border-radius: 3px;
+    }
+
+.config-section, .query-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.query-section {
+    background-color: #f0f4f8;
+}
+
+.form-control, .input-group {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(91, 115, 232, 0.25);
+        border-color: #5b73e8;
+    }
+
+.btn-primary {
+    background: linear-gradient(135deg, #5b73e8, #44c7f5);
+    border: none;
+    box-shadow: 0 3px 10px rgba(91, 115, 232, 0.3);
+    transition: all 0.3s ease;
+}
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(91, 115, 232, 0.4);
+    }
+
+.btn-outline-secondary {
+    border-color: #ced4da;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+    }
+
+.result-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #5b73e8;
+}
+
+.response-content {
+    white-space: pre-line;
+    line-height: 1.5;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.response-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.animate__animated {
+    animation-duration: 0.5s;
+}
+
+.animate__fadeIn {
+    animation-name: fadeIn;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .databricks-test-container {
+        padding: 0.5rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .config-section, .query-section {
+        padding: 1rem;
+    }
+}
+.code-font {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.advanced-controls {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    border: 1px solid #dee2e6;
+}
+
+/* Tooltip enhancements */
+.form-label i.fas.fa-info-circle {
+    cursor: help;
+    color: #5b73e8;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+    .form-label i.fas.fa-info-circle:hover {
+        opacity: 1;
+    }
+
+/* SQL code formatting */
+.result-container pre {
+    white-space: pre-wrap;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    overflow-x: auto;
+}
+
+    .result-container pre code {
+        color: inherit;
+    }
+
+    /* SQL keywords highlighting */
+    .result-container pre .keyword {
+        color: #569cd6;
+        font-weight: bold;
+    }
+
+    .result-container pre .function {
+        color: #dcdcaa;
+    }
+
+    .result-container pre .string {
+        color: #ce9178;
+    }
+
+    .result-container pre .number {
+        color: #b5cea8;
+    }
+
+    .result-container pre .comment {
+        color: #6a9955;
+        font-style: italic;
+    }

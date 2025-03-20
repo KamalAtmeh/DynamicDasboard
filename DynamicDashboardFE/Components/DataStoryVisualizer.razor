@@ -1,0 +1,325 @@
+﻿@* @using System.Collections.Generic
+@using System.Linq
+@using System.Text.Json
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div class="data-story-container @(IsVisible ? "visible" : "hidden")">
+    @if (IsLoading)
+    {
+        <div class="story-loading">
+            <div class="spinner-container">
+                <div class="spinner"></div>
+            </div>
+            <p>Analyzing your data...</p>
+        </div>
+    }
+    else if (Scenes != null && Scenes.Any())
+    {
+        <div class="story-header">
+            <h3>Data Story</h3>
+            <div class="story-progress">
+                @for (int i = 0; i < Scenes.Count; i++)
+                {
+                    <div class="progress-dot @(i == CurrentSceneIndex ? "active" : "")" @onclick="() => GoToScene(i)"></div>
+                }
+            </div>
+        </div>
+
+        <div class="story-content animate__animated @GetAnimationClass()">
+            <div class="scene-title">
+                <h4>@Scenes[CurrentSceneIndex].Title</h4>
+            </div>
+
+            <div class="scene-description">
+                <p>@Scenes[CurrentSceneIndex].Description</p>
+            </div>
+
+            <div class="visualization-container">
+                @if (Scenes[CurrentSceneIndex].VisualizationType == "chart")
+                {
+                    <div id="chartContainer" class="chart-container"></div>
+                }
+                else if (Scenes[CurrentSceneIndex].VisualizationType == "insights")
+                {
+                    <div class="insights-container">
+                        @foreach (var insight in Insights)
+                        {
+                            <div class="insight-card @insight.Type">
+                                <div class="insight-icon">
+                                    <i class="@GetInsightIcon(insight.Type)"></i>
+                                </div>
+                                <div class="insight-content">
+                                    <h5>@insight.Title</h5>
+                                    <p>@insight.Description</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (Scenes[CurrentSceneIndex].VisualizationType == "metric")
+                {
+                    <div class="metric-display">
+                        <div class="metric-value">@Scenes[CurrentSceneIndex].MetricValue</div>
+                        <div class="metric-label">@Scenes[CurrentSceneIndex].MetricLabel</div>
+                    </div>
+                }
+                else if (Scenes[CurrentSceneIndex].VisualizationType == "table")
+                {
+                    <div class="top-items-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in Scenes[CurrentSceneIndex].TableHeaders)
+                                    {
+                                        <th>@header</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Scenes[CurrentSceneIndex].TableData)
+                                {
+                                    <tr>
+                                        @foreach (var cell in row)
+                                        {
+                                            <td>@cell</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="story-controls">
+            <button class="btn btn-outline-secondary" @onclick="PreviousScene" disabled="@(CurrentSceneIndex == 0)">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <button class="btn btn-primary" @onclick="NextScene" disabled="@(CurrentSceneIndex == Scenes.Count - 1)">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="no-data-message">
+            <i class="fas fa-chart-bar"></i>
+            <p>Run a query to see your data story!</p>
+        </div>
+    }
+</div>
+
+@code {
+      [Parameter]
+        public int DatabaseId { get; set; }
+
+        [Parameter]
+        public int QueryId { get; set; }
+        
+        private bool isLoading = true;
+        private string errorMessage;
+        private DynamicDashboardCommon.Models.DataStory dataStory;
+        private int currentScene = 0;
+        private string currentAnimation = "fadeIn";
+        private readonly string[] animations = { "fadeIn", "slideIn", "expandIn", "bounceIn" };
+        private Random random = new Random();
+        
+        // Reference to JS module for rendering charts
+        private IJSObjectReference dataStoryModule;
+        
+        protected override async Task OnInitializedAsync()
+        {
+            try
+            {
+                // Load query results and generate data story
+                await LoadDataStoryAsync();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error initializing data story: {ex.Message}";
+                isLoading = false;
+            }
+        }
+        
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            try
+            {
+                if (firstRender)
+                {
+                    // Import the JS module for chart rendering
+                    dataStoryModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                        "import", "./js/dataStoryCharts.js");
+                }
+                
+                // Render the visualization for the current scene
+                if (!isLoading && dataStory != null && 
+                    dataStory.Scenes != null && 
+                    currentScene < dataStory.Scenes.Count)
+                {
+                    var scene = dataStory.Scenes[currentScene];
+                    await RenderVisualizationAsync(scene);
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error rendering visualization: {ex.Message}";
+                await JSRuntime.InvokeVoidAsync("console.error", ex.Message);
+            }
+        }
+        
+        private async Task LoadDataStoryAsync()
+        {
+            isLoading = true;
+            
+            try
+            {
+                // Get the query execution results
+                var executionResponse = await Http.GetFromJsonAsync<QueryExecutionResponse>(
+                    $"api/Query/results/{DatabaseId}/{QueryId}");
+                
+                if (executionResponse == null || !executionResponse.Success)
+                {
+                    errorMessage = executionResponse?.ErrorMessage ?? "Failed to retrieve query results";
+                    isLoading = false;
+                    return;
+                }
+                
+                // Generate data story from results
+                var response = await Http.PostAsJsonAsync(
+                    "api/DataStory/generate", 
+                    new DataStoryRequest
+                    {
+                        DatabaseId = DatabaseId,
+                        Question = executionResponse.OriginalQuestion,
+                        QueryId = QueryId,
+                        Results = executionResponse.Results
+                    });
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    dataStory = await response.Content.ReadFromJsonAsync<DynamicDashboardCommon.Models.DataStory>();
+                    
+                    if (dataStory != null && !dataStory.Success)
+                    {
+                        errorMessage = dataStory.ErrorMessage;
+                    }
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    errorMessage = $"Error generating data story: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"An error occurred: {ex.Message}";
+            }
+            finally
+            {
+                isLoading = false;
+            }
+        }
+        
+        private async Task RenderVisualizationAsync(StoryScene scene)
+        {
+            if (dataStoryModule == null || string.IsNullOrEmpty(scene.Visualization) || 
+                scene.Visualization == "none" || scene.Visualization == "insights")
+            {
+                return;
+            }
+            
+            try
+            {
+                // Parse configuration
+                var config = !string.IsNullOrEmpty(scene.Config) 
+                    ? JsonSerializer.Deserialize<Dictionary<string, object>>(scene.Config) 
+                    : new Dictionary<string, object>();
+                
+                // Render the appropriate chart type
+                switch (scene.Visualization)
+                {
+                    case "bar":
+                        await dataStoryModule.InvokeVoidAsync("renderBarChart", "barChart", dataStory.Data, config);
+                        break;
+                    case "line":
+                        await dataStoryModule.InvokeVoidAsync("renderLineChart", "lineChart", dataStory.Data, config);
+                        break;
+                    case "pie":
+                        await dataStoryModule.InvokeVoidAsync("renderPieChart", "pieChart", config);
+                        break;
+                    case "horizontalBar":
+                        await dataStoryModule.InvokeVoidAsync("renderHorizontalBarChart", "horizontalBarChart", dataStory.Data, config);
+                        break;
+                    case "scatter":
+                        await dataStoryModule.InvokeVoidAsync("renderScatterChart", "scatterChart", dataStory.Data, config);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("console.error", $"Error rendering {scene.Visualization} chart: {ex.Message}");
+            }
+        }
+        
+        private async Task NextScene()
+        {
+            if (currentScene < dataStory.Scenes.Count - 1)
+            {
+                currentScene++;
+                ChangeAnimation();
+                StateHasChanged();
+                await Task.Delay(100); // Give time for the DOM to update
+                
+                var scene = dataStory.Scenes[currentScene];
+                await RenderVisualizationAsync(scene);
+            }
+        }
+        
+        private void PreviousScene()
+        {
+            if (currentScene > 0)
+            {
+                currentScene--;
+                ChangeAnimation();
+                StateHasChanged();
+            }
+        }
+        
+        private void ChangeAnimation()
+        {
+            // Randomly select a new animation
+            currentAnimation = animations[random.Next(animations.Length)];
+        }
+        
+        private void RestartStory()
+        {
+            currentScene = 0;
+            ChangeAnimation();
+            StateHasChanged();
+        }
+        
+        private void ReturnToDashboard()
+        {
+            NavigationManager.NavigateTo("/dashboard");
+        }
+        
+        public async ValueTask DisposeAsync()
+        {
+            if (dataStoryModule != null)
+            {
+                await dataStoryModule.DisposeAsync();
+            }
+        }
+    }
+    
+    public class DataStoryRequest
+    {
+        public int DatabaseId { get; set; }
+        public int QueryId { get; set; }
+        public string Question { get; set; }
+        public List<Dictionary<string, object>> Results { get; set; }
+    }
+} *@

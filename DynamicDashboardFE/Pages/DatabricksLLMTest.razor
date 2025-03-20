@@ -1,0 +1,572 @@
+﻿@page "/databrickstest"
+@using System.Net.Http.Json
+@using System.Text.Json
+@using System.Text
+@using System.Diagnostics
+@using System.Net.Http.Headers
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IToastService toastService
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.JSInterop;
+using Blazored.Toast.Services;
+
+<div class="databricks-test-container">
+	<div class="databricks-card">
+		<div class="card-header">
+			<h2><i class="fas fa-robot me-2"></i>Databricks LLM Test</h2>
+		</div>
+
+		<div class="card-body">
+			<!-- API Configuration -->
+			<div class="config-section">
+				<h4>API Configuration</h4>
+				<div class="mb-3">
+					<label for="apiToken" class="form-label">Databricks API Token</label>
+					<div class="input-group">
+						<input type="@(showToken ? "text" : "password")" class="form-control" id="apiToken" @bind="apiToken"
+						placeholder="Enter your Databricks API token" />
+						<button class="btn btn-outline-secondary" @onclick="ToggleTokenVisibility">
+							<i class="@(showToken ? "fas fa-eye-slash" : "fas fa-eye")"></i>
+						</button>
+					</div>
+					<small class="text-muted">Your token will not be stored permanently</small>
+				</div>
+
+				<div class="mb-3">
+					<label for="databricksHost" class="form-label">Databricks Host</label>
+					<input type="text" class="form-control" id="databricksHost" @bind="databricksHost"
+					placeholder="dbc-92b3f98a-e511.cloud.databricks.com" />
+				</div>
+
+				<div class="mb-3">
+					<label for="endpointName" class="form-label">Endpoint Name</label>
+					<input type="text" class="form-control" id="endpointName" @bind="endpointName"
+					placeholder="llama-70b-instruct" />
+				</div>
+
+				<div class="mb-3">
+					<label for="modelName" class="form-label">Model Name</label>
+					<input type="text" class="form-control" id="modelName" @bind="modelName"
+					placeholder="LLAMA-70b-Instruct" />
+				</div>
+			</div>
+
+			<!-- Query Section -->
+			<div class="query-section mt-4">
+				<h4>Test Query</h4>
+				<div class="mb-3">
+					<label for="systemPrompt" class="form-label">System Prompt</label>
+					<textarea class="form-control" id="systemPrompt" rows="2" @bind="systemPrompt"
+					placeholder="You are an AI assistant"></textarea>
+				</div>
+
+				<div class="mb-3">
+					<label for="userPrompt" class="form-label">User Prompt</label>
+					<textarea class="form-control" id="userPrompt" rows="3" @bind="userPrompt"
+					placeholder="Tell me about Large Language Models"></textarea>
+				</div>
+
+				<div class="mb-3">
+					<label for="maxTokens" class="form-label">Max Tokens</label>
+					<input type="number" class="form-control" id="maxTokens" @bind="maxTokens" min="1" max="4096" />
+				</div>
+
+				<div class="d-flex justify-content-between align-items-center">
+					<div>
+						<button class="btn btn-primary" @onclick="SendRequestAsync" disabled="@isLoading">
+							@if (isLoading)
+							{
+								<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+								<span>Processing...</span>
+							}
+							else
+							{
+								<i class="fas fa-paper-plane me-2"></i>
+
+								<span>Send Request</span>
+							}
+						</button>
+						<button class="btn btn-outline-secondary ms-2" @onclick="SendViaServerAsync" disabled="@isLoading">
+							<i class="fas fa-server me-2"></i>Server Proxy
+						</button>
+					</div>
+
+					<button class="btn btn-outline-secondary" @onclick="ClearForm">
+						<i class="fas fa-eraser me-2"></i>Clear
+					</button>
+				</div>
+				<div class="mt-2">
+					<small class="text-info">
+						<i class="fas fa-info-circle me-1"></i>
+						Use "Server Proxy" button to avoid CORS issues
+					</small>
+				</div>
+			</div>
+
+			<!-- Error Display -->
+			@if (!string.IsNullOrEmpty(errorMessage))
+			{
+				<div class="alert alert-danger mt-4 animate__animated animate__fadeIn">
+					<div class="d-flex justify-content-between align-items-center">
+						<div><i class="fas fa-exclamation-triangle me-2"></i>@errorMessage</div>
+						<button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+					</div>
+				</div>
+			}
+
+			<!-- Results Display -->
+			@if (!string.IsNullOrEmpty(responseText))
+			{
+				<div class="results-section mt-4 animate__animated animate__fadeIn">
+					<h4><i class="fas fa-comment-dots me-2"></i>Response</h4>
+					<div class="result-container">
+						<div class="response-content">@((MarkupString)FormattedResponse)</div>
+						<div class="response-actions">
+							<button class="btn btn-sm btn-outline-primary" @onclick="CopyResponseToClipboard">
+								<i class="fas fa-copy me-1"></i>Copy
+							</button>
+						</div>
+					</div>
+
+					<div class="mt-3 text-end">
+						<small class="text-muted">Response time: @responseTimeMs ms</small>
+					</div>
+				</div>
+			}
+
+			<!-- Request details -->
+			@if (showRequestDetails)
+			{
+				<div class="debug-section mt-4 animate__animated animate__fadeIn">
+					<h4><i class="fas fa-bug me-2"></i>Request Details</h4>
+					<div class="debug-container">
+						<h5>Request URL:</h5>
+						<pre>@requestUrl</pre>
+
+						<h5>Request Payload:</h5>
+						<pre>@requestPayload</pre>
+
+						<h5>Raw Response:</h5>
+						<pre>@rawResponse</pre>
+					</div>
+				</div>
+			}
+
+			<div class="mt-3">
+				<button class="btn btn-sm btn-outline-secondary" @onclick="@(() => showRequestDetails = !showRequestDetails)">
+					<i class="fas @(showRequestDetails ? "fa-eye-slash" : "fa-eye") me-1"></i>
+					@(showRequestDetails ? "Hide" : "Show") Request Details
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Advanced Model Configuration (collapsible) -->
+<div class="advanced-section mt-4">
+	<button class="btn btn-outline-secondary w-100 text-start" type="button"
+	@onclick="@(() => showAdvanced = !showAdvanced)">
+		<i class="fas @(showAdvanced ? "fa-chevron-down" : "fa-chevron-right") me-2"></i>
+		Advanced Model Configuration
+	</button>
+
+	@if (showAdvanced)
+	{
+		<div class="advanced-controls mt-3 animate__animated animate__fadeIn">
+			<div class="row">
+				<div class="col-md-6">
+					<div class="mb-3">
+						<label for="temperature" class="form-label">
+							Temperature (@temperature.ToString("0.00"))
+							<i class="fas fa-info-circle ms-1" title="Controls randomness: 0 is more deterministic, 1 is more creative"></i>
+						</label>
+						<input type="range" class="form-range" id="temperature" min="0" max="1" step="0.01"
+						@bind-value="temperature" @bind-value:event="oninput" />
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="mb-3">
+						<label for="topP" class="form-label">
+							Top P (@topP.ToString("0.00"))
+							<i class="fas fa-info-circle ms-1" title="Nucleus sampling: 1.0 considers all tokens, lower values focus on higher probability tokens"></i>
+						</label>
+						<input type="range" class="form-range" id="topP" min="0" max="1" step="0.01"
+						@bind-value="topP" @bind-value:event="oninput" />
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-6">
+					<div class="mb-3">
+						<label for="frequencyPenalty" class="form-label">
+							Frequency Penalty (@frequencyPenalty.ToString("0.00"))
+							<i class="fas fa-info-circle ms-1" title="Reduces repetition of tokens: higher values reduce repetition"></i>
+						</label>
+						<input type="range" class="form-range" id="frequencyPenalty" min="-2" max="2" step="0.01"
+						@bind-value="frequencyPenalty" @bind-value:event="oninput" />
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="mb-3">
+						<label for="presencePenalty" class="form-label">
+							Presence Penalty (@presencePenalty.ToString("0.00"))
+							<i class="fas fa-info-circle ms-1" title="Increases likelihood of discussing new topics: higher values encourage new topics"></i>
+						</label>
+						<input type="range" class="form-range" id="presencePenalty" min="-2" max="2" step="0.01"
+						@bind-value="presencePenalty" @bind-value:event="oninput" />
+					</div>
+				</div>
+			</div>
+
+			<div class="mb-3">
+				<label for="stopSequences" class="form-label">
+					Stop Sequences
+					<i class="fas fa-info-circle ms-1" title="Sequences to stop generation (separate with comma)"></i>
+				</label>
+				<input type="text" class="form-control" id="stopSequences" @bind="stopSequences"
+				placeholder="e.g., ;, --, /*" />
+			</div>
+
+			<div class="mb-3 form-check">
+				<input type="checkbox" class="form-check-input" id="useExampleFormat" @bind="useExampleFormat" />
+				<label class="form-check-label" for="useExampleFormat">Include SQL formatting example</label>
+			</div>
+
+			@if (useExampleFormat)
+			{
+				<div class="mb-3">
+					<label for="exampleFormat" class="form-label">SQL Example Format</label>
+					<textarea class="form-control code-font" id="exampleFormat" rows="5" @bind="exampleFormat"></textarea>
+				</div>
+			}
+
+			<div class="mb-3">
+				<label for="schemaText" class="form-label">Database Schema (for improved accuracy)</label>
+				<textarea class="form-control code-font" id="schemaText" rows="6" @bind="schemaText"
+				placeholder="Tables: [Customer(id, name, email), Order(id, customer_id, date, amount)]"></textarea>
+			</div>
+		</div>
+	}
+</div>
+@code
+{
+
+	// API Configuration
+	private string apiToken = "dapi1e8c0a09a8a2e2ea5848cd47e5d93a38";
+	private string databricksHost = "dbc-930e2a5e-f343.cloud.databricks.com";
+	//private string endpointName = "llama-70b-instruct";
+	private string endpointName = "databricks-meta-llama-3-3-70b-instruct";
+
+	//private string modelName = "LLAMA-70b-Instruct";
+	private string modelName = "meta-llama-3.3-70b-instruct-121024";
+	
+	private int maxTokens = 4000;
+	private string schemaText = @"Tables:
+- Customers(CustomerID, FirstName, LastName, Email, Phone)
+- Orders(OrderID, CustomerID, OrderDate, TotalAmount)
+- OrderItems(OrderItemID, OrderID, ProductID, Quantity, UnitPrice)
+- Products(ProductID, ProductName, Category, UnitPrice, StockQuantity)";
+	private bool showAdvanced = false;
+	// Prompts
+	private string systemPrompt = "You are an expert SQL developer";
+	private string userPrompt = "Tell me about Large Language Models";
+
+	// UI State
+	private bool isLoading = false;
+	private string errorMessage = "";
+	private string responseText = "";
+	private long responseTimeMs = 0;
+	private bool showToken = false;
+	private bool showRequestDetails = false;
+
+	// Debug info
+	private string requestUrl = "";
+	private string requestPayload = "";
+	private string rawResponse = "";
+
+	// Property to format the response with line breaks for HTML display
+	private string FormattedResponse => responseText?.Replace("\n", "<br />") ?? "";
+
+
+	private double temperature = 0.1;
+	private double topP = 0.95;
+	private double frequencyPenalty = 0.0;
+	private double presencePenalty = 0.0;
+	private string stopSequences = ";";
+	private bool useExampleFormat = true;
+
+	// Example SQL format
+	private string exampleFormat = @"SELECT column1, column2
+FROM table
+WHERE condition
+ORDER BY column1;";
+
+	// Enhanced system prompt template
+	private string systemPromptTemplate = @"You are an expert SQL developer who generates accurate SQL queries from natural language questions.
+Follow these strict guidelines:
+
+1. Only use tables and columns that exist in the provided schema
+2. Always qualify column names with table names or aliases
+3. Generate standard SQL that works with {0} databases
+4. Follow the exact formatting style shown in the examples
+5. Do not include explanations, only output valid SQL code
+6. End statements with a semicolon
+7. Handle JOINs, WHERE clauses, and GROUP BY correctly based on the schema
+8. Use precise column names as specified in the schema, never invent new ones
+
+Database Schema:
+{1}
+
+{2}";
+
+	private async Task SendRequestAsync()
+	{
+		// Validate inputs
+		if (ValidateInputs() == false)
+			return;
+
+		try
+		{
+			isLoading = true;
+			errorMessage = "";
+
+			// Build the complete URL
+			requestUrl = $"https://{databricksHost}/serving-endpoints/{endpointName}/invocations";
+
+			// Start timing
+			var stopwatch = Stopwatch.StartNew();
+
+			// Prepare the request
+			using var client = new HttpClient();
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiToken);
+
+			var chatRequest = new
+			{
+				messages = new[]
+				{
+						new { role = "system", content = systemPrompt },
+						new { role = "user", content = userPrompt }
+					},
+				model = modelName,
+				max_tokens = maxTokens
+			};
+
+			requestPayload = JsonSerializer.Serialize(chatRequest, new JsonSerializerOptions { WriteIndented = true });
+
+			var content = new StringContent(
+				requestPayload,
+				Encoding.UTF8,
+				"application/json"
+			);
+
+			// Send the request
+			var response = await client.PostAsync(requestUrl, content);
+			stopwatch.Stop();
+			responseTimeMs = stopwatch.ElapsedMilliseconds;
+
+			// Process the response
+			rawResponse = await response.Content.ReadAsStringAsync();
+
+			if (response.IsSuccessStatusCode)
+			{
+				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+				try
+				{
+					var parsedResponse = JsonSerializer.Deserialize<DatabricksResponse>(rawResponse, options);
+					if (parsedResponse?.Choices?.Length > 0)
+					{
+						responseText = parsedResponse.Choices[0].Message.Content;
+						toastService.ShowSuccess("Request completed successfully!");
+					}
+					else
+					{
+						responseText = "No content found in the response.";
+					}
+				}
+				catch (Exception ex)
+				{
+					// If can't parse properly, just show the raw response
+					responseText = $"Error parsing response: {ex.Message}\n\nRaw response:\n{rawResponse}";
+				}
+			}
+			else
+			{
+				errorMessage = $"Error: {response.StatusCode} - {rawResponse}";
+				toastService.ShowError("Request failed");
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"An error occurred: {ex.Message}";
+			toastService.ShowError("An unexpected error occurred");
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private async Task SendViaServerAsync()
+	{
+		// Validate inputs
+		if (ValidateInputs() == false)
+			return;
+
+		try
+		{
+			isLoading = true;
+			errorMessage = "";
+
+			// string formattedSystemPrompt = string.Format(
+			// systemPromptTemplate,
+			// endpointName.ToLowerInvariant().Contains("mysql") ? "MySQL" :
+			// 	endpointName.ToLowerInvariant().Contains("postgres") ? "PostgreSQL" : "SQL Server",
+			// schemaText,
+			// useExampleFormat ? $"Format example:\n{exampleFormat}" : "");
+			string formattedSystemPrompt = systemPrompt;
+			// Start timing
+			var stopwatch = Stopwatch.StartNew();
+
+
+
+			// Prepare the request to our backend proxy
+			var proxyRequest = new
+			{
+				DatabricksHost = databricksHost,
+				EndpointName = endpointName,
+				ApiToken = apiToken,
+				ModelName = modelName,
+				MaxTokens = maxTokens,
+				SystemPrompt = formattedSystemPrompt,
+				UserPrompt = userPrompt
+			};
+			
+
+			requestUrl = "/api/DatabricksProxy/callLlm";
+			requestPayload = JsonSerializer.Serialize(proxyRequest, new JsonSerializerOptions { WriteIndented = true });
+
+			// Send the request to our backend proxy
+			var response = await Http.PostAsJsonAsync(requestUrl, proxyRequest);
+			stopwatch.Stop();
+			responseTimeMs = stopwatch.ElapsedMilliseconds;
+
+			// Process the response
+			rawResponse = await response.Content.ReadAsStringAsync();
+
+			if (response.IsSuccessStatusCode)
+			{
+				var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+
+				if (proxyResponse?.Success == true)
+				{
+					responseText = proxyResponse.Content;
+					toastService.ShowSuccess("Request completed successfully!");
+				}
+				else
+				{
+					errorMessage = proxyResponse?.ErrorMessage ?? "Unknown error from proxy service";
+					toastService.ShowError("Request failed");
+				}
+			}
+			else
+			{
+				errorMessage = $"Error: {response.StatusCode} - {rawResponse}";
+				toastService.ShowError("Request failed");
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"An error occurred: {ex.Message}";
+			toastService.ShowError("An unexpected error occurred");
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private bool ValidateInputs()
+	{
+		if (string.IsNullOrWhiteSpace(apiToken))
+		{
+			errorMessage = "Please enter a Databricks API token";
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(databricksHost))
+		{
+			errorMessage = "Please enter the Databricks host";
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(endpointName))
+		{
+			errorMessage = "Please enter an endpoint name";
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(userPrompt))
+		{
+			errorMessage = "Please enter a user prompt";
+			return false;
+		}
+
+		return true;
+	}
+
+	private void ClearForm()
+	{
+		systemPrompt = "You are an expert SQL developer";
+		userPrompt = "";
+		responseText = "";
+		errorMessage = "";
+		rawResponse = "";
+		requestPayload = "";
+		requestUrl = "";
+	}
+
+	private void ToggleTokenVisibility()
+	{
+		showToken = !showToken;
+	}
+
+	private async Task CopyResponseToClipboard()
+	{
+		if (!string.IsNullOrEmpty(responseText))
+		{
+			await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", responseText);
+			toastService.ShowSuccess("Response copied to clipboard!");
+		}
+	}
+
+	// Response model classes
+	private class DatabricksResponse
+	{
+		public Choice[] Choices { get; set; }
+	}
+
+	private class Choice
+	{
+		public Message Message { get; set; }
+	}
+
+	private class Message
+	{
+		public string Content { get; set; }
+	}
+
+	private class ProxyResponse
+	{
+		public bool Success { get; set; }
+		public string Content { get; set; }
+		public string ErrorMessage { get; set; }
+	}
+}
+}
+}

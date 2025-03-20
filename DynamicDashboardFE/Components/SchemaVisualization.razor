@@ -1,0 +1,255 @@
+﻿@page "/schemavisualization/{DatabaseId:int}"
+@using DynamicDashboardCommon.Models
+@using Microsoft.JSInterop
+@using System.Text.Json
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject IToastService ToastService
+@implements IAsyncDisposable
+
+<div class="schema-container">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Interactive Schema Visualization</h3>
+            <div class="btn-toolbar">
+                <button class="btn btn-sm btn-outline-primary me-2" @onclick="ResetView">
+                    <i class="fas fa-sync-alt"></i> Reset View
+                </button>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ZoomIn">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ZoomOut">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="visualization-overlay @(_isLoading ? "d-flex" : "d-none")">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span class="ms-2">Loading schema visualization...</span>
+            </div>
+            <div id="schema-visualization-container" style="height: 600px;"></div>
+        </div>
+        @if (selectedElement != null)
+        {
+            <div class="card-footer">
+                <div class="selected-element-details">
+                    <h4>@selectedElement.Name</h4>
+                    <p class="text-muted">@selectedElement.Description</p>
+
+                    @if (selectedElement.Type == "table")
+                    {
+                        <div class="table-info">
+                            <span class="badge bg-info">@selectedElement.ColumnCount Columns</span>
+                            <span class="badge bg-secondary">@selectedElement.RelationshipCount Relationships</span>
+                        </div>
+                    }
+                    else if (selectedElement.Type == "relationship")
+                    {
+                        <div class="relationship-info">
+                            <p><strong>Type:</strong> @selectedElement.RelationshipType</p>
+                            <p><strong>From:</strong> @selectedElement.SourceTable.@selectedElement.SourceColumn</p>
+                            <p><strong>To:</strong> @selectedElement.TargetTable.@selectedElement.TargetColumn</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int DatabaseId { get; set; }
+
+    private bool _isLoading = true;
+    private ElementDetails selectedElement;
+    private DatabaseSchema schema;
+    private IJSObjectReference module;
+    private IJSObjectReference cytoscapeInstance;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadDatabaseSchema();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading schema: {ex.Message}");
+            _isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./js/schemaVisualization.js");
+        }
+
+        if (schema != null && module != null && _isLoading)
+        {
+            await InitializeVisualization();
+        }
+    }
+
+    private async Task LoadDatabaseSchema()
+    {
+        _isLoading = true;
+        schema = await Http.GetFromJsonAsync<DatabaseSchema>($"api/DatabaseSchema/parsed/{DatabaseId}/1");
+    }
+
+    private async Task InitializeVisualization()
+    {
+        try
+        {
+            var graphData = ConvertSchemaToGraphData();
+            cytoscapeInstance = await module.InvokeAsync<IJSObjectReference>(
+                "initializeCytoscape", "schema-visualization-container", graphData);
+
+            await module.InvokeVoidAsync("addEventListeners",
+                DotNetObjectReference.Create(this));
+
+            _isLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error initializing visualization: {ex.Message}");
+            _isLoading = false;
+        }
+    }
+
+    private object ConvertSchemaToGraphData()
+    {
+        var nodes = new List<object>();
+        var edges = new List<object>();
+
+        // Add table nodes
+        foreach (var table in schema.Tables)
+        {
+            if (table.IsActive)
+            {
+                nodes.Add(new
+                {
+                    data = new
+                    {
+                        id = table.ID,
+                        label = string.IsNullOrEmpty(table.FriendlyName)
+                            ? table.DBName
+                            : table.FriendlyName,
+                        name = table.DBName,
+                        type = "table",
+                        columns = table.Columns?.Count ?? 0,
+                        description = table.Description
+                    }
+                });
+            }
+        }
+
+        // Add relationship edges
+        if (schema.Relationships != null)
+        {
+            foreach (var rel in schema.Relationships)
+            {
+                if (rel.IsActive)
+                {
+                    edges.Add(new
+                    {
+                        data = new
+                        {
+                            id = rel.ID,
+                            source = rel.Source.TableID,
+                            target = rel.Target.TableID,
+                            label = rel.Name,
+                            type = rel.Type,
+                            sourceColumn = rel.Source.ColumnName,
+                            targetColumn = rel.Target.ColumnName
+                        }
+                    });
+                }
+            }
+        }
+
+        return new
+        {
+            nodes,
+            edges
+        };
+    }
+
+    [JSInvokable]
+    public void OnElementSelected(string elementJson)
+    {
+        try
+        {
+            selectedElement = JsonSerializer.Deserialize<ElementDetails>(elementJson);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deserializing element: {ex.Message}");
+        }
+    }
+
+    [JSInvokable]
+    public void OnElementUnselected()
+    {
+        selectedElement = null;
+        StateHasChanged();
+    }
+
+    private async Task ZoomIn()
+    {
+        if (cytoscapeInstance != null)
+        {
+            await module.InvokeVoidAsync("zoomIn");
+        }
+    }
+
+    private async Task ZoomOut()
+    {
+        if (cytoscapeInstance != null)
+        {
+            await module.InvokeVoidAsync("zoomOut");
+        }
+    }
+
+    private async Task ResetView()
+    {
+        if (cytoscapeInstance != null)
+        {
+            await module.InvokeVoidAsync("resetView");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module != null)
+        {
+            await module.DisposeAsync();
+        }
+    }
+
+    // Element details model for selection events
+    private class ElementDetails
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public string Description { get; set; }
+        public int ColumnCount { get; set; }
+        public int RelationshipCount { get; set; }
+        public string RelationshipType { get; set; }
+        public string SourceTable { get; set; }
+        public string SourceColumn { get; set; }
+        public string TargetTable { get; set; }
+        public string TargetColumn { get; set; }
+    }
+}

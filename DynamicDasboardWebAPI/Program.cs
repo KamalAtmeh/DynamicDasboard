@@ -46,7 +46,7 @@ builder.Services.AddCors(options =>
 
 // Register repositories and services
 
-
+builder.Services.AddHttpClient();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
