@@ -28,9 +28,10 @@
             @foreach (var vizType in AvailableVisualizations)
             {
                 <div class="viz-item @(DraggedVizType == vizType.Type ? "dragging" : "")"
-                draggable="true"
-                @ondragstart="@(e => HandleDragStart(e, vizType.Type))"
-                @key="vizType.Type">
+                     draggable="true"
+                     @ondragstart="@(e => HandleDragStart(e, vizType.Type))"
+                     @key="vizType.Type"
+                     data-viz-type="@vizType.Type">
                     <h3><i class="@vizType.Icon"></i> @vizType.Name</h3>
                     <div class="viz-preview">
                         @((MarkupString)vizType.PreviewSvg)
@@ -833,87 +834,109 @@
     // Drag and drop handlers
     private void HandleDragStart(DragEventArgs e, string vizType)
     {
+        Console.WriteLine($"Drag started: {vizType}");
         DraggedVizType = vizType;
+        StateHasChanged();
     }
 
     private void HandleDragOver(int position)
     {
-        HighlightedDropzone = position;
+        if (HighlightedDropzone != position)
+        {
+            HighlightedDropzone = position;
+            StateHasChanged();
+        }
     }
 
     private void HandleDragLeave(int position)
     {
         if (HighlightedDropzone == position)
+        {
             HighlightedDropzone = -1;
+            StateHasChanged();
+        }
     }
 
     private async Task HandleDrop(int position)
     {
+        Console.WriteLine($"Drop: {DraggedVizType} at position {position}");
+
         if (string.IsNullOrEmpty(DraggedVizType))
+        {
+            Console.WriteLine("No visualization type dragged - returning");
             return;
-
-        // Create visualization
-        var viz = new Visualization
-            {
-                Id = $"viz-{++_visualizationCounter}",
-                Type = DraggedVizType,
-                SceneId = CurrentScene,
-                Position = position,
-                Title = GetDefaultTitle(DraggedVizType)
-            };
-
-        // Set default axes based on data
-        if (_numericColumns.Any() && AvailableDataColumns.Any())
-        {
-            if (DraggedVizType == "bar" || DraggedVizType == "line")
-            {
-                viz.XAxis = _categoryColumns.FirstOrDefault() ?? AvailableDataColumns.First();
-                viz.YAxis = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.First();
-            }
-            else if (DraggedVizType == "pie")
-            {
-                viz.Category = _categoryColumns.FirstOrDefault() ?? AvailableDataColumns.First();
-                viz.Value = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.First();
-            }
-            else if (DraggedVizType == "scatter")
-            {
-                if (_numericColumns.Count >= 2)
-                {
-                    viz.XAxis = _numericColumns[0];
-                    viz.YAxis = _numericColumns[1];
-                }
-                else
-                {
-                    viz.XAxis = AvailableDataColumns.First();
-                    viz.YAxis = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.Last();
-                }
-            }
         }
 
-        // Remove existing visualization at this position in this scene
-        var existingViz = GetVisualizationAtPosition(position);
-        if (existingViz != null)
+        try
         {
-            _visualizations.Remove(existingViz);
+            // Create visualization
+            var viz = new Visualization
+                {
+                    Id = $"viz-{++_visualizationCounter}",
+                    Type = DraggedVizType,
+                    SceneId = CurrentScene,
+                    Position = position,
+                    Title = GetDefaultTitle(DraggedVizType)
+                };
+
+            // Set default axes based on data
+            if (_numericColumns.Any() && AvailableDataColumns.Any())
+            {
+                if (DraggedVizType == "bar" || DraggedVizType == "line")
+                {
+                    viz.XAxis = _categoryColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+                    viz.YAxis = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+                }
+                else if (DraggedVizType == "pie")
+                {
+                    viz.Category = _categoryColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+                    viz.Value = _numericColumns.FirstOrDefault() ?? AvailableDataColumns.First();
+                }
+                // Add default axis settings for other chart types
+            }
+
+            // Remove existing visualization at this position in this scene
+            var existingViz = _visualizations.FirstOrDefault(v => v.SceneId == CurrentScene && v.Position == position);
+            if (existingViz != null)
+            {
+                _visualizations.Remove(existingViz);
+                await JSRuntime.InvokeVoidAsync("storyCanvas.cleanupChart", existingViz.Id);
+            }
+
+            // Add the new visualization
+            _visualizations.Add(viz);
+            Console.WriteLine($"Added visualization: {viz.Id}, Type: {viz.Type}, Position: {viz.Position}");
+
+            // Reset drag state
+            DraggedVizType = string.Empty;
+            HighlightedDropzone = -1;
+
+            // Refresh UI first
+            StateHasChanged();
+
+            // Render the visualization after the UI updates
+            await Task.Delay(100); // Slightly longer delay to ensure DOM is updated
+
+            Console.WriteLine($"Rendering visualization {viz.Id} of type {viz.Type}");
+            var dataJson = JsonSerializer.Serialize(_currentData);
+            var configJson = JsonSerializer.Serialize(viz);
+
+            await JSRuntime.InvokeVoidAsync("storyCanvas.renderVisualization", viz.Id, viz.Type, dataJson, configJson);
+
+            // Animate the new visualization
+            await JSRuntime.InvokeVoidAsync("storyCanvas.animateNewVisualization", viz.Id);
+
+            Console.WriteLine("Visualization rendering complete");
         }
-
-        // Add the new visualization
-        _visualizations.Add(viz);
-
-        // Reset drag state
-        DraggedVizType = string.Empty;
-        HighlightedDropzone = -1;
-
-        // Refresh UI
-        StateHasChanged();
-
-        // Render the visualization after the UI updates
-        await Task.Delay(10);
-        await RenderVisualization(viz);
-
-        // Animate the new visualization
-        await JSRuntime.InvokeVoidAsync("storyCanvas.animateNewVisualization", viz.Id);
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in HandleDrop: {ex.Message}");
+            // Display error to user
+            ToastService.ShowError($"Error adding visualization: {ex.Message}");
+        }
     }
+
+
 
     private string GetDefaultTitle(string vizType)
     {

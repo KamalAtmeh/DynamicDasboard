@@ -1,64 +1,6 @@
-﻿/**
- * StoryCanvas.js
- * JavaScript module for the Data Storytelling Canvas component
- * Uses ApexCharts for primary visualizations with D3.js for enhanced animations
- */
-// Check if window is defined to avoid errors in server-side environments
-//if (typeof window !== 'undefined') {
-//    // Create the namespace if it doesn't exist
-//    window.storyCanvas = window.storyCanvas || {};
+﻿
 
-//    // Define the initialize function that is called from Blazor
-//    window.storyCanvas.initialize = function (dotNetHelper) {
-//        console.log("StoryCanvas initialized with .NET helper:", dotNetHelper);
-//        // Store the .NET helper for callbacks
-//        window.storyCanvas._dotNetHelper = dotNetHelper;
-        
-//        // Add a debug statement to confirm initialization
-//        console.log("StoryCanvas initialization complete");
-        
-//        return true;
-//    };
 
-//    // Add the setAnimationsEnabled function
-//    window.storyCanvas.setAnimationsEnabled = function (enabled) {
-//        console.log("Animations enabled:", enabled);
-//        // Implementation will come later
-//        return true;
-//    };
-
-//    // Add the hideLoadingOverlay function
-//    window.storyCanvas.hideLoadingOverlay = function () {
-//        console.log("Hiding loading overlay");
-//        // Find and hide loading overlay
-//        const overlay = document.querySelector('.loading-overlay');
-//        if (overlay) {
-//            overlay.style.opacity = '0';
-//            overlay.style.transition = 'opacity 0.5s ease';
-            
-//            setTimeout(() => {
-//                overlay.style.display = 'none';
-//            }, 500);
-//        }
-//        return true;
-//    };
-
-//    // Add the animateInitialElements function
-//    window.storyCanvas.animateInitialElements = function () {
-//        console.log("Animating initial elements");
-//        // Simple implementation for now
-//        return true;
-//    };
-
-//    // Add the renderVisualization function stub
-//    window.storyCanvas.renderVisualization = function (id, type, dataJson, configJson) {
-//        console.log("Rendering visualization:", id, type);
-//        console.log("Data:", dataJson);
-//        console.log("Config:", configJson);
-//        // Simple implementation for debugging
-//        return true;
-//    };
-//}
 
 // Create a namespace to avoid polluting the global scope
 window.storyCanvas = (function () {
@@ -133,24 +75,72 @@ window.storyCanvas = (function () {
                 });
             }
         }
-    }
 
-    // Add to public API
-    return {
-        // Existing methods...
-        setAnimationsEnabled,
-    };
+        return true;
+    }
 
     /**
      * Sets up drag and drop event listeners
      */
+    /**
+     * Sets up drag and drop event listeners
+     */
     function setupDragAndDrop() {
-        document.addEventListener('dragstart', () => {
+        console.log("Setting up drag and drop handlers");
+
+        // Global drag state
+        document.addEventListener('dragstart', (e) => {
+            console.log("Drag started", e);
             isDragging = true;
+
+            // Set drag image if applicable
+            if (e.target.classList.contains('viz-item')) {
+                // Optional: customize drag image
+                // var img = new Image();
+                // img.src = 'path/to/drag-image.png';
+                // e.dataTransfer.setDragImage(img, 10, 10);
+
+                // Set data transfer
+                if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    // The type of visualization being dragged can be stored in a data attribute
+                    const vizType = e.target.getAttribute('data-viz-type');
+                    if (vizType) {
+                        e.dataTransfer.setData('text/plain', vizType);
+                    }
+                }
+            }
         });
 
         document.addEventListener('dragend', () => {
+            console.log("Drag ended");
             isDragging = false;
+        });
+
+        // Set up dropzone event listeners
+        const dropzones = document.querySelectorAll('.dropzone');
+        dropzones.forEach(dropzone => {
+            // These listeners are redundant with the Blazor ones but serve as a fallback
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('highlight');
+            });
+
+            dropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('highlight');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('highlight');
+
+                // The actual drop handling is in Blazor
+                console.log("Drop event in JS - Blazor should handle this");
+            });
         });
     }
 
@@ -196,68 +186,108 @@ window.storyCanvas = (function () {
      * @param {string} configJson - JSON string of visualization config
      */
     function renderVisualization(id, type, dataJson, configJson) {
-        // Parse JSON data
-        const data = JSON.parse(dataJson);
-        const config = JSON.parse(configJson);
+        console.log(`renderVisualization called for id=${id}, type=${type}`);
 
-        // Get the container element
-        const container = document.getElementById(`viz-content-${id}`);
-        if (!container) {
-            console.error(`Container not found: viz-content-${id}`);
-            return;
-        }
+        try {
+            // Parse JSON data
+            const data = JSON.parse(dataJson);
+            console.log("Data parsed successfully:", data.length, "items");
 
-        // Destroy existing chart if it exists
-        if (chartInstances[id]) {
-            if (chartInstances[id].chart) {
-                chartInstances[id].chart.destroy();
+            const config = JSON.parse(configJson);
+            console.log("Config parsed successfully:", config);
+
+            // Get the container element
+            const containerId = `viz-content-${id}`;
+            console.log(`Looking for container: ${containerId}`);
+
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.error(`Container not found: ${containerId}`);
+
+                // List all available viz-content-* elements to help debug
+                const allContainers = document.querySelectorAll('[id^="viz-content-"]');
+                console.log(`Found ${allContainers.length} viz-content elements:`);
+                allContainers.forEach(el => console.log(` - ${el.id}`));
+
+                return false;
             }
-            delete chartInstances[id];
-        }
 
-        // Clear container
-        container.innerHTML = '';
+            console.log(`Container found, dimensions: ${container.offsetWidth}x${container.offsetHeight}`);
 
-        // Create chart container element
-        const chartContainer = document.createElement('div');
-        chartContainer.id = `chart-${id}`;
-        chartContainer.style.width = '100%';
-        chartContainer.style.height = '100%';
-        container.appendChild(chartContainer);
+            // Destroy existing chart if it exists
+            if (chartInstances[id]) {
+                console.log(`Destroying existing chart for ${id}`);
+                if (chartInstances[id].chart) {
+                    chartInstances[id].chart.destroy();
+                }
+                delete chartInstances[id];
+            }
 
-        // Select chart colors
-        const colors = colorSchemes[config.colorScheme || 'default'];
+            // Clear container
+            container.innerHTML = '';
 
-        // Render based on visualization type
-        switch (type) {
-            case 'bar':
-                renderBarChart(id, data, config, colors);
-                break;
-            case 'line':
-                renderLineChart(id, data, config, colors);
-                break;
-            case 'pie':
-                renderPieChart(id, data, config, colors);
-                break;
-            case 'scatter':
-                renderScatterChart(id, data, config, colors);
-                break;
-            case 'heatmap':
-                renderHeatMap(id, data, config, colors);
-                break;
-            case 'gauge':
-                renderGaugeChart(id, data, config, colors);
-                break;
-            case 'text':
-                renderTextBlock(id, data, config);
-                break;
-            case 'map':
-                renderMapVisualization(id, data, config, colors);
-                break;
-            default:
-                container.innerHTML = `<div class="viz-error">Unsupported visualization type: ${type}</div>`;
+            // Create chart container element
+            const chartContainer = document.createElement('div');
+            chartContainer.id = `chart-${id}`;
+            chartContainer.style.width = '100%';
+            chartContainer.style.height = '100%';
+            container.appendChild(chartContainer);
+
+            // Check if ApexCharts is available
+            if (typeof ApexCharts === 'undefined') {
+                console.error("ApexCharts is not loaded!");
+                container.innerHTML = '<div class="viz-error">ApexCharts library is not available</div>';
+                return false;
+            }
+
+            // Select chart colors
+            const colors = colorSchemes[config.colorScheme || 'default'];
+
+            // Render based on visualization type
+            console.log(`Rendering chart of type: ${type}`);
+
+            switch (type) {
+                case 'bar':
+                    renderBarChart(id, data, config, colors);
+                    break;
+                case 'line':
+                    renderLineChart(id, data, config, colors);
+                    break;
+                case 'pie':
+                    renderPieChart(id, data, config, colors);
+                    break;
+                case 'scatter':
+                    renderScatterChart(id, data, config, colors);
+                    break;
+                case 'heatmap':
+                    renderHeatMap(id, data, config, colors);
+                    break;
+                case 'gauge':
+                    renderGaugeChart(id, data, config, colors);
+                    break;
+                case 'text':
+                    renderTextBlock(id, data, config);
+                    break;
+                case 'map':
+                    renderMapVisualization(id, data, config, colors);
+                    break;
+                default:
+                    container.innerHTML = `<div class="viz-error">Unsupported visualization type: ${type}</div>`;
+                    return false;
+            }
+
+            console.log(`Chart rendered successfully: ${id}`);
+            return true;
+        } catch (error) {
+            console.error(`Error rendering visualization ${id}:`, error);
+            return false;
         }
     }
+
+
+
+
+
 
     /**
      * Renders a bar chart using ApexCharts
@@ -1370,6 +1400,62 @@ window.storyCanvas = (function () {
         };
     }
 
+    // Add debugging function to check visualization containers
+    window.checkVizContainers = function () {
+        console.group("Visualization Containers Check");
+
+        // Check for ApexCharts and D3
+        console.log("Libraries:", {
+            "ApexCharts": typeof ApexCharts !== 'undefined',
+            "D3": typeof d3 !== 'undefined'
+        });
+
+        // Check canvas and dropzone structure
+        const canvas = document.querySelector('.canvas-content');
+        console.log("Canvas container:", canvas ? {
+            width: canvas.offsetWidth,
+            height: canvas.offsetHeight,
+            children: canvas.children.length
+        } : "Not found");
+
+        // Check dropzones
+        const dropzones = document.querySelectorAll('.dropzone');
+        console.log(`Found ${dropzones.length} dropzones`);
+        Array.from(dropzones).forEach((zone, i) => {
+            console.log(`Dropzone ${i}:`, {
+                position: zone.getAttribute('data-position'),
+                hasContent: zone.querySelector('.canvas-viz') !== null,
+                dimensions: {
+                    width: zone.offsetWidth,
+                    height: zone.offsetHeight
+                }
+            });
+        });
+
+        // Check visualization containers
+        const vizContainers = document.querySelectorAll('.viz-content');
+        console.log(`Found ${vizContainers.length} viz-content elements`);
+        Array.from(vizContainers).forEach(container => {
+            console.log(`Container ${container.id}:`, {
+                dimensions: {
+                    width: container.offsetWidth,
+                    height: container.offsetHeight
+                },
+                styles: {
+                    display: window.getComputedStyle(container).display,
+                    position: window.getComputedStyle(container).position,
+                    overflow: window.getComputedStyle(container).overflow
+                }
+            });
+        });
+
+        // Check chart instances
+        console.log("Chart instances:", Object.keys(chartInstances));
+
+        console.groupEnd();
+        return "Visualization container check complete";
+    };
+
     /**
      * Animates a text block with D3
      */
@@ -2364,12 +2450,25 @@ window.storyCanvas = (function () {
         }
     }
 
+    /**
+     * Cleans up a chart instance
+     */
+    function cleanupChart(id) {
+        if (chartInstances[id]) {
+            if (chartInstances[id].chart) {
+                chartInstances[id].chart.destroy();
+            }
+            delete chartInstances[id];
+        }
+    }
+
     // Public API
     return {
         initialize,
-        renderVisualization,
+        setAnimationsEnabled,
         hideLoadingOverlay,
         animateInitialElements,
+        renderVisualization,
         animateNewVisualization,
         animateRemoveVisualization,
         pulseInsight,
@@ -2379,6 +2478,10 @@ window.storyCanvas = (function () {
         transitionToNextSlide,
         transitionToPrevSlide,
         renderPresentationSlide,
+        cleanupChart,
         toggleDarkMode
     };
 })();
+
+
+
