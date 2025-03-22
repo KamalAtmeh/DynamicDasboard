@@ -1,6 +1,8 @@
 using DynamicDasboardWebAPI.Repositories;
+using DynamicDasboardWebAPI.Repositories.TestAutomation;
 using DynamicDasboardWebAPI.Services;
 using DynamicDasboardWebAPI.Services.LLM;
+using DynamicDasboardWebAPI.Services.TestAutomation;
 using DynamicDasboardWebAPI.Utilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,6 +92,9 @@ builder.Services.AddScoped<DatabaseService>();
 
 builder.Services.AddScoped<DatabaseSchemaRepository>();
 builder.Services.AddScoped<DatabaseSchemaService>();
+
+builder.Services.AddScoped<TestAutomationRepository>();
+builder.Services.AddScoped<TestAutomationService>();
 
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });

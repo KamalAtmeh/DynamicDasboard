@@ -566,6 +566,81 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
         }
 
+        public byte[] ConvertJsonToExcelTemplate(TestCasesImportRequest request)
+        {
+            try
+            {
+                using var package = new ExcelPackage();
+                var worksheet = package.Workbook.Worksheets.Add("Test Cases");
+
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Question";
+                worksheet.Cells[1, 2].Value = "ExpectedSQL";
+                worksheet.Cells[1, 3].Value = "ExpectedExplanation";
+                worksheet.Cells[1, 4].Value = "ComplexityLevel";
+                worksheet.Cells[1, 5].Value = "QueryCategory";
+                worksheet.Cells[1, 6].Value = "ExpectedRowCount";
+                // Add remaining headers for output columns
+
+                // Format headers
+                using (var range = worksheet.Cells[1, 1, 1, 17])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
+
+                // Add test cases data
+                for (int i = 0; i < request.TestCases.Count; i++)
+                {
+                    var testCase = request.TestCases[i];
+                    int row = i + 2; // Start from row 2 (after header)
+
+                    worksheet.Cells[row, 1].Value = testCase.Question;
+                    worksheet.Cells[row, 2].Value = testCase.ExpectedSql;
+                    worksheet.Cells[row, 3].Value = testCase.ExpectedExplanation;
+                    worksheet.Cells[row, 4].Value = testCase.ComplexityLevel;
+                    worksheet.Cells[row, 5].Value = testCase.QueryCategory;
+                    // ExpectedRowCount is left blank as requested
+                }
+
+                // Set column widths
+                worksheet.Column(1).Width = 50;  // Question
+                worksheet.Column(2).Width = 70;  // ExpectedSQL
+                worksheet.Column(3).Width = 50;  // ExpectedExplanation
+                worksheet.Column(4).Width = 15;  // ComplexityLevel
+                worksheet.Column(5).Width = 15;  // QueryCategory
+
+                return package.GetAsByteArray();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error converting JSON to Excel template: {ex.Message}", ex);
+            }
+        }
+
+        // Add to DynamicDasboardWebAPI/Services/TestAutomation/TestAutomationService.cs
+
+        /// <summary>
+        /// Retrieves job details with pagination.
+        /// </summary>
+        /// <param name="jobId">The job ID.</param>
+        /// <param name="pageNumber">The page number.</param>
+        /// <param name="pageSize">The page size.</param>
+        /// <returns>Paginated job details.</returns>
+        public async Task<(IEnumerable<TestAutomationDetail> Details, int TotalCount)> GetJobDetailsPaginatedAsync(
+            int jobId, int pageNumber = 1, int pageSize = 20)
+        {
+            try
+            {
+                return await _testRepository.GetTestDetailsPaginatedAsync(jobId, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving test job details: {ex.Message}", ex);
+            }
+        }
+
         /// <summary>
         /// Retrieves dataset comparison data for a specific test detail.
         /// </summary>
@@ -796,6 +871,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 "Find customers who have spent more than the average in each product category they've purchased from"
             };
         }
+
+
 
         #endregion
     }

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Reflection;
+using Blazored.Toast.Services;
+using static System.Net.WebRequestMethods;
 
 namespace DynamicDashboardFE.Pages.Admin
 {
@@ -175,7 +177,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
                 // Load relationships
                 relationships = schemaObj?.Relationships ?? new List<RelationshipSchema>();
-                
+
             }
             catch (Exception ex)
             {
@@ -239,7 +241,6 @@ namespace DynamicDashboardFE.Pages.Admin
                                    JsonContent.Create(tableUpdate));
 
                 var success = await result.Content.ReadFromJsonAsync<bool>();
-
                 if (result.IsSuccessStatusCode && success)
                 {
 
@@ -335,7 +336,7 @@ namespace DynamicDashboardFE.Pages.Admin
 
                 // Send only the column updates in a batch
                 await Http.PutAsync($"api/databaseschema/UpdateColumnsDetailsByColumnID/{DatabaseId}/{selectedTable.ID}",
-                                   JsonContent.Create(columnUpdates));
+                JsonContent.Create(columnUpdates));
 
                 toastService.ShowSuccess("Column changes saved successfully.");
             }
@@ -1176,7 +1177,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                
+
                 throw;
             }
         }
@@ -1197,7 +1198,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-               
+
                 toastService.ShowError("Failed to update term mapping. Please try again.");
             }
         }

@@ -55,7 +55,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<DatabaseSchema> GetSchemaWithJsonByDataBaseIdAsync(int databaseID)
+        public async Task<DatabaseSchema> GetSchemaWithJsonByDataBaseIdAsync(int databaseID, bool isCalledByGenerate = false)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace DynamicDasboardWebAPI.Services
                     return null;
                 }
                 DatabaseSchema schema = await objDBschemaMetadataRepository.GetDatabaseJsonSchemaByIdAsync(databaseID);
-                if ((schema == null || schema.ID == 0 || string.IsNullOrEmpty(schema.SchemaData)) && databaseID > 0)
+                if ((schema == null || schema.ID == 0 || string.IsNullOrEmpty(schema.SchemaData)) && databaseID > 0 && !isCalledByGenerate)
                 {
                     return await GenerateAndGetDatabaseSchemaFromConnectedDBAsync(databaseID, objDataBase);
                 }
@@ -100,7 +100,7 @@ namespace DynamicDasboardWebAPI.Services
             try
             {
 
-                DatabaseSchema objexistingSchema = await GetSchemaObject(databaseId);
+                DatabaseSchema objexistingSchema = await GetSchemaObject(databaseId, false, true);
                 bool hasExistingSchema = objexistingSchema != null && !string.IsNullOrEmpty(objexistingSchema.SchemaData);
                 if (objexistingSchema != null && objexistingSchema.ID > 0 && !string.IsNullOrEmpty(objexistingSchema.SchemaData))
 
@@ -1186,7 +1186,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        public async Task<DatabaseSchema> GetSchemaObject(int databaseID, bool useCache = false)
+        public async Task<DatabaseSchema> GetSchemaObject(int databaseID, bool useCache = false, bool isCalledByGenerate = false)
         {
             try
             {
@@ -1201,7 +1201,7 @@ namespace DynamicDasboardWebAPI.Services
                     }
                 }
 
-                var schema = await GetSchemaWithJsonByDataBaseIdAsync(databaseID);
+                var schema = await GetSchemaWithJsonByDataBaseIdAsync(databaseID, isCalledByGenerate);
                 if (schema == null)
                     return null;
 

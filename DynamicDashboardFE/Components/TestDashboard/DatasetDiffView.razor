@@ -1,0 +1,177 @@
+﻿@using System.Collections.Generic
+
+<div class="dataset-diff-view">
+    @if (Expected == null || Actual == null || !Expected.Any() || !Actual.Any())
+    {
+        <div class="empty-state">
+            <p>Cannot compare datasets - one or both datasets are empty</p>
+        </div>
+    }
+    else
+    {
+        <div class="dataset-diff-summary">
+            <div class="diff-section">
+                <h5>Structure Differences</h5>
+                <div class="diff-item">
+                    <span class="diff-label">Row Count:</span>
+                    <span class="diff-value @(Expected.Count == Actual.Count ? "match" : "mismatch")">
+                        Expected: @Expected.Count, Actual: @Actual.Count
+                        @if (Expected.Count != Actual.Count)
+                        {
+                            <span class="diff-indicator">@(Actual.Count - Expected.Count > 0 ? "+" : "")@(Actual.Count - Expected.Count)</span>
+                        }
+                    </span>
+                </div>
+
+                @{
+                    var expectedColumns = Expected[0].Keys.ToHashSet();
+                    var actualColumns = Actual[0].Keys.ToHashSet();
+                    var commonColumns = expectedColumns.Intersect(actualColumns).ToList();
+                    var missingColumns = expectedColumns.Except(actualColumns).ToList();
+                    var extraColumns = actualColumns.Except(expectedColumns).ToList();
+                }
+
+                <div class="diff-item">
+                    <span class="diff-label">Common Columns:</span>
+                    <span class="diff-value">@commonColumns.Count</span>
+                </div>
+
+                @if (missingColumns.Any())
+                {
+                    <div class="diff-item">
+                        <span class="diff-label">Missing Columns:</span>
+                        <div class="diff-tags">
+                            @foreach (var column in missingColumns)
+                            {
+                                <span class="diff-tag missing">@column</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (extraColumns.Any())
+                {
+                    <div class="diff-item">
+                        <span class="diff-label">Extra Columns:</span>
+                        <div class="diff-tags">
+                            @foreach (var column in extraColumns)
+                            {
+                                <span class="diff-tag extra">@column</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (commonColumns.Any())
+            {
+                <div class="diff-section">
+                    <h5>Data Differences</h5>
+
+                    @{
+                        // Limit analysis to first 100 rows if datasets are large
+                        var expectedSample = Expected.Count > 100 ? Expected.Take(100).ToList() : Expected;
+                        var actualSample = Actual.Count > 100 ? Actual.Take(100).ToList() : Actual;
+
+                        var minRows = Math.Min(expectedSample.Count, actualSample.Count);
+                        var diffCount = 0;
+
+                        // Find rows with differences
+                        var rowDiffs = new List<(int rowIndex, List<string> diffColumns)>();
+
+                        for (int i = 0; i < minRows; i++)
+                        {
+                            var expectedRow = expectedSample[i];
+                            var actualRow = actualSample[i];
+
+                            var diffColumnsInRow = commonColumns
+                            .Where(col => !Equals(
+                            expectedRow.TryGetValue(col, out var expectedVal) ? expectedVal : null,
+                            actualRow.TryGetValue(col, out var actualVal) ? actualVal : null))
+                            .ToList();
+
+                            if (diffColumnsInRow.Any())
+                            {
+                                rowDiffs.Add((i, diffColumnsInRow));
+                                diffCount++;
+                            }
+                        }
+                    }
+
+                    <div class="diff-item">
+                        <span class="diff-label">Different Values:</span>
+                        <span class="diff-value @(diffCount > 0 ? "mismatch" : "match")">
+                            @diffCount @(diffCount == 1 ? "row" : "rows") with differences found
+                        </span>
+                    </div>
+
+                    @if (diffCount > 0)
+                    {
+                        <div class="diff-details">
+                            <table class="diff-table">
+                                <thead>
+                                    <tr>
+                                        <th>Row</th>
+                                        <th>Column</th>
+                                        <th>Expected</th>
+                                        <th>Actual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var (rowIndex, diffColumns) in rowDiffs)
+                                    {
+                                        @foreach (var column in diffColumns)
+                                        {
+                                            <tr>
+                                                <td>@(rowIndex + 1)</td>
+                                                <td>@column</td>
+                                                <td class="expected">
+                                                    @FormatValue(Expected[rowIndex].TryGetValue(column, out var expectedVal) ? expectedVal : null)
+                                                </td>
+                                                <td class="actual">
+                                                    @FormatValue(Actual[rowIndex].TryGetValue(column, out var actualVal) ? actualVal : null)
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if (Expected.Count > 100 || Actual.Count > 100)
+                        {
+                            <div class="diff-note">
+                                <i class="fas fa-info-circle me-2"></i> Comparison limited to first 100 rows.
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<Dictionary<string, object>> Expected { get; set; }
+
+    [Parameter]
+    public List<Dictionary<string, object>> Actual { get; set; }
+
+    private string FormatValue(object value)
+    {
+        if (value == null) return "NULL";
+
+        if (value is DateTime dateTime)
+        {
+            return dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        if (value is decimal decimalValue)
+        {
+            return decimalValue.ToString("0.00");
+        }
+
+        return value.ToString();
+    }
+}

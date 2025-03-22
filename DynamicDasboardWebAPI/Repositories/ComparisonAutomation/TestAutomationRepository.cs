@@ -392,6 +392,53 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
             }
         }
 
+
+        // Add to DynamicDasboardWebAPI/Repositories/TestAutomation/TestAutomationRepository.cs
+
+        /// <summary>
+        /// Retrieves test details by job ID and row number (for pagination).
+        /// </summary>
+        /// <param name="jobId">The ID of the job.</param>
+        /// <param name="pageNumber">The page number.</param>
+        /// <param name="pageSize">The page size.</param>
+        /// <returns>A collection of test detail records with pagination.</returns>
+        public async Task<(IEnumerable<TestAutomationDetail> Details, int TotalCount)> GetTestDetailsPaginatedAsync(
+            int jobId, int pageNumber = 1, int pageSize = 20)
+        {
+            try
+            {
+                const string countQuery = @"
+            SELECT COUNT(*)
+            FROM TestAutomationDetails 
+            WHERE JobID = @JobID";
+
+                const string detailsQuery = @"
+            SELECT *
+            FROM TestAutomationDetails 
+            WHERE JobID = @JobID 
+            ORDER BY DetailID
+            OFFSET @Offset ROWS
+            FETCH NEXT @PageSize ROWS ONLY";
+
+                return await WithConnectionAsync(async conn =>
+                {
+                    int totalCount = await conn.QuerySingleOrDefaultSafeAsync<int>(countQuery, new { JobID = jobId });
+
+                    var offset = (pageNumber - 1) * pageSize;
+                    var details = await conn.QuerySafeAsync<TestAutomationDetail>(
+                        detailsQuery,
+                        new { JobID = jobId, Offset = offset, PageSize = pageSize }
+                    );
+
+                    return (details, totalCount);
+                });
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         #endregion
     }
 }

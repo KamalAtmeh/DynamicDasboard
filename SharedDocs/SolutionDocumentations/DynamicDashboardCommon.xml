@@ -37,11 +37,6 @@
             <param name="sqlScript">SQL script to analyze</param>
             <returns>Collection of referenced database objects</returns>
         </member>
-        <member name="T:DynamicDashboardCommon.Models.BatchProcessingLog">
-            <summary>
-            Represents a log entry for a batch processing job.
-            </summary>
-        </member>
         <member name="T:DynamicDashboardCommon.Models.DataViewingType">
             <summary>
             Represents the different ways data can be viewed in the system
@@ -1010,6 +1005,231 @@
         <member name="P:DynamicDashboardCommon.Models.QueryValidationResult.ReferencedObjects">
             <summary>
             Objects referenced in the SQL script
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.BatchProcessingLog">
+            <summary>
+            Represents a log entry for a batch processing job.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TestAutomationDataset">
+            <summary>
+            Represents a dataset (either expected or actual) for a test case.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.DatasetID">
+            <summary>
+            The unique identifier for the dataset.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.DetailID">
+            <summary>
+            The ID of the test detail this dataset belongs to.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.IsExpected">
+            <summary>
+            Indicates whether this is the expected dataset (true) or the actual generated dataset (false).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.DatasetJSON">
+            <summary>
+            The JSON representation of the dataset.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.RowCount">
+            <summary>
+            The number of rows in the dataset.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.ColumnCount">
+            <summary>
+            The number of columns in the dataset.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.ColumnNames">
+            <summary>
+            JSON array of column names.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.DataHash">
+            <summary>
+            Hash value for quick dataset comparison.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDataset.Detail">
+            <summary>
+            Navigation property for the parent test detail.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TestAutomationDetail">
+            <summary>
+            Represents details for a specific test case within a test automation job.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.DetailID">
+            <summary>
+            The unique identifier for the test detail.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.JobID">
+            <summary>
+            The ID of the job this detail belongs to.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.Question">
+            <summary>
+            The natural language question being tested.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ExpectedSQL">
+            <summary>
+            The expected SQL query that should be generated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.GeneratedSQL">
+            <summary>
+            The SQL query that was actually generated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.SQLMatchScore">
+            <summary>
+            The similarity score between expected and generated SQL (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ExpectedExplanation">
+            <summary>
+            The expected explanation of the query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.GeneratedExplanation">
+            <summary>
+            The explanation that was actually generated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ExplanationMatchScore">
+            <summary>
+            The similarity score between expected and generated explanations (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ExpectedRowCount">
+            <summary>
+            The expected number of rows in the query result.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ActualRowCount">
+            <summary>
+            The actual number of rows in the query result.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.DataMatchScore">
+            <summary>
+            The similarity score between expected and actual datasets (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ResultMatchStatus">
+            <summary>
+            The status of the result match (e.g., "Exact Match", "Row Count Match", "Mismatch").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ComplexityLevel">
+            <summary>
+            The complexity level of the query (e.g., "Simple", "Medium", "Complex").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.QueryCategory">
+            <summary>
+            The category of the query (e.g., "Aggregate", "Join", "Filter").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ExecutionTimeMs">
+            <summary>
+            The execution time of the query in milliseconds.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.Success">
+            <summary>
+            Indicates whether the test was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.ErrorMessage">
+            <summary>
+            Any error message that occurred during processing.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.Job">
+            <summary>
+            Navigation property for the parent job.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationDetail.Datasets">
+            <summary>
+            Navigation property for the datasets.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TestAutomationJob">
+            <summary>
+            Represents a test automation job that processes multiple questions against a database schema.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.JobID">
+            <summary>
+            The unique identifier for the test job.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.FileName">
+            <summary>
+            The name of the file used for the test job.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.DatabaseSchemaID">
+            <summary>
+            The ID of the database schema being tested.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.TotalQuestions">
+            <summary>
+            The total number of questions processed in this job.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.SuccessCount">
+            <summary>
+            The number of questions that were successfully processed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.AverageQueryMatchScore">
+            <summary>
+            The average match score between expected and generated SQL queries (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.AverageExplanationMatchScore">
+            <summary>
+            The average match score between expected and generated explanations (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.AverageDataMatchScore">
+            <summary>
+            The average match score between expected and actual datasets (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.LLMUsed">
+            <summary>
+            The identifier of the LLM used for processing.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.ExecutedBy">
+            <summary>
+            The ID of the user who executed the job, if any.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.ExecutedAt">
+            <summary>
+            The timestamp when the job was executed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomationJob.Details">
+            <summary>
+            Navigation property for the job details.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.User">

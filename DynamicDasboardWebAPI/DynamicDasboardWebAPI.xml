@@ -39,6 +39,62 @@
             <param name="id">The ID that was searched for.</param>
             <returns>A 404 Not Found response.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.TestAutomationController">
+            <summary>
+            API Controller for test automation operations.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.#ctor(DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService,DynamicDasboardWebAPI.Services.ILogsService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.TestAutomationController"/> class.
+            </summary>
+            <param name="testService">The test automation service.</param>
+            <param name="logsService">Service for logs and exception handling.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.UploadTestFile(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String)">
+            <summary>
+            Uploads and processes a test file.
+            </summary>
+            <param name="file">The test file to upload.</param>
+            <param name="databaseId">The ID of the database to test against.</param>
+            <param name="llmProvider">The LLM provider to use for testing.</param>
+            <returns>The processed file with test results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetTestTemplate">
+            <summary>
+            Gets a template file for test cases.
+            </summary>
+            <returns>An Excel template file.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetSampleQuestions">
+            <summary>
+            Gets a sample file with test questions.
+            </summary>
+            <returns>An Excel file with sample test questions.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetTestJobs(System.Int32)">
+            <summary>
+            Gets recent test jobs.
+            </summary>
+            <param name="limit">Maximum number of jobs to retrieve.</param>
+            <returns>Collection of test jobs.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetTestJobDetails(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Gets details of a specific test job.
+            </summary>
+            <param name="jobId">The job ID.</param>
+            <param name="pageNumber">The page number.</param>
+            <param name="pageSize">The page size.</param>
+            <returns>Test job details with pagination.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetDatasetComparison(System.Int32)">
+            <summary>
+            Gets comparison data for a specific test detail.
+            </summary>
+            <param name="detailId">The test detail ID.</param>
+            <returns>Dataset comparison data.</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.QueryController">
             <summary>
             Enhanced controller for processing natural language queries with a multi-step workflow:
@@ -354,6 +410,101 @@
             <param name="limit">Maximum number of jobs to return.</param>
             <param name="databaseId">Optional: ID of the DB to connect to (0=default).</param>
             <returns>A list of recent batch processing jobs.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository">
+            <summary>
+            Repository for managing test automation data in the database.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.#ctor(System.Data.IDbConnection,DynamicDasboardWebAPI.Utilities.DbConnectionFactory)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository"/> class.
+            </summary>
+            <param name="appDbConnection">Default database connection instance.</param>
+            <param name="connectionFactory">Factory for dynamic connections.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.LogTestJobAsync(System.String,System.Int32,System.Int32,System.Int32,System.String,System.Decimal,System.Decimal,System.Decimal,System.Nullable{System.Int32})">
+            <summary>
+            Logs a test automation job.
+            </summary>
+            <param name="fileName">The name of the test file.</param>
+            <param name="databaseId">The ID of the database schema used for testing.</param>
+            <param name="totalQuestions">The total number of questions in the test.</param>
+            <param name="successCount">The number of successfully processed questions.</param>
+            <param name="llmUsed">The LLM provider used for the test.</param>
+            <param name="avgQueryScore">Average SQL query match score.</param>
+            <param name="avgExplanationScore">Average explanation match score.</param>
+            <param name="avgDataScore">Average dataset match score.</param>
+            <param name="userId">The user who executed the test (optional).</param>
+            <returns>The ID of the newly created job.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.GetRecentTestJobsAsync(System.Nullable{System.Int32},System.Int32)">
+            <summary>
+            Retrieves recent test automation jobs.
+            </summary>
+            <param name="userId">Filter by user ID (optional).</param>
+            <param name="limit">Maximum number of jobs to retrieve.</param>
+            <returns>A collection of test automation jobs.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.LogTestDetailAsync(System.Int32,System.String,System.String,System.String,System.Nullable{System.Decimal},System.String,System.String,System.Nullable{System.Decimal},System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Nullable{System.Int32},System.Boolean,System.String)">
+            <summary>
+            Logs a test detail record.
+            </summary>
+            <param name="jobId">The ID of the parent job.</param>
+            <param name="question">The natural language question.</param>
+            <param name="expectedSql">The expected SQL query.</param>
+            <param name="generatedSql">The generated SQL query.</param>
+            <param name="sqlMatchScore">The SQL match score.</param>
+            <param name="expectedExplanation">The expected explanation.</param>
+            <param name="generatedExplanation">The generated explanation.</param>
+            <param name="explanationMatchScore">The explanation match score.</param>
+            <param name="expectedRowCount">The expected row count.</param>
+            <param name="actualRowCount">The actual row count.</param>
+            <param name="dataMatchScore">The dataset match score.</param>
+            <param name="resultMatchStatus">The result match status.</param>
+            <param name="complexityLevel">The question complexity level.</param>
+            <param name="queryCategory">The query category.</param>
+            <param name="executionTimeMs">The execution time in milliseconds.</param>
+            <param name="success">Whether the test was successful.</param>
+            <param name="errorMessage">Any error message.</param>
+            <returns>The ID of the newly created detail record.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.GetTestDetailsForJobAsync(System.Int32)">
+            <summary>
+            Retrieves test details for a specific job.
+            </summary>
+            <param name="jobId">The ID of the job.</param>
+            <returns>A collection of test detail records.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.SaveDatasetAsync(System.Int32,System.Boolean,System.String,System.Int32,System.Int32,System.String,System.String)">
+            <summary>
+            Saves a dataset for a test detail.
+            </summary>
+            <param name="detailId">The ID of the test detail.</param>
+            <param name="isExpected">Whether this is the expected dataset.</param>
+            <param name="datasetJson">JSON representation of the dataset.</param>
+            <param name="rowCount">Number of rows in the dataset.</param>
+            <param name="columnCount">Number of columns in the dataset.</param>
+            <param name="columnNames">JSON array of column names.</param>
+            <param name="dataHash">Hash of the dataset for comparison.</param>
+            <returns>The ID of the newly created dataset record.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.GetDatasetAsync(System.Int32,System.Boolean)">
+            <summary>
+            Retrieves a dataset for a test detail.
+            </summary>
+            <param name="detailId">The ID of the test detail.</param>
+            <param name="isExpected">Whether to retrieve the expected dataset (true) or actual dataset (false).</param>
+            <returns>The dataset record.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.GetTestDetailsPaginatedAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Retrieves test details by job ID and row number (for pagination).
+            </summary>
+            <param name="jobId">The ID of the job.</param>
+            <param name="pageNumber">The page number.</param>
+            <param name="pageSize">The page size.</param>
+            <returns>A collection of test detail records with pagination.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String)">
             <summary>
@@ -1415,6 +1566,108 @@
             <param name="eventDescription">The description of the event.</param>
             <returns>A task that represents the asynchronous operation.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService">
+            <summary>
+            Service for managing test automation operations.
+            Provides functionality for running test cases, comparing results, and generating reports.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.#ctor(DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository,DynamicDasboardWebAPI.Repositories.QueryRepository,DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory,DynamicDasboardWebAPI.Services.DatabaseService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService"/> class.
+            </summary>
+            <param name="testRepository">Repository for test automation data.</param>
+            <param name="queryRepository">Repository for executing queries.</param>
+            <param name="llmServiceFactory">Factory for creating LLM service instances.</param>
+            <param name="databaseService">Service for database operations.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.ProcessTestCasesFileAsync(System.IO.Stream,System.Int32,System.String,System.Nullable{System.Int32})">
+            <summary>
+            Processes a test cases file and runs the test automation.
+            </summary>
+            <param name="fileStream">The input file stream containing test cases.</param>
+            <param name="databaseId">The ID of the database schema to test against.</param>
+            <param name="llmProvider">The LLM provider to use for testing.</param>
+            <param name="userId">The user ID of the person running the test (optional).</param>
+            <returns>The processed file with test results as a byte array.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GenerateTestTemplate">
+            <summary>
+            Generates an Excel template for test cases.
+            </summary>
+            <returns>Excel template file as byte array.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.Generate50TestQuestionsFile">
+            <summary>
+            Generates a sample file with 50 test questions for the specified database.
+            </summary>
+            <returns>Excel file with sample test questions as byte array.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetRecentJobsAsync(System.Nullable{System.Int32},System.Int32)">
+            <summary>
+            Retrieves recent test automation jobs.
+            </summary>
+            <param name="userId">Optional user ID filter.</param>
+            <param name="limit">Maximum number of jobs to retrieve.</param>
+            <returns>Collection of test automation jobs.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetJobDetailsAsync(System.Int32)">
+            <summary>
+            Retrieves details of a specific test job.
+            </summary>
+            <param name="jobId">The ID of the job to retrieve.</param>
+            <returns>Collection of test details for the specified job.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetJobDetailsPaginatedAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Retrieves job details with pagination.
+            </summary>
+            <param name="jobId">The job ID.</param>
+            <param name="pageNumber">The page number.</param>
+            <param name="pageSize">The page size.</param>
+            <returns>Paginated job details.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetDatasetComparisonAsync(System.Int32)">
+            <summary>
+            Retrieves dataset comparison data for a specific test detail.
+            </summary>
+            <param name="detailId">The ID of the test detail.</param>
+            <returns>A tuple containing the expected and actual datasets.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.ValidateWorksheetStructure(OfficeOpenXml.ExcelWorksheet)">
+            <summary>
+            Validates that the worksheet has the expected structure for test automation.
+            </summary>
+            <param name="worksheet">The worksheet to validate.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.StoreDatasetAsync(System.Int32,System.Boolean,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Stores a dataset for comparison in the database.
+            </summary>
+            <param name="detailId">The test detail ID.</param>
+            <param name="isExpected">Whether this is the expected dataset.</param>
+            <param name="dataset">The dataset to store.</param>
+            <returns>The ID of the stored dataset.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.FormatExcelOutput(OfficeOpenXml.ExcelWorksheet,System.Int32)">
+            <summary>
+            Formats the Excel output after processing.
+            </summary>
+            <param name="worksheet">The worksheet to format.</param>
+            <param name="rowCount">The number of rows to format.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.FormatMatchScoreCell(OfficeOpenXml.ExcelRange)">
+            <summary>
+            Formats a match score cell with color coding.
+            </summary>
+            <param name="cell">The cell to format.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.Get50TestQuestions">
+            <summary>
+            Returns 50 test questions as specified in the business document.
+            </summary>
+            <returns>Array of sample questions.</returns>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.IUserService.GetAllUsersAsync">
             <summary>
             Retrieves all users asynchronously.
@@ -1466,6 +1719,135 @@
             </summary>
             <param name="userId">The ID of the user to retrieve.</param>
             <returns>A task that represents the asynchronous operation. The task result contains the user with the specified ID.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Utilities.ComparisonUtilities">
+            <summary>
+            Provides utilities for comparing SQL queries, explanations, and datasets.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.GetSQLSimilarity(System.String,System.String)">
+            <summary>
+            Calculates similarity between expected and actual SQL queries.
+            </summary>
+            <param name="expected">The expected SQL query.</param>
+            <param name="actual">The actual generated SQL query.</param>
+            <returns>Similarity score between 0 and 1.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.NormalizeSQLQuery(System.String)">
+            <summary>
+            Normalizes a SQL query for more accurate comparison.
+            </summary>
+            <param name="sql">The SQL query to normalize.</param>
+            <returns>Normalized SQL query.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.TokenizeSql(System.String)">
+            <summary>
+            Tokenizes a SQL query into individual components.
+            </summary>
+            <param name="sql">The SQL query to tokenize.</param>
+            <returns>List of SQL tokens.</returns>
+        </member>
+        <member name="F:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.SqlKeywords">
+            <summary>
+            Common SQL keywords for normalization.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.GetExplanationSimilarity(System.String,System.String)">
+            <summary>
+            Calculates similarity between expected and actual explanations.
+            </summary>
+            <param name="expected">The expected explanation.</param>
+            <param name="actual">The actual generated explanation.</param>
+            <returns>Similarity score between 0 and 1.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.NormalizeExplanation(System.String)">
+            <summary>
+            Normalizes an explanation for more accurate comparison.
+            </summary>
+            <param name="explanation">The explanation to normalize.</param>
+            <returns>Normalized explanation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.ExtractKeyTerms(System.String)">
+            <summary>
+            Extracts key terms from an explanation.
+            </summary>
+            <param name="explanation">The explanation to extract terms from.</param>
+            <returns>Set of key terms.</returns>
+        </member>
+        <member name="F:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.StopWords">
+            <summary>
+            Common stopwords to filter out during explanation comparison.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.GetDatasetSimilarity(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Calculates similarity between expected and actual datasets.
+            </summary>
+            <param name="expected">The expected dataset.</param>
+            <param name="actual">The actual generated dataset.</param>
+            <returns>Similarity score between 0 and 1, and status description.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.CompareRowContent(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Compares the content of rows between expected and actual datasets.
+            </summary>
+            <param name="expected">The expected dataset.</param>
+            <param name="actual">The actual generated dataset.</param>
+            <returns>Similarity score between 0 and 1.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.SerializeRowValues(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.List{System.String})">
+            <summary>
+            Serializes a row's values for comparison.
+            </summary>
+            <param name="row">The row to serialize.</param>
+            <param name="columns">The columns to include.</param>
+            <returns>String representation of the row.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.FormatValueForComparison(System.Object)">
+            <summary>
+            Formats a value for consistent comparison.
+            </summary>
+            <param name="value">The value to format.</param>
+            <returns>Formatted string representation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.ComputeDatasetHash(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Computes a hash of a dataset for quick comparison.
+            </summary>
+            <param name="dataset">The dataset to hash.</param>
+            <returns>Hash string.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.SortDatasetForHashing(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Prepares a dataset for consistent hashing by sorting and normalizing.
+            </summary>
+            <param name="dataset">The dataset to prepare.</param>
+            <returns>Sorted dataset representation.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.CalculateJaccardIndex``1(System.Collections.Generic.HashSet{``0},System.Collections.Generic.HashSet{``0})">
+            <summary>
+            Calculates the Jaccard index between two sets.
+            </summary>
+            <typeparam name="T">The type of set elements.</typeparam>
+            <param name="set1">The first set.</param>
+            <param name="set2">The second set.</param>
+            <returns>Jaccard index between 0 and 1.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.CalculateLevenshteinDistanceNormalized(System.String,System.String)">
+            <summary>
+            Calculates the normalized Levenshtein distance.
+            </summary>
+            <param name="s1">The first string.</param>
+            <param name="s2">The second string.</param>
+            <returns>Similarity score between 0 and 1.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Utilities.ComparisonUtilities.LevenshteinDistance(System.String,System.String)">
+            <summary>
+            Calculates the Levenshtein distance between two strings.
+            </summary>
+            <param name="s1">The first string.</param>
+            <param name="s2">The second string.</param>
+            <returns>The Levenshtein distance.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Utilities.CustomExceptionMiddleware">
             <summary>

@@ -1,0 +1,78 @@
+﻿@using System.Collections.Generic
+
+<div class="dataset-view">
+    @if (Dataset == null || !Dataset.Any())
+    {
+        <div class="empty-state">
+            <p>No data available</p>
+        </div>
+    }
+    else
+    {
+        <div class="dataset-info">
+            <span>Total rows: @Dataset.Count</span>
+            <span>Columns: @(Dataset[0].Keys.Count)</span>
+        </div>
+
+        <div class="dataset-table-container">
+            <table class="dataset-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        @foreach (var column in Dataset[0].Keys)
+                        {
+                            <th>@column</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var displayRows = Dataset.Count > 100 ? Dataset.Take(100).ToList() : Dataset;
+                    }
+                    @for (int i = 0; i < displayRows.Count; i++)
+                    {
+                        var row = displayRows[i];
+                        <tr>
+                            <td>@(i + 1)</td>
+                            @foreach (var column in Dataset[0].Keys)
+                            {
+                                <td>
+                                    @(row.TryGetValue(column, out var value) ? FormatValue(value) : "")
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Dataset.Count > 100)
+        {
+            <div class="dataset-note">
+                <i class="fas fa-info-circle me-2"></i> Showing first 100 rows of @Dataset.Count total rows.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<Dictionary<string, object>> Dataset { get; set; }
+
+    private string FormatValue(object value)
+    {
+        if (value == null) return "";
+
+        if (value is DateTime dateTime)
+        {
+            return dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        if (value is decimal decimalValue)
+        {
+            return decimalValue.ToString("0.00");
+        }
+
+        return value.ToString();
+    }
+}
