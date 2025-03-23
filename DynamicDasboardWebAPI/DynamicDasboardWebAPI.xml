@@ -1423,6 +1423,19 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateTermSuggestionsAsync(System.String)">
             <inheritdoc/>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.CallDatabricksApiAsync(System.String,System.String)">
+            <summary>
+            Calls the Databricks API with the given system and user prompts.
+            </summary>
+            <param name="systemPrompt">The system prompt to send.</param>
+            <param name="userPrompt">The user prompt to send.</param>
+            <returns>The response from the Databricks API.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.ParseSqlExplanationResponse(System.String,System.String)">
+            <summary>
+            Parses the SQL explanation response from the Databricks API.
+            </summary>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
             <summary>
             Implementation of ILlmService using DeepSeek API
@@ -1572,7 +1585,7 @@
             Provides functionality for running test cases, comparing results, and generating reports.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.#ctor(DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository,DynamicDasboardWebAPI.Repositories.QueryRepository,DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory,DynamicDasboardWebAPI.Services.DatabaseService)">
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.#ctor(DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository,DynamicDasboardWebAPI.Repositories.QueryRepository,DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory,DynamicDasboardWebAPI.Services.DatabaseService,DynamicDasboardWebAPI.Services.DatabaseSchemaService)">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService"/> class.
             </summary>
@@ -1580,6 +1593,7 @@
             <param name="queryRepository">Repository for executing queries.</param>
             <param name="llmServiceFactory">Factory for creating LLM service instances.</param>
             <param name="databaseService">Service for database operations.</param>
+            <param name="databaseSchema"></param>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.ProcessTestCasesFileAsync(System.IO.Stream,System.Int32,System.String,System.Nullable{System.Int32})">
             <summary>
@@ -1590,12 +1604,6 @@
             <param name="llmProvider">The LLM provider to use for testing.</param>
             <param name="userId">The user ID of the person running the test (optional).</param>
             <returns>The processed file with test results as a byte array.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GenerateTestTemplate">
-            <summary>
-            Generates an Excel template for test cases.
-            </summary>
-            <returns>Excel template file as byte array.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.Generate50TestQuestionsFile">
             <summary>
@@ -1617,6 +1625,13 @@
             </summary>
             <param name="jobId">The ID of the job to retrieve.</param>
             <returns>Collection of test details for the specified job.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.ConvertJsonToExcelTemplate(DynamicDashboardCommon.Models.TestCasesImportRequest)">
+            <summary>
+            Converts a JSON test cases request to an Excel template file.
+            </summary>
+            <param name="request">The JSON request containing test cases.</param>
+            <returns>The Excel file as a byte array.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetJobDetailsPaginatedAsync(System.Int32,System.Int32,System.Int32)">
             <summary>

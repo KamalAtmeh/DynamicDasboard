@@ -7,6 +7,9 @@ using Dapper;
 using DynamicDashboardCommon.Models;
 using DynamicDasboardWebAPI.Utilities;
 using DynamicDashboardCommon.Models;
+using MySqlX.XDevAPI.Relational;
+using Mysqlx.Crud;
+using System.Collections;
 
 namespace DynamicDasboardWebAPI.Repositories.TestAutomation
 {
@@ -80,7 +83,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         @ExecutedBy, 
                         GETDATE()
                     );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                    SELECT CAST(SCOPE_IDENTITY() AS INT) + 1;";
 
                 var parameters = new
                 {
@@ -95,10 +98,12 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                     ExecutedBy = userId
                 };
 
-                return await WithConnectionAsync(async conn =>
+               var jobID = await WithConnectionAsync(async conn =>
                 {
                     return await conn.ExecuteScalarSafeAsync<int>(query, parameters);
                 });
+
+                return jobID;
             }
             catch (Exception)
             {
@@ -235,7 +240,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         @Success,
                         @ErrorMessage
                     );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                    SELECT CAST(SCOPE_IDENTITY() AS INT) + 1;";
 
                 var parameters = new
                 {
@@ -326,10 +331,10 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         DetailID,
                         IsExpected,
                         DatasetJSON,
-                        RowCount,
-                        ColumnCount,
+                        [RowCount],
+                        [ColumnCount],
                         ColumnNames,
-                        DataHash
+                        [DataHash]
                     )
                     VALUES (
                         @DetailID,
@@ -340,7 +345,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         @ColumnNames,
                         @DataHash
                     );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                    SELECT CAST(SCOPE_IDENTITY() AS INT) + 1;";
 
                 var parameters = new
                 {
@@ -402,35 +407,30 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
         /// <param name="pageNumber">The page number.</param>
         /// <param name="pageSize">The page size.</param>
         /// <returns>A collection of test detail records with pagination.</returns>
-        public async Task<(IEnumerable<TestAutomationDetail> Details, int TotalCount)> GetTestDetailsPaginatedAsync(
+        public async Task<IEnumerable<TestAutomationDetail>> GetTestDetailsPaginatedAsync(
             int jobId, int pageNumber = 1, int pageSize = 20)
         {
             try
             {
-                const string countQuery = @"
-            SELECT COUNT(*)
-            FROM TestAutomationDetails 
-            WHERE JobID = @JobID";
 
-                const string detailsQuery = @"
+
+                const string query = @"
             SELECT *
             FROM TestAutomationDetails 
             WHERE JobID = @JobID 
             ORDER BY DetailID
             OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY";
+            FETCH NEXT @PageSize ROWS ONLY"
+                ;
 
                 return await WithConnectionAsync(async conn =>
                 {
-                    int totalCount = await conn.QuerySingleOrDefaultSafeAsync<int>(countQuery, new { JobID = jobId });
-
-                    var offset = (pageNumber - 1) * pageSize;
-                    var details = await conn.QuerySafeAsync<TestAutomationDetail>(
-                        detailsQuery,
-                        new { JobID = jobId, Offset = offset, PageSize = pageSize }
-                    );
-
-                    return (details, totalCount);
+                    return await conn.QuerySafeAsync<TestAutomationDetail>(query, new
+                    {
+                        JobID = jobId,
+                        Offset = (pageNumber - 1) * pageSize,
+                        PageSize = pageSize
+                    });
                 });
             }
             catch (Exception)

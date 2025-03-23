@@ -133,7 +133,7 @@ namespace DynamicDasboardWebAPI.Controllers
         /// <param name="pageSize">The page size.</param>
         /// <returns>Test job details with pagination.</returns>
         [HttpGet("jobs/{jobId}")]
-        public async Task<ActionResult<(IEnumerable<TestAutomationDetail> Details, int TotalCount)>> GetTestJobDetails(
+        public async Task<ActionResult<IEnumerable<TestAutomationDetail>>> GetTestJobDetails(
             int jobId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
         {
             try

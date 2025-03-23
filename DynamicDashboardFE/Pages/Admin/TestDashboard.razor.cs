@@ -47,6 +47,13 @@ namespace DynamicDashboardFE.Pages.Admin
         private int startPage => Math.Max(1, currentPage - 2);
         private int endPage => Math.Min(totalPages, startPage + 4);
 
+
+        //Comparison DataSets
+        private bool showComparisonView;
+        private TestAutomationDetail comparisonDetail;
+        private List<Dictionary<string, object>> expectedDataset;
+        private List<Dictionary<string, object>> actualDataset;
+
         protected override async Task OnInitializedAsync()
         {
             try
@@ -103,6 +110,7 @@ namespace DynamicDashboardFE.Pages.Admin
             finally
             {
                 isLoading = false;
+                StateHasChanged();
             }
         }
 
@@ -289,12 +297,21 @@ namespace DynamicDashboardFE.Pages.Admin
             try
             {
                 isLoadingDetails = true;
-                var result = await Http.GetFromJsonAsync<(IEnumerable<TestAutomationDetail> Details, int TotalCount)>(
-                    $"api/testautomation/jobs/{selectedJob.JobID}?pageNumber={currentPage}&pageSize={pageSize}"
-                );
 
-                testDetails = result.Details.ToList();
-                totalDetailsCount = result.TotalCount;
+                List<TestAutomationDetail> automationDetails = new List<TestAutomationDetail>();
+
+                automationDetails = await Http.GetFromJsonAsync<List<TestAutomationDetail>>($"api/testautomation/jobs/{selectedJob.JobID}?pageNumber={currentPage}&pageSize={pageSize}");
+
+                if (automationDetails != null)
+                {
+                    testDetails = automationDetails;
+                    totalDetailsCount = automationDetails.Count;
+                }
+                else
+                {
+                    toastService.ShowError("Error loading job details:  Details is empty");
+
+                }
             }
             catch (Exception ex)
             {
@@ -305,6 +322,7 @@ namespace DynamicDashboardFE.Pages.Admin
             finally
             {
                 isLoadingDetails = false;
+                StateHasChanged();
             }
         }
 
@@ -336,6 +354,7 @@ namespace DynamicDashboardFE.Pages.Admin
             finally
             {
                 isLoadingDatasets = false;
+                StateHasChanged();
             }
         }
 
@@ -430,6 +449,28 @@ namespace DynamicDashboardFE.Pages.Admin
             {
                 toastService.ShowError("Error processing JSON: " + ex.Message);
             }
+        }
+
+        private async Task ViewDetailComparisonEnhanced(TestAutomationDetail detail)
+        {
+            comparisonDetail = detail;
+
+            // Load dataset comparison data
+            var comparison = await Http.GetFromJsonAsync<(List<Dictionary<string, object>> expected, List<Dictionary<string, object>> actual)>(
+                $"api/testautomation/comparison/{detail.DetailID}"
+            );
+
+            expectedDataset = comparison.expected;
+            actualDataset = comparison.actual;
+
+            showComparisonView = true;
+            StateHasChanged();
+        }
+
+        private void CloseComparisonView()
+        {
+            showComparisonView = false;
+            StateHasChanged();
         }
 
         // Helper methods

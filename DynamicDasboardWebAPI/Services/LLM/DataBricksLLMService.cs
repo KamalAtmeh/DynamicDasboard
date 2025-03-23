@@ -253,10 +253,17 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("- Use only tables and columns that exist in the provided schema");
             prompt.AppendLine("- Ensure the SQL is compatible with the specified database type");
             prompt.AppendLine("- If no database type is specified, use ANSI-standard SQL");
+            prompt.AppendLine("- If a specific database type is specified (MySQL, SQL Server, Oracle, PostgreSQL, etc.), optimize the SQL for that platform");
             prompt.AppendLine("- Qualify all column names with table aliases (e.g., users.name)");
             prompt.AppendLine("- Handle NULL values appropriately");
             prompt.AppendLine("- Ensure GROUP BY includes all non-aggregated columns");
             prompt.AppendLine("- Use only SELECT queries (no data modification)");
+            prompt.AppendLine("- For pagination/row limiting, use the appropriate syntax for the specified database:");
+            prompt.AppendLine("  * SQL Server: TOP n");
+            prompt.AppendLine("  * MySQL/PostgreSQL/SQLite: LIMIT n");
+            prompt.AppendLine("  * Oracle 12c+: FETCH FIRST n ROWS ONLY");
+            prompt.AppendLine("  * Oracle before 12c: WHERE ROWNUM <= n");
+            prompt.AppendLine("  * ANSI-standard: FETCH FIRST n ROWS ONLY");
 
             // Business explanation requirements
             prompt.AppendLine("\nBusiness Explanation Rules:");
@@ -277,7 +284,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 }
             }
 
-            // Response format
+            // Response format with added fields for schema relevance
             prompt.AppendLine("\nYour response should be structured as JSON with the following fields:");
             prompt.AppendLine("- isSchemaRelated: Boolean indicating if the question relates to the schema");
             prompt.AppendLine("- schemaRelevanceMessage: Explanation if the question is not related to the schema");
@@ -293,6 +300,128 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("- detectedAmbiguities: Dictionary of ambiguous terms and their possible interpretations");
             prompt.AppendLine("- adjustableParameters: Dictionary of parameters that could be adjusted");
             prompt.AppendLine("- termMapping: Dictionary mapping technical terms to friendly terms (from descriptions) used");
+
+            // Add clear formatting instructions for adjustableParameters
+            prompt.AppendLine("\nADJUSTABLE PARAMETERS FORMAT:");
+            prompt.AppendLine("1. The 'defaultValue' property MUST always be a string, NEVER an array or object");
+            prompt.AppendLine("2. For multiple values, concatenate them into a single string with commas");
+            prompt.AppendLine("3. Example for categories: \"defaultValue\": \"Electronics, Clothing\" NOT \"defaultValue\": [\"Electronics\", \"Clothing\"]");
+            prompt.AppendLine("4. The 'alternatives' property must be an array of strings");
+            prompt.AppendLine("5. The 'parameterType' must be one of: \"string\", \"number\", \"date\", \"boolean\", \"category\"");
+            prompt.AppendLine("6. Every parameter MUST include the fields: defaultValue, description, alternatives, and parameterType");
+
+            // JSON format instructions
+            prompt.AppendLine("\nIMPORTANT FORMAT REQUIREMENTS:");
+            prompt.AppendLine("1. The 'alternatives' property inside 'adjustableParameters' MUST be an array of strings, even if there's only one alternative.");
+            prompt.AppendLine("2. Use the format: \"alternatives\": [\"option1\", \"option2\"] NOT \"alternatives\": \"Some text\"");
+            prompt.AppendLine("3. All arrays should be properly formatted with square brackets, even for single items.");
+            prompt.AppendLine("4. The SQL query must be properly escaped as a JSON string.");
+            prompt.AppendLine("5. Your entire response must be valid JSON - replace all newlines in SQL with \\n");
+            prompt.AppendLine("6. Properly escape all quotes, backslashes and special characters in string values");
+
+            // Example response for unrelated question
+            prompt.AppendLine("\nExample response for UNRELATED question:");
+            prompt.AppendLine("```json");
+            prompt.AppendLine("{");
+            prompt.AppendLine("  \"isSchemaRelated\": false,");
+            prompt.AppendLine("  \"schemaRelevanceMessage\": \"Your question about weather forecasting doesn't relate to this e-commerce database schema, which contains information about customers, orders, products, and inventory.\",");
+            prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": false,");
+            prompt.AppendLine("  \"unrelatedQuestionParts\": [],");
+            prompt.AppendLine("  \"suggestedTopics\": [\"Customer information\", \"Order details\", \"Product inventory\", \"Sales analytics\", \"Shipping information\"],");
+            prompt.AppendLine("  \"suggestedQuestions\": [");
+            prompt.AppendLine("    \"Who are our top 10 customers by order value?\",");
+            prompt.AppendLine("    \"What products have the lowest inventory levels?\",");
+            prompt.AppendLine("    \"How many orders were shipped last month?\"");
+            prompt.AppendLine("  ],");
+            prompt.AppendLine("  \"sqlQuery\": \"\",");
+            prompt.AppendLine("  \"businessExplanation\": \"\",");
+            prompt.AppendLine("  \"dbType\": \"ANSI-standard\",");
+            prompt.AppendLine("  \"dbNotes\": \"\",");
+            prompt.AppendLine("  \"hasAmbiguities\": false,");
+            prompt.AppendLine("  \"detectedAmbiguities\": {},");
+            prompt.AppendLine("  \"adjustableParameters\": {},");
+            prompt.AppendLine("  \"termMapping\": {}");
+            prompt.AppendLine("}");
+            prompt.AppendLine("```");
+
+            // Example response for partially unrelated question
+            prompt.AppendLine("\nExample response for PARTIALLY UNRELATED question:");
+            prompt.AppendLine("```json");
+            prompt.AppendLine("{");
+            prompt.AppendLine("  \"isSchemaRelated\": true,");
+            prompt.AppendLine("  \"schemaRelevanceMessage\": \"\",");
+            prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": true,");
+            prompt.AppendLine("  \"unrelatedQuestionParts\": [\"weather in the shipping destination\"],");
+            prompt.AppendLine("  \"suggestedTopics\": [],");
+            prompt.AppendLine("  \"suggestedQuestions\": [");
+            prompt.AppendLine("    \"What are the most common shipping destinations for our orders?\",");
+            prompt.AppendLine("    \"Which shipping methods are used most frequently?\",");
+            prompt.AppendLine("    \"What's the average shipping time for each carrier?\"");
+            prompt.AppendLine("  ],");
+            prompt.AppendLine("  \"sqlQuery\": \"SELECT o.ShippingAddress, COUNT(*) AS OrderCount\\nFROM Orders o\\nGROUP BY o.ShippingAddress\\nORDER BY OrderCount DESC\\nLIMIT 10;\",");
+            prompt.AppendLine("  \"businessExplanation\": \"This query shows the top 10 shipping destinations by number of orders. Note that I can't provide information about weather at these destinations as that data isn't in the database.\",");
+            prompt.AppendLine("  \"dbType\": \"MySQL\",");
+            prompt.AppendLine("  \"dbNotes\": \"This query uses MySQL's LIMIT syntax. For SQL Server, use TOP 10 instead.\",");
+            prompt.AppendLine("  \"hasAmbiguities\": false,");
+            prompt.AppendLine("  \"detectedAmbiguities\": {},");
+            prompt.AppendLine("  \"adjustableParameters\": {");
+            prompt.AppendLine("    \"number of destinations\": {");
+            prompt.AppendLine("      \"defaultValue\": \"10\",");
+            prompt.AppendLine("      \"description\": \"The number of destinations to return\",");
+            prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"All destinations\"],");
+            prompt.AppendLine("      \"parameterType\": \"number\"");
+            prompt.AppendLine("    }");
+            prompt.AppendLine("  },");
+            prompt.AppendLine("  \"termMapping\": {");
+            prompt.AppendLine("    \"ShippingAddress\": \"Delivery Location\"");
+            prompt.AppendLine("  }");
+            prompt.AppendLine("}");
+            prompt.AppendLine("```");
+
+            // Example for fully related question
+            prompt.AppendLine("\nExample response for FULLY RELATED question:");
+            prompt.AppendLine("```json");
+            prompt.AppendLine("{");
+            prompt.AppendLine("  \"isSchemaRelated\": true,");
+            prompt.AppendLine("  \"schemaRelevanceMessage\": \"\",");
+            prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": false,");
+            prompt.AppendLine("  \"unrelatedQuestionParts\": [],");
+            prompt.AppendLine("  \"suggestedTopics\": [],");
+            prompt.AppendLine("  \"suggestedQuestions\": [],");
+            prompt.AppendLine("  \"sqlQuery\": \"SELECT c.FirstName, c.LastName, SUM(o.TotalAmount) AS TotalSpent\\nFROM Customers c\\nJOIN Orders o ON c.CustomerID = o.CustomerID\\nGROUP BY c.CustomerID, c.FirstName, c.LastName\\nORDER BY TotalSpent DESC\\nLIMIT 10;\",");
+            prompt.AppendLine("  \"businessExplanation\": \"This query retrieves the top 10 customers based on their total purchase amounts. It shows each customer's first and last name along with the total amount they've spent across all their orders.\",");
+            prompt.AppendLine("  \"dbType\": \"MySQL\",");
+            prompt.AppendLine("  \"dbNotes\": \"For SQL Server, replace LIMIT with TOP 10.\",");
+            prompt.AppendLine("  \"hasAmbiguities\": true,");
+            prompt.AppendLine("  \"detectedAmbiguities\": {");
+            prompt.AppendLine("    \"time period\": [");
+            prompt.AppendLine("      \"All time\",");
+            prompt.AppendLine("      \"Last year\",");
+            prompt.AppendLine("      \"Current year\",");
+            prompt.AppendLine("      \"Last 6 months\"");
+            prompt.AppendLine("    ]");
+            prompt.AppendLine("  },");
+            prompt.AppendLine("  \"adjustableParameters\": {");
+            prompt.AppendLine("    \"number of customers\": {");
+            prompt.AppendLine("      \"defaultValue\": \"10\",");
+            prompt.AppendLine("      \"description\": \"The number of top customers to display\",");
+            prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"50\", \"100\"],");
+            prompt.AppendLine("      \"parameterType\": \"number\"");
+            prompt.AppendLine("    },");
+            prompt.AppendLine("    \"product categories\": {");
+            prompt.AppendLine("      \"defaultValue\": \"Electronics, Clothing\",");
+            prompt.AppendLine("      \"description\": \"The product categories to include\",");
+            prompt.AppendLine("      \"alternatives\": [\"Books\", \"Home Goods\", \"Sports Equipment\"],");
+            prompt.AppendLine("      \"parameterType\": \"category\"");
+            prompt.AppendLine("    }");
+            prompt.AppendLine("  },");
+            prompt.AppendLine("  \"termMapping\": {");
+            prompt.AppendLine("    \"Customers\": \"Client Accounts\",");
+            prompt.AppendLine("    \"Orders\": \"Purchases\",");
+            prompt.AppendLine("    \"TotalAmount\": \"Revenue\"");
+            prompt.AppendLine("  }");
+            prompt.AppendLine("}");
+            prompt.AppendLine("```");
 
             return prompt.ToString();
         }
@@ -364,6 +493,12 @@ namespace DynamicDasboardWebAPI.Services.LLM
             return prompt.ToString();
         }
 
+        /// <summary>
+        /// Calls the Databricks API with the given system and user prompts.
+        /// </summary>
+        /// <param name="systemPrompt">The system prompt to send.</param>
+        /// <param name="userPrompt">The user prompt to send.</param>
+        /// <returns>The response from the Databricks API.</returns>
         private async Task<string> CallDatabricksApiAsync(string systemPrompt, string userPrompt)
         {
             // Prepare request to the Databricks API
@@ -371,9 +506,9 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
             var messages = new[]
             {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userPrompt }
-            };
+        new { role = "system", content = systemPrompt },
+        new { role = "user", content = userPrompt }
+    };
 
             var requestBody = new
             {
@@ -391,12 +526,15 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 Encoding.UTF8,
                 "application/json");
 
-            // Set headers
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiToken);
-            _httpClient.Timeout = TimeSpan.FromSeconds(_timeoutSeconds);
+            // Create a new request message for each call instead of modifying HttpClient directly
+            using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+            request.Content = content;
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiToken);
 
-            // Send request
-            var response = await _httpClient.PostAsync(requestUrl, content);
+            // Send request with a timeout
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+
+            var response = await _httpClient.SendAsync(request, cancellationTokenSource.Token);
 
             // Process response
             if (!response.IsSuccessStatusCode)
@@ -425,6 +563,9 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+        /// <summary>
+        /// Parses the SQL explanation response from the Databricks API.
+        /// </summary>
         private SqlGenerationWithExplanationResponse ParseSqlExplanationResponse(string response, string originalQuestion)
         {
             try
@@ -435,13 +576,26 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     Success = true
                 };
 
-                // Try to parse as JSON first
-                if (response.Trim().StartsWith("{") && response.Trim().EndsWith("}"))
+                // Extract JSON from markdown code block if present
+                string jsonContent = response;
+                if (response.Trim().StartsWith("```json"))
+                {
+                    int startIndex = response.IndexOf('{');
+                    int endIndex = response.LastIndexOf('}');
+
+                    if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
+                    {
+                        jsonContent = response.Substring(startIndex, endIndex - startIndex + 1);
+                    }
+                }
+
+                // Try to parse as JSON
+                if (jsonContent.Trim().StartsWith("{") && jsonContent.Trim().EndsWith("}"))
                 {
                     try
                     {
                         var parsed = JsonSerializer.Deserialize<SqlGenerationWithExplanationResponse>(
-                            response,
+                            jsonContent,
                             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                         if (parsed != null)
@@ -451,8 +605,10 @@ namespace DynamicDasboardWebAPI.Services.LLM
                             return parsed;
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        // Log the JSON parsing exception
+                        Console.Error.WriteLine($"JSON parsing error: {ex.Message}");
                         // Parsing as JSON failed, continue to text extraction
                     }
                 }
@@ -510,16 +666,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     }
                 }
 
-                // Fallback to text response
-                return new ExplanationResponse
-                {
-                    Explanation = response,
-                    HasAmbiguities = false,
-                    ConfidenceScore = 0.7,
-                    DetectedAmbiguities = new Dictionary<string, List<string>>(),
-                    AdjustableParameters = new Dictionary<string, QueryParameterOptions>(),
-                    PreviewSql = ExtractSqlFromText(response)
-                };
+                return new ExplanationResponse();
             }
             catch (Exception ex)
             {

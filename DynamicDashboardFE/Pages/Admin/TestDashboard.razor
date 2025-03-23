@@ -678,4 +678,12 @@
             </div>
         </div>
     </div>
+    @if (showComparisonView && comparisonDetail != null)
+    {
+        <TestCaseComparisonView TestDetail="comparisonDetail"
+                                ExpectedData="expectedDataset"
+                                ActualData="actualDataset"
+                                IsVisible="showComparisonView"
+                                OnClosed="CloseComparisonView" />
+    }
 </div>

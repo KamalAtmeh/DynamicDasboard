@@ -20,10 +20,11 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
     /// </summary>
     public class TestAutomationService
     {
-        private readonly TestAutomationRepository _testRepository;
-        private readonly QueryRepository _queryRepository;
-        private readonly LLMServiceFactory _llmServiceFactory;
-        private readonly DatabaseService _databaseService;
+        private readonly TestAutomationRepository objTestAutomationRepostiroy;
+        private readonly QueryRepository objQueryRepository;
+        private readonly LLMServiceFactory objLLMServiceFactory;
+        private readonly DatabaseService objDataBaseService;
+        private readonly DatabaseSchemaService objDatabaseSchemaService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TestAutomationService"/> class.
@@ -32,17 +33,18 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// <param name="queryRepository">Repository for executing queries.</param>
         /// <param name="llmServiceFactory">Factory for creating LLM service instances.</param>
         /// <param name="databaseService">Service for database operations.</param>
+        /// <param name="databaseSchema"></param>
         public TestAutomationService(
             TestAutomationRepository testRepository,
             QueryRepository queryRepository,
             LLMServiceFactory llmServiceFactory,
-            DatabaseService databaseService)
+            DatabaseService databaseService, DatabaseSchemaService databaseSchemaService)
         {
-            _testRepository = testRepository ?? throw new ArgumentNullException(nameof(testRepository));
-            _queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
-            _llmServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
-            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
-
+            objTestAutomationRepostiroy = testRepository ?? throw new ArgumentNullException(nameof(testRepository));
+            objQueryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
+            objLLMServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
+            objDataBaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+            objDatabaseSchemaService = databaseSchemaService ?? throw new ArgumentNullException(nameof(objDatabaseSchemaService));
             // Set EPPlus license context
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
@@ -66,7 +68,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 // Check if the worksheet has the expected structure
                 ValidateWorksheetStructure(worksheet);
 
-                // Define column indices based on business document
+                // Define column indices based on updated structure (without ExpectedRowCount)
                 const int questionCol = 1;          // Column A
                 const int expectedSqlCol = 2;       // Column B
                 const int expectedExplanationCol = 3; // Column C
@@ -87,8 +89,14 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 const int statusCol = 16;           // Column P
                 const int errorCol = 17;            // Column Q
 
+
+
                 // Initialize tracking variables
-                int rowCount = worksheet.Dimension?.Rows ?? 0;
+                int lastDataRow = 1; // Start with header row
+               
+
+                // Use lastDataRow instead of rowCount
+                int rowCount = 0;
                 int totalQuestions = 0;
                 int successCount = 0;
                 decimal totalSqlMatchScore = 0;
@@ -97,8 +105,30 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
 
                 string fileName = "TestAutomation_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
 
+
+                for (int row = worksheet.Dimension?.Rows ?? 0; row >= 2; row--)
+                {
+                    // Check if this row has any data in the first few columns
+                    bool hasData = false;
+                    for (int col = 1; col <= Math.Min(5, worksheet.Dimension?.Columns ?? 0); col++)
+                    {
+                        if (!string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Text))
+                        {
+                            hasData = true;
+                            break;
+                        }
+                    }
+
+                    if (hasData)
+                    {
+                        lastDataRow = row;
+                        break;
+                    }
+                }
+                rowCount = lastDataRow;
+
                 // Create a test job record
-                int jobId = await _testRepository.LogTestJobAsync(
+                int jobId = await objTestAutomationRepostiroy.LogTestJobAsync(
                     fileName,
                     databaseId,
                     0, // Initialize with 0, will update later
@@ -111,17 +141,23 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 );
 
                 // Get LLM service instance
-                var llmService = _llmServiceFactory.CreateLlmService();
+                var llmService = objLLMServiceFactory.CreateLlmService();
 
                 // Get database info for schema
-                var database = await _databaseService.GetDatabaseByIdAsync(databaseId);
+                var database = await objDataBaseService.GetDatabaseByIdAsync(databaseId);
                 if (database == null)
                 {
                     throw new ArgumentException($"Database with ID {databaseId} not found");
                 }
 
                 // Get database schema for LLM context
-                var schemaStr = database.DBCreationScript;
+                var objDBSchema = await objDatabaseSchemaService.GetSchemaObject(database.DatabaseID);
+                if (objDBSchema == null)
+                {
+                    return null;
+                }
+
+                var schemaStr = objDatabaseSchemaService.BuildOptimizedSchemaString(objDBSchema);
 
                 // Process each row
                 for (int row = 2; row <= rowCount; row++) // Assuming row 1 is header
@@ -141,13 +177,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         var expectedExplanation = worksheet.Cells[row, expectedExplanationCol].Text;
                         var complexityLevel = worksheet.Cells[row, complexityLevelCol].Text;
                         var queryCategory = worksheet.Cells[row, queryCategoryCol].Text;
-
-                        // Try to parse expected row count
-                        int? expectedRowCount = null;
-                        if (int.TryParse(worksheet.Cells[row, expectedRowCountCol].Text, out int parsedRowCount))
-                        {
-                            expectedRowCount = parsedRowCount;
-                        }
 
                         // Step 1: Process the natural language query using the specified LLM
                         var request = new NlQueryRequest
@@ -175,11 +204,14 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
 
                         // Step 4: Execute the expected SQL query if provided
                         List<Dictionary<string, object>> expectedDataset = null;
+                        int? expectedRowCount = null;
                         if (!string.IsNullOrWhiteSpace(expectedSql))
                         {
                             try
                             {
-                                expectedDataset = await _queryRepository.ExecuteQueryOnDatabaseAsync(expectedSql, databaseId);
+                                expectedDataset = await objQueryRepository.ExecuteQueryOnDatabaseAsync(expectedSql, databaseId);
+                                expectedRowCount = expectedDataset?.Count; // Set the expected row count from actual execution
+                                worksheet.Cells[row, expectedRowCountCol].Value = expectedRowCount;
                             }
                             catch (Exception ex)
                             {
@@ -195,7 +227,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         {
                             try
                             {
-                                actualDataset = await _queryRepository.ExecuteQueryOnDatabaseAsync(generatedSql, databaseId);
+                                actualDataset = await objQueryRepository.ExecuteQueryOnDatabaseAsync(generatedSql, databaseId);
                                 actualRowCount = actualDataset?.Count;
                             }
                             catch (Exception ex)
@@ -220,7 +252,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         var executionTimeMs = (int)(endTime - startTime).TotalMilliseconds;
 
                         // Step 7: Create test detail record in database
-                        detailId = await _testRepository.LogTestDetailAsync(
+                        detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
                             jobId,
                             question,
                             expectedSql,
@@ -229,7 +261,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             expectedExplanation,
                             generatedExplanation,
                             explanationMatchScore,
-                            expectedRowCount,
+                            expectedRowCount,  // Set from actual execution
                             actualRowCount,
                             dataMatchScore,
                             resultMatchStatus,
@@ -278,7 +310,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         // Log error to database if we haven't created a detail record yet
                         if (detailId == 0)
                         {
-                            await _testRepository.LogTestDetailAsync(
+                            await objTestAutomationRepostiroy.LogTestDetailAsync(
                                 jobId,
                                 question,
                                 worksheet.Cells[row, expectedSqlCol].Text, // Expected SQL
@@ -306,7 +338,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 decimal avgExplanationScore = successCount > 0 ? totalExplanationMatchScore / successCount : 0;
                 decimal avgDataScore = successCount > 0 ? totalDataMatchScore / successCount : 0;
 
-                await _testRepository.LogTestJobAsync(
+              var jobID =  await objTestAutomationRepostiroy.LogTestJobAsync(
                     fileName,
                     databaseId,
                     totalQuestions,
@@ -330,10 +362,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
         }
 
-        /// <summary>
-        /// Generates an Excel template for test cases.
-        /// </summary>
-        /// <returns>Excel template file as byte array.</returns>
         public byte[] GenerateTestTemplate()
         {
             try
@@ -385,6 +413,12 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 categoryValidation.Formula.Values.Add("CTE");
                 categoryValidation.Formula.Values.Add("Complex");
 
+                // Add number validation for ExpectedRowCount
+                var expectedRowCountValidation = worksheet.DataValidations.AddIntegerValidation("F2:F1000");
+                expectedRowCountValidation.Operator = OfficeOpenXml.DataValidation.ExcelDataValidationOperator.greaterThanOrEqual;
+                expectedRowCountValidation.Formula.Value = 0;
+                expectedRowCountValidation.AllowBlank = true;
+
                 // Set column widths
                 worksheet.Column(1).Width = 40;  // Question
                 worksheet.Column(2).Width = 50;  // ExpectedSQL
@@ -411,7 +445,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Cells[row, 3].Value = "Enter the expected explanation";
                 worksheet.Cells[row, 4].Value = "Select complexity";
                 worksheet.Cells[row, 5].Value = "Select category";
-                worksheet.Cells[row, 6].Value = "Enter expected row count";
+                worksheet.Cells[row, 6].Value = "Enter expected row count (optional)";
 
                 // Apply instruction formatting
                 using (var range = worksheet.Cells[row, 1, row, 6])
@@ -541,7 +575,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         {
             try
             {
-                return await _testRepository.GetRecentTestJobsAsync(userId, limit);
+                return await objTestAutomationRepostiroy.GetRecentTestJobsAsync(userId, limit);
             }
             catch (Exception ex)
             {
@@ -558,7 +592,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         {
             try
             {
-                return await _testRepository.GetTestDetailsForJobAsync(jobId);
+                return await objTestAutomationRepostiroy.GetTestDetailsForJobAsync(jobId);
             }
             catch (Exception ex)
             {
@@ -566,6 +600,11 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
         }
 
+        /// <summary>
+        /// Converts a JSON test cases request to an Excel template file.
+        /// </summary>
+        /// <param name="request">The JSON request containing test cases.</param>
+        /// <returns>The Excel file as a byte array.</returns>
         public byte[] ConvertJsonToExcelTemplate(TestCasesImportRequest request)
         {
             try
@@ -573,17 +612,26 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Test Cases");
 
-                // Add headers
+                // Add headers according to the template (removing ExpectedRowCount)
                 worksheet.Cells[1, 1].Value = "Question";
                 worksheet.Cells[1, 2].Value = "ExpectedSQL";
                 worksheet.Cells[1, 3].Value = "ExpectedExplanation";
                 worksheet.Cells[1, 4].Value = "ComplexityLevel";
                 worksheet.Cells[1, 5].Value = "QueryCategory";
-                worksheet.Cells[1, 6].Value = "ExpectedRowCount";
-                // Add remaining headers for output columns
+                worksheet.Cells[1, 6].Value = "GeneratedSQL";
+                worksheet.Cells[1, 7].Value = "GeneratedExplanation";
+                worksheet.Cells[1, 8].Value = "SQLMatchScore";
+                worksheet.Cells[1, 9].Value = "ExplanationMatchScore";
+                worksheet.Cells[1, 10].Value = "ActualRowCount";
+                worksheet.Cells[1, 11].Value = "DataMatchScore";
+                worksheet.Cells[1, 12].Value = "ResultMatchStatus";
+                worksheet.Cells[1, 13].Value = "ExecutionTimeMs";
+                worksheet.Cells[1, 14].Value = "LLMUsed";
+                worksheet.Cells[1, 15].Value = "Status";
+                worksheet.Cells[1, 16].Value = "ErrorMessage";
 
                 // Format headers
-                using (var range = worksheet.Cells[1, 1, 1, 17])
+                using (var range = worksheet.Cells[1, 1, 1, 16])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -601,8 +649,26 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     worksheet.Cells[row, 3].Value = testCase.ExpectedExplanation;
                     worksheet.Cells[row, 4].Value = testCase.ComplexityLevel;
                     worksheet.Cells[row, 5].Value = testCase.QueryCategory;
-                    // ExpectedRowCount is left blank as requested
+                    worksheet.Cells[1, 6].Value = "ExpectedRowCount";
+                    // Columns 6-16 are left empty as they'll be filled by the system during test execution
                 }
+
+                // Add dropdown lists for complexity level and query category
+                var complexityValidation = worksheet.DataValidations.AddListValidation("D2:D1000");
+                complexityValidation.Formula.Values.Add("Simple");
+                complexityValidation.Formula.Values.Add("Medium");
+                complexityValidation.Formula.Values.Add("Complex");
+                complexityValidation.Formula.Values.Add("Very Complex");
+
+                var categoryValidation = worksheet.DataValidations.AddListValidation("E2:E1000");
+                categoryValidation.Formula.Values.Add("Aggregate");
+                categoryValidation.Formula.Values.Add("Filter");
+                categoryValidation.Formula.Values.Add("Join");
+                categoryValidation.Formula.Values.Add("GroupBy");
+                categoryValidation.Formula.Values.Add("OrderBy");
+                categoryValidation.Formula.Values.Add("SubQuery");
+                categoryValidation.Formula.Values.Add("CTE");
+                categoryValidation.Formula.Values.Add("Complex");
 
                 // Set column widths
                 worksheet.Column(1).Width = 50;  // Question
@@ -610,6 +676,20 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Column(3).Width = 50;  // ExpectedExplanation
                 worksheet.Column(4).Width = 15;  // ComplexityLevel
                 worksheet.Column(5).Width = 15;  // QueryCategory
+                worksheet.Column(6).Width = 70;  // GeneratedSQL
+                worksheet.Column(7).Width = 50;  // GeneratedExplanation
+                worksheet.Column(8).Width = 15;  // SQLMatchScore
+                worksheet.Column(9).Width = 15;  // ExplanationMatchScore
+                worksheet.Column(10).Width = 15; // ActualRowCount
+                worksheet.Column(11).Width = 15; // DataMatchScore
+                worksheet.Column(12).Width = 20; // ResultMatchStatus
+                worksheet.Column(13).Width = 15; // ExecutionTimeMs
+                worksheet.Column(14).Width = 15; // LLMUsed
+                worksheet.Column(15).Width = 15; // Status
+                worksheet.Column(16).Width = 50; // ErrorMessage
+
+                // Protect cells that should not be edited (system-filled columns)
+                worksheet.Cells[$"F2:P1000"].Style.Locked = true;
 
                 return package.GetAsByteArray();
             }
@@ -618,6 +698,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 throw new Exception($"Error converting JSON to Excel template: {ex.Message}", ex);
             }
         }
+    
 
         // Add to DynamicDasboardWebAPI/Services/TestAutomation/TestAutomationService.cs
 
@@ -628,12 +709,12 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// <param name="pageNumber">The page number.</param>
         /// <param name="pageSize">The page size.</param>
         /// <returns>Paginated job details.</returns>
-        public async Task<(IEnumerable<TestAutomationDetail> Details, int TotalCount)> GetJobDetailsPaginatedAsync(
+        public async Task<IEnumerable<TestAutomationDetail>> GetJobDetailsPaginatedAsync(
             int jobId, int pageNumber = 1, int pageSize = 20)
         {
             try
             {
-                return await _testRepository.GetTestDetailsPaginatedAsync(jobId, pageNumber, pageSize);
+                return await objTestAutomationRepostiroy.GetTestDetailsPaginatedAsync(jobId, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -651,8 +732,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         {
             try
             {
-                var expectedDataset = await _testRepository.GetDatasetAsync(detailId, true);
-                var actualDataset = await _testRepository.GetDatasetAsync(detailId, false);
+                var expectedDataset = await objTestAutomationRepostiroy.GetDatasetAsync(detailId, true);
+                var actualDataset = await objTestAutomationRepostiroy.GetDatasetAsync(detailId, false);
 
                 List<Dictionary<string, object>> expectedData = null;
                 List<Dictionary<string, object>> actualData = null;
@@ -731,7 +812,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 string dataHash = ComparisonUtilities.ComputeDatasetHash(dataset);
 
                 // Store in database
-                return await _testRepository.SaveDatasetAsync(
+                return await objTestAutomationRepostiroy.SaveDatasetAsync(
                     detailId,
                     isExpected,
                     datasetJson,
