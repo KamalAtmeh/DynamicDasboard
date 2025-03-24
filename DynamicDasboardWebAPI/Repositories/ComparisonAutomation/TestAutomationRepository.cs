@@ -35,55 +35,39 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
         /// <summary>
         /// Logs a test automation job.
         /// </summary>
-        /// <param name="fileName">The name of the test file.</param>
-        /// <param name="databaseId">The ID of the database schema used for testing.</param>
-        /// <param name="totalQuestions">The total number of questions in the test.</param>
-        /// <param name="successCount">The number of successfully processed questions.</param>
-        /// <param name="llmUsed">The LLM provider used for the test.</param>
-        /// <param name="avgQueryScore">Average SQL query match score.</param>
-        /// <param name="avgExplanationScore">Average explanation match score.</param>
-        /// <param name="avgDataScore">Average dataset match score.</param>
-        /// <param name="userId">The user who executed the test (optional).</param>
-        /// <returns>The ID of the newly created job.</returns>
-        public async Task<int> LogTestJobAsync(
-            string fileName,
-            int databaseId,
-            int totalQuestions,
-            int successCount,
-            string llmUsed,
-            decimal avgQueryScore,
-            decimal avgExplanationScore,
-            decimal avgDataScore,
-            int? userId = null)
+        public async Task<int> LogTestJobAsync(string fileName, int databaseId, int totalQuestions,
+            int successCount, string llmUsed, decimal avgQueryScore, decimal avgExplanationScore,
+            decimal avgDataScore, int? userId = null)
         {
             try
             {
+                // Fix the SQL to correctly return the identity value
                 const string query = @"
-                    INSERT INTO TestAutomationJobs (
-                        FileName, 
-                        DatabaseSchemaID, 
-                        TotalQuestions, 
-                        SuccessCount, 
-                        AverageQueryMatchScore, 
-                        AverageExplanationMatchScore, 
-                        AverageDataMatchScore,
-                        LLMUsed, 
-                        ExecutedBy, 
-                        ExecutedAt
-                    )
-                    VALUES (
-                        @FileName, 
-                        @DatabaseSchemaID, 
-                        @TotalQuestions, 
-                        @SuccessCount, 
-                        @AverageQueryMatchScore, 
-                        @AverageExplanationMatchScore, 
-                        @AverageDataMatchScore,
-                        @LLMUsed, 
-                        @ExecutedBy, 
-                        GETDATE()
-                    );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+            INSERT INTO TestAutomationJobs (
+                FileName, 
+                DatabaseSchemaID, 
+                TotalQuestions, 
+                SuccessCount, 
+                AverageQueryMatchScore, 
+                AverageExplanationMatchScore, 
+                AverageDataMatchScore,
+                LLMUsed, 
+                ExecutedBy, 
+                ExecutedAt
+            )
+            VALUES (
+                @FileName, 
+                @DatabaseSchemaID, 
+                @TotalQuestions, 
+                @SuccessCount, 
+                @AverageQueryMatchScore, 
+                @AverageExplanationMatchScore, 
+                @AverageDataMatchScore,
+                @LLMUsed, 
+                @ExecutedBy, 
+                GETDATE()
+            );
+            SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                 var parameters = new
                 {
@@ -98,15 +82,19 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                     ExecutedBy = userId
                 };
 
-               var jobID = await WithConnectionAsync(async conn =>
+                var jobID = await WithConnectionAsync(async conn =>
                 {
                     return await conn.ExecuteScalarSafeAsync<int>(query, parameters);
                 });
 
+                // Log the created job ID for diagnostics
+                Console.WriteLine($"Created test job with ID: {jobID}");
+
                 return jobID;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error logging test job: {ex.Message}");
                 throw;
             }
         }
@@ -212,85 +200,60 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
         /// <summary>
         /// Logs a test detail record.
         /// </summary>
-        /// <param name="jobId">The ID of the parent job.</param>
-        /// <param name="question">The natural language question.</param>
-        /// <param name="expectedSql">The expected SQL query.</param>
-        /// <param name="generatedSql">The generated SQL query.</param>
-        /// <param name="sqlMatchScore">The SQL match score.</param>
-        /// <param name="expectedExplanation">The expected explanation.</param>
-        /// <param name="generatedExplanation">The generated explanation.</param>
-        /// <param name="explanationMatchScore">The explanation match score.</param>
-        /// <param name="expectedRowCount">The expected row count.</param>
-        /// <param name="actualRowCount">The actual row count.</param>
-        /// <param name="dataMatchScore">The dataset match score.</param>
-        /// <param name="resultMatchStatus">The result match status.</param>
-        /// <param name="complexityLevel">The question complexity level.</param>
-        /// <param name="queryCategory">The query category.</param>
-        /// <param name="executionTimeMs">The execution time in milliseconds.</param>
-        /// <param name="success">Whether the test was successful.</param>
-        /// <param name="errorMessage">Any error message.</param>
-        /// <returns>The ID of the newly created detail record.</returns>
-        public async Task<int> LogTestDetailAsync(
-            int jobId,
-            string question,
-            string expectedSql,
-            string generatedSql,
-            decimal? sqlMatchScore,
-            string expectedExplanation,
-            string generatedExplanation,
-            decimal? explanationMatchScore,
-            int? expectedRowCount,
-            int? actualRowCount,
-            decimal? dataMatchScore,
-            string resultMatchStatus,
-            string complexityLevel,
-            string queryCategory,
-            int? executionTimeMs,
-            bool success,
-            string errorMessage = null)
+        public async Task<int> LogTestDetailAsync(int jobId, string question, string expectedSql,
+            string generatedSql, decimal? sqlMatchScore, string expectedExplanation,
+            string generatedExplanation, decimal? explanationMatchScore, int? expectedRowCount,
+            int? actualRowCount, decimal? dataMatchScore, string resultMatchStatus,
+            string complexityLevel, string queryCategory, int? executionTimeMs,
+            bool success, string errorMessage = null)
         {
             try
             {
+                // Important validation to prevent mismatched job IDs
+                if (jobId <= 0)
+                    throw new ArgumentException("Invalid job ID", nameof(jobId));
+
+                // Fix the SQL to correctly return the identity value
                 const string query = @"
-                    INSERT INTO TestAutomationDetails (
-                        JobID,
-                        Question,
-                        ExpectedSQL,
-                        GeneratedSQL,
-                        SQLMatchScore,
-                        ExpectedExplanation,
-                        GeneratedExplanation,
-                        ExplanationMatchScore,
-                        ExpectedRowCount,
-                        ActualRowCount,
-                        DataMatchScore,
-                        ResultMatchStatus,
-                        ComplexityLevel,
-                        QueryCategory,
-                        ExecutionTimeMs,
-                        Success,
-                        ErrorMessage
-                    )
-                    VALUES (
-                        @JobID,
-                        @Question,
-                        @ExpectedSQL,
-                        @GeneratedSQL,
-                        @SQLMatchScore,
-                        @ExpectedExplanation,
-                        @GeneratedExplanation,
-                        @ExplanationMatchScore,
-                        @ExpectedRowCount,
-                        @ActualRowCount,
-                        @DataMatchScore,
-                        @ResultMatchStatus,
-                        @ComplexityLevel,
-                        @QueryCategory,
-                        @ExecutionTimeMs,
-                        @Success,
-                        @ErrorMessage
-                    );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+            INSERT INTO TestAutomationDetails (
+                JobID,
+                Question,
+                ExpectedSQL,
+                GeneratedSQL,
+                SQLMatchScore,
+                ExpectedExplanation,
+                GeneratedExplanation,
+                ExplanationMatchScore,
+                ExpectedRowCount,
+                ActualRowCount,
+                DataMatchScore,
+                ResultMatchStatus,
+                ComplexityLevel,
+                QueryCategory,
+                ExecutionTimeMs,
+                Success,
+                ErrorMessage
+            )
+            VALUES (
+                @JobID,
+                @Question,
+                @ExpectedSQL,
+                @GeneratedSQL,
+                @SQLMatchScore,
+                @ExpectedExplanation,
+                @GeneratedExplanation,
+                @ExplanationMatchScore,
+                @ExpectedRowCount,
+                @ActualRowCount,
+                @DataMatchScore,
+                @ResultMatchStatus,
+                @ComplexityLevel,
+                @QueryCategory,
+                @ExecutionTimeMs,
+                @Success,
+                @ErrorMessage
+            );
+            SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                 var parameters = new
                 {
@@ -313,13 +276,19 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                     ErrorMessage = errorMessage
                 };
 
-                return await WithConnectionAsync(async conn =>
+                var detailId = await WithConnectionAsync(async conn =>
                 {
                     return await conn.ExecuteScalarSafeAsync<int>(query, parameters);
                 });
+
+                // Log the created detail ID for diagnostics
+                Console.WriteLine($"Created test detail with ID: {detailId} for job ID: {jobId}");
+
+                return detailId;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error logging test detail: {ex.Message}");
                 throw;
             }
         }
@@ -354,67 +323,102 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
 
         #region Dataset Operations
 
-        /// <summary>
-        /// Saves a dataset for a test detail.
-        /// </summary>
-        /// <param name="detailId">The ID of the test detail.</param>
-        /// <param name="isExpected">Whether this is the expected dataset.</param>
-        /// <param name="datasetJson">JSON representation of the dataset.</param>
-        /// <param name="rowCount">Number of rows in the dataset.</param>
-        /// <param name="columnCount">Number of columns in the dataset.</param>
-        /// <param name="columnNames">JSON array of column names.</param>
-        /// <param name="dataHash">Hash of the dataset for comparison.</param>
-        /// <returns>The ID of the newly created dataset record.</returns>
-        public async Task<int> SaveDatasetAsync(
-            int detailId,
-            bool isExpected,
-            string datasetJson,
-            int rowCount,
-            int columnCount,
-            string columnNames,
-            string dataHash)
+
+        public async Task<int> SaveDatasetAsync(int detailId, bool isExpected, string datasetJson,
+            int rowCount, int columnCount, string columnNames, string dataHash)
         {
             try
             {
-                const string query = @"
-                    INSERT INTO TestAutomationDatasets (
-                        DetailID,
-                        IsExpected,
-                        DatasetJSON,
-                        [RowCount],
-                        [ColumnCount],
-                        ColumnNames,
-                        [DataHash]
-                    )
-                    VALUES (
-                        @DetailID,
-                        @IsExpected,
-                        @DatasetJSON,
-                        @RowCount,
-                        @ColumnCount,
-                        @ColumnNames,
-                        @DataHash
-                    );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                // Important validation
+                if (detailId <= 0)
+                    throw new ArgumentException("Invalid detail ID", nameof(detailId));
 
-                var parameters = new
-                {
-                    DetailID = detailId,
-                    IsExpected = isExpected,
-                    DatasetJSON = datasetJson,
-                    RowCount = rowCount,
-                    ColumnCount = columnCount,
-                    ColumnNames = columnNames,
-                    DataHash = dataHash
-                };
+                // Check if a dataset already exists for this detail and expected flag
+                const string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM TestAutomationDatasets 
+            WHERE DetailID = @DetailID AND IsExpected = @IsExpected";
 
-                return await WithConnectionAsync(async conn =>
+                var existingCount = await WithConnectionAsync(async conn =>
                 {
-                    return await conn.ExecuteScalarSafeAsync<int>(query, parameters);
+                    return await conn.ExecuteScalarSafeAsync<int>(checkQuery, new
+                    {
+                        DetailID = detailId,
+                        IsExpected = isExpected
+                    });
                 });
+
+                if (existingCount > 0)
+                {
+                    // Update existing dataset
+                    const string updateQuery = @"
+                UPDATE TestAutomationDatasets 
+                SET DatasetJSON = @DatasetJSON,
+                    RowCount = @RowCount,
+                    ColumnCount = @ColumnCount,
+                    ColumnNames = @ColumnNames,
+                    DataHash = @DataHash
+                WHERE DetailID = @DetailID AND IsExpected = @IsExpected;
+                
+                SELECT DatasetID FROM TestAutomationDatasets 
+                WHERE DetailID = @DetailID AND IsExpected = @IsExpected;";
+
+                    return await WithConnectionAsync(async conn =>
+                    {
+                        return await conn.ExecuteScalarSafeAsync<int>(updateQuery, new
+                        {
+                            DetailID = detailId,
+                            IsExpected = isExpected,
+                            DatasetJSON = datasetJson,
+                            RowCount = rowCount,
+                            ColumnCount = columnCount,
+                            ColumnNames = columnNames,
+                            DataHash = dataHash
+                        });
+                    });
+                }
+                else
+                {
+                    // Create new dataset
+                    const string insertQuery = @"
+                INSERT INTO TestAutomationDatasets (
+                    DetailID,
+                    IsExpected,
+                    DatasetJSON,
+                    RowCount,
+                    ColumnCount,
+                    ColumnNames,
+                    DataHash
+                )
+                VALUES (
+                    @DetailID,
+                    @IsExpected,
+                    @DatasetJSON,
+                    @RowCount,
+                    @ColumnCount,
+                    @ColumnNames,
+                    @DataHash
+                );
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                    return await WithConnectionAsync(async conn =>
+                    {
+                        return await conn.ExecuteScalarSafeAsync<int>(insertQuery, new
+                        {
+                            DetailID = detailId,
+                            IsExpected = isExpected,
+                            DatasetJSON = datasetJson,
+                            RowCount = rowCount,
+                            ColumnCount = columnCount,
+                            ColumnNames = columnNames,
+                            DataHash = dataHash
+                        });
+                    });
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error saving dataset: {ex.Message}");
                 throw;
             }
         }
@@ -448,39 +452,43 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
         }
 
 
-        // Add to DynamicDasboardWebAPI/Repositories/TestAutomation/TestAutomationRepository.cs
-
         /// <summary>
-        /// Retrieves test details by job ID and row number (for pagination).
+        /// Retrieves test details with pagination and total count.
         /// </summary>
-        /// <param name="jobId">The ID of the job.</param>
+        /// <param name="jobId">The job ID.</param>
         /// <param name="pageNumber">The page number.</param>
         /// <param name="pageSize">The page size.</param>
-        /// <returns>A collection of test detail records with pagination.</returns>
-        public async Task<IEnumerable<TestAutomationDetail>> GetTestDetailsPaginatedAsync(
-            int jobId, int pageNumber = 1, int pageSize = 20)
+        /// <returns>Tuple containing paginated test details and total count.</returns>
+        public async Task<(IEnumerable<TestAutomationDetail> Data, int TotalCount)> GetTestDetailsPaginatedAsync(
+            int jobId, int pageNumber = 1, int pageSize = 10)
         {
             try
             {
-
-
-                const string query = @"
+                const string queryData = @"
             SELECT *
             FROM TestAutomationDetails 
             WHERE JobID = @JobID 
             ORDER BY DetailID
             OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY"
-                ;
+            FETCH NEXT @PageSize ROWS ONLY";
+
+                const string queryCount = @"
+            SELECT COUNT(*)
+            FROM TestAutomationDetails 
+            WHERE JobID = @JobID";
 
                 return await WithConnectionAsync(async conn =>
                 {
-                    return await conn.QuerySafeAsync<TestAutomationDetail>(query, new
+                    var data = await conn.QuerySafeAsync<TestAutomationDetail>(queryData, new
                     {
                         JobID = jobId,
                         Offset = (pageNumber - 1) * pageSize,
                         PageSize = pageSize
                     });
+
+                    var totalCount = await conn.ExecuteScalarSafeAsync<int>(queryCount, new { JobID = jobId });
+
+                    return (data, totalCount);
                 });
             }
             catch (Exception)

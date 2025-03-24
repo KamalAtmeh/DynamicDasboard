@@ -292,6 +292,16 @@ namespace DynamicDashboardFE.Pages.Admin
             LoadJobDetails();
         }
 
+
+
+        // Add a class to deserialize the API response with total count
+        private class TestJobDetailsResponse
+        {
+            public List<TestAutomationDetail> Data { get; set; }
+            public int TotalCount { get; set; }
+        }
+
+        // Update the LoadJobDetails method to handle the new response format
         private async Task LoadJobDetails()
         {
             if (selectedJob == null)
@@ -301,19 +311,18 @@ namespace DynamicDashboardFE.Pages.Admin
             {
                 isLoadingDetails = true;
 
-                List<TestAutomationDetail> automationDetails = new List<TestAutomationDetail>();
+                // Use the new response class that includes total count
+                var response = await Http.GetFromJsonAsync<TestJobDetailsResponse>(
+                    $"api/testautomation/jobs/{selectedJob.JobID}?pageNumber={currentPage}&pageSize={pageSize}");
 
-                automationDetails = await Http.GetFromJsonAsync<List<TestAutomationDetail>>($"api/testautomation/jobs/{selectedJob.JobID}?pageNumber={currentPage}&pageSize={pageSize}");
-
-                if (automationDetails != null)
+                if (response != null)
                 {
-                    testDetails = automationDetails;
-                    totalDetailsCount = automationDetails.Count;
+                    testDetails = response.Data;
+                    totalDetailsCount = response.TotalCount; // Set total count from response
                 }
                 else
                 {
-                    toastService.ShowError("Error loading job details:  Details is empty");
-
+                    toastService.ShowError("Error loading job details: Details is empty");
                 }
             }
             catch (Exception ex)

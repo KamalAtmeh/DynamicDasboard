@@ -127,20 +127,26 @@ namespace DynamicDasboardWebAPI.Controllers
         }
 
         /// <summary>
-        /// Gets details of a specific test job.
+        /// Gets details of a specific test job with pagination and total count.
         /// </summary>
         /// <param name="jobId">The job ID.</param>
         /// <param name="pageNumber">The page number.</param>
         /// <param name="pageSize">The page size.</param>
-        /// <returns>Test job details with pagination.</returns>
+        /// <returns>Test job details with pagination and total count.</returns>
         [HttpGet("jobs/{jobId}")]
-        public async Task<ActionResult<IEnumerable<TestAutomationDetail>>> GetTestJobDetails(
-            int jobId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetTestJobDetails(
+            int jobId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var details = await _testService.GetJobDetailsPaginatedAsync(jobId, pageNumber, pageSize);
-                return Ok(details);
+                var (data, totalCount) = await _testService.GetJobDetailsPaginatedAsync(jobId, pageNumber, pageSize);
+
+                // Return both the data and total count
+                return Ok(new
+                {
+                    Data = data,
+                    TotalCount = totalCount
+                });
             }
             catch (Exception ex)
             {

@@ -81,12 +81,12 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetTestJobDetails(System.Int32,System.Int32,System.Int32)">
             <summary>
-            Gets details of a specific test job.
+            Gets details of a specific test job with pagination and total count.
             </summary>
             <param name="jobId">The job ID.</param>
             <param name="pageNumber">The page number.</param>
             <param name="pageSize">The page size.</param>
-            <returns>Test job details with pagination.</returns>
+            <returns>Test job details with pagination and total count.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.TestAutomationController.GetDatasetComparison(System.Int32)">
             <summary>
@@ -511,12 +511,12 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.GetTestDetailsPaginatedAsync(System.Int32,System.Int32,System.Int32)">
             <summary>
-            Retrieves test details by job ID and row number (for pagination).
+            Retrieves test details with pagination and total count.
             </summary>
-            <param name="jobId">The ID of the job.</param>
+            <param name="jobId">The job ID.</param>
             <param name="pageNumber">The page number.</param>
             <param name="pageSize">The page size.</param>
-            <returns>A collection of test detail records with pagination.</returns>
+            <returns>Tuple containing paginated test details and total count.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String)">
             <summary>
@@ -1647,12 +1647,12 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetJobDetailsPaginatedAsync(System.Int32,System.Int32,System.Int32)">
             <summary>
-            Retrieves job details with pagination.
+            Retrieves job details with pagination and total count.
             </summary>
             <param name="jobId">The job ID.</param>
             <param name="pageNumber">The page number.</param>
             <param name="pageSize">The page size.</param>
-            <returns>Paginated job details.</returns>
+            <returns>Tuple containing paginated job details and total count.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetDatasetComparisonAsync(System.Int32)">
             <summary>
