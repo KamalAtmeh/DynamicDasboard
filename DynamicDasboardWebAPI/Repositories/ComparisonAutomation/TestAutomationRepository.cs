@@ -383,7 +383,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                     const string updateQuery = @"
                 UPDATE TestAutomationDatasets 
                 SET DatasetJSON = @DatasetJSON,
-                    RowCount = @RowCount,
+                    [RowCount] = @RowCount,
                     ColumnCount = @ColumnCount,
                     ColumnNames = @ColumnNames,
                     DataHash = @DataHash
@@ -414,7 +414,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                     DetailID,
                     IsExpected,
                     DatasetJSON,
-                    RowCount,
+                    [RowCount],
                     ColumnCount,
                     ColumnNames,
                     DataHash

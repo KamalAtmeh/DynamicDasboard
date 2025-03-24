@@ -22,7 +22,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
     /// </summary>
     public class TestAutomationService
     {
-        private readonly TestAutomationRepository _testAutomationRepository;
+        private readonly TestAutomationRepository objTestAutomationRepostiroy;
         private readonly QueryRepository _queryRepository;
         private readonly LLMServiceFactory _llmServiceFactory;
         private readonly DatabaseService _databaseService;
@@ -48,7 +48,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             DatasetComparisonService datasetComparisonService,
             IConfiguration configuration)
         {
-            _testAutomationRepository = testRepository ?? throw new ArgumentNullException(nameof(testRepository));
+            objTestAutomationRepostiroy = testRepository ?? throw new ArgumentNullException(nameof(testRepository));
             _queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
             _llmServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
@@ -110,7 +110,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 string fileName = "TestAutomation_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
 
                 // Create job record with initial values - we'll update these later
-                int jobId = await _testAutomationRepository.LogTestJobAsync(
+                int jobId = await objTestAutomationRepostiroy.LogTestJobAsync(
                     fileName,
                     databaseId,
                     0, // Initialize with 0, will update later
@@ -244,7 +244,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         bool success = dataMatchScore > 0.9m;
 
                         // Create test detail record
-                        detailId = await _testAutomationRepository.LogTestDetailAsync(
+                        detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
                             jobId,
                             question,
                             expectedSql,
@@ -315,7 +315,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         {
                             try
                             {
-                                detailId = await _testAutomationRepository.LogTestDetailAsync(
+                                detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
                                     jobId,
                                     question,
                                     worksheet.Cells[row, expectedSqlCol].Text,
@@ -352,7 +352,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 decimal avgExplanationScore = totalQuestions > 0 ? totalExplanationMatchScore / totalQuestions : 0;
                 decimal avgDataScore = successCount > 0 ? totalDataMatchScore / successCount : 0;
 
-                await _testAutomationRepository.UpdateTestJobAsync(
+                await objTestAutomationRepostiroy.UpdateTestJobAsync(
                     jobId,
                     totalQuestions,
                     successCount,
@@ -839,8 +839,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             try
             {
                 // Retrieve the datasets from the repository
-                var expectedDataset = await _testAutomationRepository.GetDatasetAsync(detailId, true);
-                var actualDataset = await _testAutomationRepository.GetDatasetAsync(detailId, false);
+                var expectedDataset = await objTestAutomationRepostiroy.GetDatasetAsync(detailId, true);
+                var actualDataset = await objTestAutomationRepostiroy.GetDatasetAsync(detailId, false);
 
                 List<Dictionary<string, object>> expectedData = new List<Dictionary<string, object>>();
                 List<Dictionary<string, object>> actualData = new List<Dictionary<string, object>>();
@@ -891,7 +891,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 }
 
                 // Get the test detail to add additional information
-                var testDetail = await _testAutomationRepository.GetTestDetailByIdAsync(detailId);
+                var testDetail = await objTestAutomationRepostiroy.GetTestDetailByIdAsync(detailId);
 
                 // Use the dataset comparison service to compare the datasets
                 var comparisonResult = _datasetComparisonService.CompareDatasets(expectedData, actualData);

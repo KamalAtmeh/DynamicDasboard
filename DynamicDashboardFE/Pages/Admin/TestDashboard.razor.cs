@@ -345,6 +345,8 @@ namespace DynamicDashboardFE.Pages.Admin
         {
             selectedDetail = detail;
             showComparisonView = true; // Use our enhanced view only
+            //SetActiveComparisonTab("sql");
+            //SetActiveDatasetTab("expected");
 
             // Load dataset comparison data
             await LoadDatasetComparison(detail.DetailID);

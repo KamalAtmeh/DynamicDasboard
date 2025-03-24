@@ -5,12 +5,11 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models.TestAutomation;
-using ObjectsComparer;
 
 namespace DynamicDasboardWebAPI.Services.TestAutomation
 {
     /// <summary>
-    /// Service for comparing datasets using ObjectsComparer library.
+    /// Service for comparing datasets without depending on external libraries.
     /// </summary>
     public class DatasetComparisonService
     {
@@ -68,7 +67,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 return result;
             }
 
-            // Compare the datasets using ObjectsComparer
+            // Compare the datasets row by row
             CompareDatasetRows(expected, actual, result, recordsToCompare);
 
             // Set final result summary
@@ -114,7 +113,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         }
 
         /// <summary>
-        /// Compares rows between datasets using ObjectsComparer.
+        /// Compares rows between datasets manually instead of using ObjectsComparer.
         /// </summary>
         private void CompareDatasetRows(
             List<Dictionary<string, object>> expected,
@@ -124,32 +123,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         {
             try
             {
-                // Create the comparer configuration
-                var settings = new ComparisonSettings
-                {
-                    KeyComparer = StringComparer.OrdinalIgnoreCase,
-                    EmptyAndNullEnumerablesEqual = true
-                };
-
-                // Handle value comparisons for different data types
-                settings.ValueComparers.Add(typeof(string), new CaseInsensitiveStringComparer());
-                settings.ValueComparers.Add(typeof(DateTime), new DateTimeComparer());
-                settings.ValueComparers.Add(typeof(double), new NumericComparer<double>());
-                settings.ValueComparers.Add(typeof(decimal), new NumericComparer<decimal>());
-                settings.ValueComparers.Add(typeof(float), new NumericComparer<float>());
-
-                // Create and configure the comparer
-                var comparer = new Comparer<Dictionary<string, object>>(settings);
-
-                // We only care about comparing common columns
-                // Add a member filter to ignore columns that don't exist in both datasets
-                if (result.HasStructuralDifferences)
-                {
-                    comparer.Config.MembersToInclude = result.CommonColumns
-                        .Select(col => new MemberInfo(col))
-                        .ToList();
-                }
-
                 // Track overall comparison results
                 bool allRowsMatch = true;
                 int matchingRows = 0;
@@ -162,8 +135,42 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     var expectedRow = FilterToCommonColumns(expected[i], result.CommonColumns);
                     var actualRow = FilterToCommonColumns(actual[i], result.CommonColumns);
 
-                    // Compare the current row
-                    var rowMatch = comparer.Compare(expectedRow, actualRow, out var differences);
+                    // Compare row values manually
+                    var differences = new List<DatasetDifference>();
+                    bool rowMatch = true;
+
+                    foreach (var column in result.CommonColumns)
+                    {
+                        // Get column values (using case-insensitive lookup)
+                        var expectedKey = expectedRow.Keys.FirstOrDefault(k =>
+                            string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
+                        var actualKey = actualRow.Keys.FirstOrDefault(k =>
+                            string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
+
+                        // Compare values if keys exist
+                        if (expectedKey != null && actualKey != null)
+                        {
+                            var expectedValue = expectedRow[expectedKey];
+                            var actualValue = actualRow[actualKey];
+
+                            // Perform comparison based on value type
+                            bool valuesMatch = CompareValues(expectedValue, actualValue);
+
+                            if (!valuesMatch)
+                            {
+                                rowMatch = false;
+                                differences.Add(new DatasetDifference
+                                {
+                                    RowIndex = i,
+                                    ColumnName = column,
+                                    ExpectedValue = expectedValue,
+                                    ActualValue = actualValue,
+                                    DifferenceType = "ValueMismatch",
+                                    Description = $"{column}: Expected '{FormatValue(expectedValue)}', Actual '{FormatValue(actualValue)}'"
+                                });
+                            }
+                        }
+                    }
 
                     if (rowMatch)
                     {
@@ -174,19 +181,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         differentRows++;
                         allRowsMatch = false;
 
-                        // Record the differences
-                        foreach (var diff in differences)
-                        {
-                            result.Differences.Add(new DatasetDifference
-                            {
-                                RowIndex = i,
-                                ColumnName = diff.MemberPath,
-                                ExpectedValue = diff.Value1,
-                                ActualValue = diff.Value2,
-                                DifferenceType = diff.DifferenceType.ToString(),
-                                Description = $"{diff.MemberPath}: Expected '{diff.Value1}', Actual '{diff.Value2}'"
-                            });
-                        }
+                        // Add the differences to the result
+                        result.Differences.AddRange(differences);
                     }
                 }
 
@@ -230,137 +226,92 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             return filtered;
         }
 
-        #region Custom Comparers
-
         /// <summary>
-        /// Case-insensitive string comparer for ObjectsComparer.
+        /// Compares two values for equality, handling different types.
         /// </summary>
-        private class CaseInsensitiveStringComparer : IValueComparer
+        private bool CompareValues(object value1, object value2)
         {
-            public bool Compare(object value1, object value2, ComparisonSettings settings, out string errorMessage)
+            // Handle null cases
+            if (value1 == null && value2 == null)
+                return true;
+            if (value1 == null || value2 == null)
+                return false;
+
+            // Handle numeric types with tolerance
+            if (IsNumeric(value1) && IsNumeric(value2))
             {
-                errorMessage = null;
-
-                // Handle null cases
-                if (value1 == null && value2 == null)
-                    return true;
-                if (value1 == null || value2 == null)
-                {
-                    errorMessage = $"One value is null: '{value1}' vs '{value2}'";
-                    return false;
-                }
-
-                // Compare strings case-insensitively
-                string s1 = value1.ToString();
-                string s2 = value2.ToString();
-                bool isEqual = string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
-
-                if (!isEqual)
-                {
-                    errorMessage = $"String values differ: '{s1}' vs '{s2}'";
-                }
-
-                return isEqual;
-            }
-        }
-
-        /// <summary>
-        /// Date comparer that ignores time portion for ObjectsComparer.
-        /// </summary>
-        private class DateTimeComparer : IValueComparer
-        {
-            public bool Compare(object value1, object value2, ComparisonSettings settings, out string errorMessage)
-            {
-                errorMessage = null;
-
-                // Handle null cases
-                if (value1 == null && value2 == null)
-                    return true;
-                if (value1 == null || value2 == null)
-                {
-                    errorMessage = $"One value is null: '{value1}' vs '{value2}'";
-                    return false;
-                }
-
-                // Try to parse as dates if they're not already DateTime objects
-                DateTime date1, date2;
-
-                if (value1 is DateTime dt1)
-                {
-                    date1 = dt1;
-                }
-                else if (!DateTime.TryParse(value1.ToString(), out date1))
-                {
-                    errorMessage = $"Could not parse '{value1}' as a valid date";
-                    return false;
-                }
-
-                if (value2 is DateTime dt2)
-                {
-                    date2 = dt2;
-                }
-                else if (!DateTime.TryParse(value2.ToString(), out date2))
-                {
-                    errorMessage = $"Could not parse '{value2}' as a valid date";
-                    return false;
-                }
-
-                // Compare dates
-                bool isEqual = date1.Date == date2.Date;
-
-                if (!isEqual)
-                {
-                    errorMessage = $"Dates differ: '{date1:yyyy-MM-dd}' vs '{date2:yyyy-MM-dd}'";
-                }
-
-                return isEqual;
-            }
-        }
-
-        /// <summary>
-        /// Generic numeric comparer with tolerance for floating-point values.
-        /// </summary>
-        private class NumericComparer<T> : IValueComparer where T : IComparable
-        {
-            private readonly double _tolerance = 0.0001;
-
-            public bool Compare(object value1, object value2, ComparisonSettings settings, out string errorMessage)
-            {
-                errorMessage = null;
-
-                // Handle null cases
-                if (value1 == null && value2 == null)
-                    return true;
-                if (value1 == null || value2 == null)
-                {
-                    errorMessage = $"One value is null: '{value1}' vs '{value2}'";
-                    return false;
-                }
-
                 try
                 {
-                    // Convert to double for comparison with tolerance
                     double d1 = Convert.ToDouble(value1);
                     double d2 = Convert.ToDouble(value2);
-
-                    // Compare with tolerance
-                    bool isEqual = Math.Abs(d1 - d2) < _tolerance;
-
-                    if (!isEqual)
-                    {
-                        errorMessage = $"Numeric values differ: '{d1}' vs '{d2}'";
-                    }
-
-                    return isEqual;
+                    const double tolerance = 0.0001;
+                    return Math.Abs(d1 - d2) < tolerance;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    errorMessage = $"Failed to compare numeric values: {ex.Message}";
-                    return false;
+                    // If conversion fails, fall back to string comparison
                 }
             }
+
+            // Handle DateTime comparison
+            if ((value1 is DateTime || value2 is DateTime) ||
+                (DateTime.TryParse(value1.ToString(), out _) || DateTime.TryParse(value2.ToString(), out _)))
+            {
+                try
+                {
+                    DateTime dt1 = value1 is DateTime ? (DateTime)value1 : DateTime.Parse(value1.ToString());
+                    DateTime dt2 = value2 is DateTime ? (DateTime)value2 : DateTime.Parse(value2.ToString());
+
+                    // Compare dates without time component
+                    return dt1.Date == dt2.Date;
+                }
+                catch
+                {
+                    // If parsing fails, fall back to string comparison
+                }
+            }
+
+            // Default string comparison (case-insensitive)
+            return string.Equals(value1.ToString(), value2.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
-        #endregion
+        /// <summary>
+        /// Determines if an object is a numeric type.
+        /// </summary>
+        private bool IsNumeric(object value)
+        {
+            if (value == null)
+                return false;
+
+            return value is byte || value is sbyte ||
+                   value is short || value is ushort ||
+                   value is int || value is uint ||
+                   value is long || value is ulong ||
+                   value is float || value is double ||
+                   value is decimal;
+        }
+
+        /// <summary>
+        /// Formats a value for display.
+        /// </summary>
+        private string FormatValue(object value)
+        {
+            if (value == null)
+                return "null";
+
+            if (value is DateTime dt)
+                return dt.ToString("yyyy-MM-dd");
+
+            if (value is decimal dec)
+                return dec.ToString("0.####");
+
+            if (value is double dbl)
+                return dbl.ToString("0.####");
+
+            if (value is float flt)
+                return flt.ToString("0.####");
+
+            return value.ToString();
+        }
     }
 }
