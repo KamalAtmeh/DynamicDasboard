@@ -1081,3 +1081,236 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Comparison toggle button */
+.comparison-toggle {
+    position: fixed;
+    top: 70px;
+    right: -150px;
+    z-index: 1002;
+    transition: right 0.3s ease-in-out;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 4px 0 0 4px;
+    background-color: #fff;
+    opacity: 0;
+    visibility: hidden;
+}
+
+    .comparison-toggle.visible {
+        right: 0;
+        opacity: 1;
+        visibility: visible;
+    }
+
+.btn-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: #f8f9fa;
+    color: #007bff;
+    font-weight: 500;
+    border-radius: 4px 0 0 4px;
+    transition: all 0.2s ease;
+}
+
+    .btn-toggle:hover {
+        background-color: #e2f0ff;
+    }
+
+    .btn-toggle i {
+        font-size: 1rem;
+    }
+
+/* Enhanced header actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Improved loading indicator */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+    .loading-container .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 1rem;
+        color: #007bff;
+    }
+
+/* Retry button in empty state */
+.empty-state .btn-outline-primary {
+    background-color: transparent;
+    border-color: #007bff;
+    color: #007bff;
+    transition: all 0.2s ease;
+}
+
+    .empty-state .btn-outline-primary:hover {
+        background-color: #007bff;
+        color: white;
+    }
+
+/* Better code block styling */
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+}
+
+.code-block {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    height: 300px;
+    overflow-y: auto;
+}
+
+    .code-block.expected {
+        border-left: 3px solid #28a745;
+    }
+
+    .code-block.generated {
+        border-left: 3px solid #007bff;
+    }
+
+/* Enhanced dataset tabs */
+.dataset-tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+    .dataset-tabs .tab {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        .dataset-tabs .tab:hover {
+            color: #007bff;
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        .dataset-tabs .tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+/* Dataset comparison improvements */
+.dataset-content {
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+.dataset-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.meta-value {
+    color: #212529;
+}
+
+    .meta-value.success {
+        color: #28a745;
+    }
+
+    .meta-value.error {
+        color: #dc3545;
+    }
+
+/* Animations */
+.animate__animated {
+    animation-duration: 0.4s;
+}
+
+.animate__fadeIn {
+    animation-name: fadeIn;
+}
+
+.animate__fadeInUp {
+    animation-name: fadeInUp;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 20px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Responsive improvements */
+@media (max-width: 992px) {
+    .code-comparison,
+    .text-comparison {
+        flex-direction: column;
+    }
+
+    .code-block {
+        height: 200px;
+    }
+
+    .comparison-modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+}

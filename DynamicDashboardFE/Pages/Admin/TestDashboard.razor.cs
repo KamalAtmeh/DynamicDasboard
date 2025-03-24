@@ -1,5 +1,7 @@
 ﻿using Blazored.Toast.Services;
+using DynamicDashboardCommon.Helper;
 using DynamicDashboardCommon.Models;
+using DynamicDashboardCommon.Models.TestAutomation;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
@@ -8,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DynamicDashboardFE.Pages.Admin
@@ -32,7 +35,7 @@ namespace DynamicDashboardFE.Pages.Admin
         private IBrowserFile selectedFile;
         private TestAutomationJob selectedJob;
         private TestAutomationDetail selectedDetail;
-        private (List<Dictionary<string, object>> expected, List<Dictionary<string, object>> actual) comparisonData;
+        private DatasetComparisonResult comparisonData;
 
         private bool isLoading;
         private bool isUploading;
@@ -326,6 +329,9 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
+        /// <summary>
+        /// Shows the legacy comparison modal with dataset visualization.
+        /// </summary>
         private async Task ViewDetailComparison(TestAutomationDetail detail)
         {
             selectedDetail = detail;
@@ -337,32 +343,100 @@ namespace DynamicDashboardFE.Pages.Admin
             await LoadDatasetComparison(detail.DetailID);
         }
 
+        // These are the updated/fixed methods for TestDashboard.razor.cs specifically focused on comparison functionality
+
+        /// <summary>
+        /// Loads dataset comparison data for visualization.
+        /// </summary>
         private async Task LoadDatasetComparison(int detailId)
         {
             try
             {
                 isLoadingDatasets = true;
-                comparisonData = await Http.GetFromJsonAsync<(List<Dictionary<string, object>> expected, List<Dictionary<string, object>> actual)>(
-                    $"api/testautomation/comparison/{detailId}"
-                );
+                StateHasChanged(); // Update UI to show loading state
+
+                // Log the request for troubleshooting
+                var response = await Http.GetAsync($"api/testautomation/comparison/{detailId}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    toastService.ShowError($"Error loading comparison data: {errorContent}");
+                    comparisonData = new DatasetComparisonResult
+                    {
+                        Expected = new List<Dictionary<string, object>>(),
+                        Actual = new List<Dictionary<string, object>>()
+                    };
+
+                    // Log the error response
+                    await JSRuntime.InvokeVoidAsync("console.log", $"Error response: {errorContent}");
+                    return;
+                }
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    // Use a custom JsonSerializerOptions for more flexibility
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
+                        Converters = { new DictionaryObjectConverter() } // Custom converter for Dictionary<string, object>
+                    };
+
+                    // Deserialize into DatasetComparisonResult
+                    var result = JsonSerializer.Deserialize<DatasetComparisonResult>(responseContent, options);
+
+                    // Set the comparison data
+                    comparisonData = result;
+
+                    // Also set the data for the TestCaseComparisonView component
+                    expectedDataset = result.Expected;
+                    actualDataset = result.Actual;
+
+                    // Log success and count information
+                    int expectedCount = result.Expected?.Count ?? 0;
+                    int actualCount = result.Actual?.Count ?? 0;
+                    await JSRuntime.InvokeVoidAsync("console.log", $"Successfully loaded {expectedCount} expected and {actualCount} actual records.");
+                }
+                catch (JsonException jsonEx)
+                {
+                    toastService.ShowError($"Error parsing comparison data: {jsonEx.Message}");
+
+                    // Set empty data in case of error
+                    comparisonData = new DatasetComparisonResult
+                    {
+                        Expected = new List<Dictionary<string, object>>(),
+                        Actual = new List<Dictionary<string, object>>()
+                    };
+                }
             }
             catch (Exception ex)
             {
-                toastService.ShowError("Error loading dataset comparison: " + ex.Message);
-                comparisonData = (null, null);
+                toastService.ShowError($"Error loading dataset comparison: {ex.Message}");
+
+                // Set empty data in case of error
+                comparisonData = new DatasetComparisonResult
+                {
+                    Expected = new List<Dictionary<string, object>>(),
+                    Actual = new List<Dictionary<string, object>>()
+                };
             }
             finally
             {
                 isLoadingDatasets = false;
-                StateHasChanged();
+                StateHasChanged(); // Update UI to hide loading state
             }
         }
 
-        private void CloseComparisonModal()
+        private void CloseComparisonView()
         {
-            showComparisonModal = false;
-            selectedDetail = null;
-            comparisonData = (null, null);
+            showComparisonView = false;
+            comparisonDetail = null;
+            expectedDataset = null;
+            actualDataset = null;
+            StateHasChanged();
         }
 
         private async Task DownloadResults()
@@ -451,27 +525,60 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
+        /// <summary>
+        /// Shows the enhanced TestCaseComparisonView component.
+        /// </summary>
         private async Task ViewDetailComparisonEnhanced(TestAutomationDetail detail)
         {
             comparisonDetail = detail;
 
-            // Load dataset comparison data
-            var comparison = await Http.GetFromJsonAsync<(List<Dictionary<string, object>> expected, List<Dictionary<string, object>> actual)>(
-                $"api/testautomation/comparison/{detail.DetailID}"
-            );
-
-            expectedDataset = comparison.expected;
-            actualDataset = comparison.actual;
-
-            showComparisonView = true;
+            // Show loading indicator
+            isLoadingDatasets = true;
             StateHasChanged();
+
+            try
+            {
+                // Load dataset comparison data
+                await LoadDatasetComparison(detail.DetailID);
+
+                // Update the component's data
+                showComparisonView = true;
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error preparing comparison view: {ex.Message}");
+            }
+            finally
+            {
+                isLoadingDatasets = false;
+                StateHasChanged();
+            }
         }
 
-        private void CloseComparisonView()
+        /// <summary>
+        /// Adds a toggle button to switch between the legacy and enhanced comparison views.
+        /// </summary>
+        private void ToggleComparisonView()
         {
-            showComparisonView = false;
+            if (showComparisonModal && selectedDetail != null)
+            {
+                // Switch from modal to enhanced view
+                showComparisonModal = false;
+                comparisonDetail = selectedDetail;
+                showComparisonView = true;
+            }
+            else if (showComparisonView && comparisonDetail != null)
+            {
+                // Switch from enhanced view to modal
+                showComparisonView = false;
+                selectedDetail = comparisonDetail;
+                showComparisonModal = true;
+            }
+
             StateHasChanged();
         }
+
+
 
         // Helper methods
         private int GetSuccessRate(TestAutomationJob job)
@@ -515,6 +622,7 @@ namespace DynamicDashboardFE.Pages.Admin
             return $"{size:0.##} {sizes[order]}";
         }
 
-
     }
+
+
 }

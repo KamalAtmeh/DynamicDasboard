@@ -3,6 +3,7 @@ using DynamicDasboardWebAPI.Repositories.TestAutomation;
 using DynamicDasboardWebAPI.Services.LLM;
 using DynamicDasboardWebAPI.Utilities;
 using DynamicDashboardCommon.Models;
+using DynamicDashboardCommon.Models.TestAutomation;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -68,7 +69,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 // Check if the worksheet has the expected structure
                 ValidateWorksheetStructure(worksheet);
 
-                // Define column indices based on updated structure (without ExpectedRowCount)
+                // Define column indices based on updated structure
                 const int questionCol = 1;          // Column A
                 const int expectedSqlCol = 2;       // Column B
                 const int expectedExplanationCol = 3; // Column C
@@ -89,23 +90,10 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 const int statusCol = 16;           // Column P
                 const int errorCol = 17;            // Column Q
 
-
-
                 // Initialize tracking variables
                 int lastDataRow = 1; // Start with header row
-               
 
-                // Use lastDataRow instead of rowCount
-                int rowCount = 0;
-                int totalQuestions = 0;
-                int successCount = 0;
-                decimal totalSqlMatchScore = 0;
-                decimal totalExplanationMatchScore = 0;
-                decimal totalDataMatchScore = 0;
-
-                string fileName = "TestAutomation_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
-
-
+                // Find the last row with data
                 for (int row = worksheet.Dimension?.Rows ?? 0; row >= 2; row--)
                 {
                     // Check if this row has any data in the first few columns
@@ -125,9 +113,17 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         break;
                     }
                 }
-                rowCount = lastDataRow;
+                int rowCount = lastDataRow;
 
-                // Create a test job record
+                int totalQuestions = 0;
+                int successCount = 0;
+                decimal totalSqlMatchScore = 0;
+                decimal totalExplanationMatchScore = 0;
+                decimal totalDataMatchScore = 0;
+
+                string fileName = "TestAutomation_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
+
+                // CRITICAL FIX: Create a test job record first and use the returned ID consistently
                 int jobId = await objTestAutomationRepostiroy.LogTestJobAsync(
                     fileName,
                     databaseId,
@@ -154,7 +150,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 var objDBSchema = await objDatabaseSchemaService.GetSchemaObject(database.DatabaseID);
                 if (objDBSchema == null)
                 {
-                    return null;
+                    throw new ArgumentException("Could not retrieve database schema");
                 }
 
                 var schemaStr = objDatabaseSchemaService.BuildOptimizedSchemaString(objDBSchema);
@@ -252,8 +248,9 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         var executionTimeMs = (int)(endTime - startTime).TotalMilliseconds;
 
                         // Step 7: Create test detail record in database
+                        // CRITICAL FIX: Use the jobId obtained earlier
                         detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
-                            jobId,
+                            jobId, // Use the jobId from the first creation
                             question,
                             expectedSql,
                             generatedSql,
@@ -310,8 +307,9 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         // Log error to database if we haven't created a detail record yet
                         if (detailId == 0)
                         {
+                            // CRITICAL FIX: Use the jobId obtained earlier
                             await objTestAutomationRepostiroy.LogTestDetailAsync(
-                                jobId,
+                                jobId, // Use the same jobId
                                 question,
                                 worksheet.Cells[row, expectedSqlCol].Text, // Expected SQL
                                 null, // Generated SQL
@@ -338,16 +336,14 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 decimal avgExplanationScore = successCount > 0 ? totalExplanationMatchScore / successCount : 0;
                 decimal avgDataScore = successCount > 0 ? totalDataMatchScore / successCount : 0;
 
-              var jobID =  await objTestAutomationRepostiroy.LogTestJobAsync(
-                    fileName,
-                    databaseId,
+                // CRITICAL FIX: Update the existing job record instead of creating a new one
+                await objTestAutomationRepostiroy.UpdateTestJobAsync(
+                    jobId, // Use the same jobId
                     totalQuestions,
                     successCount,
-                    llmProvider,
                     avgSqlScore,
                     avgExplanationScore,
-                    avgDataScore,
-                    userId
+                    avgDataScore
                 );
 
                 // Format the Excel file
@@ -727,8 +723,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// </summary>
         /// <param name="detailId">The ID of the test detail.</param>
         /// <returns>A tuple containing the expected and actual datasets.</returns>
-        public async Task<(List<Dictionary<string, object>> expected, List<Dictionary<string, object>> actual)>
-            GetDatasetComparisonAsync(int detailId)
+        public async Task<DatasetComparisonResult> GetDatasetComparisonAsync(int detailId)
         {
             try
             {
@@ -741,20 +736,72 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 // Deserialize expected dataset if available
                 if (expectedDataset != null && !string.IsNullOrWhiteSpace(expectedDataset.DatasetJSON))
                 {
-                    expectedData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
-                        expectedDataset.DatasetJSON,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    try
+                    {
+                        // Use a more tolerant JSON deserializer to handle property value conversion
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
+                        };
+
+                        expectedData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
+                            expectedDataset.DatasetJSON, options);
+
+                        // Ensure proper type conversion for numeric values
+                        if (expectedData != null)
+                        {
+                            expectedData = NormalizeDatasetTypes(expectedData);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"Error deserializing expected dataset: {ex.Message}");
+                        // Provide a fallback if deserialization fails
+                        expectedData = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object> { { "Error", "Failed to parse expected dataset" } }
+                };
+                    }
                 }
 
                 // Deserialize actual dataset if available
                 if (actualDataset != null && !string.IsNullOrWhiteSpace(actualDataset.DatasetJSON))
                 {
-                    actualData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
-                        actualDataset.DatasetJSON,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    try
+                    {
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
+                        };
+
+                        actualData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
+                            actualDataset.DatasetJSON, options);
+
+                        // Ensure proper type conversion for numeric values
+                        if (actualData != null)
+                        {
+                            actualData = NormalizeDatasetTypes(actualData);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"Error deserializing actual dataset: {ex.Message}");
+                        // Provide a fallback if deserialization fails
+                        actualData = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object> { { "Error", "Failed to parse actual dataset" } }
+                };
+                    }
                 }
 
-                return (expectedData, actualData);
+                // Create and return the DatasetComparisonResult object
+                return new DatasetComparisonResult
+                {
+                    Expected = expectedData ?? new List<Dictionary<string, object>>(),
+                    Actual = actualData ?? new List<Dictionary<string, object>>()
+                };
             }
             catch (Exception ex)
             {
@@ -762,7 +809,259 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
         }
 
+
+
         #region Private Helper Methods
+
+        /// <summary>
+        /// Normalizes data types in a dataset to ensure proper comparison.
+        /// JSON deserialization can sometimes produce inconsistent types.
+        /// </summary>
+        private List<Dictionary<string, object>> NormalizeDatasetTypes(List<Dictionary<string, object>> dataset)
+        {
+            if (dataset == null || dataset.Count == 0) return dataset;
+
+            var result = new List<Dictionary<string, object>>();
+
+            // First, determine the most appropriate type for each column
+            var columnTypes = new Dictionary<string, Type>();
+            foreach (var row in dataset)
+            {
+                foreach (var kvp in row)
+                {
+                    if (kvp.Value != null)
+                    {
+                        if (!columnTypes.TryGetValue(kvp.Key, out var currentType))
+                        {
+                            columnTypes[kvp.Key] = kvp.Value.GetType();
+                        }
+                        else if (kvp.Value.GetType() != currentType)
+                        {
+                            // If mixed types, prefer numeric types in this order: decimal, double, int
+                            if (kvp.Value is decimal || currentType == typeof(decimal))
+                            {
+                                columnTypes[kvp.Key] = typeof(decimal);
+                            }
+                            else if (kvp.Value is double || currentType == typeof(double))
+                            {
+                                columnTypes[kvp.Key] = typeof(double);
+                            }
+                            else if (kvp.Value is int || currentType == typeof(int))
+                            {
+                                columnTypes[kvp.Key] = typeof(int);
+                            }
+                            // Default to string if mixed non-numeric types
+                            else
+                            {
+                                columnTypes[kvp.Key] = typeof(string);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Now convert each value to the appropriate type
+            foreach (var row in dataset)
+            {
+                var normalizedRow = new Dictionary<string, object>();
+
+                foreach (var kvp in row)
+                {
+                    if (kvp.Value == null)
+                    {
+                        normalizedRow[kvp.Key] = null;
+                        continue;
+                    }
+
+                    if (columnTypes.TryGetValue(kvp.Key, out var targetType))
+                    {
+                        try
+                        {
+                            if (targetType == typeof(decimal) && kvp.Value is JsonElement je)
+                            {
+                                if (je.TryGetDecimal(out var dec))
+                                    normalizedRow[kvp.Key] = dec;
+                                else if (je.TryGetDouble(out var dbl))
+                                    normalizedRow[kvp.Key] = (decimal)dbl;
+                                else if (je.TryGetInt32(out var i32))
+                                    normalizedRow[kvp.Key] = (decimal)i32;
+                                else
+                                    normalizedRow[kvp.Key] = kvp.Value;
+                            }
+                            else if (targetType == typeof(double) && kvp.Value is JsonElement je2)
+                            {
+                                if (je2.TryGetDouble(out var dbl))
+                                    normalizedRow[kvp.Key] = dbl;
+                                else if (je2.TryGetInt32(out var i32))
+                                    normalizedRow[kvp.Key] = (double)i32;
+                                else
+                                    normalizedRow[kvp.Key] = kvp.Value;
+                            }
+                            else if (targetType == typeof(int) && kvp.Value is JsonElement je3)
+                            {
+                                if (je3.TryGetInt32(out var i32))
+                                    normalizedRow[kvp.Key] = i32;
+                                else
+                                    normalizedRow[kvp.Key] = kvp.Value;
+                            }
+                            else if (targetType == typeof(DateTime) && kvp.Value is JsonElement je4)
+                            {
+                                if (je4.TryGetDateTime(out var dt))
+                                    normalizedRow[kvp.Key] = dt;
+                                else
+                                    normalizedRow[kvp.Key] = kvp.Value;
+                            }
+                            else if (kvp.Value is JsonElement je5)
+                            {
+                                // Handle other JsonElement cases
+                                switch (je5.ValueKind)
+                                {
+                                    case JsonValueKind.String:
+                                        normalizedRow[kvp.Key] = je5.GetString();
+                                        break;
+                                    case JsonValueKind.Number:
+                                        if (je5.TryGetInt32(out var i))
+                                            normalizedRow[kvp.Key] = i;
+                                        else if (je5.TryGetDouble(out var d))
+                                            normalizedRow[kvp.Key] = d;
+                                        else if (je5.TryGetDecimal(out var dec))
+                                            normalizedRow[kvp.Key] = dec;
+                                        else
+                                            normalizedRow[kvp.Key] = je5.GetRawText();
+                                        break;
+                                    case JsonValueKind.True:
+                                        normalizedRow[kvp.Key] = true;
+                                        break;
+                                    case JsonValueKind.False:
+                                        normalizedRow[kvp.Key] = false;
+                                        break;
+                                    case JsonValueKind.Null:
+                                        normalizedRow[kvp.Key] = null;
+                                        break;
+                                    default:
+                                        normalizedRow[kvp.Key] = je5.GetRawText();
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                // For regular objects, use the original value
+                                normalizedRow[kvp.Key] = kvp.Value;
+                            }
+                        }
+                        catch
+                        {
+                            // If conversion fails, use the original value
+                            normalizedRow[kvp.Key] = kvp.Value;
+                        }
+                    }
+                    else
+                    {
+                        normalizedRow[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                result.Add(normalizedRow);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Normalizes dataset for consistent storage.
+        /// </summary>
+        private List<Dictionary<string, object>> NormalizeDatasetForStorage(List<Dictionary<string, object>> dataset)
+        {
+            if (dataset == null || !dataset.Any())
+                return new List<Dictionary<string, object>>();
+
+            // Create a normalized copy of the dataset
+            var normalized = new List<Dictionary<string, object>>();
+
+            // Get a canonical list of all column names to ensure consistency
+            var allColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in dataset)
+            {
+                foreach (var key in row.Keys)
+                {
+                    allColumns.Add(key);
+                }
+            }
+
+            // Sort column names alphabetically for consistency
+            var orderedColumns = allColumns.OrderBy(c => c).ToList();
+
+            // Create normalized rows with all columns
+            foreach (var row in dataset)
+            {
+                var normalizedRow = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+                // Ensure each row has all columns, with nulls for missing values
+                foreach (var column in orderedColumns)
+                {
+                    string actualColumn = row.Keys.FirstOrDefault(k =>
+                        string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
+
+                    if (actualColumn != null && row.TryGetValue(actualColumn, out var value))
+                    {
+                        // Normalize value based on type
+                        if (value is DateTime dateTime)
+                        {
+                            normalizedRow[column] = dateTime.ToString("o"); // ISO 8601 format
+                        }
+                        else if (value is DBNull)
+                        {
+                            normalizedRow[column] = null;
+                        }
+                        else if (value is JsonElement jsonElement)
+                        {
+                            // Handle different JsonElement types
+                            switch (jsonElement.ValueKind)
+                            {
+                                case JsonValueKind.Null:
+                                    normalizedRow[column] = null;
+                                    break;
+                                case JsonValueKind.Number:
+                                    if (jsonElement.TryGetInt32(out var intValue))
+                                        normalizedRow[column] = intValue;
+                                    else if (jsonElement.TryGetDouble(out var doubleValue))
+                                        normalizedRow[column] = doubleValue;
+                                    else if (jsonElement.TryGetDecimal(out var decimalValue))
+                                        normalizedRow[column] = decimalValue;
+                                    else
+                                        normalizedRow[column] = jsonElement.GetRawText();
+                                    break;
+                                case JsonValueKind.String:
+                                    normalizedRow[column] = jsonElement.GetString();
+                                    break;
+                                case JsonValueKind.True:
+                                    normalizedRow[column] = true;
+                                    break;
+                                case JsonValueKind.False:
+                                    normalizedRow[column] = false;
+                                    break;
+                                default:
+                                    normalizedRow[column] = jsonElement.GetRawText();
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            normalizedRow[column] = value;
+                        }
+                    }
+                    else
+                    {
+                        normalizedRow[column] = null;
+                    }
+                }
+
+                normalized.Add(normalizedRow);
+            }
+
+            return normalized;
+        }
+
 
         /// <summary>
         /// Validates that the worksheet has the expected structure for test automation.
@@ -798,25 +1097,35 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         {
             try
             {
-                // Serialize the dataset to JSON
-                string datasetJson = JsonSerializer.Serialize(dataset);
+                // Ensure the dataset is consistent before serialization
+                var normalizedDataset = NormalizeDatasetForStorage(dataset);
+
+                // Serialize the dataset to JSON with proper settings
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = false, // Save space in the database
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping // Handle special characters
+                };
+
+                string datasetJson = JsonSerializer.Serialize(normalizedDataset, options);
 
                 // Get column names
-                List<string> columnNames = dataset.Count > 0
-                    ? dataset[0].Keys.ToList()
+                List<string> columnNames = normalizedDataset.Count > 0
+                    ? normalizedDataset[0].Keys.ToList()
                     : new List<string>();
 
-                string columnNamesJson = JsonSerializer.Serialize(columnNames);
+                string columnNamesJson = JsonSerializer.Serialize(columnNames, options);
 
                 // Compute hash for quick comparison
-                string dataHash = ComparisonUtilities.ComputeDatasetHash(dataset);
+                string dataHash = ComparisonUtilities.ComputeDatasetHash(normalizedDataset);
 
                 // Store in database
                 return await objTestAutomationRepostiroy.SaveDatasetAsync(
                     detailId,
                     isExpected,
                     datasetJson,
-                    dataset.Count,
+                    normalizedDataset.Count,
                     columnNames.Count,
                     columnNamesJson,
                     dataHash

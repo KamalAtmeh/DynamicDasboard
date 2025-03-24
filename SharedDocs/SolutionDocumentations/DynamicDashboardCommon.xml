@@ -37,6 +37,7 @@
             <param name="sqlScript">SQL script to analyze</param>
             <returns>Collection of referenced database objects</returns>
         </member>
+        <!-- Badly formed XML comment ignored for member "T:DynamicDashboardCommon.Helper.DictionaryObjectConverter" -->
         <member name="T:DynamicDashboardCommon.Models.DataViewingType">
             <summary>
             Represents the different ways data can be viewed in the system

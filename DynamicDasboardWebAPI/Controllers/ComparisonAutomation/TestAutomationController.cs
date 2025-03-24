@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using DynamicDasboardWebAPI.Services;
+using DynamicDashboardCommon.Models.TestAutomation;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -157,12 +158,19 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
-                var comparison = await _testService.GetDatasetComparisonAsync(detailId);
-                return Ok(comparison);
+
+                DatasetComparisonResult objcomparison = await _testService.GetDatasetComparisonAsync(detailId);
+
+                
+                bool hasExpectedData = objcomparison.Expected != null && objcomparison.Expected.Any();
+                bool hasActualData = objcomparison.Actual != null && objcomparison.Actual.Any();
+
+                return Ok(objcomparison);
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString(),
+                    $"Error retrieving dataset comparison for detail ID {detailId}");
             }
         }
 

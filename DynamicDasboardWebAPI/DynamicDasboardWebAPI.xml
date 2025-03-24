@@ -438,6 +438,18 @@
             <param name="userId">The user who executed the test (optional).</param>
             <returns>The ID of the newly created job.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.UpdateTestJobAsync(System.Int32,System.Int32,System.Int32,System.Decimal,System.Decimal,System.Decimal)">
+            <summary>
+            Updates an existing test automation job with new details.
+            </summary>
+            <param name="jobId">The ID of the job to update.</param>
+            <param name="totalQuestions">The total number of questions processed.</param>
+            <param name="successCount">The number of successfully processed questions.</param>
+            <param name="avgQueryScore">Average SQL query match score.</param>
+            <param name="avgExplanationScore">Average explanation match score.</param>
+            <param name="avgDataScore">Average dataset match score.</param>
+            <returns>The number of affected rows (should be 1 if successful).</returns>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.TestAutomation.TestAutomationRepository.GetRecentTestJobsAsync(System.Nullable{System.Int32},System.Int32)">
             <summary>
             Retrieves recent test automation jobs.
@@ -1648,6 +1660,17 @@
             </summary>
             <param name="detailId">The ID of the test detail.</param>
             <returns>A tuple containing the expected and actual datasets.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.NormalizeDatasetTypes(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Normalizes data types in a dataset to ensure proper comparison.
+            JSON deserialization can sometimes produce inconsistent types.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.NormalizeDatasetForStorage(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+            <summary>
+            Normalizes dataset for consistent storage.
+            </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.ValidateWorksheetStructure(OfficeOpenXml.ExcelWorksheet)">
             <summary>

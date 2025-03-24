@@ -1,12 +1,10 @@
-﻿@* File: DynamicDashboardFE/Components/TestDashboard/TestCaseComparisonView.razor *@
-
-@using DynamicDashboardCommon.Models
+﻿@using DynamicDashboardCommon.Models
 @inject IJSRuntime JSRuntime
 
-<div class="comparison-container @(IsVisible ? "visible" : "")">
+<div class="comparison-container @(IsVisible ? "visible" : "")" @onclick:stopPropagation>
     <div class="comparison-header">
         <div class="header-info">
-            <h2>Test Case Comparison</h2>
+            <h2>Advanced Test Analysis</h2>
             <div class="metadata">
                 <div class="metadata-item">
                     <span class="label">Question:</span>
@@ -19,6 +17,13 @@
                             <div class="gauge-fill" style="width: @(TestDetail?.SQLMatchScore * 100 ?? 0)%"></div>
                         </div>
                         <span>@FormatPercent(TestDetail?.SQLMatchScore)</span>
+                    </div>
+                    <div class="stat @GetStatusClass(TestDetail?.ExplanationMatchScore)">
+                        <span>Explanation</span>
+                        <div class="gauge">
+                            <div class="gauge-fill" style="width: @(TestDetail?.ExplanationMatchScore * 100 ?? 0)%"></div>
+                        </div>
+                        <span>@FormatPercent(TestDetail?.ExplanationMatchScore)</span>
                     </div>
                     <div class="stat @GetStatusClass(TestDetail?.DataMatchScore)">
                         <span>Data Match</span>
@@ -34,14 +39,17 @@
     </div>
 
     <div class="tabs">
-        <div class="tab @(ActiveTab == "sql" ? "active" : "")" @onclick='() => SetActiveTab(" sql")'>
+        <div class="tab @(ActiveTab == "sql" ? "active" : "")" @onclick='() => SetActiveTab("sql")'>
             <i class="fas fa-code"></i> SQL Comparison
         </div>
-        <div class="tab @(ActiveTab == "datasets" ? "active" : "")" @onclick='() => SetActiveTab(" datasets")'>
+        <div class="tab @(ActiveTab == "explanation" ? "active" : "")" @onclick='() => SetActiveTab("explanation")'>
+            <i class="fas fa-comment-alt"></i> Explanation
+        </div>
+        <div class="tab @(ActiveTab == "datasets" ? "active" : "")" @onclick='() => SetActiveTab("datasets")'>
             <i class="fas fa-table"></i> Datasets
         </div>
-        <div class="tab @(ActiveTab == "visual" ? "active" : "")" @onclick='() => SetActiveTab(" visual")'>
-            <i class="fas fa-chart-bar"></i> Visual Diff
+        <div class="tab @(ActiveTab == "visual" ? "active" : "")" @onclick='() => SetActiveTab("visual")'>
+            <i class="fas fa-chart-bar"></i> Visual Analysis
         </div>
     </div>
 
@@ -53,6 +61,11 @@
                     <div class="panel">
                         <div class="panel-header">
                             <h3>Expected SQL</h3>
+                            <div class="header-actions">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(TestDetail?.ExpectedSQL)">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
                         </div>
                         <div class="code-container expected">
                             <pre class="code">@TestDetail?.ExpectedSQL</pre>
@@ -61,6 +74,11 @@
                     <div class="panel">
                         <div class="panel-header">
                             <h3>Generated SQL</h3>
+                            <div class="header-actions">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(TestDetail?.GeneratedSQL)">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
                         </div>
                         <div class="code-container generated">
                             <pre class="code">@TestDetail?.GeneratedSQL</pre>
@@ -74,6 +92,29 @@
                         <span>@TestDetail.ErrorMessage</span>
                     </div>
                 }
+            </div>
+        }
+        else if (ActiveTab == "explanation")
+        {
+            <div class="explanation-comparison animate__animated animate__fadeIn">
+                <div class="split-view">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>Expected Explanation</h3>
+                        </div>
+                        <div class="text-container expected">
+                            <div class="text-content">@TestDetail?.ExpectedExplanation</div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>Generated Explanation</h3>
+                        </div>
+                        <div class="text-container generated">
+                            <div class="text-content">@TestDetail?.GeneratedExplanation</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
         else if (ActiveTab == "datasets")
@@ -130,7 +171,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var row in ExpectedData.Take(15))
+                                            @foreach (var row in ExpectedData.Take(ShowAllRows ? ExpectedData.Count : 15))
                                             {
                                                 <tr>
                                                     @foreach (var col in ExpectedData[0].Keys)
@@ -142,10 +183,11 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                @if (ExpectedData.Count > 15)
+                                @if (ExpectedData.Count > 15 && !ShowAllRows)
                                 {
                                     <div class="data-footer">
-                                        Showing 15 of @ExpectedData.Count rows
+                                        <span>Showing 15 of @ExpectedData.Count rows</span>
+                                        <button class="btn btn-sm btn-link" @onclick="() => ShowAllRows = true">Show All</button>
                                     </div>
                                 }
                             }
@@ -184,7 +226,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var row in ActualData.Take(15))
+                                            @foreach (var row in ActualData.Take(ShowAllRows ? ActualData.Count : 15))
                                             {
                                                 <tr>
                                                     @foreach (var col in ActualData[0].Keys)
@@ -196,16 +238,75 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                @if (ActualData.Count > 15)
+                                @if (ActualData.Count > 15 && !ShowAllRows)
                                 {
                                     <div class="data-footer">
-                                        Showing 15 of @ActualData.Count rows
+                                        <span>Showing 15 of @ActualData.Count rows</span>
+                                        <button class="btn btn-sm btn-link" @onclick="() => ShowAllRows = true">Show All</button>
                                     </div>
                                 }
                             }
                         </div>
                     </div>
                 </div>
+
+                <div class="diff-controls">
+                    <button class="btn btn-primary" @onclick="CalculateDifferences">
+                        <i class="fas fa-exchange-alt me-2"></i> Calculate Differences
+                    </button>
+
+                    @if (HasCalculatedDiff)
+                    {
+                        <div class="diff-summary">
+                            <div class="diff-stat">
+                                <span class="diff-label">Matching Rows:</span>
+                                <span class="diff-value @(ExactMatchCount > 0 ? "success" : "")">@ExactMatchCount</span>
+                            </div>
+                            <div class="diff-stat">
+                                <span class="diff-label">Different Rows:</span>
+                                <span class="diff-value @(DifferentValueCount > 0 ? "error" : "")">@DifferentValueCount</span>
+                            </div>
+                            <div class="diff-stat">
+                                <span class="diff-label">Missing in Actual:</span>
+                                <span class="diff-value @(MissingRowCount > 0 ? "warning" : "")">@MissingRowCount</span>
+                            </div>
+                            <div class="diff-stat">
+                                <span class="diff-label">Extra in Actual:</span>
+                                <span class="diff-value @(ExtraRowCount > 0 ? "warning" : "")">@ExtraRowCount</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (ShowDiffView && DifferenceRows.Any())
+                {
+                    <div class="diff-view animate__animated animate__fadeIn">
+                        <h4>Row Differences</h4>
+                        <div class="table-wrapper">
+                            <table class="diff-table">
+                                <thead>
+                                    <tr>
+                                        <th>Row #</th>
+                                        <th>Column</th>
+                                        <th>Expected Value</th>
+                                        <th>Actual Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var diff in DifferenceRows)
+                                    {
+                                        <tr>
+                                            <td>@diff.RowIndex</td>
+                                            <td>@diff.Column</td>
+                                            <td class="expected-value">@diff.ExpectedValue</td>
+                                            <td class="actual-value">@diff.ActualValue</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
             </div>
         }
         else if (ActiveTab == "visual")
@@ -225,12 +326,22 @@
                             <h3>Structure Comparison</h3>
                             <div class="structure-viz" id="structureViz">
                                 <!-- Will be populated by JS -->
+                                <div class="loading-spinner">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="viz-section data">
                             <h3>Data Differences</h3>
                             <div class="data-viz" id="dataViz">
                                 <!-- Will be populated by JS -->
+                                <div class="loading-spinner">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -238,6 +349,11 @@
                             <h3>Match Overview</h3>
                             <div class="sunburst-viz" id="sunburstViz">
                                 <!-- Will be populated by JS -->
+                                <div class="loading-spinner">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -255,6 +371,16 @@
     [Parameter] public EventCallback OnClosed { get; set; }
 
     private string ActiveTab = "sql";
+    private bool ShowAllRows = false;
+    private bool ShowDiffView = false;
+    private bool HasCalculatedDiff = false;
+
+    // Difference analysis metrics
+    private int ExactMatchCount = 0;
+    private int DifferentValueCount = 0;
+    private int MissingRowCount = 0;
+    private int ExtraRowCount = 0;
+    private List<RowDifference> DifferenceRows = new List<RowDifference>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -264,11 +390,19 @@
         }
     }
 
+    protected override void OnParametersSet()
+    {
+        // Reset diff view when new data is loaded
+        ShowDiffView = false;
+        HasCalculatedDiff = false;
+        DifferenceRows.Clear();
+    }
+
     private async Task RenderVisualizations()
     {
         // Column comparison data
-        var expectedColumns = ExpectedData.Count > 0 ? ExpectedData[0].Keys.ToArray() : new string[0];
-        var actualColumns = ActualData.Count > 0 ? ActualData[0].Keys.ToArray() : new string[0];
+        var expectedColumns = ExpectedData?.Count > 0 ? ExpectedData[0].Keys.ToArray() : new string[0];
+        var actualColumns = ActualData?.Count > 0 ? ActualData[0].Keys.ToArray() : new string[0];
 
         // Row count comparison
         var rowData = new
@@ -293,7 +427,7 @@
 
         if (ExpectedData?.Count > 0 && ActualData?.Count > 0)
         {
-            var commonColumns = expectedColumns.Intersect(actualColumns).ToArray();
+            var commonColumns = expectedColumns.Intersect(actualColumns, StringComparer.OrdinalIgnoreCase).ToArray();
 
             // Count differences in data
             var minRows = Math.Min(ExpectedData.Count, ActualData.Count);
@@ -304,7 +438,7 @@
                     var expectedVal = ExpectedData[i].TryGetValue(col, out var ev) ? ev?.ToString() : null;
                     var actualVal = ActualData[i].TryGetValue(col, out var av) ? av?.ToString() : null;
 
-                    if (expectedVal == actualVal)
+                    if (string.Equals(expectedVal, actualVal, StringComparison.OrdinalIgnoreCase))
                         commonCount++;
                     else
                         diffCount++;
@@ -353,6 +487,135 @@
         await OnClosed.InvokeAsync();
     }
 
+    private async Task CopyToClipboard(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+    }
+
+    private void CalculateDifferences()
+    {
+        if (ExpectedData == null || !ExpectedData.Any() || ActualData == null || !ActualData.Any())
+        {
+            return;
+        }
+
+        DifferenceRows.Clear();
+
+        // Get common columns for comparison
+        var expectedColumns = ExpectedData[0].Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var actualColumns = ActualData[0].Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var commonColumns = expectedColumns.Intersect(actualColumns, StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (!commonColumns.Any())
+        {
+            return;
+        }
+
+        // Calculate exact matches, different values, missing and extra rows
+        int minRows = Math.Min(ExpectedData.Count, ActualData.Count);
+
+        ExactMatchCount = 0;
+        DifferentValueCount = 0;
+
+        // Compare common rows
+        for (int i = 0; i < minRows; i++)
+        {
+            bool rowMatches = true;
+
+            foreach (var column in commonColumns)
+            {
+                string actualColumn = ActualData[i].Keys.FirstOrDefault(k =>
+                    string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
+
+                string expectedColumn = ExpectedData[i].Keys.FirstOrDefault(k =>
+                    string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
+
+                if (actualColumn != null && expectedColumn != null)
+                {
+                    var expectedVal = ExpectedData[i][expectedColumn];
+                    var actualVal = ActualData[i][actualColumn];
+
+                    bool valuesMatch = AreValuesEqual(expectedVal, actualVal);
+
+                    if (!valuesMatch)
+                    {
+                        rowMatches = false;
+                        DifferenceRows.Add(new RowDifference
+                            {
+                                RowIndex = i + 1,
+                                Column = column,
+                                ExpectedValue = FormatValue(expectedVal),
+                                ActualValue = FormatValue(actualVal)
+                            });
+                    }
+                }
+            }
+
+            if (rowMatches)
+            {
+                ExactMatchCount++;
+            }
+            else
+            {
+                DifferentValueCount++;
+            }
+        }
+
+        // Count missing and extra rows
+        MissingRowCount = ExpectedData.Count - minRows;
+        ExtraRowCount = ActualData.Count - minRows;
+
+        HasCalculatedDiff = true;
+        ShowDiffView = true;
+        StateHasChanged();
+    }
+
+    private bool AreValuesEqual(object expected, object actual)
+    {
+        if (expected == null && actual == null)
+            return true;
+
+        if (expected == null || actual == null)
+            return false;
+
+        // Convert to string for comparison
+        string expectedStr = expected.ToString();
+        string actualStr = actual.ToString();
+
+        // Special handling for numeric values
+        if (IsNumeric(expected) && IsNumeric(actual))
+        {
+            if (decimal.TryParse(expectedStr, out var expectedNum) &&
+                decimal.TryParse(actualStr, out var actualNum))
+            {
+                // Consider numbers equal if they're within a small tolerance
+                return Math.Abs(expectedNum - actualNum) < 0.000001m;
+            }
+        }
+
+        // Special handling for dates
+        if ((expected is DateTime || actual is DateTime) &&
+            DateTime.TryParse(expectedStr, out var expectedDate) &&
+            DateTime.TryParse(actualStr, out var actualDate))
+        {
+            return expectedDate == actualDate;
+        }
+
+        // Default string comparison
+        return string.Equals(expectedStr, actualStr, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsNumeric(object obj)
+    {
+        return obj is int || obj is long || obj is float ||
+               obj is double || obj is decimal || obj is short ||
+               obj is byte || obj is sbyte || obj is ushort ||
+               obj is uint || obj is ulong;
+    }
+
     private string GetStatusClass(decimal? score)
     {
         if (!score.HasValue) return "error";
@@ -381,6 +644,17 @@
         if (value is decimal decimalValue)
             return decimalValue.ToString("0.00");
 
+        if (value is double doubleValue)
+            return doubleValue.ToString("0.00");
+
         return value.ToString();
+    }
+
+    private class RowDifference
+    {
+        public int RowIndex { get; set; }
+        public string Column { get; set; }
+        public string ExpectedValue { get; set; }
+        public string ActualValue { get; set; }
     }
 }

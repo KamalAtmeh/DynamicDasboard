@@ -112,6 +112,56 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
         }
 
         /// <summary>
+        /// Updates an existing test automation job with new details.
+        /// </summary>
+        /// <param name="jobId">The ID of the job to update.</param>
+        /// <param name="totalQuestions">The total number of questions processed.</param>
+        /// <param name="successCount">The number of successfully processed questions.</param>
+        /// <param name="avgQueryScore">Average SQL query match score.</param>
+        /// <param name="avgExplanationScore">Average explanation match score.</param>
+        /// <param name="avgDataScore">Average dataset match score.</param>
+        /// <returns>The number of affected rows (should be 1 if successful).</returns>
+        public async Task<int> UpdateTestJobAsync(
+            int jobId,
+            int totalQuestions,
+            int successCount,
+            decimal avgQueryScore,
+            decimal avgExplanationScore,
+            decimal avgDataScore)
+        {
+            try
+            {
+                const string query = @"
+            UPDATE TestAutomationJobs 
+            SET TotalQuestions = @TotalQuestions, 
+                SuccessCount = @SuccessCount, 
+                AverageQueryMatchScore = @AverageQueryMatchScore, 
+                AverageExplanationMatchScore = @AverageExplanationMatchScore, 
+                AverageDataMatchScore = @AverageDataMatchScore
+            WHERE JobID = @JobID";
+
+                var parameters = new
+                {
+                    JobID = jobId,
+                    TotalQuestions = totalQuestions,
+                    SuccessCount = successCount,
+                    AverageQueryMatchScore = avgQueryScore,
+                    AverageExplanationMatchScore = avgExplanationScore,
+                    AverageDataMatchScore = avgDataScore
+                };
+
+                return await WithConnectionAsync(async conn =>
+                {
+                    return await conn.ExecuteSafeAsync(query, parameters);
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating test job: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
         /// Retrieves recent test automation jobs.
         /// </summary>
         /// <param name="userId">Filter by user ID (optional).</param>
