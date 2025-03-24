@@ -4,6 +4,7 @@ using DynamicDasboardWebAPI.Services.LLM;
 using DynamicDasboardWebAPI.Utilities;
 using DynamicDashboardCommon.Models;
 using DynamicDashboardCommon.Models.TestAutomation;
+using DynamicDashboardCommon.Models.TestAutomation;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -21,11 +22,13 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
     /// </summary>
     public class TestAutomationService
     {
-        private readonly TestAutomationRepository objTestAutomationRepostiroy;
-        private readonly QueryRepository objQueryRepository;
-        private readonly LLMServiceFactory objLLMServiceFactory;
-        private readonly DatabaseService objDataBaseService;
-        private readonly DatabaseSchemaService objDatabaseSchemaService;
+        private readonly TestAutomationRepository _testAutomationRepository;
+        private readonly QueryRepository _queryRepository;
+        private readonly LLMServiceFactory _llmServiceFactory;
+        private readonly DatabaseService _databaseService;
+        private readonly DatabaseSchemaService _databaseSchemaService;
+        private readonly DatasetComparisonService _datasetComparisonService;
+        private readonly IConfiguration _configuration;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TestAutomationService"/> class.
@@ -35,25 +38,33 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// <param name="llmServiceFactory">Factory for creating LLM service instances.</param>
         /// <param name="databaseService">Service for database operations.</param>
         /// <param name="databaseSchema"></param>
+
         public TestAutomationService(
             TestAutomationRepository testRepository,
             QueryRepository queryRepository,
             LLMServiceFactory llmServiceFactory,
-            DatabaseService databaseService, DatabaseSchemaService databaseSchemaService)
+            DatabaseService databaseService,
+            DatabaseSchemaService databaseSchemaService,
+            DatasetComparisonService datasetComparisonService,
+            IConfiguration configuration)
         {
-            objTestAutomationRepostiroy = testRepository ?? throw new ArgumentNullException(nameof(testRepository));
-            objQueryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
-            objLLMServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
-            objDataBaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
-            objDatabaseSchemaService = databaseSchemaService ?? throw new ArgumentNullException(nameof(objDatabaseSchemaService));
+            _testAutomationRepository = testRepository ?? throw new ArgumentNullException(nameof(testRepository));
+            _queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
+            _llmServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
+            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+            _databaseSchemaService = databaseSchemaService ?? throw new ArgumentNullException(nameof(databaseSchemaService));
+            _datasetComparisonService = datasetComparisonService ?? throw new ArgumentNullException(nameof(datasetComparisonService));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
             // Set EPPlus license context
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
         /// <summary>
-        /// Processes a test cases file and runs the test automation.
+        /// Processes a test file and runs comparison on datasets only (SQL and explanation comparison skipped).
         /// </summary>
-        public async Task<byte[]> ProcessTestCasesFileAsync(Stream fileStream, int databaseId, string llmProvider, int? userId = null)
+        public async Task<byte[]> ProcessTestCasesFileAsync(
+            Stream fileStream, int databaseId, string llmProvider, int? userId = null)
         {
             try
             {
@@ -85,33 +96,13 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 const int statusCol = 16;           // Column P
                 const int errorCol = 17;            // Column Q
 
-                // Initialize tracking variables
-                int lastDataRow = 1; // Start with header row
-
                 // Find the last row with data
-                for (int row = worksheet.Dimension?.Rows ?? 0; row >= 2; row--)
-                {
-                    // Check if this row has any data in the first few columns
-                    bool hasData = false;
-                    for (int col = 1; col <= Math.Min(5, worksheet.Dimension?.Columns ?? 0); col++)
-                    {
-                        if (!string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Text))
-                        {
-                            hasData = true;
-                            break;
-                        }
-                    }
+                int rowCount = FindLastDataRow(worksheet);
 
-                    if (hasData)
-                    {
-                        lastDataRow = row;
-                        break;
-                    }
-                }
-                int rowCount = lastDataRow;
-
+                // Initialize tracking variables
                 int totalQuestions = 0;
                 int successCount = 0;
+                // Set these to 0 since we're skipping SQL and explanation comparison
                 decimal totalSqlMatchScore = 0;
                 decimal totalExplanationMatchScore = 0;
                 decimal totalDataMatchScore = 0;
@@ -119,7 +110,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 string fileName = "TestAutomation_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
 
                 // Create job record with initial values - we'll update these later
-                int jobId = await objTestAutomationRepostiroy.LogTestJobAsync(
+                int jobId = await _testAutomationRepository.LogTestJobAsync(
                     fileName,
                     databaseId,
                     0, // Initialize with 0, will update later
@@ -135,23 +126,23 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 Console.WriteLine($"Created test job with ID: {jobId}");
 
                 // Get LLM service instance
-                var llmService = objLLMServiceFactory.CreateLlmService();
+                var llmService = _llmServiceFactory.CreateLlmService();
 
                 // Get database info for schema
-                var database = await objDataBaseService.GetDatabaseByIdAsync(databaseId);
+                var database = await _databaseService.GetDatabaseByIdAsync(databaseId);
                 if (database == null)
                 {
                     throw new ArgumentException($"Database with ID {databaseId} not found");
                 }
 
                 // Get database schema for LLM context
-                var objDBSchema = await objDatabaseSchemaService.GetSchemaObject(database.DatabaseID);
-                if (objDBSchema == null)
+                var dbSchema = await _databaseSchemaService.GetSchemaObject(database.DatabaseID);
+                if (dbSchema == null)
                 {
                     throw new ArgumentException("Could not retrieve database schema");
                 }
 
-                var schemaStr = objDatabaseSchemaService.BuildOptimizedSchemaString(objDBSchema);
+                var schemaStr = _databaseSchemaService.BuildOptimizedSchemaString(dbSchema);
 
                 // Process each row
                 for (int row = 2; row <= rowCount; row++) // Assuming row 1 is header
@@ -188,41 +179,40 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         var generatedSql = sqlExplanationResponse.SqlQuery;
                         var generatedExplanation = sqlExplanationResponse.BusinessExplanation;
 
-                        // Step 2: Compare the generated SQL with the expected SQL
-                        decimal sqlMatchScore = ComparisonUtilities.GetSQLSimilarity(expectedSql, generatedSql);
+                        // SKIPPED: SQL comparison (we're only focusing on dataset comparison)
+                        // Set a placeholder value for SQL match score
+                        decimal sqlMatchScore = 0;
 
-                        // Step 3: Compare the generated explanation with the expected explanation
-                        decimal explanationMatchScore = ComparisonUtilities.GetExplanationSimilarity(
-                            expectedExplanation,
-                            generatedExplanation);
+                        // SKIPPED: Explanation comparison (we're only focusing on dataset comparison)
+                        // Set a placeholder value for explanation match score
+                        decimal explanationMatchScore = 0;
 
-                        // Step 4: Execute the expected SQL query if provided
+                        // Execute the expected SQL query if provided
                         List<Dictionary<string, object>> expectedDataset = null;
                         int? expectedRowCount = null;
                         if (!string.IsNullOrWhiteSpace(expectedSql))
                         {
                             try
                             {
-                                expectedDataset = await objQueryRepository.ExecuteQueryOnDatabaseAsync(expectedSql, databaseId);
-                                expectedRowCount = expectedDataset?.Count; // Set the expected row count from actual execution
+                                expectedDataset = await _queryRepository.ExecuteQueryOnDatabaseAsync(expectedSql, databaseId);
+                                expectedRowCount = expectedDataset?.Count;
                                 worksheet.Cells[row, expectedRowCountCol].Value = expectedRowCount;
                             }
                             catch (Exception ex)
                             {
-                                // If expected SQL fails, log it but continue
                                 worksheet.Cells[row, errorCol].Value = $"Expected SQL execution failed: {ex.Message}";
                                 Console.WriteLine($"Expected SQL execution failed: {ex.Message}");
                             }
                         }
 
-                        // Step 5: Execute the generated SQL query
+                        // Execute the generated SQL query
                         List<Dictionary<string, object>> actualDataset = null;
                         int? actualRowCount = null;
                         if (!string.IsNullOrWhiteSpace(generatedSql))
                         {
                             try
                             {
-                                actualDataset = await objQueryRepository.ExecuteQueryOnDatabaseAsync(generatedSql, databaseId);
+                                actualDataset = await _queryRepository.ExecuteQueryOnDatabaseAsync(generatedSql, databaseId);
                                 actualRowCount = actualDataset?.Count;
                             }
                             catch (Exception ex)
@@ -232,31 +222,37 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             }
                         }
 
-                        // Step 6: Compare datasets and compute similarity score
+                        // Compare datasets using our specialized DatasetComparisonService
                         decimal dataMatchScore = 0;
                         string resultMatchStatus = "Not Compared";
 
                         if (expectedDataset != null && actualDataset != null)
                         {
-                            var (score, status) = ComparisonUtilities.GetDatasetSimilarity(expectedDataset, actualDataset);
-                            dataMatchScore = score;
-                            resultMatchStatus = status;
+                            var comparisonResult = _datasetComparisonService.CompareDatasets(expectedDataset, actualDataset);
+                            dataMatchScore = comparisonResult.IsEquivalent ? 1.0m : 0.0m;
+                            resultMatchStatus = comparisonResult.ComparisonSummary;
+
+                            // Add dataset match score to total for averaging
+                            totalDataMatchScore += dataMatchScore;
                         }
 
                         // Calculate execution time
                         var endTime = DateTime.Now;
                         var executionTimeMs = (int)(endTime - startTime).TotalMilliseconds;
 
-                        // Step 7: Create test detail record in database - FIXED: ensure jobId is consistent
-                        detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
-                            jobId, // Use consistent jobId
+                        // Determine success based on dataset comparison only
+                        bool success = dataMatchScore > 0.9m;
+
+                        // Create test detail record
+                        detailId = await _testAutomationRepository.LogTestDetailAsync(
+                            jobId,
                             question,
                             expectedSql,
                             generatedSql,
-                            sqlMatchScore,
+                            sqlMatchScore, // Placeholder value since we're skipping SQL comparison
                             expectedExplanation,
                             generatedExplanation,
-                            explanationMatchScore,
+                            explanationMatchScore, // Placeholder value since we're skipping explanation comparison
                             expectedRowCount,
                             actualRowCount,
                             dataMatchScore,
@@ -264,38 +260,32 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             complexityLevel,
                             queryCategory,
                             executionTimeMs,
-                            true, // Success
-                            null  // No error
+                            success,
+                            null
                         );
 
                         Console.WriteLine($"Created test detail with ID: {detailId} for job ID: {jobId}");
 
-                        // Step 8: Store datasets for detailed comparison - FIXED: Enhanced dataset storage
+                        // Store datasets for comparison
                         if (expectedDataset != null)
                         {
-                            int datasetId = await StoreDatasetAsync(detailId, true, expectedDataset);
-                            Console.WriteLine($"Stored expected dataset with ID: {datasetId} for detail ID: {detailId}");
+                            await StoreDatasetAsync(detailId, true, expectedDataset);
                         }
                         else
                         {
-                            // Store empty dataset to ensure record exists
-                            int datasetId = await StoreDatasetAsync(detailId, true, new List<Dictionary<string, object>>());
-                            Console.WriteLine($"Stored empty expected dataset with ID: {datasetId} for detail ID: {detailId}");
+                            await StoreDatasetAsync(detailId, true, new List<Dictionary<string, object>>());
                         }
 
                         if (actualDataset != null)
                         {
-                            int datasetId = await StoreDatasetAsync(detailId, false, actualDataset);
-                            Console.WriteLine($"Stored actual dataset with ID: {datasetId} for detail ID: {detailId}");
+                            await StoreDatasetAsync(detailId, false, actualDataset);
                         }
                         else
                         {
-                            // Store empty dataset to ensure record exists
-                            int datasetId = await StoreDatasetAsync(detailId, false, new List<Dictionary<string, object>>());
-                            Console.WriteLine($"Stored empty actual dataset with ID: {datasetId} for detail ID: {detailId}");
+                            await StoreDatasetAsync(detailId, false, new List<Dictionary<string, object>>());
                         }
 
-                        // Step 9: Update Excel with results
+                        // Update Excel with results
                         worksheet.Cells[row, generatedSqlCol].Value = generatedSql;
                         worksheet.Cells[row, generatedExplanationCol].Value = generatedExplanation;
                         worksheet.Cells[row, sqlMatchScoreCol].Value = sqlMatchScore;
@@ -308,10 +298,10 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         worksheet.Cells[row, statusCol].Value = "Success";
 
                         // Update running totals
-                        successCount++;
-                        totalSqlMatchScore += sqlMatchScore;
-                        totalExplanationMatchScore += explanationMatchScore;
-                        totalDataMatchScore += dataMatchScore;
+                        if (success)
+                        {
+                            successCount++;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -325,30 +315,27 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         {
                             try
                             {
-                                // FIXED: use consistent jobId
-                                detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
+                                detailId = await _testAutomationRepository.LogTestDetailAsync(
                                     jobId,
                                     question,
-                                    worksheet.Cells[row, expectedSqlCol].Text, // Expected SQL
+                                    worksheet.Cells[row, expectedSqlCol].Text,
                                     null, // Generated SQL
                                     null, // SQL match score
-                                    worksheet.Cells[row, expectedExplanationCol].Text, // Expected explanation
+                                    worksheet.Cells[row, expectedExplanationCol].Text,
                                     null, // Generated explanation
                                     null, // Explanation match score
                                     null, // Expected row count
                                     null, // Actual row count
                                     null, // Data match score
                                     "Error", // Result match status
-                                    worksheet.Cells[row, complexityLevelCol].Text, // Complexity level
-                                    worksheet.Cells[row, queryCategoryCol].Text, // Query category
+                                    worksheet.Cells[row, complexityLevelCol].Text,
+                                    worksheet.Cells[row, queryCategoryCol].Text,
                                     null, // Execution time
                                     false, // Success flag
                                     ex.Message // Error message
                                 );
 
-                                Console.WriteLine($"Created error test detail with ID: {detailId} for job ID: {jobId}");
-
-                                // Still store empty datasets to ensure records exist
+                                // Store empty datasets to ensure records exist
                                 await StoreDatasetAsync(detailId, true, new List<Dictionary<string, object>>());
                                 await StoreDatasetAsync(detailId, false, new List<Dictionary<string, object>>());
                             }
@@ -361,13 +348,12 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 }
 
                 // Update the job with final counts and averages
-                decimal avgSqlScore = successCount > 0 ? totalSqlMatchScore / successCount : 0;
-                decimal avgExplanationScore = successCount > 0 ? totalExplanationMatchScore / successCount : 0;
+                decimal avgSqlScore = totalQuestions > 0 ? totalSqlMatchScore / totalQuestions : 0;
+                decimal avgExplanationScore = totalQuestions > 0 ? totalExplanationMatchScore / totalQuestions : 0;
                 decimal avgDataScore = successCount > 0 ? totalDataMatchScore / successCount : 0;
 
-                // FIXED: Update with accurate information
-                await objTestAutomationRepostiroy.UpdateTestJobAsync(
-                    jobId, // Use consistent jobId
+                await _testAutomationRepository.UpdateTestJobAsync(
+                    jobId,
                     totalQuestions,
                     successCount,
                     avgSqlScore,
@@ -847,23 +833,24 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// Retrieves dataset comparison data for a specific test detail.
         /// </summary>
         /// <param name="detailId">The ID of the test detail.</param>
-        /// <returns>A tuple containing the expected and actual datasets.</returns>
+        /// <returns>A comprehensive dataset comparison result.</returns>
         public async Task<DatasetComparisonResult> GetDatasetComparisonAsync(int detailId)
         {
             try
             {
-                var expectedDataset = await objTestAutomationRepostiroy.GetDatasetAsync(detailId, true);
-                var actualDataset = await objTestAutomationRepostiroy.GetDatasetAsync(detailId, false);
+                // Retrieve the datasets from the repository
+                var expectedDataset = await _testAutomationRepository.GetDatasetAsync(detailId, true);
+                var actualDataset = await _testAutomationRepository.GetDatasetAsync(detailId, false);
 
-                List<Dictionary<string, object>> expectedData = null;
-                List<Dictionary<string, object>> actualData = null;
+                List<Dictionary<string, object>> expectedData = new List<Dictionary<string, object>>();
+                List<Dictionary<string, object>> actualData = new List<Dictionary<string, object>>();
 
                 // Deserialize expected dataset if available
                 if (expectedDataset != null && !string.IsNullOrWhiteSpace(expectedDataset.DatasetJSON))
                 {
                     try
                     {
-                        // Use a more tolerant JSON deserializer to handle property value conversion
+                        // Use more tolerant deserialization settings
                         var options = new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true,
@@ -872,21 +859,12 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
 
                         expectedData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
                             expectedDataset.DatasetJSON, options);
-
-                        // Ensure proper type conversion for numeric values
-                        if (expectedData != null)
-                        {
-                            expectedData = NormalizeDatasetTypes(expectedData);
-                        }
                     }
                     catch (Exception ex)
                     {
                         Console.Error.WriteLine($"Error deserializing expected dataset: {ex.Message}");
-                        // Provide a fallback if deserialization fails
-                        expectedData = new List<Dictionary<string, object>>
-                {
-                    new Dictionary<string, object> { { "Error", "Failed to parse expected dataset" } }
-                };
+                        // Create an empty dataset if deserialization fails
+                        expectedData = new List<Dictionary<string, object>>();
                     }
                 }
 
@@ -903,37 +881,49 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
 
                         actualData = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(
                             actualDataset.DatasetJSON, options);
-
-                        // Ensure proper type conversion for numeric values
-                        if (actualData != null)
-                        {
-                            actualData = NormalizeDatasetTypes(actualData);
-                        }
                     }
                     catch (Exception ex)
                     {
                         Console.Error.WriteLine($"Error deserializing actual dataset: {ex.Message}");
-                        // Provide a fallback if deserialization fails
-                        actualData = new List<Dictionary<string, object>>
-                {
-                    new Dictionary<string, object> { { "Error", "Failed to parse actual dataset" } }
-                };
+                        // Create an empty dataset if deserialization fails
+                        actualData = new List<Dictionary<string, object>>();
                     }
                 }
 
-                // Create and return the DatasetComparisonResult object
-                return new DatasetComparisonResult
+                // Get the test detail to add additional information
+                var testDetail = await _testAutomationRepository.GetTestDetailByIdAsync(detailId);
+
+                // Use the dataset comparison service to compare the datasets
+                var comparisonResult = _datasetComparisonService.CompareDatasets(expectedData, actualData);
+
+                // Add metadata from the test detail
+                if (testDetail != null)
                 {
-                    Expected = expectedData ?? new List<Dictionary<string, object>>(),
-                    Actual = actualData ?? new List<Dictionary<string, object>>()
-                };
+                    comparisonResult.TestDetail = new TestDetailMetadata
+                    {
+                        DetailID = testDetail.DetailID,
+                        Question = testDetail.Question,
+                        ExpectedRowCount = testDetail.ExpectedRowCount,
+                        ActualRowCount = testDetail.ActualRowCount,
+                        DataMatchScore = testDetail.DataMatchScore,
+                        ResultMatchStatus = testDetail.ResultMatchStatus,
+                        Success = testDetail.Success
+                    };
+                }
+
+                return comparisonResult;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving dataset comparison: {ex.Message}", ex);
+                // Log the error and return an empty comparison result
+                Console.Error.WriteLine($"Error retrieving dataset comparison: {ex.Message}");
+                return new DatasetComparisonResult
+                {
+                    ComparisonSummary = $"Error retrieving dataset comparison: {ex.Message}",
+                    IsEquivalent = false
+                };
             }
         }
-
 
 
         #region Private Helper Methods
@@ -1211,7 +1201,36 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
         }
 
+        /// <summary>
+        /// Finds the last row with data in the worksheet.
+        /// </summary>
+        private int FindLastDataRow(ExcelWorksheet worksheet)
+        {
+            int lastRow = 1; // Start with header row
 
+            // Find the last row with data
+            for (int row = worksheet.Dimension?.Rows ?? 0; row >= 2; row--)
+            {
+                // Check if this row has any data in the first few columns
+                bool hasData = false;
+                for (int col = 1; col <= Math.Min(5, worksheet.Dimension?.Columns ?? 0); col++)
+                {
+                    if (!string.IsNullOrWhiteSpace(worksheet.Cells[row, col].Text))
+                    {
+                        hasData = true;
+                        break;
+                    }
+                }
+
+                if (hasData)
+                {
+                    lastRow = row;
+                    break;
+                }
+            }
+
+            return lastRow;
+        }
 
         /// <summary>
         /// Formats the Excel output after processing.

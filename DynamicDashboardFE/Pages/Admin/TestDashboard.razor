@@ -193,7 +193,7 @@
                                     </div>
                                 </div>
                                 <div class="job-scores">
-                                    <div class="score-item" title="SQL Match Score">
+@*                                     <div class="score-item" title="SQL Match Score">
                                         <div class="score-label">SQL</div>
                                         <div class="score-bar">
                                             <div class="score-progress" style="width: @(job.AverageQueryMatchScore * 100)%"></div>
@@ -206,7 +206,7 @@
                                             <div class="score-progress" style="width: @(job.AverageExplanationMatchScore * 100)%"></div>
                                         </div>
                                         <div class="score-value">@FormatPercent(job.AverageExplanationMatchScore)</div>
-                                    </div>
+                                    </div> *@
                                     <div class="score-item" title="Data Match Score">
                                         <div class="score-label">Data</div>
                                         <div class="score-bar">
@@ -274,7 +274,7 @@
                     </div>
                     
                     <div class="score-cards">
-                        <div class="score-card">
+@*                         <div class="score-card">
                             <div class="score-card-header">
                                 <h5>SQL Match Score</h5>
                             </div>
@@ -300,7 +300,7 @@
                                 <div class="gauge-fill @GetScoreClass(selectedJob.AverageExplanationMatchScore)" 
                                      style="width: @(selectedJob.AverageExplanationMatchScore * 100)%"></div>
                             </div>
-                        </div>
+                        </div> *@
                         
                         <div class="score-card">
                             <div class="score-card-header">
@@ -370,8 +370,8 @@
                                         <th>Question</th>
                                         <th style="width: 120px">Category</th>
                                         <th style="width: 100px">Complexity</th>
-                                        <th style="width: 100px">SQL Match</th>
-                                        <th style="width: 100px">Explanation</th>
+@*                                         <th style="width: 100px">SQL Match</th>
+                                        <th style="width: 100px">Explanation</th> *@
                                         <th style="width: 100px">Data Match</th>
                                         <th style="width: 80px">Status</th>
                                         <th style="width: 100px">Actions</th>
@@ -385,7 +385,7 @@
                                             <td>@detail.Question</td>
                                             <td>@detail.QueryCategory</td>
                                             <td>@detail.ComplexityLevel</td>
-                                            <td>
+@*                                             <td>
                                                 <div class="score-pill @GetScoreClass(detail.SQLMatchScore)">
                                                     @FormatPercent(detail.SQLMatchScore)
                                                 </div>
@@ -394,7 +394,7 @@
                                                 <div class="score-pill @GetScoreClass(detail.ExplanationMatchScore)">
                                                     @FormatPercent(detail.ExplanationMatchScore)
                                                 </div>
-                                            </td>
+                                            </td> *@
                                             <td>
                                                 <div class="score-pill @GetScoreClass(detail.DataMatchScore)">
                                                     @FormatPercent(detail.DataMatchScore)
@@ -507,69 +507,16 @@
                     Data Results
                 </div>
             </div>
-            
-            @if (activeComparisonTab == "sql")
-            {
-                <div class="comparison-content animate__animated animate__fadeIn">
-                    <div class="comparison-header">
-                        <h5>SQL Comparison 
-                            <span class="score-badge @GetScoreClass(selectedDetail.SQLMatchScore)">
-                                Match Score: @FormatPercent(selectedDetail.SQLMatchScore)
-                            </span>
-                        </h5>
-                    </div>
-                    
-                    <div class="code-comparison">
-                        <div class="code-column">
-                            <div class="code-header">
-                                <h6>Expected SQL</h6>
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(selectedDetail.ExpectedSQL)">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                            <pre class="code-block expected">@selectedDetail.ExpectedSQL</pre>
-                        </div>
-                        
-                        <div class="code-column">
-                            <div class="code-header">
-                                <h6>Generated SQL</h6>
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(selectedDetail.GeneratedSQL)">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                            <pre class="code-block generated">@selectedDetail.GeneratedSQL</pre>
-                        </div>
-                    </div>
-                </div>
-            }
-            else if (activeComparisonTab == "explanation")
-            {
-                <div class="comparison-content animate__animated animate__fadeIn">
-                    <div class="comparison-header">
-                        <h5>Explanation Comparison 
-                            <span class="score-badge @GetScoreClass(selectedDetail.ExplanationMatchScore)">
-                                Match Score: @FormatPercent(selectedDetail.ExplanationMatchScore)
-                            </span>
-                        </h5>
-                    </div>
-                    
-                    <div class="text-comparison">
-                        <div class="text-column">
-                            <div class="text-header">
-                                <h6>Expected Explanation</h6>
-                            </div>
-                            <div class="text-block expected">@selectedDetail.ExpectedExplanation</div>
-                        </div>
-                        
-                        <div class="text-column">
-                            <div class="text-header">
-                                <h6>Generated Explanation</h6>
-                            </div>
-                            <div class="text-block generated">@selectedDetail.GeneratedExplanation</div>
-                        </div>
-                    </div>
-                </div>
-            }
+
+                <!-- Replace the SQL and explanation comparison sections with this -->
+                @if (showComparisonView && selectedDetail != null)
+                {
+                    <DatasetComparisonView ComparisonResult="comparisonData"
+                                           IsVisible="showComparisonView"
+                                           IsLoading="isLoadingDatasets"
+                                           OnRefresh="() => LoadDatasetComparison(selectedDetail.DetailID)"
+                                           OnClose="CloseComparisonView" />
+                }
             else if (activeComparisonTab == "data")
             {
                 <div class="comparison-content animate__animated animate__fadeIn">

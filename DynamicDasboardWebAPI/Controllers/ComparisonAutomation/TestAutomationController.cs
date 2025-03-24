@@ -154,24 +154,22 @@ namespace DynamicDasboardWebAPI.Controllers
             }
         }
 
+        // Update the GetDatasetComparison method in TestAutomationController
+
         /// <summary>
-        /// Gets comparison data for a specific test detail.
+        /// Gets enhanced dataset comparison data for a specific test detail.
         /// </summary>
         /// <param name="detailId">The test detail ID.</param>
-        /// <returns>Dataset comparison data.</returns>
+        /// <returns>Comprehensive dataset comparison result.</returns>
         [HttpGet("comparison/{detailId}")]
         public async Task<IActionResult> GetDatasetComparison(int detailId)
         {
             try
             {
+                // Use the enhanced dataset comparison service
+                var comparisonResult = await _testService.GetDatasetComparisonAsync(detailId);
 
-                DatasetComparisonResult objcomparison = await _testService.GetDatasetComparisonAsync(detailId);
-
-                
-                bool hasExpectedData = objcomparison.Expected != null && objcomparison.Expected.Any();
-                bool hasActualData = objcomparison.Actual != null && objcomparison.Actual.Any();
-
-                return Ok(objcomparison);
+                return Ok(comparisonResult);
             }
             catch (Exception ex)
             {

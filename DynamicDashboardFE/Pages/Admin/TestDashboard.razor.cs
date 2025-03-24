@@ -339,14 +339,12 @@ namespace DynamicDashboardFE.Pages.Admin
         }
 
         /// <summary>
-        /// Shows the legacy comparison modal with dataset visualization.
+        /// Loads dataset comparison data and hides SQL/explanation comparison.
         /// </summary>
         private async Task ViewDetailComparison(TestAutomationDetail detail)
         {
             selectedDetail = detail;
-            showComparisonModal = true;
-            SetActiveComparisonTab("sql");
-            SetActiveDatasetTab("expected");
+            showComparisonView = true; // Use our enhanced view only
 
             // Load dataset comparison data
             await LoadDatasetComparison(detail.DetailID);
@@ -444,7 +442,7 @@ namespace DynamicDashboardFE.Pages.Admin
             // Close both views to ensure nothing remains open
             showComparisonView = false;
             showComparisonModal = false;  // Add this line to fix the issue
-
+            comparisonData = new DatasetComparisonResult();
             // Reset related data
             comparisonDetail = null;
             selectedDetail = null;  // Also reset selectedDetail

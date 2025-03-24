@@ -1013,6 +1013,163 @@
             Represents a log entry for a batch processing job.
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult">
+            <summary>
+            Represents the result of comparing two datasets.
+            Provides detailed information about the comparison including functional equivalence
+            and structural differences.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.Expected">
+            <summary>
+            The expected dataset for comparison
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.Actual">
+            <summary>
+            The actual dataset for comparison
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.IsEquivalent">
+            <summary>
+            Whether the datasets are functionally equivalent (common columns have matching values)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.TotalRowsCompared">
+            <summary>
+            Total number of rows compared
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.MatchingRows">
+            <summary>
+            Number of rows with matching values for common columns
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.DifferentRows">
+            <summary>
+            Number of rows with at least one difference in common columns
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.HasStructuralDifferences">
+            <summary>
+            Whether the datasets have different column structures
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.CommonColumns">
+            <summary>
+            Columns that exist in both datasets (case-insensitive matching)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.UniqueExpectedColumns">
+            <summary>
+            Columns that exist only in the expected dataset
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.UniqueActualColumns">
+            <summary>
+            Columns that exist only in the actual dataset
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.Differences">
+            <summary>
+            Detailed information about differences between datasets
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.ComparisonSummary">
+            <summary>
+            Human-readable explanation of the comparison result
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.#ctor">
+            <summary>
+            Constructor with default values
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult.TestDetail">
+            <summary>
+            Metadata about the test detail this comparison relates to
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference">
+            <summary>
+            Represents a specific difference between datasets
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference.RowIndex">
+            <summary>
+            Zero-based index of the row with the difference
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference.ColumnName">
+            <summary>
+            Name of the column with the difference
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference.ExpectedValue">
+            <summary>
+            The value in the expected dataset
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference.ActualValue">
+            <summary>
+            The value in the actual dataset
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference.DifferenceType">
+            <summary>
+            Type of difference (structural, value, type, etc.)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.DatasetDifference.Description">
+            <summary>
+            Human-readable description of the difference
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata">
+            <summary>
+            Lightweight metadata about a test detail for inclusion in comparison results.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.DetailID">
+            <summary>
+            The unique identifier for the test detail.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.Question">
+            <summary>
+            The natural language question being tested.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.ExpectedRowCount">
+            <summary>
+            The expected number of rows in the query result.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.ActualRowCount">
+            <summary>
+            The actual number of rows in the query result.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.DataMatchScore">
+            <summary>
+            The similarity score between expected and actual datasets (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.ResultMatchStatus">
+            <summary>
+            The status of the result match (e.g., "Exact Match", "Row Count Match", "Mismatch").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.Success">
+            <summary>
+            Indicates whether the test was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TestAutomation.TestDetailMetadata.TestDetail">
+            <summary>
+            Metadata about the test detail this comparison relates to
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.TestAutomationDataset">
             <summary>
             Represents a dataset (either expected or actual) for a test case.

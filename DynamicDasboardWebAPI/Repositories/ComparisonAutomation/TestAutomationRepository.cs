@@ -319,6 +319,35 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
             }
         }
 
+        // Add this method to the TestAutomationRepository class
+
+        /// <summary>
+        /// Retrieves a specific test detail by its ID.
+        /// </summary>
+        /// <param name="detailId">The ID of the test detail to retrieve.</param>
+        /// <returns>The test detail record.</returns>
+        public async Task<TestAutomationDetail> GetTestDetailByIdAsync(int detailId)
+        {
+            try
+            {
+                const string query = @"
+            SELECT * 
+            FROM TestAutomationDetails 
+            WHERE DetailID = @DetailID";
+
+                return await WithConnectionAsync(async conn =>
+                {
+                    return await conn.QuerySingleOrDefaultSafeAsync<TestAutomationDetail>(
+                        query, new { DetailID = detailId });
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving test detail: {ex.Message}");
+                throw;
+            }
+        }
+
         #endregion
 
         #region Dataset Operations

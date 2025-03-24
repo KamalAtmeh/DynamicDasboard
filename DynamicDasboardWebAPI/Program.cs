@@ -93,6 +93,7 @@ builder.Services.AddScoped<DatabaseService>();
 builder.Services.AddScoped<DatabaseSchemaRepository>();
 builder.Services.AddScoped<DatabaseSchemaService>();
 
+builder.Services.AddScoped<DatasetComparisonService>();
 builder.Services.AddScoped<TestAutomationRepository>();
 builder.Services.AddScoped<TestAutomationService>();
 
