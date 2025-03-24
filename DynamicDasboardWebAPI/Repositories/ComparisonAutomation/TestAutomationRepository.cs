@@ -83,7 +83,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         @ExecutedBy, 
                         GETDATE()
                     );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT) + 1;";
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                 var parameters = new
                 {
@@ -290,7 +290,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         @Success,
                         @ErrorMessage
                     );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT) + 1;";
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                 var parameters = new
                 {
@@ -395,7 +395,7 @@ namespace DynamicDasboardWebAPI.Repositories.TestAutomation
                         @ColumnNames,
                         @DataHash
                     );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT) + 1;";
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                 var parameters = new
                 {

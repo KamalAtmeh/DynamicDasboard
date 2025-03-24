@@ -432,10 +432,16 @@ namespace DynamicDashboardFE.Pages.Admin
 
         private void CloseComparisonView()
         {
+            // Close both views to ensure nothing remains open
             showComparisonView = false;
+            showComparisonModal = false;  // Add this line to fix the issue
+
+            // Reset related data
             comparisonDetail = null;
+            selectedDetail = null;  // Also reset selectedDetail
             expectedDataset = null;
             actualDataset = null;
+
             StateHasChanged();
         }
 
