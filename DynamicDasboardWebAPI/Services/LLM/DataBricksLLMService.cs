@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DynamicDasboardWebAPI.Services.LLM
@@ -563,9 +564,6 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
-        /// <summary>
-        /// Parses the SQL explanation response from the Databricks API.
-        /// </summary>
         private SqlGenerationWithExplanationResponse ParseSqlExplanationResponse(string response, string originalQuestion)
         {
             try
@@ -594,9 +592,22 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 {
                     try
                     {
+                        // Create custom JSON options with proper handling of special characters
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                            AllowTrailingCommas = true,
+                            ReadCommentHandling = JsonCommentHandling.Skip
+                        };
+
+                        // Pre-process the JSON string to ensure escape sequences are properly handled
+                        // Convert all literal newlines in SQL query to proper JSON escaped newlines
+                        jsonContent = NormalizeJsonEscapeSequences(jsonContent);
+
+                        // Deserialize with the customized options
                         var parsed = JsonSerializer.Deserialize<SqlGenerationWithExplanationResponse>(
                             jsonContent,
-                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            options);
 
                         if (parsed != null)
                         {
@@ -605,11 +616,13 @@ namespace DynamicDasboardWebAPI.Services.LLM
                             return parsed;
                         }
                     }
-                    catch (Exception ex)
+                    catch (JsonException jsonEx)
                     {
-                        // Log the JSON parsing exception
-                        Console.Error.WriteLine($"JSON parsing error: {ex.Message}");
-                        // Parsing as JSON failed, continue to text extraction
+                        // Log the JSON parsing exception with the problematic content
+                        Console.Error.WriteLine($"JSON parsing error: {jsonEx.Message}");
+                        Console.Error.WriteLine($"JSON content: {jsonContent}");
+
+                        // Fall back to text extraction
                     }
                 }
 
@@ -642,6 +655,29 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     OriginalQuestion = originalQuestion
                 };
             }
+        }
+
+        /// <summary>
+        /// Normalizes JSON escape sequences to ensure proper parsing
+        /// </summary>
+        private string NormalizeJsonEscapeSequences(string json)
+        {
+            // Common problematic patterns to fix
+
+            // Handle the case of \n\ which is causing the error
+            // Replace the pattern \n\ with \n (removing the trailing backslash)
+            json = Regex.Replace(json, @"\\n\\(?=[^\\])", "\\n");
+
+            // Handle other potentially problematic escape sequences
+            // Replace literal newlines in string values with proper JSON \n
+            // json = Regex.Replace(json, @"(?<=([""])(?:[^""\\]|\\[^"])*?)[\r\n] + (?= (?: [^""\\] |\\[^"])*?\1)", "\\n");
+            json = System.Text.RegularExpressions.Regex.Replace(json, @"(?<=([[{](?:[^""\\][\\][""])+))\[\r\n] + (?= (?:[^""\\][\\][""])+[\]}])", "\\n");
+         
+
+            // Note: This is a simplified approach and may need further refinement
+            // based on the specific patterns in your data
+
+            return json;
         }
 
         private ExplanationResponse ParseExplanationResponse(string response)

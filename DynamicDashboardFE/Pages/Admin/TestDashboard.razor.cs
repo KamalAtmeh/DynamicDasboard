@@ -292,6 +292,42 @@ namespace DynamicDashboardFE.Pages.Admin
             LoadJobDetails();
         }
 
+        private async Task CopyOptimizedSchema()
+        {
+            if (selectedDatabaseId <= 0)
+            {
+                toastService.ShowWarning("Please select a database first");
+                return;
+            }
+
+            try
+            {
+                // Show loading toast
+                toastService.ShowInfo("Retrieving schema...");
+
+                // Call the API to get the optimized schema
+                var response = await Http.GetAsync($"api/databaseschema/OptimizedSchemaString/{selectedDatabaseId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var schema = await response.Content.ReadAsStringAsync();
+
+                    // Copy to clipboard using JS interop
+                    await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", schema);
+
+                    toastService.ShowSuccess("Schema copied to clipboard!");
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    toastService.ShowError($"Error retrieving schema: {errorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error: {ex.Message}");
+            }
+        }
 
 
         // Add a class to deserialize the API response with total count

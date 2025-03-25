@@ -4,12 +4,13 @@ using DynamicDasboardWebAPI.Services.LLM;
 using DynamicDasboardWebAPI.Utilities;
 using DynamicDashboardCommon.Models;
 using DynamicDashboardCommon.Models.TestAutomation;
-using DynamicDashboardCommon.Models.TestAutomation;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -30,6 +31,11 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         private readonly DatasetComparisonService _datasetComparisonService;
         private readonly IConfiguration _configuration;
 
+        // Configurable settings from appsettings.json
+        private readonly int _maxRecordsToCompare;
+        private readonly int _requestTimeoutSeconds;
+        private readonly int _pageSizeDefault;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TestAutomationService"/> class.
         /// </summary>
@@ -37,8 +43,9 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// <param name="queryRepository">Repository for executing queries.</param>
         /// <param name="llmServiceFactory">Factory for creating LLM service instances.</param>
         /// <param name="databaseService">Service for database operations.</param>
-        /// <param name="databaseSchema"></param>
-
+        /// <param name="databaseSchemaService">Service for database schema operations.</param>
+        /// <param name="datasetComparisonService">Service for dataset comparison.</param>
+        /// <param name="configuration">Application configuration.</param>
         public TestAutomationService(
             TestAutomationRepository testRepository,
             QueryRepository queryRepository,
@@ -56,13 +63,23 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             _datasetComparisonService = datasetComparisonService ?? throw new ArgumentNullException(nameof(datasetComparisonService));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
+            // Get configurable comparison limit from settings (default values if not specified)
+            _maxRecordsToCompare = _configuration.GetValue<int>("TestAutomation:MaxRecordsToCompare", 100);
+            _requestTimeoutSeconds = _configuration.GetValue<int>("TestAutomation:RequestTimeoutSeconds", 300);
+            _pageSizeDefault = _configuration.GetValue<int>("TestAutomation:DefaultPageSize", 10);
+
             // Set EPPlus license context
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
         /// <summary>
-        /// Processes a test file and runs comparison on datasets only (SQL and explanation comparison skipped).
+        /// Processes a test file and runs comparison on datasets only.
         /// </summary>
+        /// <param name="fileStream">The file stream containing test cases.</param>
+        /// <param name="databaseId">The database ID to test against.</param>
+        /// <param name="llmProvider">The LLM provider to use.</param>
+        /// <param name="userId">Optional user ID.</param>
+        /// <returns>The processed file as a byte array.</returns>
         public async Task<byte[]> ProcessTestCasesFileAsync(
             Stream fileStream, int databaseId, string llmProvider, int? userId = null)
         {
@@ -75,7 +92,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 // Check if the worksheet has the expected structure
                 ValidateWorksheetStructure(worksheet);
 
-                // Define column indices based on updated structure
+                // Define column indices based on updated structure (removed SQL and Explanation match scores)
                 const int questionCol = 1;          // Column A
                 const int expectedSqlCol = 2;       // Column B
                 const int expectedExplanationCol = 3; // Column C
@@ -83,18 +100,17 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 const int queryCategoryCol = 5;     // Column E
                 const int expectedRowCountCol = 6;  // Column F
 
-                // Output columns
+                // Output columns - Updated to remove SQL and Explanation match scores
                 const int generatedSqlCol = 7;      // Column G
-                const int generatedExplanationCol = 8; // Column H
-                const int sqlMatchScoreCol = 9;     // Column I
-                const int explanationMatchScoreCol = 10; // Column J
-                const int actualRowCountCol = 11;   // Column K
-                const int dataMatchScoreCol = 12;   // Column L
-                const int resultMatchStatusCol = 13; // Column M
-                const int executionTimeCol = 14;    // Column N
-                const int llmUsedCol = 15;          // Column O
-                const int statusCol = 16;           // Column P
-                const int errorCol = 17;            // Column Q
+                const int actualSqlCol = 8;         // Column H - NEW COLUMN
+                const int generatedExplanationCol = 9; // Column I
+                const int actualRowCountCol = 10;   // Column J
+                const int dataMatchScoreCol = 11;   // Column K
+                const int resultMatchStatusCol = 12; // Column L
+                const int executionTimeCol = 13;    // Column M
+                const int llmUsedCol = 14;          // Column N
+                const int statusCol = 15;           // Column O
+                const int errorCol = 16;            // Column P
 
                 // Find the last row with data
                 int rowCount = FindLastDataRow(worksheet);
@@ -102,9 +118,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 // Initialize tracking variables
                 int totalQuestions = 0;
                 int successCount = 0;
-                // Set these to 0 since we're skipping SQL and explanation comparison
-                decimal totalSqlMatchScore = 0;
-                decimal totalExplanationMatchScore = 0;
                 decimal totalDataMatchScore = 0;
 
                 string fileName = "TestAutomation_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
@@ -116,14 +129,11 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     0, // Initialize with 0, will update later
                     0, // Initialize with 0, will update later
                     llmProvider,
-                    0, // Will update later
-                    0, // Will update later
-                    0, // Will update later
+                    0, // SQL match score - removed, kept for DB compatibility
+                    0, // Explanation match score - removed, kept for DB compatibility
+                    0, // Data match score - will update later
                     userId
                 );
-
-                // Log job creation 
-                Console.WriteLine($"Created test job with ID: {jobId}");
 
                 // Get LLM service instance
                 var llmService = _llmServiceFactory.CreateLlmService();
@@ -178,14 +188,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
 
                         var generatedSql = sqlExplanationResponse.SqlQuery;
                         var generatedExplanation = sqlExplanationResponse.BusinessExplanation;
-
-                        // SKIPPED: SQL comparison (we're only focusing on dataset comparison)
-                        // Set a placeholder value for SQL match score
-                        decimal sqlMatchScore = 0;
-
-                        // SKIPPED: Explanation comparison (we're only focusing on dataset comparison)
-                        // Set a placeholder value for explanation match score
-                        decimal explanationMatchScore = 0;
+                        string actualSql = string.Empty; // Will store the actual executed SQL
 
                         // Execute the expected SQL query if provided
                         List<Dictionary<string, object>> expectedDataset = null;
@@ -200,8 +203,9 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             }
                             catch (Exception ex)
                             {
-                                worksheet.Cells[row, errorCol].Value = $"Expected SQL execution failed: {ex.Message}";
-                                Console.WriteLine($"Expected SQL execution failed: {ex.Message}");
+                                // Add source file, method name, and line number to error
+                                string errorDetails = GetDetailedExceptionInfo(ex);
+                                worksheet.Cells[row, errorCol].Value = $"Expected SQL execution failed: {ex.Message} | {errorDetails}";
                             }
                         }
 
@@ -212,17 +216,22 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         {
                             try
                             {
+                                // Store the actual SQL that will be executed
+                                actualSql = generatedSql;
+
+                                // Execute the SQL
                                 actualDataset = await _queryRepository.ExecuteQueryOnDatabaseAsync(generatedSql, databaseId);
                                 actualRowCount = actualDataset?.Count;
                             }
                             catch (Exception ex)
                             {
-                                worksheet.Cells[row, errorCol].Value = $"Generated SQL execution failed: {ex.Message}";
-                                Console.WriteLine($"Generated SQL execution failed: {ex.Message}");
+                                // Add source file, method name, and line number to error
+                                string errorDetails = GetDetailedExceptionInfo(ex);
+                                worksheet.Cells[row, errorCol].Value = $"Generated SQL execution failed: {ex.Message} | {errorDetails}";
                             }
                         }
 
-                        // Compare datasets using our specialized DatasetComparisonService
+                        // Compare datasets using DatasetComparisonService
                         decimal dataMatchScore = 0;
                         string resultMatchStatus = "Not Compared";
 
@@ -234,6 +243,31 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
 
                             // Add dataset match score to total for averaging
                             totalDataMatchScore += dataMatchScore;
+                        }
+                        else
+                        {
+                            // If one or both datasets are empty, provide clear error message
+                            if (expectedDataset == null && actualDataset == null)
+                            {
+                                resultMatchStatus = "Both datasets are empty";
+                                worksheet.Cells[row, errorCol].Value = "Both expected and actual datasets are empty. Check SQL execution.";
+                            }
+                            else if (expectedDataset == null)
+                            {
+                                resultMatchStatus = "Expected dataset is empty";
+                                if (string.IsNullOrEmpty(worksheet.Cells[row, errorCol].Text))
+                                {
+                                    worksheet.Cells[row, errorCol].Value = "Expected dataset is empty. Check expected SQL.";
+                                }
+                            }
+                            else // actualDataset is null
+                            {
+                                resultMatchStatus = "Actual dataset is empty";
+                                if (string.IsNullOrEmpty(worksheet.Cells[row, errorCol].Text))
+                                {
+                                    worksheet.Cells[row, errorCol].Value = "Actual dataset is empty. Check generated SQL.";
+                                }
+                            }
                         }
 
                         // Calculate execution time
@@ -249,10 +283,10 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             question,
                             expectedSql,
                             generatedSql,
-                            sqlMatchScore, // Placeholder value since we're skipping SQL comparison
+                            null, // Placeholder value - SQL match removed
                             expectedExplanation,
                             generatedExplanation,
-                            explanationMatchScore, // Placeholder value since we're skipping explanation comparison
+                            null, // Placeholder value - Explanation match removed
                             expectedRowCount,
                             actualRowCount,
                             dataMatchScore,
@@ -261,10 +295,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             queryCategory,
                             executionTimeMs,
                             success,
-                            null
+                            worksheet.Cells[row, errorCol].Text
                         );
-
-                        Console.WriteLine($"Created test detail with ID: {detailId} for job ID: {jobId}");
 
                         // Store datasets for comparison
                         if (expectedDataset != null)
@@ -285,17 +317,16 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             await StoreDatasetAsync(detailId, false, new List<Dictionary<string, object>>());
                         }
 
-                        // Update Excel with results
+                        // Update Excel with results - Updated column mapping
                         worksheet.Cells[row, generatedSqlCol].Value = generatedSql;
+                        worksheet.Cells[row, actualSqlCol].Value = actualSql; // New column for actual executed SQL
                         worksheet.Cells[row, generatedExplanationCol].Value = generatedExplanation;
-                        worksheet.Cells[row, sqlMatchScoreCol].Value = sqlMatchScore;
-                        worksheet.Cells[row, explanationMatchScoreCol].Value = explanationMatchScore;
                         worksheet.Cells[row, actualRowCountCol].Value = actualRowCount;
                         worksheet.Cells[row, dataMatchScoreCol].Value = dataMatchScore;
                         worksheet.Cells[row, resultMatchStatusCol].Value = resultMatchStatus;
                         worksheet.Cells[row, executionTimeCol].Value = executionTimeMs;
                         worksheet.Cells[row, llmUsedCol].Value = llmProvider;
-                        worksheet.Cells[row, statusCol].Value = "Success";
+                        worksheet.Cells[row, statusCol].Value = success ? "Success" : "Failed";
 
                         // Update running totals
                         if (success)
@@ -305,10 +336,11 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     }
                     catch (Exception ex)
                     {
-                        // Handle errors and log them
+                        // Handle errors and log them with detailed info
+                        string errorDetails = GetDetailedExceptionInfo(ex);
+
                         worksheet.Cells[row, statusCol].Value = "Error";
-                        worksheet.Cells[row, errorCol].Value = ex.Message;
-                        Console.WriteLine($"Error processing row {row}: {ex.Message}");
+                        worksheet.Cells[row, errorCol].Value = $"{ex.Message} | {errorDetails}";
 
                         // Log error to database if we haven't created a detail record yet
                         if (detailId == 0)
@@ -320,10 +352,10 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                                     question,
                                     worksheet.Cells[row, expectedSqlCol].Text,
                                     null, // Generated SQL
-                                    null, // SQL match score
+                                    null, // SQL match score - removed
                                     worksheet.Cells[row, expectedExplanationCol].Text,
                                     null, // Generated explanation
-                                    null, // Explanation match score
+                                    null, // Explanation match score - removed
                                     null, // Expected row count
                                     null, // Actual row count
                                     null, // Data match score
@@ -332,7 +364,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                                     worksheet.Cells[row, queryCategoryCol].Text,
                                     null, // Execution time
                                     false, // Success flag
-                                    ex.Message // Error message
+                                    $"{ex.Message} | {errorDetails}" // Error message with details
                                 );
 
                                 // Store empty datasets to ensure records exist
@@ -341,27 +373,24 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             }
                             catch (Exception innerEx)
                             {
-                                Console.WriteLine($"Error creating test detail record: {innerEx.Message}");
+                                string innerErrorDetails = GetDetailedExceptionInfo(innerEx);
+                                worksheet.Cells[row, errorCol].Value += $" | Error creating test detail record: {innerEx.Message} | {innerErrorDetails}";
                             }
                         }
                     }
                 }
 
-                // Update the job with final counts and averages
-                decimal avgSqlScore = totalQuestions > 0 ? totalSqlMatchScore / totalQuestions : 0;
-                decimal avgExplanationScore = totalQuestions > 0 ? totalExplanationMatchScore / totalQuestions : 0;
+                // Update the job with final counts and averages - keep SQL/Explanation scores as 0 for DB compatibility
                 decimal avgDataScore = successCount > 0 ? totalDataMatchScore / successCount : 0;
 
                 await objTestAutomationRepostiroy.UpdateTestJobAsync(
                     jobId,
                     totalQuestions,
                     successCount,
-                    avgSqlScore,
-                    avgExplanationScore,
+                    0, // SQL match score - removed but kept for DB
+                    0, // Explanation match score - removed but kept for DB
                     avgDataScore
                 );
-
-                Console.WriteLine($"Updated test job {jobId} with totals: Questions={totalQuestions}, Success={successCount}");
 
                 // Format the Excel file
                 FormatExcelOutput(worksheet, rowCount);
@@ -371,8 +400,37 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing test cases: {ex.Message}");
-                throw new Exception($"Error processing test cases: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error processing test cases: {ex.Message} | {errorDetails}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Gets detailed exception information including file, method, and line number.
+        /// </summary>
+        /// <param name="ex">The exception to get details for.</param>
+        /// <returns>A string with detailed exception information.</returns>
+        private string GetDetailedExceptionInfo(Exception ex)
+        {
+            try
+            {
+                var stackTrace = new StackTrace(ex, true);
+                var frame = stackTrace.GetFrame(0);
+
+                if (frame != null)
+                {
+                    string fileName = Path.GetFileName(frame.GetFileName() ?? "Unknown");
+                    string methodName = frame.GetMethod()?.Name ?? "Unknown";
+                    int lineNumber = frame.GetFileLineNumber();
+
+                    return $"File: {fileName}, Method: {methodName}, Line: {lineNumber}";
+                }
+
+                return "Details unavailable";
+            }
+            catch
+            {
+                return "Error extracting exception details";
             }
         }
 
@@ -454,7 +512,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         else
                         {
                             // Log final failure
-                            Console.WriteLine($"All attempts to store dataset failed. Error: {ex.Message}");
+                            string errorDetails = GetDetailedExceptionInfo(ex);
+                            Console.WriteLine($"All attempts to store dataset failed. Error: {ex.Message} | {errorDetails}");
                             throw; // Rethrow on final attempt
                         }
                     }
@@ -464,11 +523,16 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error storing dataset: {ex.Message}");
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                Console.WriteLine($"Error storing dataset: {ex.Message} | {errorDetails}");
                 throw; // Rethrow to ensure caller knows about failure
             }
         }
 
+        /// <summary>
+        /// Generates a test template Excel file with updated column structure.
+        /// </summary>
+        /// <returns>Excel file as byte array.</returns>
         public byte[] GenerateTestTemplate()
         {
             try
@@ -476,7 +540,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Test Cases");
 
-                // Define headers according to the business document
+                // Define headers according to updated structure (removed SQL/Explanation match scores)
                 worksheet.Cells[1, 1].Value = "Question";
                 worksheet.Cells[1, 2].Value = "ExpectedSQL";
                 worksheet.Cells[1, 3].Value = "ExpectedExplanation";
@@ -484,19 +548,18 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Cells[1, 5].Value = "QueryCategory";
                 worksheet.Cells[1, 6].Value = "ExpectedRowCount";
                 worksheet.Cells[1, 7].Value = "GeneratedSQL";
-                worksheet.Cells[1, 8].Value = "GeneratedExplanation";
-                worksheet.Cells[1, 9].Value = "SQLMatchScore";
-                worksheet.Cells[1, 10].Value = "ExplanationMatchScore";
-                worksheet.Cells[1, 11].Value = "ActualRowCount";
-                worksheet.Cells[1, 12].Value = "DataMatchScore";
-                worksheet.Cells[1, 13].Value = "ResultMatchStatus";
-                worksheet.Cells[1, 14].Value = "ExecutionTimeMs";
-                worksheet.Cells[1, 15].Value = "LLMUsed";
-                worksheet.Cells[1, 16].Value = "Status";
-                worksheet.Cells[1, 17].Value = "ErrorMessage";
+                worksheet.Cells[1, 8].Value = "ActualSQL"; // New column
+                worksheet.Cells[1, 9].Value = "GeneratedExplanation";
+                worksheet.Cells[1, 10].Value = "ActualRowCount";
+                worksheet.Cells[1, 11].Value = "DataMatchScore";
+                worksheet.Cells[1, 12].Value = "ResultMatchStatus";
+                worksheet.Cells[1, 13].Value = "ExecutionTimeMs";
+                worksheet.Cells[1, 14].Value = "LLMUsed";
+                worksheet.Cells[1, 15].Value = "Status";
+                worksheet.Cells[1, 16].Value = "ErrorMessage";
 
                 // Format headers
-                using (var range = worksheet.Cells[1, 1, 1, 17])
+                using (var range = worksheet.Cells[1, 1, 1, 16])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -526,7 +589,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 expectedRowCountValidation.Formula.Value = 0;
                 expectedRowCountValidation.AllowBlank = true;
 
-                // Set column widths
+                // Set column widths - Updated column layout
                 worksheet.Column(1).Width = 40;  // Question
                 worksheet.Column(2).Width = 50;  // ExpectedSQL
                 worksheet.Column(3).Width = 50;  // ExpectedExplanation
@@ -534,16 +597,15 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Column(5).Width = 15;  // QueryCategory
                 worksheet.Column(6).Width = 15;  // ExpectedRowCount
                 worksheet.Column(7).Width = 50;  // GeneratedSQL
-                worksheet.Column(8).Width = 50;  // GeneratedExplanation
-                worksheet.Column(9).Width = 15;  // SQLMatchScore
-                worksheet.Column(10).Width = 15; // ExplanationMatchScore
-                worksheet.Column(11).Width = 15; // ActualRowCount
-                worksheet.Column(12).Width = 15; // DataMatchScore
-                worksheet.Column(13).Width = 20; // ResultMatchStatus
-                worksheet.Column(14).Width = 15; // ExecutionTimeMs
-                worksheet.Column(15).Width = 15; // LLMUsed
-                worksheet.Column(16).Width = 15; // Status
-                worksheet.Column(17).Width = 50; // ErrorMessage
+                worksheet.Column(8).Width = 50;  // ActualSQL
+                worksheet.Column(9).Width = 50;  // GeneratedExplanation
+                worksheet.Column(10).Width = 15; // ActualRowCount
+                worksheet.Column(11).Width = 15; // DataMatchScore
+                worksheet.Column(12).Width = 20; // ResultMatchStatus
+                worksheet.Column(13).Width = 15; // ExecutionTimeMs
+                worksheet.Column(14).Width = 15; // LLMUsed
+                worksheet.Column(15).Width = 15; // Status
+                worksheet.Column(16).Width = 50; // ErrorMessage
 
                 // Add instructions row with comments
                 int row = 2;
@@ -562,13 +624,14 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 }
 
                 // Protect cells that should not be edited
-                worksheet.Cells[$"G3:Q1000"].Style.Locked = true;
+                worksheet.Cells[$"G3:P1000"].Style.Locked = true;
 
                 return package.GetAsByteArray();
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error generating test template: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error generating test template: {ex.Message} | {errorDetails}", ex);
             }
         }
 
@@ -583,7 +646,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Test Questions");
 
-                // Add headers
+                // Add headers - Updated column layout
                 worksheet.Cells[1, 1].Value = "Question";
                 worksheet.Cells[1, 2].Value = "ExpectedSQL";
                 worksheet.Cells[1, 3].Value = "ExpectedExplanation";
@@ -591,19 +654,18 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Cells[1, 5].Value = "QueryCategory";
                 worksheet.Cells[1, 6].Value = "ExpectedRowCount";
                 worksheet.Cells[1, 7].Value = "GeneratedSQL";
-                worksheet.Cells[1, 8].Value = "GeneratedExplanation";
-                worksheet.Cells[1, 9].Value = "SQLMatchScore";
-                worksheet.Cells[1, 10].Value = "ExplanationMatchScore";
-                worksheet.Cells[1, 11].Value = "ActualRowCount";
-                worksheet.Cells[1, 12].Value = "DataMatchScore";
-                worksheet.Cells[1, 13].Value = "ResultMatchStatus";
-                worksheet.Cells[1, 14].Value = "ExecutionTimeMs";
-                worksheet.Cells[1, 15].Value = "LLMUsed";
-                worksheet.Cells[1, 16].Value = "Status";
-                worksheet.Cells[1, 17].Value = "ErrorMessage";
+                worksheet.Cells[1, 8].Value = "ActualSQL"; // New column
+                worksheet.Cells[1, 9].Value = "GeneratedExplanation";
+                worksheet.Cells[1, 10].Value = "ActualRowCount";
+                worksheet.Cells[1, 11].Value = "DataMatchScore";
+                worksheet.Cells[1, 12].Value = "ResultMatchStatus";
+                worksheet.Cells[1, 13].Value = "ExecutionTimeMs";
+                worksheet.Cells[1, 14].Value = "LLMUsed";
+                worksheet.Cells[1, 15].Value = "Status";
+                worksheet.Cells[1, 16].Value = "ErrorMessage";
 
                 // Format headers
-                using (var range = worksheet.Cells[1, 1, 1, 17])
+                using (var range = worksheet.Cells[1, 1, 1, 16])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -645,7 +707,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     }
                 }
 
-                // Set column widths
+                // Set column widths - Updated column layout
                 worksheet.Column(1).Width = 50;  // Question
                 worksheet.Column(2).Width = 70;  // ExpectedSQL
                 worksheet.Column(3).Width = 50;  // ExpectedExplanation
@@ -653,22 +715,22 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Column(5).Width = 15;  // QueryCategory
                 worksheet.Column(6).Width = 15;  // ExpectedRowCount
                 worksheet.Column(7).Width = 70;  // GeneratedSQL
-                worksheet.Column(8).Width = 50;  // GeneratedExplanation
-                worksheet.Column(9).Width = 15;  // SQLMatchScore
-                worksheet.Column(10).Width = 15; // ExplanationMatchScore
-                worksheet.Column(11).Width = 15; // ActualRowCount
-                worksheet.Column(12).Width = 15; // DataMatchScore
-                worksheet.Column(13).Width = 20; // ResultMatchStatus
-                worksheet.Column(14).Width = 15; // ExecutionTimeMs
-                worksheet.Column(15).Width = 15; // LLMUsed
-                worksheet.Column(16).Width = 15; // Status
-                worksheet.Column(17).Width = 30; // ErrorMessage
+                worksheet.Column(8).Width = 70;  // ActualSQL
+                worksheet.Column(9).Width = 50;  // GeneratedExplanation
+                worksheet.Column(10).Width = 15; // ActualRowCount
+                worksheet.Column(11).Width = 15; // DataMatchScore
+                worksheet.Column(12).Width = 20; // ResultMatchStatus
+                worksheet.Column(13).Width = 15; // ExecutionTimeMs
+                worksheet.Column(14).Width = 15; // LLMUsed
+                worksheet.Column(15).Width = 15; // Status
+                worksheet.Column(16).Width = 50; // ErrorMessage
 
                 return package.GetAsByteArray();
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error generating sample test questions: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error generating sample test questions: {ex.Message} | {errorDetails}", ex);
             }
         }
 
@@ -686,7 +748,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving recent test jobs: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error retrieving recent test jobs: {ex.Message} | {errorDetails}", ex);
             }
         }
 
@@ -703,7 +766,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving test job details: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error retrieving test job details: {ex.Message} | {errorDetails}", ex);
             }
         }
 
@@ -719,16 +783,16 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 using var package = new ExcelPackage();
                 var worksheet = package.Workbook.Worksheets.Add("Test Cases");
 
-                // Add headers according to the template (removing ExpectedRowCount)
+                // Add headers according to the updated template layout
                 worksheet.Cells[1, 1].Value = "Question";
                 worksheet.Cells[1, 2].Value = "ExpectedSQL";
                 worksheet.Cells[1, 3].Value = "ExpectedExplanation";
                 worksheet.Cells[1, 4].Value = "ComplexityLevel";
                 worksheet.Cells[1, 5].Value = "QueryCategory";
-                worksheet.Cells[1, 6].Value = "GeneratedSQL";
-                worksheet.Cells[1, 7].Value = "GeneratedExplanation";
-                worksheet.Cells[1, 8].Value = "SQLMatchScore";
-                worksheet.Cells[1, 9].Value = "ExplanationMatchScore";
+                worksheet.Cells[1, 6].Value = "ExpectedRowCount";
+                worksheet.Cells[1, 7].Value = "GeneratedSQL";
+                worksheet.Cells[1, 8].Value = "ActualSQL"; // New column
+                worksheet.Cells[1, 9].Value = "GeneratedExplanation";
                 worksheet.Cells[1, 10].Value = "ActualRowCount";
                 worksheet.Cells[1, 11].Value = "DataMatchScore";
                 worksheet.Cells[1, 12].Value = "ResultMatchStatus";
@@ -756,8 +820,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     worksheet.Cells[row, 3].Value = testCase.ExpectedExplanation;
                     worksheet.Cells[row, 4].Value = testCase.ComplexityLevel;
                     worksheet.Cells[row, 5].Value = testCase.QueryCategory;
-                    worksheet.Cells[1, 6].Value = "ExpectedRowCount";
-                    // Columns 6-16 are left empty as they'll be filled by the system during test execution
+                    // ExpectedRowCount in column 6 will be calculated during processing
                 }
 
                 // Add dropdown lists for complexity level and query category
@@ -777,16 +840,16 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 categoryValidation.Formula.Values.Add("CTE");
                 categoryValidation.Formula.Values.Add("Complex");
 
-                // Set column widths
+                // Set column widths - Updated column layout
                 worksheet.Column(1).Width = 50;  // Question
                 worksheet.Column(2).Width = 70;  // ExpectedSQL
                 worksheet.Column(3).Width = 50;  // ExpectedExplanation
                 worksheet.Column(4).Width = 15;  // ComplexityLevel
                 worksheet.Column(5).Width = 15;  // QueryCategory
-                worksheet.Column(6).Width = 70;  // GeneratedSQL
-                worksheet.Column(7).Width = 50;  // GeneratedExplanation
-                worksheet.Column(8).Width = 15;  // SQLMatchScore
-                worksheet.Column(9).Width = 15;  // ExplanationMatchScore
+                worksheet.Column(6).Width = 15;  // ExpectedRowCount
+                worksheet.Column(7).Width = 70;  // GeneratedSQL
+                worksheet.Column(8).Width = 70;  // ActualSQL
+                worksheet.Column(9).Width = 50;  // GeneratedExplanation
                 worksheet.Column(10).Width = 15; // ActualRowCount
                 worksheet.Column(11).Width = 15; // DataMatchScore
                 worksheet.Column(12).Width = 20; // ResultMatchStatus
@@ -796,18 +859,16 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 worksheet.Column(16).Width = 50; // ErrorMessage
 
                 // Protect cells that should not be edited (system-filled columns)
-                worksheet.Cells[$"F2:P1000"].Style.Locked = true;
+                worksheet.Cells[$"G2:P1000"].Style.Locked = true;
 
                 return package.GetAsByteArray();
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error converting JSON to Excel template: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error converting JSON to Excel template: {ex.Message} | {errorDetails}", ex);
             }
         }
-
-
-        // Add to DynamicDasboardWebAPI/Services/TestAutomation/TestAutomationService.cs
 
         /// <summary>
         /// Retrieves job details with pagination and total count.
@@ -825,7 +886,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving test job details: {ex.Message}", ex);
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                throw new Exception($"Error retrieving test job details: {ex.Message} | {errorDetails}", ex);
             }
         }
 
@@ -862,7 +924,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     }
                     catch (Exception ex)
                     {
-                        Console.Error.WriteLine($"Error deserializing expected dataset: {ex.Message}");
+                        string errorDetails = GetDetailedExceptionInfo(ex);
+                        Console.Error.WriteLine($"Error deserializing expected dataset: {ex.Message} | {errorDetails}");
                         // Create an empty dataset if deserialization fails
                         expectedData = new List<Dictionary<string, object>>();
                     }
@@ -884,7 +947,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     }
                     catch (Exception ex)
                     {
-                        Console.Error.WriteLine($"Error deserializing actual dataset: {ex.Message}");
+                        string errorDetails = GetDetailedExceptionInfo(ex);
+                        Console.Error.WriteLine($"Error deserializing actual dataset: {ex.Message} | {errorDetails}");
                         // Create an empty dataset if deserialization fails
                         actualData = new List<Dictionary<string, object>>();
                     }
@@ -916,171 +980,17 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             catch (Exception ex)
             {
                 // Log the error and return an empty comparison result
-                Console.Error.WriteLine($"Error retrieving dataset comparison: {ex.Message}");
+                string errorDetails = GetDetailedExceptionInfo(ex);
+                Console.Error.WriteLine($"Error retrieving dataset comparison: {ex.Message} | {errorDetails}");
                 return new DatasetComparisonResult
                 {
-                    ComparisonSummary = $"Error retrieving dataset comparison: {ex.Message}",
+                    ComparisonSummary = $"Error retrieving dataset comparison: {ex.Message} | {errorDetails}",
                     IsEquivalent = false
                 };
             }
         }
 
-
         #region Private Helper Methods
-
-        /// <summary>
-        /// Normalizes data types in a dataset to ensure proper comparison.
-        /// JSON deserialization can sometimes produce inconsistent types.
-        /// </summary>
-        private List<Dictionary<string, object>> NormalizeDatasetTypes(List<Dictionary<string, object>> dataset)
-        {
-            if (dataset == null || dataset.Count == 0) return dataset;
-
-            var result = new List<Dictionary<string, object>>();
-
-            // First, determine the most appropriate type for each column
-            var columnTypes = new Dictionary<string, Type>();
-            foreach (var row in dataset)
-            {
-                foreach (var kvp in row)
-                {
-                    if (kvp.Value != null)
-                    {
-                        if (!columnTypes.TryGetValue(kvp.Key, out var currentType))
-                        {
-                            columnTypes[kvp.Key] = kvp.Value.GetType();
-                        }
-                        else if (kvp.Value.GetType() != currentType)
-                        {
-                            // If mixed types, prefer numeric types in this order: decimal, double, int
-                            if (kvp.Value is decimal || currentType == typeof(decimal))
-                            {
-                                columnTypes[kvp.Key] = typeof(decimal);
-                            }
-                            else if (kvp.Value is double || currentType == typeof(double))
-                            {
-                                columnTypes[kvp.Key] = typeof(double);
-                            }
-                            else if (kvp.Value is int || currentType == typeof(int))
-                            {
-                                columnTypes[kvp.Key] = typeof(int);
-                            }
-                            // Default to string if mixed non-numeric types
-                            else
-                            {
-                                columnTypes[kvp.Key] = typeof(string);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Now convert each value to the appropriate type
-            foreach (var row in dataset)
-            {
-                var normalizedRow = new Dictionary<string, object>();
-
-                foreach (var kvp in row)
-                {
-                    if (kvp.Value == null)
-                    {
-                        normalizedRow[kvp.Key] = null;
-                        continue;
-                    }
-
-                    if (columnTypes.TryGetValue(kvp.Key, out var targetType))
-                    {
-                        try
-                        {
-                            if (targetType == typeof(decimal) && kvp.Value is JsonElement je)
-                            {
-                                if (je.TryGetDecimal(out var dec))
-                                    normalizedRow[kvp.Key] = dec;
-                                else if (je.TryGetDouble(out var dbl))
-                                    normalizedRow[kvp.Key] = (decimal)dbl;
-                                else if (je.TryGetInt32(out var i32))
-                                    normalizedRow[kvp.Key] = (decimal)i32;
-                                else
-                                    normalizedRow[kvp.Key] = kvp.Value;
-                            }
-                            else if (targetType == typeof(double) && kvp.Value is JsonElement je2)
-                            {
-                                if (je2.TryGetDouble(out var dbl))
-                                    normalizedRow[kvp.Key] = dbl;
-                                else if (je2.TryGetInt32(out var i32))
-                                    normalizedRow[kvp.Key] = (double)i32;
-                                else
-                                    normalizedRow[kvp.Key] = kvp.Value;
-                            }
-                            else if (targetType == typeof(int) && kvp.Value is JsonElement je3)
-                            {
-                                if (je3.TryGetInt32(out var i32))
-                                    normalizedRow[kvp.Key] = i32;
-                                else
-                                    normalizedRow[kvp.Key] = kvp.Value;
-                            }
-                            else if (targetType == typeof(DateTime) && kvp.Value is JsonElement je4)
-                            {
-                                if (je4.TryGetDateTime(out var dt))
-                                    normalizedRow[kvp.Key] = dt;
-                                else
-                                    normalizedRow[kvp.Key] = kvp.Value;
-                            }
-                            else if (kvp.Value is JsonElement je5)
-                            {
-                                // Handle other JsonElement cases
-                                switch (je5.ValueKind)
-                                {
-                                    case JsonValueKind.String:
-                                        normalizedRow[kvp.Key] = je5.GetString();
-                                        break;
-                                    case JsonValueKind.Number:
-                                        if (je5.TryGetInt32(out var i))
-                                            normalizedRow[kvp.Key] = i;
-                                        else if (je5.TryGetDouble(out var d))
-                                            normalizedRow[kvp.Key] = d;
-                                        else if (je5.TryGetDecimal(out var dec))
-                                            normalizedRow[kvp.Key] = dec;
-                                        else
-                                            normalizedRow[kvp.Key] = je5.GetRawText();
-                                        break;
-                                    case JsonValueKind.True:
-                                        normalizedRow[kvp.Key] = true;
-                                        break;
-                                    case JsonValueKind.False:
-                                        normalizedRow[kvp.Key] = false;
-                                        break;
-                                    case JsonValueKind.Null:
-                                        normalizedRow[kvp.Key] = null;
-                                        break;
-                                    default:
-                                        normalizedRow[kvp.Key] = je5.GetRawText();
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                // For regular objects, use the original value
-                                normalizedRow[kvp.Key] = kvp.Value;
-                            }
-                        }
-                        catch
-                        {
-                            // If conversion fails, use the original value
-                            normalizedRow[kvp.Key] = kvp.Value;
-                        }
-                    }
-                    else
-                    {
-                        normalizedRow[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                result.Add(normalizedRow);
-            }
-
-            return result;
-        }
 
         /// <summary>
         /// Normalizes dataset for consistent storage.
@@ -1177,7 +1087,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             return normalized;
         }
 
-
         /// <summary>
         /// Validates that the worksheet has the expected structure for test automation.
         /// </summary>
@@ -1189,7 +1098,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 throw new ArgumentException("The uploaded file does not contain valid test data. Please use the template format.");
             }
 
-            // Check for required header columns as defined in the business document
+            // Check for required header columns
             var requiredHeaders = new[] { "Question", "ExpectedSQL", "ExpectedExplanation" };
             for (int i = 0; i < requiredHeaders.Length; i++)
             {
@@ -1243,22 +1152,21 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             for (int row = 2; row <= rowCount; row++)
             {
                 // Format success/failure rows differently
-                string status = worksheet.Cells[row, 16].Text;
+                string status = worksheet.Cells[row, 15].Text; // Updated status column index
                 if (string.Equals(status, "Success", StringComparison.OrdinalIgnoreCase))
                 {
-                    worksheet.Cells[row, 16].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                    worksheet.Cells[row, 16].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen);
+                    worksheet.Cells[row, 15].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    worksheet.Cells[row, 15].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen);
                 }
-                else if (string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase))
                 {
-                    worksheet.Cells[row, 16].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                    worksheet.Cells[row, 16].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightPink);
+                    worksheet.Cells[row, 15].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    worksheet.Cells[row, 15].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightPink);
                 }
 
                 // Format match scores with conditional formatting and percentage display
-                FormatMatchScoreCell(worksheet.Cells[row, 9]);  // SQL match score
-                FormatMatchScoreCell(worksheet.Cells[row, 10]); // Explanation match score
-                FormatMatchScoreCell(worksheet.Cells[row, 12]); // Data match score
+                FormatMatchScoreCell(worksheet.Cells[row, 11]); // Data match score - Updated column index
             }
         }
 
@@ -1284,7 +1192,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             cell.Style.Numberformat.Format = "0.00%";
             cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
 
-            // Color coding based on score ranges defined in business document
+            // Color coding based on score ranges
             if (score >= 0.9m)
                 cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen);
             else if (score >= 0.7m)
@@ -1299,7 +1207,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// <returns>Array of sample questions.</returns>
         private string[] Get50TestQuestions()
         {
-            // Using the 50 test questions from the BatchProcessingService in the provided code
             return new string[]
             {
                 "Show me the top 10 customers by total order value in the last 6 months",
@@ -1354,8 +1261,6 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                 "Find customers who have spent more than the average in each product category they've purchased from"
             };
         }
-
-
 
         #endregion
     }

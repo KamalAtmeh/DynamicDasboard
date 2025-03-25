@@ -1409,9 +1409,9 @@
             <param name="userPrompt">The user prompt to send.</param>
             <returns>The response from the Databricks API.</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.ParseSqlExplanationResponse(System.String,System.String)">
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.NormalizeJsonEscapeSequences(System.String)">
             <summary>
-            Parses the SQL explanation response from the Databricks API.
+            Normalizes JSON escape sequences to ensure proper parsing
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService">
@@ -1585,16 +1585,6 @@
             </summary>
             <param name="configuration">Application configuration.</param>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareDatasets(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Nullable{System.Int32})">
-            <summary>
-            Compares two datasets with flexible matching criteria.
-            Datasets are compared based on content similarity regardless of structure.
-            </summary>
-            <param name="expected">The expected dataset</param>
-            <param name="actual">The actual dataset</param>
-            <param name="maxRecords">Optional override for max records to compare</param>
-            <returns>A detailed comparison result</returns>
-        </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.AnalyzeColumnStructures(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult)">
             <summary>
             Analyzes column structures of both datasets and identifies common and unique columns.
@@ -1692,17 +1682,37 @@
             <param name="queryRepository">Repository for executing queries.</param>
             <param name="llmServiceFactory">Factory for creating LLM service instances.</param>
             <param name="databaseService">Service for database operations.</param>
-            <param name="databaseSchema"></param>
+            <param name="databaseSchemaService">Service for database schema operations.</param>
+            <param name="datasetComparisonService">Service for dataset comparison.</param>
+            <param name="configuration">Application configuration.</param>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.ProcessTestCasesFileAsync(System.IO.Stream,System.Int32,System.String,System.Nullable{System.Int32})">
             <summary>
-            Processes a test file and runs comparison on datasets only (SQL and explanation comparison skipped).
+            Processes a test file and runs comparison on datasets only.
             </summary>
+            <param name="fileStream">The file stream containing test cases.</param>
+            <param name="databaseId">The database ID to test against.</param>
+            <param name="llmProvider">The LLM provider to use.</param>
+            <param name="userId">Optional user ID.</param>
+            <returns>The processed file as a byte array.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GetDetailedExceptionInfo(System.Exception)">
+            <summary>
+            Gets detailed exception information including file, method, and line number.
+            </summary>
+            <param name="ex">The exception to get details for.</param>
+            <returns>A string with detailed exception information.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.StoreDatasetAsync(System.Int32,System.Boolean,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
             <summary>
             Stores a dataset for comparison in the database with enhanced error handling.
             </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.GenerateTestTemplate">
+            <summary>
+            Generates a test template Excel file with updated column structure.
+            </summary>
+            <returns>Excel file as byte array.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.Generate50TestQuestionsFile">
             <summary>
@@ -1747,12 +1757,6 @@
             </summary>
             <param name="detailId">The ID of the test detail.</param>
             <returns>A comprehensive dataset comparison result.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.NormalizeDatasetTypes(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
-            <summary>
-            Normalizes data types in a dataset to ensure proper comparison.
-            JSON deserialization can sometimes produce inconsistent types.
-            </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService.NormalizeDatasetForStorage(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
             <summary>

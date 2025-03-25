@@ -24,12 +24,12 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
         /// <summary>
         /// Threshold for column name similarity to consider two columns matching.
         /// </summary>
-        private const double ColumnSimilarityThreshold = 0.7;
+        private const double ColumnSimilarityThreshold = .9;
 
         /// <summary>
         /// Threshold for row content similarity to consider rows matching.
         /// </summary>
-        private const double RowSimilarityThreshold = 0.6;
+        private const double RowSimilarityThreshold = 1;
 
         /// <summary>
         /// Initializes a new instance of the DatasetComparisonService class.
@@ -43,64 +43,155 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             _maxRecordsToCompare = _configuration.GetValue<int>("TestAutomation:MaxRecordsToCompare", 100);
         }
 
-        /// <summary>
-        /// Compares two datasets with flexible matching criteria.
-        /// Datasets are compared based on content similarity regardless of structure.
-        /// </summary>
-        /// <param name="expected">The expected dataset</param>
-        /// <param name="actual">The actual dataset</param>
-        /// <param name="maxRecords">Optional override for max records to compare</param>
-        /// <returns>A detailed comparison result</returns>
         public DatasetComparisonResult CompareDatasets(
             List<Dictionary<string, object>> expected,
             List<Dictionary<string, object>> actual,
             int? maxRecords = null)
         {
-            var result = new DatasetComparisonResult
-            {
-                Expected = expected ?? new List<Dictionary<string, object>>(),
-                Actual = actual ?? new List<Dictionary<string, object>>()
-            };
+            var result = new DatasetComparisonResult();
 
-            // Handle empty datasets
-            if ((expected == null || !expected.Any()) || (actual == null || !actual.Any()))
+            // Handle null or empty input safely
+            if (expected == null) expected = new List<Dictionary<string, object>>();
+            if (actual == null) actual = new List<Dictionary<string, object>>();
+
+            // Create defensive copies of all collections to avoid modification during enumeration
+            var expectedCopy = expected
+                .Select(dict => new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            var actualCopy = actual
+                .Select(dict => new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            // Initialize result properties
+            result.Expected = expectedCopy;
+            result.Actual = actualCopy;
+
+            // Early exit for empty datasets
+            if (!expectedCopy.Any() || !actualCopy.Any())
             {
                 result.ComparisonSummary = "One or both datasets are empty";
-                result.IsEquivalent = false;
+                result.IsEquivalent = expectedCopy.Count == actualCopy.Count && expectedCopy.Count == 0;
                 return result;
             }
 
-            try
+            // Extract column names safely - create copies
+            var expectedColumns = expectedCopy.Count > 0
+                ? new HashSet<string>(expectedCopy[0].Keys, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var actualColumns = actualCopy.Count > 0
+                ? new HashSet<string>(actualCopy[0].Keys, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Find common and unique columns - using new collections instead of modifying existing ones
+            result.CommonColumns = expectedColumns
+                .Intersect(actualColumns, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c)
+                .ToList();
+
+            result.UniqueExpectedColumns = expectedColumns
+                .Except(actualColumns, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c)
+                .ToList();
+
+            result.UniqueActualColumns = actualColumns
+                .Except(expectedColumns, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c)
+                .ToList();
+
+            result.HasStructuralDifferences =
+                result.UniqueExpectedColumns.Any() || result.UniqueActualColumns.Any();
+
+            // Set row count limit
+            int recordLimit = maxRecords ?? _maxRecordsToCompare;
+            int rowsToCompare = Math.Min(
+                Math.Min(expectedCopy.Count, actualCopy.Count),
+                recordLimit
+            );
+
+            result.TotalRowsCompared = rowsToCompare;
+            result.MatchingRows = 0;
+            result.DifferentRows = 0;
+            result.Differences = new List<DatasetDifference>();
+
+            // Compare rows using common columns only
+            for (int rowIndex = 0; rowIndex < rowsToCompare; rowIndex++)
             {
-                // Use override value if provided, otherwise use configured value
-                int recordLimit = maxRecords ?? _maxRecordsToCompare;
+                bool rowMatches = true;
+                var differencesInCurrentRow = new List<DatasetDifference>();
 
-                // Analyze column structures
-                AnalyzeColumnStructures(expected, actual, result);
+                foreach (var column in result.CommonColumns)
+                {
+                    // Find actual column keys that match this column name (case-insensitive)
+                    var expectedKey = expectedCopy[rowIndex].Keys
+                        .FirstOrDefault(k => string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
 
-                // Find best column mappings
-                var columnMappings = FindBestColumnMappings(expected, actual, result);
+                    var actualKey = actualCopy[rowIndex].Keys
+                        .FirstOrDefault(k => string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
 
-                // Calculate rows to compare (minimum of dataset sizes and limit)
-                int rowsToCompare = Math.Min(Math.Min(expected.Count, actual.Count), recordLimit);
-                result.TotalRowsCompared = rowsToCompare;
+                    // Get values (or null if column doesn't exist)
+                    object expectedValue = expectedKey != null && expectedCopy[rowIndex].ContainsKey(expectedKey)
+                        ? expectedCopy[rowIndex][expectedKey]
+                        : null;
 
-                // Compare rows using flexible matching
-                CompareRowsFlexibly(expected, actual, columnMappings, result, rowsToCompare);
+                    object actualValue = actualKey != null && actualCopy[rowIndex].ContainsKey(actualKey)
+                        ? actualCopy[rowIndex][actualKey]
+                        : null;
 
-                // Determine overall equivalence
-                DetermineEquivalence(result);
+                    // Compare values
+                    if (!AreValuesEqual(expectedValue, actualValue))
+                    {
+                        rowMatches = false;
 
-                return result;
+                        // Create a difference entry
+                        differencesInCurrentRow.Add(new DatasetDifference
+                        {
+                            RowIndex = rowIndex,
+                            ColumnName = column,
+                            ExpectedValue = expectedValue,
+                            ActualValue = actualValue,
+                            DifferenceType = "ValueMismatch",
+                            Description = $"Values differ in row {rowIndex + 1}, column '{column}'"
+                        });
+                    }
+                }
+
+                // Update counters based on row comparison
+                if (rowMatches)
+                {
+                    result.MatchingRows++;
+                }
+                else
+                {
+                    result.DifferentRows++;
+                    // Add differences to the main list - all at once to avoid modifying during enumeration
+                    result.Differences.AddRange(differencesInCurrentRow);
+                }
             }
-            catch (Exception ex)
+
+            // Determine overall equivalence
+            result.IsEquivalent = result.DifferentRows == 0 && !result.HasStructuralDifferences;
+
+            // Generate summary
+            if (result.IsEquivalent)
             {
-                // Log error and return result indicating failure
-                Console.Error.WriteLine($"Error comparing datasets: {ex.Message}");
-                result.ComparisonSummary = $"Error during comparison: {ex.Message}";
-                result.IsEquivalent = false;
-                return result;
+                result.ComparisonSummary = $"Datasets are identical. {result.TotalRowsCompared} rows compared.";
             }
+            else if (result.DifferentRows > 0 && result.HasStructuralDifferences)
+            {
+                result.ComparisonSummary = $"Datasets differ in structure and content. {result.DifferentRows} out of {result.TotalRowsCompared} rows have differences.";
+            }
+            else if (result.DifferentRows > 0)
+            {
+                result.ComparisonSummary = $"Datasets have the same structure but different values. {result.DifferentRows} out of {result.TotalRowsCompared} rows have differences.";
+            }
+            else
+            {
+                result.ComparisonSummary = $"Datasets have different structure but identical values in common columns.";
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -519,8 +610,9 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                     decimal num2 = Convert.ToDecimal(value2);
 
                     // Consider numbers equal if they're within a small tolerance
-                    const decimal tolerance = 0.0001m;
-                    return Math.Abs(num1 - num2) < tolerance;
+                    //todo make it confugrable
+                    const decimal tolerance = 0;
+                    return Math.Abs(num1 - num2) <= tolerance;
                 }
                 catch
                 {
@@ -714,6 +806,62 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
             }
 
             return false;
+        }
+
+        private bool AreValuesEqual(object value1, object value2)
+        {
+            // Both null - equal
+            if (value1 == null && value2 == null)
+                return true;
+
+            // Only one null - not equal
+            if (value1 == null || value2 == null)
+                return false;
+
+            // Convert to strings for comparison
+            string str1 = FormatValueForComparison(value1);
+            string str2 = FormatValueForComparison(value2);
+
+            // Special case for numerics - compare with tolerance
+            if (IsNumeric(value1) && IsNumeric(value2))
+            {
+                try
+                {
+                    decimal num1 = Convert.ToDecimal(value1);
+                    decimal num2 = Convert.ToDecimal(value2);
+
+                    // Small tolerance for floating point comparison
+                    const decimal tolerance = 0.0001m;
+                    return Math.Abs(num1 - num2) < tolerance;
+                }
+                catch
+                {
+                    // If conversion fails, fall back to string comparison
+                }
+            }
+
+            // Compare as strings (case insensitive)
+            return string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string FormatValueForComparison(object value)
+        {
+            if (value == null)
+                return "null";
+
+            if (value is DateTime dt)
+                return dt.ToString("yyyy-MM-dd");
+
+            if (value is decimal dec)
+                return dec.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+            if (value is double dbl)
+                return dbl.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+            if (value is float flt)
+                return flt.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+            return value.ToString();
         }
 
         #endregion
