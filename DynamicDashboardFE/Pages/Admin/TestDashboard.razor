@@ -51,6 +51,9 @@
 				<i class="fas fa-chart-bar me-2"></i> Test Results
 			</div>
 		}
+		<div class="tab @(activeTab == "import" ? "active" : "")" @onclick='() => SetActiveTab("import")'>
+			<i class="fas fa-history me-2"></i> Import Excel From JSON
+		</div>
 	</div>
 
 	<div class="dashboard-content">
@@ -462,6 +465,35 @@
 				</div>
 			</div>
 		}
+
+
+		else if (activeTab == "import")
+		{
+			<div class="import-json-section">
+				<div class="card">
+					<div class="card-header bg-primary text-white">
+						<h4><i class="fas fa-file-import me-2"></i>Import JSON Test Cases</h4>
+					</div>
+					<div class="card-body">
+						<div class="form-group mb-3">
+							<label>Paste JSON Test Cases:</label>
+							<textarea class="form-control" rows="8" @bind="jsonTestCases"  placeholder="Paste your JSON test cases here..."></textarea>
+							<small class="form-text text-muted">
+								Format: {"databaseId":5,"testCases":[{"question":"Show me all customers from the database","expectedSql":"SELECT * FROM customers","expectedExplanation":"This query retrieves all customer records from the customers table.","complexityLevel":"Simple","queryCategory":"Filter"}]}
+							</small>
+						</div>
+						<div class="form-group d-flex justify-content-between">
+							<button class="btn btn-outline-secondary" @onclick="ClearJsonInput">
+								<i class="fas fa-eraser me-2"></i>Clear
+							</button>
+							<button class="btn btn-primary" @onclick="ImportJsonTestCases" disabled="@string.IsNullOrWhiteSpace(jsonTestCases)">
+								<i class="fas fa-file-excel me-2"></i>Generate Excel Template
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		}
 	</div>
 
 	@if (showComparisonModal && selectedDetail != null)
@@ -682,30 +714,7 @@
     </div>
 }
 
-	<div class="import-json-section">
-		<div class="card">
-			<div class="card-header bg-primary text-white">
-				<h4><i class="fas fa-file-import me-2"></i>Import JSON Test Cases</h4>
-			</div>
-			<div class="card-body">
-				<div class="form-group mb-3">
-					<label>Paste JSON Test Cases:</label>
-					<textarea class="form-control" rows="8" @bind="jsonTestCases" placeholder="Paste your JSON test cases here..."></textarea>
-					<small class="form-text text-muted">
-						Format: { "databaseId": 1, "testCases": [{ "question": "...", "expectedSql": "...", ... }] }
-					</small>
-				</div>
-				<div class="form-group d-flex justify-content-between">
-					<button class="btn btn-outline-secondary" @onclick="ClearJsonInput">
-						<i class="fas fa-eraser me-2"></i>Clear
-					</button>
-					<button class="btn btn-primary" @onclick="ImportJsonTestCases" disabled="@string.IsNullOrWhiteSpace(jsonTestCases)">
-						<i class="fas fa-file-excel me-2"></i>Generate Excel Template
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
+
 @* 	@if (showComparisonView && comparisonDetail != null)
 	{
 		<TestCaseComparisonView TestDetail="comparisonDetail"

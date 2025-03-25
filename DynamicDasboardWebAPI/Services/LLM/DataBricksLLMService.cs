@@ -1,6 +1,7 @@
 ﻿using DynamicDashboardCommon.Models;
 using DynamicDashboardCommon.Models.LLM;
 using Microsoft.Extensions.Configuration;
+using MySqlX.XDevAPI;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace DynamicDasboardWebAPI.Services.LLM
 {
@@ -255,7 +257,8 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("- Ensure the SQL is compatible with the specified database type");
             prompt.AppendLine("- If no database type is specified, use ANSI-standard SQL");
             prompt.AppendLine("- If a specific database type is specified (MySQL, SQL Server, Oracle, PostgreSQL, etc.), optimize the SQL for that platform");
-            prompt.AppendLine("- Qualify all column names with table aliases (e.g., users.name)");
+            //prompt.AppendLine("- Qualify all column names with table aliases (e.g., users.name)");
+            prompt.AppendLine("-  you must use the exact column names as they appear in the database schema.Do not modify, rename, or normalize column names. however you need to Qualify all column names with table aliases (e.g., users.name)");
             prompt.AppendLine("- Handle NULL values appropriately");
             prompt.AppendLine("- Ensure GROUP BY includes all non-aggregated columns");
             prompt.AppendLine("- Use only SELECT queries (no data modification)");
@@ -666,12 +669,12 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
             // Handle the case of \n\ which is causing the error
             // Replace the pattern \n\ with \n (removing the trailing backslash)
-            json = Regex.Replace(json, @"\\n\\(?=[^\\])", "\\n");
+            json = Regex.Replace(json, @"\\n\\(?=[^\\])", " ");
 
             // Handle other potentially problematic escape sequences
             // Replace literal newlines in string values with proper JSON \n
             // json = Regex.Replace(json, @"(?<=([""])(?:[^""\\]|\\[^"])*?)[\r\n] + (?= (?: [^""\\] |\\[^"])*?\1)", "\\n");
-            json = System.Text.RegularExpressions.Regex.Replace(json, @"(?<=([[{](?:[^""\\][\\][""])+))\[\r\n] + (?= (?:[^""\\][\\][""])+[\]}])", "\\n");
+            json = System.Text.RegularExpressions.Regex.Replace(json, @"(?<=([[{](?:[^""\\][\\][""])+))\[\r\n] + (?= (?:[^""\\][\\][""])+[\]}])", " ");
          
 
             // Note: This is a simplified approach and may need further refinement

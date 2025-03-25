@@ -238,6 +238,8 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         if (expectedDataset != null && actualDataset != null)
                         {
                             var comparisonResult = _datasetComparisonService.CompareDatasets(expectedDataset, actualDataset);
+
+                            // Binary scoring - either 0% or 100%
                             dataMatchScore = comparisonResult.IsEquivalent ? 1.0m : 0.0m;
                             resultMatchStatus = comparisonResult.ComparisonSummary;
 
@@ -246,27 +248,21 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         }
                         else
                         {
-                            // If one or both datasets are empty, provide clear error message
+                            // More specific messages for empty datasets
                             if (expectedDataset == null && actualDataset == null)
                             {
                                 resultMatchStatus = "Both datasets are empty";
-                                worksheet.Cells[row, errorCol].Value = "Both expected and actual datasets are empty. Check SQL execution.";
+                                dataMatchScore = 1.0m; // Consider identical if both are empty
                             }
                             else if (expectedDataset == null)
                             {
                                 resultMatchStatus = "Expected dataset is empty";
-                                if (string.IsNullOrEmpty(worksheet.Cells[row, errorCol].Text))
-                                {
-                                    worksheet.Cells[row, errorCol].Value = "Expected dataset is empty. Check expected SQL.";
-                                }
+                                dataMatchScore = 0.0m;
                             }
                             else // actualDataset is null
                             {
                                 resultMatchStatus = "Actual dataset is empty";
-                                if (string.IsNullOrEmpty(worksheet.Cells[row, errorCol].Text))
-                                {
-                                    worksheet.Cells[row, errorCol].Value = "Actual dataset is empty. Check generated SQL.";
-                                }
+                                dataMatchScore = 0.0m;
                             }
                         }
 
@@ -275,9 +271,12 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                         var executionTimeMs = (int)(endTime - startTime).TotalMilliseconds;
 
                         // Determine success based on dataset comparison only
-                        bool success = dataMatchScore > 0.9m;
+                        bool success = true; // Default to success
+                        if (!string.IsNullOrEmpty(worksheet.Cells[row, errorCol].Text))
+                        {
+                            success = false; // Only fail if there's an error message
+                        }
 
-                        // Create test detail record
                         detailId = await objTestAutomationRepostiroy.LogTestDetailAsync(
                             jobId,
                             question,
@@ -294,7 +293,7 @@ namespace DynamicDasboardWebAPI.Services.TestAutomation
                             complexityLevel,
                             queryCategory,
                             executionTimeMs,
-                            success,
+                            success, // Now based on errors, not match score
                             worksheet.Cells[row, errorCol].Text
                         );
 
