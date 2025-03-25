@@ -7,6 +7,7 @@
 @inject IToastService toastService
 @inject NavigationManager NavigationManager
 
+
 <div class="test-dashboard-container">
 	<div class="comparison-toggle @(showComparisonModal || showComparisonView ? "visible" : "")">
 		<button class="btn btn-toggle" @onclick="ToggleComparisonView">
@@ -28,6 +29,13 @@
 				<i class="fas fa-lightbulb me-1"></i> Sample Questions
 			</button>
 		</div>
+	</div>
+
+	<div class="comparison-toggle @(showComparisonModal || showComparisonView ? "visible" : "")">
+		<button class="btn btn-toggle" @onclick="ToggleComparisonView">
+			<i class="fas @(showComparisonModal ? "fa-expand-alt" : "fa-compress-alt")"></i>
+			<span>@(showComparisonModal ? "Enhanced View" : "Simple View")</span>
+		</button>
 	</div>
 
 	<div class="dashboard-tabs">
@@ -412,7 +420,7 @@
 											</td>
 											<td>
 												<button class="btn btn-sm btn-outline-primary"
-														@onclick="() => ViewDetailComparison(detail)">
+														@onclick='() => ViewDetailComparison(detail)'>
 													View
 												</button>
 											</td>
@@ -454,237 +462,241 @@
 	</div>
 
 	@if (showComparisonModal && selectedDetail != null)
-	{
-		<div class="modal-backdrop animate__animated animate__fadeIn" @onclick="CloseComparisonView"></div>
-		<div class="comparison-modal animate__animated animate__fadeInUp">
-			<div class="modal-header">
-				<h3>Test Case Comparison</h3>
-				<div class="header-actions">
-					<button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => ViewDetailComparisonEnhanced(selectedDetail)">
-						<i class="fas fa-expand-alt me-1"></i> Enhanced View
-					</button>
-					<button type="button" class="btn-close" @onclick="CloseComparisonView"></button>
-				</div>
-			</div>
-			<div class="modal-body">
-				<div class="detail-section">
-					<h4>Question</h4>
-					<div class="question-box">@selectedDetail.Question</div>
+{
+    <div class="modal-backdrop animate__animated animate__fadeIn" @onclick="CloseComparisonView"></div>
+    <div class="comparison-modal animate__animated animate__fadeInUp">
+        <div class="modal-header">
+            <h3>Test Case Comparison</h3>
+            <div class="header-actions">
+                <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick='() => ViewDetailComparisonEnhanced(selectedDetail)'>
+                    <i class="fas fa-expand-alt me-1"></i> Enhanced View
+                </button>
+                <button type="button" class="btn-close" @onclick="CloseComparisonView"></button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="detail-section">
+                <h4>Question</h4>
+                <div class="question-box">@selectedDetail.Question</div>
 
-					<div class="detail-meta">
-						<div class="meta-item">
-							<span class="meta-label">Category:</span>
-							<span class="meta-value">@selectedDetail.QueryCategory</span>
-						</div>
-						<div class="meta-item">
-							<span class="meta-label">Complexity:</span>
-							<span class="meta-value">@selectedDetail.ComplexityLevel</span>
-						</div>
-						<div class="meta-item">
-							<span class="meta-label">Status:</span>
-							<span class="meta-value @(selectedDetail.Success ? "success" : "error")">
-								@(selectedDetail.Success ? "Success" : "Failed")
-							</span>
-						</div>
-						<div class="meta-item">
-							<span class="meta-label">Execution Time:</span>
-							<span class="meta-value">@(selectedDetail.ExecutionTimeMs) ms</span>
-						</div>
-					</div>
-				</div>
+                <div class="detail-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Category:</span>
+                        <span class="meta-value">@selectedDetail.QueryCategory</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Complexity:</span>
+                        <span class="meta-value">@selectedDetail.ComplexityLevel</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Status:</span>
+                        <span class="meta-value @(selectedDetail.Success ? "success" : "error")">
+                            @(selectedDetail.Success ? "Success" : "Failed")
+                        </span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Execution Time:</span>
+                        <span class="meta-value">@(selectedDetail.ExecutionTimeMs) ms</span>
+                    </div>
+                </div>
+            </div>
 
-				<div class="comparison-tabs">
-					<div class="tab @(activeComparisonTab == "sql" ? "active" : "")"
-						 @onclick='() => SetActiveComparisonTab("sql")'>
-						SQL Comparison
-					</div>
-					<div class="tab @(activeComparisonTab == "explanation" ? "active" : "")"
-						 @onclick='() => SetActiveComparisonTab("explanation")'>
-						Explanation
-					</div>
-					<div class="tab @(activeComparisonTab == "data" ? "active" : "")"
-						 @onclick='() => SetActiveComparisonTab("data")'>
-						Data Results
-					</div>
-				</div>
+            <div class="comparison-tabs">
+                <div class="tab @(activeComparisonTab == "sql" ? "active" : "")"
+                     @onclick='() => SetActiveComparisonTab("sql")'>
+                    SQL Comparison
+                </div>
+                <div class="tab @(activeComparisonTab == "explanation" ? "active" : "")"
+                     @onclick='() => SetActiveComparisonTab("explanation")'>
+                    Explanation
+                </div>
+                <div class="tab @(activeComparisonTab == "data" ? "active" : "")"
+                     @onclick='() => SetActiveComparisonTab("data")'>
+                    Data Results
+                </div>
+            </div>
 
-				<!-- Replace the SQL and explanation comparison sections with this -->
-				@if (activeComparisonTab == "sql")
-				{
-					<div class="comparison-content animate__animated animate__fadeIn">
-						<div class="comparison-header">
-							<h5>
-								SQL Comparison
-								<span class="score-badge @GetScoreClass(selectedDetail.SQLMatchScore)">
-									Match Score: @FormatPercent(selectedDetail.SQLMatchScore)
-								</span>
-							</h5>
-						</div>
+            @if (activeComparisonTab == "sql")
+            {
+                <div class="comparison-content animate__animated animate__fadeIn">
+                    <div class="comparison-header">
+                        <h5>
+                            SQL Comparison
+                            <span class="score-badge @GetScoreClass(selectedDetail.SQLMatchScore)">
+                                Match Score: @FormatPercent(selectedDetail.SQLMatchScore)
+                            </span>
+                        </h5>
+                    </div>
 
-						<div class="code-comparison">
-							<div class="code-column">
-								<div class="code-header">
-									<h6>Expected SQL</h6>
-									<button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(selectedDetail.ExpectedSQL)">
-										<i class="fas fa-copy"></i>
-									</button>
-								</div>
-								<pre class="code-block expected">@selectedDetail.ExpectedSQL</pre>
-							</div>
+                    <div class="code-comparison">
+                        <div class="code-column">
+                            <div class="code-header">
+                                <h6>Expected SQL</h6>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(selectedDetail.ExpectedSQL)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <pre class="code-block expected">@selectedDetail.ExpectedSQL</pre>
+                        </div>
 
-							<div class="code-column">
-								<div class="code-header">
-									<h6>Generated SQL</h6>
-									<button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(selectedDetail.GeneratedSQL)">
-										<i class="fas fa-copy"></i>
-									</button>
-								</div>
-								<pre class="code-block generated">@selectedDetail.GeneratedSQL</pre>
-							</div>
-						</div>
-					</div>
-				}
-				else if (activeComparisonTab == "explanation")
-				{
-					<div class="comparison-content animate__animated animate__fadeIn">
-						<div class="comparison-header">
-							<h5>
-								Explanation Comparison
-								<span class="score-badge @GetScoreClass(selectedDetail.ExplanationMatchScore)">
-									Match Score: @FormatPercent(selectedDetail.ExplanationMatchScore)
-								</span>
-							</h5>
-						</div>
+                        <div class="code-column">
+                            <div class="code-header">
+                                <h6>Generated SQL</h6>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CopyToClipboard(selectedDetail.GeneratedSQL)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <pre class="code-block generated">@selectedDetail.GeneratedSQL</pre>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (activeComparisonTab == "explanation")
+            {
+                <div class="comparison-content animate__animated animate__fadeIn">
+                    <div class="comparison-header">
+                        <h5>
+                            Explanation Comparison
+                            <span class="score-badge @GetScoreClass(selectedDetail.ExplanationMatchScore)">
+                                Match Score: @FormatPercent(selectedDetail.ExplanationMatchScore)
+                            </span>
+                        </h5>
+                    </div>
 
-						<div class="text-comparison">
-							<div class="text-column">
-								<div class="text-header">
-									<h6>Expected Explanation</h6>
-								</div>
-								<div class="text-block expected">@selectedDetail.ExpectedExplanation</div>
-							</div>
+                    <div class="text-comparison">
+                        <div class="text-column">
+                            <div class="text-header">
+                                <h6>Expected Explanation</h6>
+                            </div>
+                            <div class="text-block expected">@selectedDetail.ExpectedExplanation</div>
+                        </div>
 
-							<div class="text-column">
-								<div class="text-header">
-									<h6>Generated Explanation</h6>
-								</div>
-								<div class="text-block generated">@selectedDetail.GeneratedExplanation</div>
-							</div>
-						</div>
-					</div>
-				}
-				else if (activeComparisonTab == "data")
-				{
-					<div class="comparison-content animate__animated animate__fadeIn">
-						<div class="comparison-header">
-							<h5>
-								Data Results Comparison
-								<span class="score-badge @GetScoreClass(selectedDetail.DataMatchScore)">
-									Match Score: @FormatPercent(selectedDetail.DataMatchScore)
-								</span>
-							</h5>
-						</div>
+                        <div class="text-column">
+                            <div class="text-header">
+                                <h6>Generated Explanation</h6>
+                            </div>
+                            <div class="text-block generated">@selectedDetail.GeneratedExplanation</div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (activeComparisonTab == "data")
+            {
+                <div class="comparison-content animate__animated animate__fadeIn">
+                    <div class="comparison-header">
+                        <h5>
+                            Data Results Comparison
+                            <span class="score-badge @GetScoreClass(selectedDetail.DataMatchScore)">
+                                Match Score: @FormatPercent(selectedDetail.DataMatchScore)
+                            </span>
+                        </h5>
+                    </div>
 
-						<div class="dataset-meta">
-							<div class="meta-item">
-								<span class="meta-label">Expected Rows:</span>
-								<span class="meta-value">@selectedDetail.ExpectedRowCount</span>
-							</div>
-							<div class="meta-item">
-								<span class="meta-label">Actual Rows:</span>
-								<span class="meta-value">@selectedDetail.ActualRowCount</span>
-							</div>
-							<div class="meta-item">
-								<span class="meta-label">Result Status:</span>
-								<span class="meta-value">@selectedDetail.ResultMatchStatus</span>
-							</div>
-						</div>
+                    <div class="dataset-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Expected Rows:</span>
+                            <span class="meta-value">@selectedDetail.ExpectedRowCount</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Actual Rows:</span>
+                            <span class="meta-value">@selectedDetail.ActualRowCount</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Result Status:</span>
+                            <span class="meta-value">@selectedDetail.ResultMatchStatus</span>
+                        </div>
+                    </div>
 
-						@if (isLoadingDatasets)
-						{
-							<div class="loading-container">
-								<div class="spinner-border text-primary" role="status">
-									<span class="visually-hidden">Loading...</span>
-								</div>
-								<p>Loading datasets...</p>
-							</div>
-						}
-						else if ((comparisonData.Expected == null || !comparisonData.Expected.Any()) &&
-						(comparisonData.Actual == null || !comparisonData.Actual.Any()))
-						{
-							<div class="empty-state">
-								<i class="fas fa-database fa-3x mb-3"></i>
-								<h4>No dataset comparison available</h4>
-								<p>The datasets could not be loaded or may be empty.</p>
-								<button class="btn btn-outline-primary mt-3" @onclick="() => LoadDatasetComparison(selectedDetail.DetailID)">
-									<i class="fas fa-sync-alt me-2"></i> Retry Loading
-								</button>
-							</div>
-						}
-						else
-						{
-							<div class="dataset-tabs">
-								<div class="tab @(activeDatasetTab == "expected" ? "active" : "")"
-									 @onclick='() => SetActiveDatasetTab("expected")'>
-									Expected Dataset
-								</div>
-								<div class="tab @(activeDatasetTab == "actual" ? "active" : "")"
-									 @onclick='() => SetActiveDatasetTab("actual")'>
-									Actual Dataset
-								</div>
-								<div class="tab @(activeDatasetTab == "diff" ? "active" : "")"
-									 @onclick='() => SetActiveDatasetTab("diff")'>
-									Differences
-								</div>
-							</div>
+                    @if (isLoadingDatasets)
+                    {
+                        <div class="loading-container">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading datasets...</p>
+                        </div>
+                    }
+                    else if ((comparisonData?.Expected == null || !comparisonData.Expected.Any()) &&
+                            (comparisonData?.Actual == null || !comparisonData.Actual.Any()))
+                    {
+                        <div class="empty-state">
+                            <i class="fas fa-database fa-3x mb-3"></i>
+                            <h4>No dataset comparison available</h4>
+                            <p>The datasets could not be loaded or may be empty.</p>
+                            <button class="btn btn-outline-primary mt-3" @onclick="() => LoadDatasetComparison(selectedDetail.DetailID)">
+                                <i class="fas fa-sync-alt me-2"></i> Retry Loading
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="dataset-tabs">
+                            <div class="tab @(activeDatasetTab == "expected" ? "active" : "")"
+                                 @onclick='() => SetActiveDatasetTab("expected")'>
+                                Expected Dataset
+                            </div>
+                            <div class="tab @(activeDatasetTab == "actual" ? "active" : "")"
+                                 @onclick='() => SetActiveDatasetTab("actual")'>
+                                Actual Dataset
+                            </div>
+                            <div class="tab @(activeDatasetTab == "diff" ? "active" : "")"
+                                 @onclick='() => SetActiveDatasetTab("diff")'>
+                                Differences
+                            </div>
+                        </div>
 
-							<div class="dataset-content">
-								@if (activeDatasetTab == "expected" && comparisonData.Expected != null)
-								{
-									<DatasetView Dataset="comparisonData.expected" />
-								}
-								else if (activeDatasetTab == "actual" && comparisonData.Actual != null)
-								{
-									<DatasetView Dataset="comparisonData.actual" />
-								}
-								else if (activeDatasetTab == "diff")
-								{
-									<DatasetDiffView Expected="comparisonData.Expected" Actual="comparisonData.Actual" />
-								}
-								else
-								{
-									<div class="empty-state">
-										<i class="fas fa-table fa-3x mb-3"></i>
-										<h4>No data available</h4>
-										<p>The selected dataset is not available.</p>
-									</div>
-								}
-							</div>
-						}
-
-					</div>
-				}
-			</div>
-			<div class="modal-footer">
-				<button class="btn btn-primary" @onclick="CloseComparisonView">
-					<i class="fas fa-check me-2"></i>Close
-				</button>
-			</div>
-		</div>
-	}
+                        <div class="dataset-content">
+                            @if (activeDatasetTab == "expected" && comparisonData.Expected != null)
+                            {
+                                <Components.TestDashboard.DatasetView Dataset="comparisonData.Expected" />
+                            }
+                            else if (activeDatasetTab == "actual" && comparisonData.Actual != null)
+                            {
+                                <Components.TestDashboard.DatasetView Dataset="comparisonData.Actual" />
+                            }
+                            else if (activeDatasetTab == "diff")
+                            {
+                                <Components.TestDashboard.DatasetDiffView Expected="comparisonData.Expected" Actual="comparisonData.Actual" />
+                            }
+                            else
+                            {
+                                <div class="empty-state">
+                                    <i class="fas fa-table fa-3x mb-3"></i>
+                                    <h4>No data available</h4>
+                                    <p>The selected dataset is not available.</p>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" @onclick="CloseComparisonView">
+                <i class="fas fa-check me-2"></i>Close
+            </button>
+        </div>
+    </div>
+}
 
 	<div class="import-json-section">
 		<div class="card">
-			<div class="card-header">
+			<div class="card-header bg-primary text-white">
 				<h4><i class="fas fa-file-import me-2"></i>Import JSON Test Cases</h4>
 			</div>
 			<div class="card-body">
 				<div class="form-group mb-3">
 					<label>Paste JSON Test Cases:</label>
-					<textarea class="form-control" rows="8" @bind="jsonTestCases"></textarea>
+					<textarea class="form-control" rows="8" @bind="jsonTestCases" placeholder="Paste your JSON test cases here..."></textarea>
+					<small class="form-text text-muted">
+						Format: { "databaseId": 1, "testCases": [{ "question": "...", "expectedSql": "...", ... }] }
+					</small>
 				</div>
-				<div class="form-group">
-					<button class="btn btn-primary" @onclick="ImportJsonTestCases">
+				<div class="form-group d-flex justify-content-between">
+					<button class="btn btn-outline-secondary" @onclick="ClearJsonInput">
+						<i class="fas fa-eraser me-2"></i>Clear
+					</button>
+					<button class="btn btn-primary" @onclick="ImportJsonTestCases" disabled="@string.IsNullOrWhiteSpace(jsonTestCases)">
 						<i class="fas fa-file-excel me-2"></i>Generate Excel Template
 					</button>
 				</div>
@@ -710,6 +722,13 @@
 </div>
 
 @code {
+	// Add this to the @code block to handle the clear button
+	private void ClearJsonInput()
+	{
+		jsonTestCases = string.Empty;
+	}
+
+	// Note: Make sure the CopyToClipboard method is implemented in the codebehind
 	private async Task CopyToClipboard(string text)
 	{
 		if (string.IsNullOrEmpty(text))

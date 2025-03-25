@@ -3,46 +3,20 @@
   "WorkspaceRootPath": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\utilities\\comparisonutilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\utilities\\comparisonutilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\testautomation\\testautomationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\testautomation\\testautomationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\repositories\\comparisonautomation\\testautomationrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\repositories\\comparisonautomation\\testautomationrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\llm\\databricksllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\llm\\databricksllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\USER\\AppData\\Local\\SourceServer\\233f0387893ca64bdfaf807fc5dffa0c6f4db27b65a20d7da160e6aae5a91d75\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\USER\\AppData\\Local\\SourceServer\\5a63a0ac833093484a981c14da2a607d55cf59510503f010d93304ff7bad0f97\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\testdashboard.razor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\testdashboard.razor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\datasetcomparisonview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\datasetcomparisonview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\testdashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\testdashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\testautomation\\datasetcomparisonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\testautomation\\datasetcomparisonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\testdashboard.razor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\pages\\admin\\testdashboard.razor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\datasetcomparisonview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\datasetcomparisonview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\models\\testautomation\\datasetcomparison.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\models\\testautomation\\datasetcomparison.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\helper\\dictionaryobjectconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\helper\\dictionaryobjectconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\datasetcomparisonview.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
@@ -51,6 +25,48 @@
     {
       "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\testcasecomparisonview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\testcasecomparisonview.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\testcasecomparisonview.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\testcasecomparisonview.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\testautomation\\datasetcomparisonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\testautomation\\datasetcomparisonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\controllers\\database\\relationshipcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\controllers\\database\\relationshipcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\repositories\\databaseschema\\databaseschemarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\repositories\\databaseschema\\databaseschemarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\llm\\databricksllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\llm\\databricksllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\testautomation\\testautomationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\testautomation\\testautomationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\utilities\\comparisonutilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\utilities\\comparisonutilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\repositories\\comparisonautomation\\testautomationrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\repositories\\comparisonautomation\\testautomationrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\USER\\AppData\\Local\\SourceServer\\233f0387893ca64bdfaf807fc5dffa0c6f4db27b65a20d7da160e6aae5a91d75\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\USER\\AppData\\Local\\SourceServer\\5a63a0ac833093484a981c14da2a607d55cf59510503f010d93304ff7bad0f97\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\models\\testautomation\\datasetcomparison.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\models\\testautomation\\datasetcomparison.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -63,10 +79,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\models\\testautomation\\testdetailmetadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\models\\testautomation\\testdetailmetadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\projects\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\testcasecomparisonview.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\testcasecomparisonview.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\USER\\AppData\\Local\\Temp\\txbfrfkp..sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}|"
@@ -83,11 +95,203 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 11,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DictionaryObjectConverter.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Helper\\DictionaryObjectConverter.cs",
+              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Helper\\DictionaryObjectConverter.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Helper\\DictionaryObjectConverter.cs",
+              "RelativeToolTip": "DynamicDashboardCommon\\Helper\\DictionaryObjectConverter.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC0AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T16:55:25.634Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "DatabaseSchemaRepository.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\DataBaseSchema\\DatabaseSchemaRepository.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Repositories\\DataBaseSchema\\DatabaseSchemaRepository.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\DataBaseSchema\\DatabaseSchemaRepository.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Repositories\\DataBaseSchema\\DatabaseSchemaRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T11:13:01.668Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "DatasetComparisonView.razor.css",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
+              "RelativeToolTip": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
+              "ViewState": "AgIAAI0BAAAAAAAAAAAowLEBAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-03-24T10:37:18.845Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "DatasetComparisonView.razor",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
+              "RelativeToolTip": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
+              "ViewState": "AgIAABkBAAAAAAAAAAAEwEoBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-03-24T10:36:45.393Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Program.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Program.cs",
+              "ViewState": "AgIAACoAAAAAAAAAAAAAAF4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T10:35:34.623Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "TestDetailMetadata.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
+              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
+              "RelativeToolTip": "DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADEAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T10:34:01.3Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "DataSetComparisonService.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADgAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T10:18:22.941Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "DataSetComparison.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
+              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
+              "RelativeToolTip": "DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
+              "ViewState": "AgIAADcAAAAAAAAAAAAAAGIAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T10:16:23.655Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "DataBricksLLMService.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEYAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T07:27:01.541Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "TestAutomationService.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
+              "ViewState": "AgIAAIwAAAAAAAAAAAAAALMAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T07:27:01.572Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 5,
+              "Title": "TestCaseComparisonView.razor",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
+              "RelativeToolTip": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
+              "ViewState": "AgIAAKcBAAAAAAAAAAAEwM4BAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-03-24T07:54:11.891Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "TestDashboard.razor",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor*",
+              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor*",
+              "ViewState": "AgIAAG4BAAAAAAAAAAAEwKgBAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-03-24T07:32:23.187Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "TestDashboard.razor.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
+              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
+              "ViewState": "AgIAAKIBAAAAAAAAAAAEwM0BAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T07:27:01.532Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "RelationshipController.cs",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\DataBase\\RelationshipController.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Controllers\\DataBase\\RelationshipController.cs",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\DataBase\\RelationshipController.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Controllers\\DataBase\\RelationshipController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC0AAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-24T16:01:56.186Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "TestCaseComparisonView.razor.css",
+              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
+              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
+              "RelativeToolTip": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
+              "ViewState": "AgIAAJMCAAAAAAAAAAAowOMCAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-03-24T07:55:41.286Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
               "Title": "TestAutomationService.cs",
               "DocumentMoniker": "C:\\Users\\USER\\AppData\\Local\\SourceServer\\5a63a0ac833093484a981c14da2a607d55cf59510503f010d93304ff7bad0f97\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\Users\\USER\\AppData\\Local\\SourceServer\\5a63a0ac833093484a981c14da2a607d55cf59510503f010d93304ff7bad0f97\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
@@ -100,148 +304,25 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "TestDashboard.razor.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
-              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor.cs",
-              "ViewState": "AgIAAHAAAAAAAAAAAAAAwLgAAABoAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T07:27:01.532Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "DatasetComparisonView.razor.css",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
-              "RelativeToolTip": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor.css",
-              "ViewState": "AgIAAG8BAAAAAAAAAAAowL8BAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2025-03-24T10:37:18.845Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "DatasetComparisonView.razor",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Components\\DatasetComparisonView.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAmAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-24T10:36:45.393Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Program.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Program.cs",
-              "ViewState": "AgIAACoAAAAAAAAAAAAAAF4AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T10:35:34.623Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "TestDetailMetadata.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
-              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
-              "RelativeToolTip": "DynamicDashboardCommon\\Models\\TestAutomation\\TestDetailMetadata.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAADEAAAA6AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T10:34:01.3Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "DataSetComparisonService.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\TestAutomation\\DataSetComparisonService.cs",
-              "ViewState": "AgIAAO4AAAAAAAAAAAAUwBUBAAAVAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T10:18:22.941Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "DataSetComparison.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
-              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
-              "RelativeToolTip": "DynamicDashboardCommon\\Models\\TestAutomation\\DataSetComparison.cs",
-              "ViewState": "AgIAADcAAAAAAAAAAAAAAGIAAAAoAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T10:16:23.655Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "DataBricksLLMService.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEwAAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T07:27:01.541Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "TestAutomationService.cs",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
-              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\TestAutomation\\TestAutomationService.cs",
-              "ViewState": "AgIAAJgAAAAAAAAAAAAEwL8AAAAtAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-24T07:27:01.572Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 12,
-              "Title": "TestCaseComparisonView.razor",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor",
-              "ViewState": "AgIAAOgBAAAAAAAAAAAAACACAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-24T07:54:11.891Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
               "Title": "ComparisonUtilities.cs",
               "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Utilities\\ComparisonUtilities.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Utilities\\ComparisonUtilities.cs",
               "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Utilities\\ComparisonUtilities.cs",
               "RelativeToolTip": "DynamicDasboardWebAPI\\Utilities\\ComparisonUtilities.cs",
-              "ViewState": "AgIAAA8BAAAAAAAAAAAAAC8BAAAwAAAAAAAAAA==",
+              "ViewState": "AgIAAA8BAAAAAAAAAAAAAB0BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-24T07:43:52.74Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 13,
               "Title": "TestAutomationRepository.cs",
               "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\ComparisonAutomation\\TestAutomationRepository.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Repositories\\ComparisonAutomation\\TestAutomationRepository.cs",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\ComparisonAutomation\\TestAutomationRepository.cs*",
-              "RelativeToolTip": "DynamicDasboardWebAPI\\Repositories\\ComparisonAutomation\\TestAutomationRepository.cs*",
+              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Repositories\\ComparisonAutomation\\TestAutomationRepository.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Repositories\\ComparisonAutomation\\TestAutomationRepository.cs",
               "ViewState": "AgIAAGcBAAAAAAAAAAAEwKABAAAdAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-24T07:27:01.561Z",
@@ -249,7 +330,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 14,
               "Title": "DataBricksLLMService.cs",
               "DocumentMoniker": "C:\\Users\\USER\\AppData\\Local\\SourceServer\\233f0387893ca64bdfaf807fc5dffa0c6f4db27b65a20d7da160e6aae5a91d75\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\Users\\USER\\AppData\\Local\\SourceServer\\233f0387893ca64bdfaf807fc5dffa0c6f4db27b65a20d7da160e6aae5a91d75\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
@@ -262,20 +343,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "TestDashboard.razor",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor",
-              "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\TestDashboard.razor",
-              "ViewState": "AgIAAI8CAAAAAAAAAAAAALUCAAAbAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-03-24T07:32:23.187Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 21,
               "Title": "NavMenu.razor",
               "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Layout\\NavMenu.razor",
               "RelativeDocumentMoniker": "DynamicDashboardFE\\Layout\\NavMenu.razor",
@@ -287,7 +355,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 18,
               "Title": "TestAutomationController.cs",
               "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\ComparisonAutomation\\TestAutomationController.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Controllers\\ComparisonAutomation\\TestAutomationController.cs",
@@ -299,7 +367,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 20,
               "Title": "txbfrfkp..sql",
               "DocumentMoniker": "C:\\Users\\USER\\AppData\\Local\\Temp\\txbfrfkp..sql",
               "RelativeDocumentMoniker": "..\\..\\..\\Users\\USER\\AppData\\Local\\Temp\\txbfrfkp..sql",
@@ -307,18 +375,6 @@
               "RelativeToolTip": "..\\..\\..\\Users\\USER\\AppData\\Local\\Temp\\txbfrfkp..sql",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
               "WhenOpened": "2025-03-24T07:37:41.53Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 16,
-              "Title": "TestCaseComparisonView.razor.css",
-              "DocumentMoniker": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
-              "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
-              "ToolTip": "C:\\Projects\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
-              "RelativeToolTip": "DynamicDashboardFE\\Components\\TestCaseComparisonView.razor.css",
-              "ViewState": "AgIAAGkCAAAAAAAAAAAcwJMCAAASAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2025-03-24T07:55:41.286Z"
             }
           ]
         }

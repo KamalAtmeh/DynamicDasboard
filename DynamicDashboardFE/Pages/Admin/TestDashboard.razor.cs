@@ -338,15 +338,12 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        /// <summary>
-        /// Loads dataset comparison data and hides SQL/explanation comparison.
-        /// </summary>
         private async Task ViewDetailComparison(TestAutomationDetail detail)
         {
             selectedDetail = detail;
-            showComparisonView = true; // Use our enhanced view only
-            //SetActiveComparisonTab("sql");
-            //SetActiveDatasetTab("expected");
+            showComparisonModal = true;
+            SetActiveComparisonTab("datasets"); // Default to datasets tab
+            SetActiveDatasetTab("expected");
 
             // Load dataset comparison data
             await LoadDatasetComparison(detail.DetailID);
@@ -355,7 +352,7 @@ namespace DynamicDashboardFE.Pages.Admin
         // These are the updated/fixed methods for TestDashboard.razor.cs specifically focused on comparison functionality
 
         /// <summary>
-        /// Loads dataset comparison data for visualization.
+        /// Loads dataset comparison data for visualization with improved error handling
         /// </summary>
         private async Task LoadDatasetComparison(int detailId)
         {
@@ -364,21 +361,24 @@ namespace DynamicDashboardFE.Pages.Admin
                 isLoadingDatasets = true;
                 StateHasChanged(); // Update UI to show loading state
 
-                // Log the request for troubleshooting
-                var response = await Http.GetAsync($"api/testautomation/comparison/{detailId}");
+                // Set a timeout for the API call to prevent indefinite loading
+                using var cts = new CancellationTokenSource();
+                cts.CancelAfter(TimeSpan.FromSeconds(30)); // 30-second timeout
+
+                var response = await Http.GetAsync($"api/testautomation/comparison/{detailId}", cts.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    toastService.ShowError($"Error loading comparison data: {errorContent}");
+                    toastService.ShowError($"Error loading comparison data: {response.StatusCode}");
+                    Console.Error.WriteLine($"API Error: {errorContent}");
+
                     comparisonData = new DatasetComparisonResult
                     {
+                        ComparisonSummary = $"Failed to load comparison data: {response.StatusCode}",
                         Expected = new List<Dictionary<string, object>>(),
                         Actual = new List<Dictionary<string, object>>()
                     };
-
-                    // Log the error response
-                    await JSRuntime.InvokeVoidAsync("console.log", $"Error response: {errorContent}");
                     return;
                 }
 
@@ -386,16 +386,28 @@ namespace DynamicDashboardFE.Pages.Admin
 
                 try
                 {
-                    // Use a custom JsonSerializerOptions for more flexibility
+                    // Use System.Text.Json with custom options
                     var options = new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true,
-                        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
-                        Converters = { new DictionaryObjectConverter() } // Custom converter for Dictionary<string, object>
+                        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                        Converters = { new DynamicDashboardCommon.Helper.DictionaryObjectConverter() }
                     };
 
                     // Deserialize into DatasetComparisonResult
                     var result = JsonSerializer.Deserialize<DatasetComparisonResult>(responseContent, options);
+
+                    if (result == null)
+                    {
+                        toastService.ShowError("Failed to parse comparison data");
+                        comparisonData = new DatasetComparisonResult
+                        {
+                            ComparisonSummary = "Failed to parse comparison data",
+                            Expected = new List<Dictionary<string, object>>(),
+                            Actual = new List<Dictionary<string, object>>()
+                        };
+                        return;
+                    }
 
                     // Set the comparison data
                     comparisonData = result;
@@ -407,15 +419,17 @@ namespace DynamicDashboardFE.Pages.Admin
                     // Log success and count information
                     int expectedCount = result.Expected?.Count ?? 0;
                     int actualCount = result.Actual?.Count ?? 0;
-                    await JSRuntime.InvokeVoidAsync("console.log", $"Successfully loaded {expectedCount} expected and {actualCount} actual records.");
+                    Console.WriteLine($"Successfully loaded {expectedCount} expected and {actualCount} actual records.");
                 }
                 catch (JsonException jsonEx)
                 {
                     toastService.ShowError($"Error parsing comparison data: {jsonEx.Message}");
+                    Console.Error.WriteLine($"JSON Error: {jsonEx}");
 
                     // Set empty data in case of error
                     comparisonData = new DatasetComparisonResult
                     {
+                        ComparisonSummary = $"Error parsing comparison data: {jsonEx.Message}",
                         Expected = new List<Dictionary<string, object>>(),
                         Actual = new List<Dictionary<string, object>>()
                     };
@@ -424,10 +438,12 @@ namespace DynamicDashboardFE.Pages.Admin
             catch (Exception ex)
             {
                 toastService.ShowError($"Error loading dataset comparison: {ex.Message}");
+                Console.Error.WriteLine($"Generic Error: {ex}");
 
                 // Set empty data in case of error
                 comparisonData = new DatasetComparisonResult
                 {
+                    ComparisonSummary = $"Error: {ex.Message}",
                     Expected = new List<Dictionary<string, object>>(),
                     Actual = new List<Dictionary<string, object>>()
                 };
@@ -443,11 +459,17 @@ namespace DynamicDashboardFE.Pages.Admin
         {
             // Close both views to ensure nothing remains open
             showComparisonView = false;
-            showComparisonModal = false;  // Add this line to fix the issue
-            comparisonData = new DatasetComparisonResult();
+            showComparisonModal = false;
+
             // Reset related data
+            comparisonData = new DatasetComparisonResult
+            {
+                Expected = new List<Dictionary<string, object>>(),
+                Actual = new List<Dictionary<string, object>>(),
+                ComparisonSummary = "No comparison performed"
+            };
             comparisonDetail = null;
-            selectedDetail = null;  // Also reset selectedDetail
+            selectedDetail = null;
             expectedDataset = null;
             actualDataset = null;
 
@@ -540,12 +562,10 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        /// <summary>
-        /// Shows the enhanced TestCaseComparisonView component.
-        /// </summary>
         private async Task ViewDetailComparisonEnhanced(TestAutomationDetail detail)
         {
             comparisonDetail = detail;
+            selectedDetail = detail; // Ensure both are set for proper state management
 
             // Show loading indicator
             isLoadingDatasets = true;
@@ -556,12 +576,14 @@ namespace DynamicDashboardFE.Pages.Admin
                 // Load dataset comparison data
                 await LoadDatasetComparison(detail.DetailID);
 
-                // Update the component's data
+                // Show the enhanced view and hide the modal view
                 showComparisonView = true;
+                showComparisonModal = false;
             }
             catch (Exception ex)
             {
                 toastService.ShowError($"Error preparing comparison view: {ex.Message}");
+                Console.Error.WriteLine($"View Error: {ex}");
             }
             finally
             {
@@ -570,9 +592,6 @@ namespace DynamicDashboardFE.Pages.Admin
             }
         }
 
-        /// <summary>
-        /// Adds a toggle button to switch between the legacy and enhanced comparison views.
-        /// </summary>
         private void ToggleComparisonView()
         {
             if (showComparisonModal && selectedDetail != null)

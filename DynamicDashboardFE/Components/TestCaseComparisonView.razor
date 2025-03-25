@@ -54,7 +54,7 @@
                 </div>
             </div>
         </div>
-        <button class="close-btn" @onclick="OnClose">×</button>
+        <button class="close-btn" @onclick="CloseComparisonView">×</button>
     </div>
 
     <div class="tabs">
@@ -485,9 +485,9 @@
         }
     }
 
-    private async Task OnClose()
+    private async Task CloseComparisonView()
     {
-        await OnClosed.InvokeAsync();
+        await OnClose.InvokeAsync();
     }
 
     private void SetActiveTab(string tab)

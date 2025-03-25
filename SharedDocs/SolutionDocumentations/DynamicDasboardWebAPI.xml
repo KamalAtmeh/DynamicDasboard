@@ -1559,52 +1559,123 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService">
             <summary>
-            Service for comparing datasets without depending on external libraries.
+            Enhanced service for comparing datasets with flexible matching criteria.
+            Supports intelligent column matching, order-independent row comparison,
+            and configurable comparison limits.
             </summary>
         </member>
-        <member name="F:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.MaxRecordsToCompare">
+        <member name="F:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService._maxRecordsToCompare">
             <summary>
             Maximum number of records to compare when validating datasets.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareDatasets(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
+        <member name="F:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.ColumnSimilarityThreshold">
             <summary>
-            Compares two datasets to determine if they are functionally equivalent.
-            Datasets are considered equivalent if they have the same number of rows and
-            all common columns have matching values.
+            Threshold for column name similarity to consider two columns matching.
+            </summary>
+        </member>
+        <member name="F:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.RowSimilarityThreshold">
+            <summary>
+            Threshold for row content similarity to consider rows matching.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the DatasetComparisonService class.
+            </summary>
+            <param name="configuration">Application configuration.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareDatasets(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Nullable{System.Int32})">
+            <summary>
+            Compares two datasets with flexible matching criteria.
+            Datasets are compared based on content similarity regardless of structure.
             </summary>
             <param name="expected">The expected dataset</param>
             <param name="actual">The actual dataset</param>
+            <param name="maxRecords">Optional override for max records to compare</param>
             <returns>A detailed comparison result</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.AnalyzeColumnStructures(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult)">
             <summary>
-            Analyzes the column structures of both datasets and identifies common and unique columns.
+            Analyzes column structures of both datasets and identifies common and unique columns.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareDatasetRows(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult,System.Int32)">
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.FindBestColumnMappings(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult)">
             <summary>
-            Compares rows between datasets manually instead of using ObjectsComparer.
+            Finds the best mapping between columns in the expected and actual datasets.
+            Uses multiple strategies including exact matches, synonym matches, and similarity.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.FilterToCommonColumns(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.List{System.String})">
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.FindBestColumnMatch(System.String,System.Collections.Generic.List{System.String},System.Collections.Generic.Dictionary{System.String,System.Object})">
             <summary>
-            Filters a row dictionary to only include specified columns (case-insensitive).
+            Finds the best matching column name based on similarity and content patterns.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareRowsFlexibly(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.Dictionary{System.String,System.String},DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult,System.Int32)">
+            <summary>
+            Compares rows between datasets using flexible matching that ignores order.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.ExtractMappedValues(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.List{System.String})">
+            <summary>
+            Extracts values for mapped columns from a row.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.FindBestRowMatch(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}},System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Finds the best matching row in a set of rows based on content similarity.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CalculateRowSimilarity(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Calculates similarity between two rows based on their common columns.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareRowValues(System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.Object},System.Collections.Generic.Dictionary{System.String,System.String},System.Int32,System.Int32)">
+            <summary>
+            Compares individual values from two rows and returns differences.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.DetermineEquivalence(DynamicDashboardCommon.Models.TestAutomation.DatasetComparisonResult)">
+            <summary>
+            Determines overall equivalence based on comparison results.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CompareValues(System.Object,System.Object)">
             <summary>
-            Compares two values for equality, handling different types.
+            Compares two values for equality with type flexibility.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.IsNumeric(System.Object)">
             <summary>
-            Determines if an object is a numeric type.
+            Determines if an object represents a numeric value.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.FormatValue(System.Object)">
             <summary>
-            Formats a value for display.
+            Formats a value consistently for display and comparison.
+            Uses culture-invariant formatting to ensure consistency across environments.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.NormalizeColumnName(System.String)">
+            <summary>
+            Normalizes a column name for comparison by removing common prefixes/suffixes,
+            spaces, and non-alphanumeric characters.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.CalculateStringSimilarity(System.String,System.String)">
+            <summary>
+            Calculates string similarity using a combination of character-based and pattern-based matching.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.LevenshteinDistance(System.String,System.String)">
+            <summary>
+            Calculates Levenshtein distance between two strings.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService.ArePotentialSynonyms(System.String,System.String)">
+            <summary>
+            Determines if two column names are potential synonyms based on common naming patterns.
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.TestAutomation.TestAutomationService">
