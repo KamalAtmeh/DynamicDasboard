@@ -1,6 +1,7 @@
 ﻿@page "/dashboard"
 @using DynamicDashboardCommon.Models
 @using DynamicDashboardCommon.Models.LLM
+@using DynamicDashboardFE.Components.Dashboard
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject IToastService toastService
@@ -9,6 +10,8 @@
 	<div class="dashboard-container">
 		<!-- Header -->
 		<div class="dashboard-header">
+		<h1>Natural Language Query Dashboard</h1>
+
 			<div class="db-selector">
 				<select class="form-select" @onchange="OnDatabaseSelectionChanged">
 					<option value="0">-- Select Database --</option>
@@ -20,30 +23,200 @@
 			</div>
 
 			<!-- Search Bar -->
-			<div class="search-container">
-				<div class="input-group">
-					<input type="text" class="form-control" placeholder="Ask anything about your data..."
-						   @bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
-					<button class="btn btn-primary" @onclick="AnalyzeQuestion" disabled="@isLoading">
-						@if (isLoading)
-						{
-							<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-							<span>Processing...</span>
-						}
-						else
-						{
-							<i class="fas fa-search"></i>
-						}
-					</button>
-				</div>
-			</div>
-
-			<div class="user-menu">
-				<button class="btn btn-outline-secondary">
-					<i class="fas fa-cog"></i>
+		<div class="search-container">
+			<div class="input-group">
+				<input type="text" class="form-control" placeholder="Ask anything about your data..."
+					   @bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
+				<button class="btn btn-primary" @onclick="AnalyzeQuestion" disabled="@isLoading">
+					@if (isLoading)
+					{
+						<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+						<span>Processing...</span>
+					}
+					else
+					{
+						<i class="fas fa-search"></i>
+					}
 				</button>
 			</div>
 		</div>
+
+		<div class="user-menu">
+			<button class="btn btn-outline-secondary">
+				<i class="fas fa-cog"></i>
+			</button>
+		</div>
+	</div>
+	  <!-- Dashboard Metrics -->
+    <div class="metrics-container">
+        <MetricCard Title="Active Databases" Value="24" Trend="+12%" TrendIsPositive="true" />
+        <MetricCard Title="Queries Run" Value="1,458" Trend="+32%" TrendIsPositive="true" />
+        <MetricCard Title="Active Users" Value="386" Trend="+8%" TrendIsPositive="true" />
+        <MetricCard Title="Avg. Response Time" Value="2.8s" Trend="-15%" TrendIsPositive="true" />
+    </div>
+
+    <!-- Dashboard Charts -->
+    <div class="charts-container">
+        <ChartCard Title="Monthly Sales by Region" ChartId="monthlySalesChart" />
+        <ChartCard Title="Q1 vs Q2 Performance" ChartId="quarterlyPerformanceChart" />
+        <ChartCard Title="Top Products by Revenue" ChartId="topProductsChart" />
+        <ChartCard Title="Customer Acquisition Trends" ChartId="customerAcquisitionChart" />
+        <ChartCard Title="Sales Heatmap by Location" ChartId="salesHeatmapChart" />
+        <ChartCard Title="Marketing-Revenue Relationship" ChartId="marketingRevenueChart" />
+    </div>
+
+    <!-- Dashboard Content - keep all existing content -->
+    <div class="dashboard-content">
+        @if (!isExamplesLoading && suggestedQuestions.Count > 0 && executionResponse == null)
+        {
+            <div class="examples-container">
+                <h5>Try asking about:</h5>
+                <div class="examples-grid">
+                    @foreach (var example in suggestedQuestions)
+                    {
+                        <div class="example-card" @onclick="async () => await UseExample(example)">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>@example</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (executionResponse != null && executionResponse.Results != null)
+        {
+            <div class="results-container animate__animated animate__fadeIn">
+                <div class="results-header">
+                    <div>
+                        <h4>Results for: <span class="text-primary">@userQuestion</span></h4>
+                        @if (!string.IsNullOrEmpty(executionResponse.ResultExplanation))
+                        {
+                            <p class="results-explanation">
+                                <i class="fas fa-info-circle me-2"></i>
+                                @executionResponse.ResultExplanation
+                            </p>
+                        }
+                    </div>
+                    <div class="results-actions">
+                        <button class="btn btn-sm btn-outline-secondary me-2" @onclick="ShowSqlDetails">
+                            <i class="fas fa-code"></i> SQL
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary me-2" @onclick="ExportToExcel">
+                            <i class="fas fa-file-excel"></i> Export
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="ResetWorkflow">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="results-body">
+                    <!-- Keep all existing results-body content -->
+                    @if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Number)
+                    {
+                        <div class="metric-card">
+                            <div class="metric-value">@executionResponse.FormattedResult</div>
+                        </div>
+                    }
+                    else if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Label)
+                    {
+                        <div class="alert alert-info">
+                            @executionResponse.FormattedResult
+                        </div>
+                    }
+                    else if (executionResponse.Results.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        @foreach (var column in GetResultColumns(executionResponse.Results))
+                                        {
+                                            <th>@FormatColumnName(column)</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in GetPagedResults(executionResponse.Results))
+                                    {
+                                        <tr>
+                                            @foreach (var column in GetResultColumns(executionResponse.Results))
+                                            {
+                                                <td>@FormatValue(row.ContainsKey(column) ? row[column] : null)</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if (totalPages > 1)
+                        {
+                            <div class="pagination-container">
+                                <div>
+                                    Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, executionResponse.Results.Count)) of @executionResponse.Results.Count results
+                                </div>
+                                <ul class="pagination">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="javascript:void(0)" @onclick="PreviousPage">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+
+                                    @for (int i = startPage; i <= endPage; i++)
+                                    {
+                                        var pageNumber = i;
+                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                            <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPage(pageNumber)">
+                                                @pageNumber
+                                            </a>
+                                        </li>
+                                    }
+
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <a class="page-link" href="javascript:void(0)" @onclick="NextPage">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-results">
+                            <i class="fas fa-search"></i>
+                            <p>No results found for your query.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (string.IsNullOrEmpty(userQuestion) || isLoading)
+        {
+            <div class="empty-dashboard">
+                @if (isLoading)
+                {
+                    <div class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>@loadingMessage</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="welcome-message">
+                        <i class="fas fa-database mb-4"></i>
+                        <h3>Welcome to the Data Dashboard</h3>
+                        <p>Ask questions about your data in natural language</p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
 
 		<!-- Dashboard Content -->
 		<div class="dashboard-content">
@@ -193,7 +366,7 @@
 					}
 				</div>
 			}
-		</div>
+	
 	</div>
 
 	<!-- SQL Explanation Modal -->

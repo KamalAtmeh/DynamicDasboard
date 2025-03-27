@@ -408,3 +408,10 @@
         transform: translate3d(0, 0, 0);
     }
 }
+/* Sidebar and navigation-specific styles */
+.dashboard-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 60px);
+}
+

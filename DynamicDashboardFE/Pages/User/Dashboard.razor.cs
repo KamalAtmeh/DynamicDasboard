@@ -97,7 +97,7 @@ namespace DynamicDashboardFE.Pages.User
             {
                 // Load page size from configuration
                 pageSize = Configuration.GetValue("Pagination:PageSize", 10);
-
+                JSRuntime.InvokeVoidAsync("initDashboard");
                 // Load available databases
                 await LoadAvailableDatabases();
 
