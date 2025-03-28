@@ -204,6 +204,7 @@ namespace DynamicDashboardFE.Pages.User
             try
             {
                 isLoading = true;
+                JSRuntime.InvokeVoidAsync("Processing");
                 loadingMessage = "Analyzing your question...";
 
                 var request = new NlQueryRequest
@@ -306,6 +307,7 @@ namespace DynamicDashboardFE.Pages.User
             finally
             {
                 isLoading = false;
+                JSRuntime.InvokeVoidAsync("Loading", false);
             }
         }
 

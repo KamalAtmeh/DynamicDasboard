@@ -269,11 +269,8 @@
 									}
 
 									<div class="d-flex justify-content-end">
-										<button type="button" class="btn btn-primary" @onclick="SaveTableChanges">
+										<button type="button" class="btn btn-success" @onclick="SaveTableChanges">
 											<i class="fas fa-save me-2"></i> Save Changes
-										</button>
-										<button type="button" class="btn btn-primary" @onclick="GetOpimizedDBSchema">
-											<i class="fas fa-save me-2"></i> Test
 										</button>
 									</div>
 								</form>
@@ -1248,7 +1245,7 @@
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-secondary" @onclick="CloseColumnSynonymsModal">Close</button>
-				<button type="button" class="btn btn-primary" @onclick="SaveColumnSynonyms">Save Synonyms</button>
+				<button type="button" class="btn btn-outline-success" @onclick="SaveColumnSynonyms">Save Synonyms</button>
 			</div>
 		</div>
 	</div>
@@ -1462,7 +1459,7 @@
 				<button type="button" class="btn btn-secondary" @onclick="() => isTermMappingModalOpen = false">
 					Cancel
 				</button>
-				<button type="button" class="btn btn-primary" @onclick="SaveTermMapping">
+				<button type="button" class="btn btn-outline-success" @onclick="SaveTermMapping">
 					Save
 				</button>
 			</div>
@@ -1690,7 +1687,7 @@
 				@if (isEditingFormula)
 				{
 					<button type="button" class="btn btn-secondary" @onclick="CancelFormulaEdit">Cancel</button>
-					<button type="button" class="btn btn-primary"
+					<button type="button" class="btn btn-success"
 							@onclick="SaveFormulaChanges"
 							disabled="@(formulaValidationResult != null && !formulaValidationResult.IsValid)">
 						Save Changes

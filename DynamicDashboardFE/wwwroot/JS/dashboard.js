@@ -263,3 +263,37 @@ function initMarketingRevenueChart() {
 window.initDashboard = function () {
     setTimeout(initializeCharts, 500); // Wait for canvas elements to be rendered
 };
+
+function Processing() {
+    document.getElementById('vizLoadingSection').style.display = 'block';
+    document.getElementById('vizProgressBar').style.width = '0%';
+
+    // Scroll to loading visualization
+    document.getElementById('vizLoadingSection').scrollIntoView({ behavior: 'smooth' });
+
+    // Animate the progress bar
+    setTimeout(() => {
+        document.getElementById('vizProgressBar').style.width = '30%';
+        document.getElementById('step1').classList.add('completed');
+        document.getElementById('step2').classList.add('active');
+    }, 800);
+
+    setTimeout(() => {
+        document.getElementById('vizProgressBar').style.width = '60%';
+        document.getElementById('step2').classList.add('completed');
+        document.getElementById('step3').classList.add('active');
+    }, 2000);
+
+    setTimeout(() => {
+        document.getElementById('vizProgressBar').style.width = '85%';
+        document.getElementById('step3').classList.add('completed');
+        document.getElementById('step4').classList.add('active');
+    }, 3500);
+
+    setTimeout(() => {
+        document.getElementById('vizProgressBar').style.width = '100%';
+        document.getElementById('step4').classList.add('completed');
+    }, 4500);
+
+  
+}

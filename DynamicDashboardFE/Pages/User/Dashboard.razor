@@ -6,225 +6,75 @@
 @inject IJSRuntime JSRuntime
 @inject IToastService toastService
 
+<div class="page-header">
+	<h1 class="page-title">Dashboard</h1>
 
-	<div class="dashboard-container">
-		<!-- Header -->
-		<div class="dashboard-header">
-		<h1>Natural Language Query Dashboard</h1>
-
-			<div class="db-selector">
-				<select class="form-select" @onchange="OnDatabaseSelectionChanged">
-					<option value="0">-- Select Database --</option>
-					@foreach (var db in availableDatabases)
-					{
-						<option value="@db.DatabaseID">@(db.FriendlyName ?? db.Name)</option>
-					}
-				</select>
-			</div>
-
-			<!-- Search Bar -->
-		<div class="search-container">
-			<div class="input-group">
-				<input type="text" class="form-control" placeholder="Ask anything about your data..."
-					   @bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
-				<button class="btn btn-primary" @onclick="AnalyzeQuestion" disabled="@isLoading">
-					@if (isLoading)
-					{
-						<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-						<span>Processing...</span>
-					}
-					else
-					{
-						<i class="fas fa-search"></i>
-					}
-				</button>
-			</div>
-		</div>
-
-		<div class="user-menu">
-			<button class="btn btn-outline-secondary">
-				<i class="fas fa-cog"></i>
-			</button>
-		</div>
+	<div class="page-actions">
+		<button class="btn btn-primary">
+			<i class="fas fa-plus"></i> New Dashboard
+		</button>
+		<button class="btn btn-success">
+			<i class="fas fa-file-export"></i> Export
+		</button>
 	</div>
-	  <!-- Dashboard Metrics -->
-    <div class="metrics-container">
-        <MetricCard Title="Active Databases" Value="24" Trend="+12%" TrendIsPositive="true" />
-        <MetricCard Title="Queries Run" Value="1,458" Trend="+32%" TrendIsPositive="true" />
-        <MetricCard Title="Active Users" Value="386" Trend="+8%" TrendIsPositive="true" />
-        <MetricCard Title="Avg. Response Time" Value="2.8s" Trend="-15%" TrendIsPositive="true" />
-    </div>
 
-    <!-- Dashboard Charts -->
-    <div class="charts-container">
-        <ChartCard Title="Monthly Sales by Region" ChartId="monthlySalesChart" />
-        <ChartCard Title="Q1 vs Q2 Performance" ChartId="quarterlyPerformanceChart" />
-        <ChartCard Title="Top Products by Revenue" ChartId="topProductsChart" />
-        <ChartCard Title="Customer Acquisition Trends" ChartId="customerAcquisitionChart" />
-        <ChartCard Title="Sales Heatmap by Location" ChartId="salesHeatmapChart" />
-        <ChartCard Title="Marketing-Revenue Relationship" ChartId="marketingRevenueChart" />
-    </div>
-
-    <!-- Dashboard Content - keep all existing content -->
-    <div class="dashboard-content">
-        @if (!isExamplesLoading && suggestedQuestions.Count > 0 && executionResponse == null)
-        {
-            <div class="examples-container">
-                <h5>Try asking about:</h5>
-                <div class="examples-grid">
-                    @foreach (var example in suggestedQuestions)
-                    {
-                        <div class="example-card" @onclick="async () => await UseExample(example)">
-                            <i class="fas fa-lightbulb"></i>
-                            <span>@example</span>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-
-        @if (executionResponse != null && executionResponse.Results != null)
-        {
-            <div class="results-container animate__animated animate__fadeIn">
-                <div class="results-header">
-                    <div>
-                        <h4>Results for: <span class="text-primary">@userQuestion</span></h4>
-                        @if (!string.IsNullOrEmpty(executionResponse.ResultExplanation))
-                        {
-                            <p class="results-explanation">
-                                <i class="fas fa-info-circle me-2"></i>
-                                @executionResponse.ResultExplanation
-                            </p>
-                        }
-                    </div>
-                    <div class="results-actions">
-                        <button class="btn btn-sm btn-outline-secondary me-2" @onclick="ShowSqlDetails">
-                            <i class="fas fa-code"></i> SQL
-                        </button>
-                        <button class="btn btn-sm btn-outline-primary me-2" @onclick="ExportToExcel">
-                            <i class="fas fa-file-excel"></i> Export
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="ResetWorkflow">
-                            <i class="fas fa-times"></i> Clear
-                        </button>
-                    </div>
-                </div>
-
-                <div class="results-body">
-                    <!-- Keep all existing results-body content -->
-                    @if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Number)
-                    {
-                        <div class="metric-card">
-                            <div class="metric-value">@executionResponse.FormattedResult</div>
-                        </div>
-                    }
-                    else if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Label)
-                    {
-                        <div class="alert alert-info">
-                            @executionResponse.FormattedResult
-                        </div>
-                    }
-                    else if (executionResponse.Results.Count > 0)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        @foreach (var column in GetResultColumns(executionResponse.Results))
-                                        {
-                                            <th>@FormatColumnName(column)</th>
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in GetPagedResults(executionResponse.Results))
-                                    {
-                                        <tr>
-                                            @foreach (var column in GetResultColumns(executionResponse.Results))
-                                            {
-                                                <td>@FormatValue(row.ContainsKey(column) ? row[column] : null)</td>
-                                            }
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        @if (totalPages > 1)
-                        {
-                            <div class="pagination-container">
-                                <div>
-                                    Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, executionResponse.Results.Count)) of @executionResponse.Results.Count results
-                                </div>
-                                <ul class="pagination">
-                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                                        <a class="page-link" href="javascript:void(0)" @onclick="PreviousPage">
-                                            <i class="fas fa-chevron-left"></i>
-                                        </a>
-                                    </li>
-
-                                    @for (int i = startPage; i <= endPage; i++)
-                                    {
-                                        var pageNumber = i;
-                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
-                                            <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPage(pageNumber)">
-                                                @pageNumber
-                                            </a>
-                                        </li>
-                                    }
-
-                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                                        <a class="page-link" href="javascript:void(0)" @onclick="NextPage">
-                                            <i class="fas fa-chevron-right"></i>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="empty-results">
-                            <i class="fas fa-search"></i>
-                            <p>No results found for your query.</p>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-        else if (string.IsNullOrEmpty(userQuestion) || isLoading)
-        {
-            <div class="empty-dashboard">
-                @if (isLoading)
-                {
-                    <div class="loading-spinner">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p>@loadingMessage</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="welcome-message">
-                        <i class="fas fa-database mb-4"></i>
-                        <h3>Welcome to the Data Dashboard</h3>
-                        <p>Ask questions about your data in natural language</p>
-                    </div>
-                }
-            </div>
-        }
-    </div>
+	<div class="database-select-container">
+		<select id="databaseSelector" class="database-select" @onchange="OnDatabaseSelectionChanged">
+			<option value="0">-- Select Database --</option>
+			@foreach (var db in availableDatabases)
+			{
+				<option value="@db.DatabaseID">@(db.FriendlyName ?? db.Name)</option>
+			}
+		</select>
+		<i class="fas fa-database select-icon"></i>
+	</div>
 </div>
 
 
-		<!-- Dashboard Content -->
-		<div class="dashboard-content">
+
+
+
+
+<div class="card query-card">
+	<div class="card-header">
+		<div class="card-title">
+			<i class="fas fa-question-circle"></i>
+			<h3>Ask Your Question</h3>
+		</div>
+	</div>
+	<div class="card-body">
+		<textarea type="text" class="form-control" placeholder="Ask anything about your data in natural language. Example: Compare quarterly sales between North and South regions for Q1 2025...."
+				  @bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
+
+		<div class="query-actions">
+			<div class="query-tools">
+				<button class="query-history-btn">
+					<i class="fas fa-history"></i> Recent Queries
+				</button>
+				<button class="voice-input-btn" id="voiceInputBtn">
+					<i class="fas fa-microphone"></i>
+				</button>
+			</div>
+			<button class="btn btn-primary" @onclick="AnalyzeQuestion" disabled="@isLoading">
+				@if (isLoading)
+				{
+					<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+					<span>Processing...</span>
+				}
+				else
+				{
+					<i class="fas fa-bolt"></i>
+				}
+				Analyze Data
+			</button>
+		</div>
+
+		<div class="card-body">
 			@if (!isExamplesLoading && suggestedQuestions.Count > 0 && executionResponse == null)
 			{
 				<div class="examples-container">
 					<h5>Try asking about:</h5>
-					<div class="examples-grid">
+					<div class="question-chip">
 						@foreach (var example in suggestedQuestions)
 						{
 							<div class="example-card" @onclick="async () => await UseExample(example)">
@@ -264,6 +114,7 @@
 					</div>
 
 					<div class="results-body">
+						<!-- Keep all existing results-body content -->
 						@if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Number)
 						{
 							<div class="metric-card">
@@ -344,33 +195,87 @@
 					</div>
 				</div>
 			}
-			else if (string.IsNullOrEmpty(userQuestion) || isLoading)
-			{
-				<div class="empty-dashboard">
-					@if (isLoading)
-					{
-						<div class="loading-spinner">
-							<div class="spinner-border text-primary" role="status">
-								<span class="visually-hidden">Loading...</span>
-							</div>
-							<p>@loadingMessage</p>
-						</div>
-					}
-					else
-					{
-						<div class="welcome-message">
-							<i class="fas fa-database mb-4"></i>
-							<h3>Welcome to the Data Dashboard</h3>
-							<p>Ask questions about your data in natural language</p>
-						</div>
-					}
-				</div>
-			}
-	
+		</div>
 	</div>
 
-	<!-- SQL Explanation Modal -->
 
+</div>
+
+<div id="templateSection" class="template-section" style="display: none;">
+	<div class="template-header">
+		<h3>Our Understanding</h3>
+	</div>
+	<div class="template-preview">
+		<div id="templateOutput">Display <span class="param-chip" onclick="editParam('metric')">customer acquisition</span> trends over <span class="param-chip" onclick="editParam('timeframe')">last 6 months</span> filtered by <span class="param-chip" onclick="editParam('filters')">marketing channel</span></div>
+	</div>
+	<div class="template-actions">
+		<button class="btn btn-success" onclick="confirmTemplate()">
+			<i class="fas fa-check"></i> Confirm
+		</button>
+		<button class="btn btn-warning" onclick="showAdjustmentPanel()">
+			<i class="fas fa-sliders-h"></i> Adjust
+		</button>
+	</div>
+</div>
+
+<div id="vizLoadingSection" style="@((isLoading) ? "display: block;" : "display: none;")">
+	<div class="viz-loading-container">
+		<div class="viz-background-graph"></div>
+		<div class="viz-loading-content">
+			<div class="viz-loading-title">Generating Data Insights</div>
+			<div class="viz-loading-subtitle">Analyzing your query and preparing visualizations that best represent your data</div>
+
+			<div class="viz-loading-animation">
+				<div class="viz-loading-circle"></div>
+				<div class="viz-loading-circle"></div>
+				<div class="viz-loading-circle"></div>
+			</div>
+
+			<div class="viz-loading-progress">
+				<div id="vizProgressBar" class="viz-loading-progress-bar"></div>
+			</div>
+
+			<div class="viz-loading-steps">
+				<div class="viz-loading-step active" id="step1">
+					<div class="viz-step-indicator"><i class="fas fa-check"></i></div>
+					<div class="viz-step-text">Parsing natural language query</div>
+				</div>
+				<div class="viz-loading-step" id="step2">
+					<div class="viz-step-indicator"><i class="fas fa-check"></i></div>
+					<div class="viz-step-text">Generating SQL and fetching data</div>
+				</div>
+				<div class="viz-loading-step" id="step3">
+					<div class="viz-step-indicator"><i class="fas fa-check"></i></div>
+					<div class="viz-step-text">Analyzing data patterns</div>
+				</div>
+				<div class="viz-loading-step" id="step4">
+					<div class="viz-step-indicator"><i class="fas fa-check"></i></div>
+					<div class="viz-step-text">Creating optimal visualizations</div>
+				</div>
+			</div>
+
+			<div class="viz-loading-stats">
+				<div class="viz-stat-item" style="--i:1">
+					<div class="viz-stat-value">12.5M</div>
+					<div class="viz-stat-label">Records Processed</div>
+				</div>
+				<div class="viz-stat-item" style="--i:2">
+					<div class="viz-stat-value">4</div>
+					<div class="viz-stat-label">Data Sources</div>
+				</div>
+				<div class="viz-stat-item" style="--i:3">
+					<div class="viz-stat-value">32ms</div>
+					<div class="viz-stat-label">Response Time</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Dashboard Content - keep all existing content -->
+
+
+<!-- SQL Explanation Modal -->
 @if (showSqlModal && (sqlExplanationResponse != null || executionResponse?.Sql != null))
 {
 	<div class="modal-backdrop animate__animated animate__fadeIn" @onclick="() => showSqlModal = false"></div>
@@ -503,177 +408,177 @@
 	</div>
 }
 
-	<!-- Confirmation Dialog -->
-	@if (currentStep == QueryStep.SqlExplanation && sqlExplanationResponse != null)
-	{
-		<div class="modal-backdrop"></div>
-		<div class="confirmation-dialog animate__animated animate__fadeInUp">
-			<div class="dialog-header">
-				<h5>Understanding Your Question</h5>
-				<button type="button" class="btn-close" @onclick="() => currentStep = QueryStep.Input"></button>
+<!-- Confirmation Dialog -->
+@if (currentStep == QueryStep.SqlExplanation && sqlExplanationResponse != null)
+{
+	<div class="modal-backdrop"></div>
+	<div class="confirmation-dialog animate__animated animate__fadeInUp">
+		<div class="dialog-header">
+			<h5>Understanding Your Question</h5>
+			<button type="button" class="btn-close" @onclick="() => currentStep = QueryStep.Input"></button>
+		</div>
+		<div class="dialog-body">
+			<div class="question-box">
+				<i class="fas fa-question-circle"></i>
+				<span>@userQuestion</span>
 			</div>
-			<div class="dialog-body">
-				<div class="question-box">
-					<i class="fas fa-question-circle"></i>
-					<span>@userQuestion</span>
-				</div>
 
-				<div class="explanation-box">
-					<h6>Here's what I understand:</h6>
-					<p>@sqlExplanationResponse.BusinessExplanation</p>
-				</div>
+			<div class="explanation-box">
+				<h6>Here's what I understand:</h6>
+				<p>@sqlExplanationResponse.BusinessExplanation</p>
+			</div>
 
-				<div class="sql-preview">
-					<div class="d-flex justify-content-between align-items-center mb-2">
-						<h6>SQL Query:</h6>
-						<button class="btn btn-sm btn-outline-secondary" @onclick="CopySqlToClipboard">
-							<i class="fas fa-copy"></i> Copy
-						</button>
+			<div class="sql-preview">
+				<div class="d-flex justify-content-between align-items-center mb-2">
+					<h6>SQL Query:</h6>
+					<button class="btn btn-sm btn-outline-secondary" @onclick="CopySqlToClipboard">
+						<i class="fas fa-copy"></i> Copy
+					</button>
+				</div>
+				<pre>@sqlExplanationResponse.SqlQuery</pre>
+
+				@if (!sqlExplanationResponse.IsValid)
+				{
+					<div class="invalid-warning">
+						<i class="fas fa-exclamation-triangle"></i>
+						<span>@sqlExplanationResponse.ValidationErrorMessage</span>
 					</div>
-					<pre>@sqlExplanationResponse.SqlQuery</pre>
+				}
+			</div>
 
-					@if (!sqlExplanationResponse.IsValid)
+			@if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities.Count > 0)
+			{
+				<div class="ambiguities-section">
+					<h6>I found some ambiguities:</h6>
+
+					@foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
 					{
-						<div class="invalid-warning">
-							<i class="fas fa-exclamation-triangle"></i>
-							<span>@sqlExplanationResponse.ValidationErrorMessage</span>
+						<div class="ambiguity-item">
+							<label>@ambiguity.Key:</label>
+							<select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
+								@foreach (var option in ambiguity.Value)
+								{
+									<option value="@option">@option</option>
+								}
+							</select>
 						</div>
 					}
 				</div>
+			}
 
-				@if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities.Count > 0)
-				{
-					<div class="ambiguities-section">
-						<h6>I found some ambiguities:</h6>
-
-						@foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
-						{
-							<div class="ambiguity-item">
-								<label>@ambiguity.Key:</label>
-								<select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
-									@foreach (var option in ambiguity.Value)
-									{
-										<option value="@option">@option</option>
-									}
-								</select>
-							</div>
-						}
-					</div>
-				}
-
-				@if (sqlExplanationResponse.AdjustableParameters.Count > 0)
-				{
-					<div class="parameters-section">
-						<h6>Adjustable Parameters:</h6>
-
-						@foreach (var param in sqlExplanationResponse.AdjustableParameters)
-						{
-							<div class="parameter-item">
-								<label>@param.Key:</label>
-								<select class="form-select" @bind="adjustedParameters[param.Key]">
-									<option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
-									@foreach (var option in param.Value.Alternatives)
-									{
-										<option value="@option">@option</option>
-									}
-								</select>
-							</div>
-						}
-					</div>
-				}
-			</div>
-			<div class="dialog-footer">
-				<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Input">
-					<i class="fas fa-times"></i> Cancel
-				</button>
-				<button class="btn btn-primary" @onclick="ConfirmSqlExplanation">
-					<i class="fas fa-check"></i> Execute Query
-				</button>
-			</div>
-		</div>
-	}
-
-	<!-- Unrelated Content Dialog -->
-	<!-- Unrelated Content Dialog -->
-	@if (showUnrelatedDialog)
-	{
-		<div class="modal-backdrop"></div>
-		<div class="unrelated-dialog animate__animated animate__fadeInUp">
-			<div class="dialog-header">
-				<h5>Question Not Related to Database</h5>
-				<button type="button" class="btn-close" @onclick="() => showUnrelatedDialog = false"></button>
-			</div>
-			<div class="dialog-body">
-				<div class="unrelated-message">
-					<i class="fas fa-exclamation-circle"></i>
-					<p>@unrelatedMessage</p>
-				</div>
-
-				@if (schemaTopics != null && schemaTopics.Count > 0)
-				{
-					<div class="topics-section">
-						<h6>Topics you can ask about:</h6>
-						<div class="topics-list">
-							@foreach (var topic in schemaTopics)
-							{
-								<div class="topic-tag">
-									<i class="fas fa-database"></i>
-									<span>@topic</span>
-								</div>
-							}
-						</div>
-					</div>
-				}
-
-				@if (suggestedSchemaQuestions != null && suggestedSchemaQuestions.Count > 0)
-				{
-					<div class="suggestions-section">
-						<h6>Try asking:</h6>
-						<div class="suggestion-list">
-							@foreach (var suggestion in suggestedSchemaQuestions)
-							{
-								<div class="suggestion-item" @onclick="async () => await UseExample(suggestion)">
-									<i class="fas fa-lightbulb"></i>
-									<span>@suggestion</span>
-								</div>
-							}
-						</div>
-					</div>
-				}
-			</div>
-			<div class="dialog-footer">
-				<button class="btn btn-primary" @onclick="() => showUnrelatedDialog = false">
-					Got it
-				</button>
-			</div>
-		</div>
-	}
-
-	<!-- Partially Unrelated Content Banner -->
-	@if (showPartiallyUnrelatedBanner && currentStep == QueryStep.SqlExplanation)
-	{
-		<div class="partially-unrelated-banner animate__animated animate__fadeIn">
-			<div class="banner-content">
-				<i class="fas fa-info-circle"></i>
-				<p>@partiallyUnrelatedMessage</p>
-			</div>
-			@if (partialRelatedQuestions != null && partialRelatedQuestions.Count > 0)
+			@if (sqlExplanationResponse.AdjustableParameters.Count > 0)
 			{
-				<div class="banner-suggestions">
-					<span>You might want to try:</span>
-					<div class="suggestion-pills">
-						@foreach (var question in partialRelatedQuestions)
+				<div class="parameters-section">
+					<h6>Adjustable Parameters:</h6>
+
+					@foreach (var param in sqlExplanationResponse.AdjustableParameters)
+					{
+						<div class="parameter-item">
+							<label>@param.Key:</label>
+							<select class="form-select" @bind="adjustedParameters[param.Key]">
+								<option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
+								@foreach (var option in param.Value.Alternatives)
+								{
+									<option value="@option">@option</option>
+								}
+							</select>
+						</div>
+					}
+				</div>
+			}
+		</div>
+		<div class="dialog-footer">
+			<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Input">
+				<i class="fas fa-times"></i> Cancel
+			</button>
+			<button class="btn btn-primary" @onclick="ConfirmSqlExplanation">
+				<i class="fas fa-check"></i> Execute Query
+			</button>
+		</div>
+	</div>
+}
+
+<!-- Unrelated Content Dialog -->
+<!-- Unrelated Content Dialog -->
+@if (showUnrelatedDialog)
+{
+	<div class="modal-backdrop"></div>
+	<div class="unrelated-dialog animate__animated animate__fadeInUp">
+		<div class="dialog-header">
+			<h5>Question Not Related to Database</h5>
+			<button type="button" class="btn-close" @onclick="() => showUnrelatedDialog = false"></button>
+		</div>
+		<div class="dialog-body">
+			<div class="unrelated-message">
+				<i class="fas fa-exclamation-circle"></i>
+				<p>@unrelatedMessage</p>
+			</div>
+
+			@if (schemaTopics != null && schemaTopics.Count > 0)
+			{
+				<div class="topics-section">
+					<h6>Topics you can ask about:</h6>
+					<div class="topics-list">
+						@foreach (var topic in schemaTopics)
 						{
-							<div class="suggestion-pill" @onclick="async () => await UseExample(question)">
-								@question
+							<div class="topic-tag">
+								<i class="fas fa-database"></i>
+								<span>@topic</span>
 							</div>
 						}
 					</div>
 				</div>
 			}
-			<button class="banner-close" @onclick="() => showPartiallyUnrelatedBanner = false">
-				<i class="fas fa-times"></i>
+
+			@if (suggestedSchemaQuestions != null && suggestedSchemaQuestions.Count > 0)
+			{
+				<div class="suggestions-section">
+					<h6>Try asking:</h6>
+					<div class="suggestion-list">
+						@foreach (var suggestion in suggestedSchemaQuestions)
+						{
+							<div class="suggestion-item" @onclick="async () => await UseExample(suggestion)">
+								<i class="fas fa-lightbulb"></i>
+								<span>@suggestion</span>
+							</div>
+						}
+					</div>
+				</div>
+			}
+		</div>
+		<div class="dialog-footer">
+			<button class="btn btn-primary" @onclick="() => showUnrelatedDialog = false">
+				Got it
 			</button>
 		</div>
-	}
+	</div>
+}
+
+<!-- Partially Unrelated Content Banner -->
+@if (showPartiallyUnrelatedBanner && currentStep == QueryStep.SqlExplanation)
+{
+	<div class="partially-unrelated-banner animate__animated animate__fadeIn">
+		<div class="banner-content">
+			<i class="fas fa-info-circle"></i>
+			<p>@partiallyUnrelatedMessage</p>
+		</div>
+		@if (partialRelatedQuestions != null && partialRelatedQuestions.Count > 0)
+		{
+			<div class="banner-suggestions">
+				<span>You might want to try:</span>
+				<div class="suggestion-pills">
+					@foreach (var question in partialRelatedQuestions)
+					{
+						<div class="suggestion-pill" @onclick="async () => await UseExample(question)">
+							@question
+						</div>
+					}
+				</div>
+			</div>
+		}
+		<button class="banner-close" @onclick="() => showPartiallyUnrelatedBanner = false">
+			<i class="fas fa-times"></i>
+		</button>
+	</div>
+}
 

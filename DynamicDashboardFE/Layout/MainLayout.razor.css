@@ -1,165 +1,457 @@
-.app-container {
+/* MainLayout.razor.css */
+/*.page {
+    position: relative;
     display: flex;
-    height: 100vh;
-    overflow: hidden;
-}
+    flex-direction: row;
+    background-color: #f5f7fb;
+}*/
 
-.sidebar {
-    background-color: #3a56b5; /* Adjusted to match the exact blue from the design */
+/*New*/
+
+/*.main-content {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    color: var(--dark);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    height: 100vh !important;
+    flex: 1;
+    margin-left: var(--sidebar-width);
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    transition: width 0.3s ease;
-    width: 250px;
-    box-shadow: 3px 0 15px rgba(0, 0, 0, 0.15);
-    z-index: 100;
+    min-height: 100vh;
+    transition: margin-left var(--transition-speed) ease;
 }
-
-    .sidebar.collapsed {
-        width: 60px;
-    }
-
+.sidebar {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    width: var(--sidebar-width);
+    background: linear-gradient(180deg, var(--primary) 0%, #1e365b 100%);
+    color: white;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 200;
+    transition: all var(--transition-speed) ease;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+    overflow-y: auto;
+}
 .sidebar-header {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    color: white;
+    margin: 0;
+    box-sizing: border-box;
+    padding: 25px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    height: 60px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.logo-container {
+.sidebar-menu {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    color: white;
+    margin: 0;
+    box-sizing: border-box;
+    padding: 20px 0;
+}
+
+.menu-section {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    box-sizing: border-box;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 1px;
+}
+
+
+.menu-item active {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
-    overflow: hidden;
+    padding: 12px 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 4px;
+    color: white;
+    background: rgba(255,255,255,0.1);
+    border-left: 3px solid var(--secondary);
 }
 
-.logo {
-    height: 30px;
-    width: 30px;
-    object-fit: contain;
-    margin-right: 12px;
-    filter: brightness(0) invert(1); /* Makes the logo white */
+.menu-item {
+    --fa-style-family-brands: "Font Awesome 6 Brands";
+    --fa-font-brands: normal 400 1em/1 "Font Awesome 6 Brands";
+    --fa-font-regular: normal 400 1em/1 "Font Awesome 6 Free";
+    --fa-style-family-classic: "Font Awesome 6 Free";
+    --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
+    --primary: #2A4365;
+    --primary-light: #3B82F6;
+    --secondary: #ED8936;
+    --secondary-light: #FBD38D;
+    --accent: #38B2AC;
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --dark: #1A202C;
+    --light: #F7FAFC;
+    --gray: #718096;
+    --gray-light: #E2E8F0;
+    --gray-dark: #4A5568;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --border-radius: 12px;
+    --box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+    --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    --transition-speed: 0.3s;
+    --primary-rgb: 42, 67, 101;
+    --secondary-rgb: 237, 137, 54;
+    --accent-rgb: 56, 178, 172;
+    --dark-rgb: 26, 32, 44;
+    --light-rgb: 247, 250, 252;
+    --gray-rgb: 113, 128, 150;
+    --gray-light-rgb: 226, 232, 240;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 4px;
 }
 
-.logo-text {
-    font-weight: 600;
-    font-size: 18px;
-    color: #ffffff;
-    white-space: nowrap;
-    transition: opacity 0.3s ease;
-    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    letter-spacing: 0.3px;
+.header {
+    height: var(--header-height);
+    background: var(--light);
+    box-shadow: var(--card-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background-color var(--transition-speed) ease;
 }
 
-.collapsed .logo-text {
-    opacity: 0;
-    width: 0;
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-sidebar {
+    background: none;
+    border: none;
+    color: var(--dark);
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 15px;
     display: none;
 }
 
-.toggle-button {
-    background: none;
-    border: none;
-    color: #ffffff;
-    cursor: pointer;
+.fas fa-bars {
+
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+}
+
+.header-search {
+    position: relative;
+    margin-left: 20px;
+}
+
+.header-right {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 30px;
-    width: 30px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-    .toggle-button:hover {
-        background-color: rgba(255, 255, 255, 0.15);
-        transform: scale(1.1);
-    }
-
-.main {
-    flex: 1;
+.header-actions {
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background-color: #f8f9fa;
+    margin-right: 20px;
 }
 
-.top-bar {
-    height: 60px;
+.header-action-btn {
+    background: none;
+    border: none;
+    color: var(--gray-dark);
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+}
+
+
+main {
+    flex: 1;
+}
+
+.top-row {
     background-color: #ffffff;
-    border-bottom: 1px solid #e0e0e0;
+    height: 70px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
-.breadcrumb {
-    display: flex;
-    align-items: center;
-    color: #666;
-    font-weight: 500;
-    margin: 0;
-    padding: 0;
+.search-container {
+    position: relative;
+    width: 300px;
 }
 
-    .breadcrumb i {
-        margin-right: 8px;
-        color: #3a56b5;
+    .search-container input {
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        background-color: #f5f7fb;
+    }
+
+    .search-container i {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
     }
 
 .user-profile {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
-.user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-.user-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
-}
-
-.user-role {
-    font-size: 12px;
-    color: #666;
-}
-
-.user-avatar {
-    font-size: 24px;
-    color: #3a56b5;
-}
+    .user-profile img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
 
 .content {
-    flex: 1;
-    overflow-y: auto;
     padding: 20px;
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        position: fixed;
-        z-index: 1000;
-        height: 100vh;
-    }
-
-        .sidebar.collapsed {
-            transform: translateX(-100%);
-        }
-
-        .sidebar:not(.collapsed) {
-            transform: translateX(0);
-        }
-
-    .main {
-        margin-left: 0;
-    }
-}
+    margin-bottom: 0;
+}*/

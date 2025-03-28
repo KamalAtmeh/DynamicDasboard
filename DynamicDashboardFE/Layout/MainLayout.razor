@@ -5,44 +5,70 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<BlazoredToasts Position="ToastPosition.TopRight"
-Timeout="3"
-ShowProgressBar="true"  MaxToastCount="3" PauseProgressOnHover="true" />
 
-<div class="app-container @NavMenuCssClass">
-    <div class="sidebar @NavMenuCssClass">
+
+<div class="app-container" style=" display: flex; opacity: 1; animation: 0.5s ease 0s 1 normal forwards running fadeIn;">
+    <aside class="sidebar">
         <div class="sidebar-header">
-            <div class="logo-container">
-                <img src="images/logo.png" alt="Logo" class="logo" />
-                <span class="logo-text">Dynamic Dashboard</span>
-            </div>
-            <button class="toggle-button" @onclick="ToggleNavMenu">
-                <i class="fas fa-chevron-@(collapseNavMenu ? "right" : "left")"></i>
+            <a href="#" class="sidebar-logo">
+                <i class="fas fa-chart-pie"></i>
+                <span>DataVision</span>
+            </a>
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
             </button>
         </div>
-        <NavMenu IsCollapsed="collapseNavMenu" />
-    </div>
-
-    <div class="main">
-        <header class="top-bar">
-            <div class="breadcrumb">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </div>
-            <div class="user-profile">
-                <div class="user-info">
-                    <span class="user-name">Soul On Earth</span>
-                    <span class="user-role">Soul</span>
-
+        <NavMenu  />
+    </aside>
+    <BlazoredToasts Position="ToastPosition.TopRight"
+                    Timeout="3"
+                    ShowProgressBar="true" MaxToastCount="3" PauseProgressOnHover="true" />
+    <div class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <button class="toggle-sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search data, queries, dashboards...">
                 </div>
-                <div class="user-avatar">
-                    <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-action-btn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="header-action-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-count">3</span>
+                    </button>
+                    <button class="header-action-btn">
+                        <i class="fas fa-envelope"></i>
+                        <span class="notification-count">5</span>
+                    </button>
+                    <button class="header-action-btn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <span>JS</span>
+                        <span class="status"></span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">John Smith</span>
+                        <span class="user-role">Data Analyst</span>
+                    </div>
                 </div>
             </div>
         </header>
         <main class="content">
             @Body
         </main>
+        <footer class="footer">
+            <div>© 2025 DataVision Dashboard. All rights reserved.</div>
+        </footer>
     </div>
 </div>
 
