@@ -115,6 +115,85 @@ namespace DynamicDashboardFE.Pages.User
         }
 
 
+        /// <summary>
+        /// Updates an ambiguity resolution with the selected value.
+        /// </summary>
+        private void UpdateAmbiguity(string key, string value)
+        {
+            resolvedAmbiguities[key] = value;
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Updates a parameter with the selected value.
+        /// </summary>
+        private void UpdateParameter(string key, string value)
+        {
+            adjustedParameters[key] = value;
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Modified version of ConfirmSqlExplanation to include celebration animation.
+        /// </summary>
+        private async Task ConfirmSqlExplanation()
+        {
+            if (sqlExplanationResponse == null || string.IsNullOrWhiteSpace(sqlExplanationResponse.SqlQuery))
+                return;
+
+            try
+            {
+                isLoading = true;
+                loadingMessage = "Executing query...";
+                StateHasChanged();
+                errorMessage = null;
+
+                var request = new SqlExecutionRequest
+                {
+                    OriginalQuestion = userQuestion,
+                    DatabaseId = databaseId,
+                    Sql = sqlExplanationResponse.SqlQuery
+                };
+
+                var response = await Http.PostAsJsonAsync("api/Query/execute", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Trigger celebration animation
+                    await JSRuntime.InvokeVoidAsync("animations.playCelebration");
+
+                    executionResponse = await response.Content.ReadFromJsonAsync<QueryExecutionResponse>();
+                    currentStep = QueryStep.Results;
+                    currentPage = 1; // Reset pagination
+
+                    if (executionResponse.Results != null && executionResponse.Results.Count > 0)
+                    {
+                        toastService.ShowSuccess("Query executed successfully!");
+                    }
+                    else
+                    {
+                        toastService.ShowWarning("Query executed successfully, but no results were found.");
+                    }
+                }
+                else
+                {
+                    toastService.ShowError("Error executing query. Please try a different question.");
+                    currentStep = QueryStep.Input;
+                }
+            }
+            catch (Exception ex)
+            {
+                await LogToConsole("Error: " + ex.Message);
+                toastService.ShowError("An unexpected error occurred. Please try again.");
+                currentStep = QueryStep.Input;
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+
         #endregion
 
 
@@ -421,6 +500,10 @@ namespace DynamicDashboardFE.Pages.User
 
 
 
+
+
+
+
         /// <summary>
         /// Generates questions based on the database schema
         /// </summary>
@@ -446,61 +529,6 @@ namespace DynamicDashboardFE.Pages.User
             await GenerateSqlWithExplanation();
         }
 
-        /// <summary>
-        /// Confirms SQL explanation and executes the query
-        /// </summary>
-        private async Task ConfirmSqlExplanation()
-        {
-            if (sqlExplanationResponse == null || string.IsNullOrWhiteSpace(sqlExplanationResponse.SqlQuery))
-                return;
-
-            try
-            {
-                isLoading = true;
-                loadingMessage = "Executing query...";
-                errorMessage = null;
-
-                var request = new SqlExecutionRequest
-                {
-                    OriginalQuestion = userQuestion,
-                    DatabaseId = databaseId,
-                    Sql = sqlExplanationResponse.SqlQuery
-                };
-
-                var response = await Http.PostAsJsonAsync("api/Query/execute", request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    executionResponse = await response.Content.ReadFromJsonAsync<QueryExecutionResponse>();
-                    currentStep = QueryStep.Results;
-                    currentPage = 1; // Reset pagination
-
-                    if (executionResponse.Results != null && executionResponse.Results.Count > 0)
-                    {
-                        toastService.ShowSuccess("Query executed successfully.");
-                    }
-                    else
-                    {
-                        toastService.ShowWarning("Query executed successfully, but no results were found.");
-                    }
-                }
-                else
-                {
-                    toastService.ShowError("Error executing query. Please try a different question.");
-                    currentStep = QueryStep.Input;
-                }
-            }
-            catch (Exception ex)
-            {
-                await LogToConsole("Error: " + ex.Message);
-               toastService.ShowError("An unexpected error occurred. Please try again.");
-                currentStep = QueryStep.Input;
-            }
-            finally
-            {
-                isLoading = false;
-            }
-        }
 
         /// <summary>
         /// Dismisses any displayed error messages.
@@ -739,6 +767,12 @@ namespace DynamicDashboardFE.Pages.User
             showSqlModal = false;
             showUnrelatedDialog = false;
         }
+
+
+
+
+
+
 
         /// <summary>
         /// Internal class for exporting data to Excel.

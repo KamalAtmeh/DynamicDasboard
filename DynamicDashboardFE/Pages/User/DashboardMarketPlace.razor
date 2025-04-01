@@ -1,0 +1,406 @@
+﻿@page "/marketplace"
+@using DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+
+<div class="container-fluid py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="mb-0">
+                <i class="fas fa-store me-2 text-primary"></i>
+                Dashboard Marketplace
+            </h2>
+            <p class="text-muted mb-0">Discover and use pre-built dashboards for your business needs</p>
+        </div>
+        <div class="col-md-6 d-flex justify-content-end">
+            <div class="input-group w-50">
+                <span class="input-group-text bg-light border-light">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-light" placeholder="Search dashboards..." 
+                       @bind="searchTerm" @bind:event="oninput" />
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <button class="btn btn-outline-secondary border-light" @onclick="() => searchTerm = string.Empty">
+                        <i class="fas fa-times"></i>
+                    </button>
+                }
+            </div>
+            <button class="btn btn-primary ms-2" @onclick='() => NavigationManager.NavigateTo("/dashboard/builder")'>
+                <i class="fas fa-plus me-2"></i>
+                Create Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Category</label>
+                            <select class="form-select" @bind="selectedCategoryId">
+                                <option value="0">All Categories</option>
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category.CategoryID">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label mb-1">Sharing Status</label>
+                            <select class="form-select" @bind="selectedSharingStatus">
+                                <option value="0">All Dashboards</option>
+                                <option value="1">Private</option>
+                                <option value="2">Shared</option>
+                                <option value="3">Public</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label mb-1">Creator</label>
+                            <select class="form-select" @bind="selectedCreatorFilter">
+                                <option value="all">All Creators</option>
+                                <option value="my">My Dashboards</option>
+                                <option value="ai">AI Generated</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-outline-primary w-100" @onclick="ApplyFilters">
+                                <i class="fas fa-filter me-2"></i>
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="ms-3 h5 mb-0">Loading dashboards...</div>
+        </div>
+    }
+    else if (!dashboards.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>No Dashboards Found</h5>
+                <p class="text-muted">No dashboards match your current filters or search terms.</p>
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary me-2" @onclick="() => ResetFilters()">
+                        <i class="fas fa-sync me-2"></i>
+                        Reset Filters
+                    </button>
+                    <button class="btn btn-primary" @onclick='() => NavigationManager.NavigateTo("/dashboard/builder")'>
+                        <i class="fas fa-plus me-2"></i>
+                        Create a Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Featured Dashboards (if any) -->
+        @if (featuredDashboards.Any())
+        {
+            <h4 class="mb-3">
+                <i class="fas fa-star text-warning me-2"></i>
+                Featured Dashboards
+            </h4>
+            <div class="row mb-4">
+                @foreach (var dashboard in featuredDashboards)
+                {
+                    <div class="col-md-4 mb-3">
+                        <DashboardCard Dashboard="dashboard" OnDashboardSelected="ViewDashboard" />
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- All Dashboards -->
+        <h4 class="mb-3">
+            <i class="fas fa-th-large me-2"></i>
+            All Dashboards
+        </h4>
+        <div class="row">
+            @foreach (var dashboard in filteredDashboards)
+            {
+                <div class="col-md-4 mb-3">
+                    <DashboardCard Dashboard="dashboard" OnDashboardSelected="ViewDashboard" />
+                </div>
+            }
+        </div>
+        
+        <!-- Empty State for filtered results -->
+        @if (!filteredDashboards.Any() && searchTerm.Length > 0)
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No dashboards match your search for "<strong>@searchTerm</strong>".
+                <button class="btn btn-sm btn-outline-primary ms-3" @onclick="() => searchTerm = string.Empty">
+                    Clear Search
+                </button>
+            </div>
+        }
+    }
+    
+    <!-- Dashboard Generation Modal -->
+    <div class="modal fade @(isGeneratingDashboards ? "show" : "")" tabindex="-1"
+         style="display: @(isGeneratingDashboards ? "block" : "none")">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Generate AI Dashboards</h5>
+                    <button type="button" class="btn-close" @onclick="CloseGenerationModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Database</label>
+                        <select class="form-select" @bind="selectedDatabaseId">
+                            <option value="0">-- Select Database --</option>
+                            @foreach (var db in databases)
+                            {
+                                <option value="@db.DatabaseID">@db.Name</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    @if (isGenerating)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Generating...</span>
+                            </div>
+                            <div>
+                                <h5>Generating Dashboards</h5>
+                                <p class="text-muted">This may take a minute...</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseGenerationModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="GenerateDashboards" disabled="@(selectedDatabaseId == 0 || isGenerating)">
+                        <i class="fas fa-magic me-2"></i>
+                        Generate Dashboards
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade @(isGeneratingDashboards ? "show" : "")"
+         style="display: @(isGeneratingDashboards ? "block" : "none")"></div>
+</div>
+
+@code {
+    private List<DashboardModel> dashboards = new List<DashboardModel>();
+    private List<DashboardCategory> categories = new List<DashboardCategory>();
+    private List<Database> databases = new List<Database>();
+    private bool isLoading = true;
+    private bool isGenerating = false;
+    private bool isGeneratingDashboards = false;
+    private string searchTerm = string.Empty;
+    private int selectedCategoryId = 0;
+    private int selectedSharingStatus = 0;
+    private string selectedCreatorFilter = "all";
+    private int selectedDatabaseId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboards();
+        await LoadCategories();
+        await LoadDatabases();
+    }
+
+    private async Task LoadDashboards()
+    {
+        isLoading = true;
+        try
+        {
+            dashboards = await Http.GetFromJsonAsync<List<DashboardModel>>("api/dashboard") ?? new List<DashboardModel>();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading dashboards: {ex.Message}");
+            dashboards = new List<DashboardModel>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await Http.GetFromJsonAsync<List<DashboardCategory>>("api/dashboard/categories") ?? new List<DashboardCategory>();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading categories: {ex.Message}");
+            categories = new List<DashboardCategory>();
+        }
+    }
+
+    private async Task LoadDatabases()
+    {
+        try
+        {
+            databases = await Http.GetFromJsonAsync<List<Database>>("api/databases") ?? new List<Database>();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading databases: {ex.Message}");
+            databases = new List<Database>();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        isLoading = true;
+        
+        try
+        {
+            // Build filter query
+            string query = "api/dashboard?";
+            
+            if (selectedCategoryId > 0)
+            {
+                query += $"categoryId={selectedCategoryId}&";
+            }
+            
+            if (selectedSharingStatus > 0)
+            {
+                query += $"sharingStatus={selectedSharingStatus}&";
+            }
+            
+            if (selectedCreatorFilter == "my")
+            {
+                // In a real app, use actual logged-in user ID
+                int currentUserId = 1;
+                query += $"createdBy={currentUserId}&";
+            }
+            
+            // Remove trailing & if needed
+            if (query.EndsWith("&"))
+            {
+                query = query.Remove(query.Length - 1);
+            }
+            
+            dashboards = await Http.GetFromJsonAsync<List<DashboardModel>>(query) ?? new List<DashboardModel>();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error applying filters: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ResetFilters()
+    {
+        searchTerm = string.Empty;
+        selectedCategoryId = 0;
+        selectedSharingStatus = 0;
+        selectedCreatorFilter = "all";
+        
+        // Reload dashboards
+        LoadDashboards();
+    }
+
+    private void ViewDashboard(DashboardModel dashboard)
+    {
+        NavigationManager.NavigateTo($"/dashboard/view/{dashboard.DashboardID}");
+    }
+
+    private void ShowGenerationModal()
+    {
+        isGeneratingDashboards = true;
+    }
+
+    private void CloseGenerationModal()
+    {
+        isGeneratingDashboards = false;
+        isGenerating = false;
+    }
+
+    private async Task GenerateDashboards()
+    {
+        if (selectedDatabaseId <= 0)
+        {
+            ToastService.ShowWarning("Please select a database.");
+            return;
+        }
+        
+        isGenerating = true;
+        
+        try
+        {
+            var suggestions = await Http.GetFromJsonAsync<List<DashboardModel>>($"api/dashboard/suggestions/{selectedDatabaseId}");
+            
+            if (suggestions != null && suggestions.Any())
+            {
+                ToastService.ShowSuccess($"Generated {suggestions.Count} dashboard suggestions!");
+                
+                // Close modal and reload dashboards
+                CloseGenerationModal();
+                await LoadDashboards();
+            }
+            else
+            {
+                ToastService.ShowWarning("No dashboard suggestions could be generated.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error generating dashboards: {ex.Message}");
+        }
+        finally
+        {
+            isGenerating = false;
+        }
+    }
+
+    // Computed properties
+    private List<DashboardModel> featuredDashboards => dashboards
+        .Where(d => d.IsFeatured)
+        .ToList();
+
+    private List<DashboardModel> filteredDashboards 
+    {
+        get
+        {
+            var filtered = dashboards;
+            
+            // Apply search term filter
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                filtered = filtered
+                    .Where(d => 
+                        d.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        d.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        (d.Tags?.Any(t => t.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ?? false))
+                    .ToList();
+            }
+            
+            // Don't include featured dashboards in the main list to avoid duplication
+            return filtered
+                .Where(d => !d.IsFeatured)
+                .ToList();
+        }
+    }
+}

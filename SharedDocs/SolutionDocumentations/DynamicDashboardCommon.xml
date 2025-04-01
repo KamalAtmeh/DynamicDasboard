@@ -38,6 +38,343 @@
             <returns>Collection of referenced database objects</returns>
         </member>
         <!-- Badly formed XML comment ignored for member "T:DynamicDashboardCommon.Helper.DictionaryObjectConverter" -->
+        <member name="T:DynamicDashboardCommon.Models.DashboardCategory">
+            <summary>
+            Represents a business category for dashboards.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.CategoryID">
+            <summary>
+            Gets or sets the unique identifier for the category.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.Name">
+            <summary>
+            Gets or sets the name of the category.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.Description">
+            <summary>
+            Gets or sets the description of the category.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.DisplayOrder">
+            <summary>
+            Gets or sets the display order for UI presentation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.IconClass">
+            <summary>
+            Gets or sets the icon CSS class for the category.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.CreatedAt">
+            <summary>
+            Gets or sets when this category was created.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardCategory.IsActive">
+            <summary>
+            Gets or sets whether this category is active.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DashboardComponent">
+            <summary>
+            Represents a visualization component within a dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.ComponentID">
+            <summary>
+            Gets or sets the unique identifier for the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.DashboardID">
+            <summary>
+            Gets or sets the dashboard ID this component belongs to.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.Title">
+            <summary>
+            Gets or sets the title of the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.Description">
+            <summary>
+            Gets or sets the description of the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.DataViewingTypeID">
+            <summary>
+            Gets or sets the type of the component for visualization.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.DataViewingTypeName">
+            <summary>
+            Gets or sets the component type name (for display purposes).
+            Not stored in database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.GridX">
+            <summary>
+            Gets or sets the component's position in the layout grid (X coordinate).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.GridY">
+            <summary>
+            Gets or sets the component's position in the layout grid (Y coordinate).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.GridWidth">
+            <summary>
+            Gets or sets the component's width in the layout grid.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.GridHeight">
+            <summary>
+            Gets or sets the component's height in the layout grid.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.QueryText">
+            <summary>
+            Gets or sets the SQL query used to populate this component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.QueryIntent">
+            <summary>
+            Gets or sets the natural language description of what the component displays.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.VisualizationConfig">
+            <summary>
+            Gets or sets serialized configuration options for the component visualization.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.Parameters">
+            <summary>
+            Gets or sets the parameters for the component's query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.IsValidated">
+            <summary>
+            Gets or sets whether this component has been validated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.ValidatedBy">
+            <summary>
+            Gets or sets who validated this component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.ValidatedAt">
+            <summary>
+            Gets or sets when this component was validated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.IsVisible">
+            <summary>
+            Gets or sets whether this component is visible in the dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.IsAIGenerated">
+            <summary>
+            Gets or sets whether this component was AI-generated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.RefreshInterval">
+            <summary>
+            Gets or sets the refresh interval override in seconds (0 means use dashboard default).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.FilterExpression">
+            <summary>
+            Gets or sets filter expressions for the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.CreatedAt">
+            <summary>
+            Gets or sets the creation date of this component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.LastUpdated">
+            <summary>
+            Gets or sets when this component was last updated.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DashboardModel">
+            <summary>
+            Represents a configured dashboard in the system.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.DashboardID">
+            <summary>
+            Gets or sets the unique identifier for the dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.Title">
+            <summary>
+            Gets or sets the title of the dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.Description">
+            <summary>
+            Gets or sets the description of the dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.LayoutConfig">
+            <summary>
+            Gets or sets the dashboard's layout configuration.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.Components">
+            <summary>
+            Gets or sets the components included in this dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.DatabaseID">
+            <summary>
+            Gets or sets the database ID this dashboard is associated with.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.CreatedBy">
+            <summary>
+            Gets or sets the user ID of the creator.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.CreatedAt">
+            <summary>
+            Gets or sets the creation timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.LastUpdated">
+            <summary>
+            Gets or sets the last update timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.IsFeatured">
+            <summary>
+            Gets or sets whether the dashboard is featured in the marketplace.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.CategoryID">
+            <summary>
+            Gets or sets the dashboard's category ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.CategoryName">
+            <summary>
+            Gets or sets the category name (for display purposes).
+            Not stored in database.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.SharingStatus">
+            <summary>
+            Gets or sets the dashboard's sharing status.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.RefreshInterval">
+            <summary>
+            Gets or sets the refresh interval in seconds.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.FiltersConfig">
+            <summary>
+            Gets or sets the serialized filters configuration.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.Tags">
+            <summary>
+            Gets or sets the tags for this dashboard.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.IsAIGenerated">
+            <summary>
+            Gets or sets whether this dashboard was AI-generated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardModel.ValidationStatus">
+            <summary>
+            Gets or sets the validation status for AI-generated dashboards.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DashboardSharingStatus">
+            <summary>
+            Enum representing dashboard sharing status.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DashboardValidationStatus">
+            <summary>
+            Enum representing dashboard validation status.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ComponentParameter">
+            <summary>
+            Represents a parameter for a dashboard component query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.ParameterID">
+            <summary>
+            Gets or sets the unique identifier for the parameter.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.ComponentID">
+            <summary>
+            Gets or sets the component ID this parameter belongs to.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.Name">
+            <summary>
+            Gets or sets the name of the parameter.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.DisplayName">
+            <summary>
+            Gets or sets the display name of the parameter.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.DefaultValue">
+            <summary>
+            Gets or sets the default value of the parameter.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.CurrentValue">
+            <summary>
+            Gets or sets the current value of the parameter.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.DataType">
+            <summary>
+            Gets or sets the data type of the parameter.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.IsRequired">
+            <summary>
+            Gets or sets whether this parameter is required.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.Options">
+            <summary>
+            Gets or sets the parameter options for selection (for dropdown or multi-select parameters).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.IsVisible">
+            <summary>
+            Gets or sets whether this parameter is visible to users.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.ValidationRules">
+            <summary>
+            Gets or sets validation rules for the parameter (JSON format).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentParameter.Description">
+            <summary>
+            Gets or sets the description of the parameter.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ParameterDataType">
+            <summary>
+            Enum representing parameter data types.
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.DataViewingType">
             <summary>
             Represents the different ways data can be viewed in the system

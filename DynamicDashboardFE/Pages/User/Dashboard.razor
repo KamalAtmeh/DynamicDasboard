@@ -1,4 +1,4 @@
-﻿@page "/dashboard"
+﻿@page "/dashboardtemp"
 @using DynamicDashboardCommon.Models
 @using DynamicDashboardCommon.Models.LLM
 @using DynamicDashboardFE.Components.Dashboard
@@ -114,7 +114,6 @@
 					</div>
 
 					<div class="results-body">
-						<!-- Keep all existing results-body content -->
 						@if (executionResponse.RecommendedDataViewingTypeID == (int)DataViewingTypeEnum.Number)
 						{
 							<div class="metric-card">
@@ -129,61 +128,18 @@
 						}
 						else if (executionResponse.Results.Count > 0)
 						{
-							<div class="table-responsive">
-								<table class="table table-striped table-hover">
-									<thead>
-										<tr>
-											@foreach (var column in GetResultColumns(executionResponse.Results))
-											{
-												<th>@FormatColumnName(column)</th>
-											}
-										</tr>
-									</thead>
-									<tbody>
-										@foreach (var row in GetPagedResults(executionResponse.Results))
-										{
-											<tr>
-												@foreach (var column in GetResultColumns(executionResponse.Results))
-												{
-													<td>@FormatValue(row.ContainsKey(column) ? row[column] : null)</td>
-												}
-											</tr>
-										}
-									</tbody>
-								</table>
-							</div>
-
-							@if (totalPages > 1)
-							{
-								<div class="pagination-container">
-									<div>
-										Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, executionResponse.Results.Count)) of @executionResponse.Results.Count results
-									</div>
-									<ul class="pagination">
-										<li class="page-item @(currentPage == 1 ? "disabled" : "")">
-											<a class="page-link" href="javascript:void(0)" @onclick="PreviousPage">
-												<i class="fas fa-chevron-left"></i>
-											</a>
-										</li>
-
-										@for (int i = startPage; i <= endPage; i++)
-										{
-											var pageNumber = i;
-											<li class="page-item @(currentPage == pageNumber ? "active" : "")">
-												<a class="page-link" href="javascript:void(0)" @onclick="() => GoToPage(pageNumber)">
-													@pageNumber
-												</a>
-											</li>
-										}
-
-										<li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-											<a class="page-link" href="javascript:void(0)" @onclick="NextPage">
-												<i class="fas fa-chevron-right"></i>
-											</a>
-										</li>
-									</ul>
-								</div>
-							}
+							<InteractiveDataTable Data="executionResponse.Results"
+												  PaginationEnabled="true"
+												  FilterEnabled="true"
+												  SelectionEnabled="false"
+												  OnSelectionChanged="HandleSelectionChanged"
+												  OnRowClicked="HandleRowClicked"
+												  OnExport="HandleExport"
+												  RowHighlightClassFunc="GetRowHighlightClass"
+												  CellHighlightClassFuncs="GetCellHighlightFuncs()"
+												  RowDetailsTemplate="RowDetailsTemplate"
+												  IsLoading="false"
+												  EmptyMessage="No results found for your query." />
 						}
 						else
 						{
@@ -361,18 +317,18 @@
 				<div class="ambiguities-section">
 					<h6><i class="fas fa-random me-2"></i>I found some ambiguities:</h6>
 
-					@foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
-					{
-						<div class="ambiguity-item">
-							<label>@ambiguity.Key:</label>
-							<select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
-								@foreach (var option in ambiguity.Value)
-								{
-									<option value="@option">@option</option>
-								}
-							</select>
-						</div>
-					}
+					<div class="explanatory-text">
+						@foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
+						{
+							<p>
+@* 								For @ambiguity.Key, I think you mean
+								<InlineParameterEditor Label="@ambiguity.Key"
+													   Value="@resolvedAmbiguities[ambiguity.Key]"
+													   Options="@ambiguity.Value"
+													   OnValueChange="@(value => UpdateAmbiguity(ambiguity.Key, value))" /> *@
+							</p>
+						}
+					</div>
 				</div>
 			}
 
@@ -381,19 +337,19 @@
 				<div class="parameters-section">
 					<h6><i class="fas fa-sliders-h me-2"></i>Adjustable Parameters:</h6>
 
-					@foreach (var param in sqlExplanationResponse.AdjustableParameters)
-					{
-						<div class="parameter-item">
-							<label>@param.Key:</label>
-							<select class="form-select" @bind="adjustedParameters[param.Key]">
-								<option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
-								@foreach (var option in param.Value.Alternatives)
-								{
-									<option value="@option">@option</option>
-								}
-							</select>
-						</div>
-					}
+					<div class="explanatory-text">
+						<p>
+							I'll @(sqlExplanationResponse.BusinessExplanation.ToLower().TrimStart())
+							@foreach (var param in sqlExplanationResponse.AdjustableParameters)
+							{
+								<text> for </text>
+							@* 	<InlineParameterEditor Label="@param.Key"
+													   Value="@adjustedParameters[param.Key]"
+													   Options="@(new List<string> { param.Value.DefaultValue }.Concat(param.Value.Alternatives).ToList())"
+													   OnValueChange="@(value => UpdateParameter(param.Key, value))" /> *@
+							}
+						</p>
+					</div>
 				</div>
 			}
 		</div>
@@ -408,95 +364,6 @@
 	</div>
 }
 
-<!-- Confirmation Dialog -->
-@if (currentStep == QueryStep.SqlExplanation && sqlExplanationResponse != null)
-{
-	<div class="modal-backdrop"></div>
-	<div class="confirmation-dialog animate__animated animate__fadeInUp">
-		<div class="dialog-header">
-			<h5>Understanding Your Question</h5>
-			<button type="button" class="btn-close" @onclick="() => currentStep = QueryStep.Input"></button>
-		</div>
-		<div class="dialog-body">
-			<div class="question-box">
-				<i class="fas fa-question-circle"></i>
-				<span>@userQuestion</span>
-			</div>
-
-			<div class="explanation-box">
-				<h6>Here's what I understand:</h6>
-				<p>@sqlExplanationResponse.BusinessExplanation</p>
-			</div>
-
-			<div class="sql-preview">
-				<div class="d-flex justify-content-between align-items-center mb-2">
-					<h6>SQL Query:</h6>
-					<button class="btn btn-sm btn-outline-secondary" @onclick="CopySqlToClipboard">
-						<i class="fas fa-copy"></i> Copy
-					</button>
-				</div>
-				<pre>@sqlExplanationResponse.SqlQuery</pre>
-
-				@if (!sqlExplanationResponse.IsValid)
-				{
-					<div class="invalid-warning">
-						<i class="fas fa-exclamation-triangle"></i>
-						<span>@sqlExplanationResponse.ValidationErrorMessage</span>
-					</div>
-				}
-			</div>
-
-			@if (sqlExplanationResponse.HasAmbiguities && sqlExplanationResponse.DetectedAmbiguities.Count > 0)
-			{
-				<div class="ambiguities-section">
-					<h6>I found some ambiguities:</h6>
-
-					@foreach (var ambiguity in sqlExplanationResponse.DetectedAmbiguities)
-					{
-						<div class="ambiguity-item">
-							<label>@ambiguity.Key:</label>
-							<select class="form-select" @bind="resolvedAmbiguities[ambiguity.Key]">
-								@foreach (var option in ambiguity.Value)
-								{
-									<option value="@option">@option</option>
-								}
-							</select>
-						</div>
-					}
-				</div>
-			}
-
-			@if (sqlExplanationResponse.AdjustableParameters.Count > 0)
-			{
-				<div class="parameters-section">
-					<h6>Adjustable Parameters:</h6>
-
-					@foreach (var param in sqlExplanationResponse.AdjustableParameters)
-					{
-						<div class="parameter-item">
-							<label>@param.Key:</label>
-							<select class="form-select" @bind="adjustedParameters[param.Key]">
-								<option value="@param.Value.DefaultValue">@param.Value.DefaultValue (Default)</option>
-								@foreach (var option in param.Value.Alternatives)
-								{
-									<option value="@option">@option</option>
-								}
-							</select>
-						</div>
-					}
-				</div>
-			}
-		</div>
-		<div class="dialog-footer">
-			<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Input">
-				<i class="fas fa-times"></i> Cancel
-			</button>
-			<button class="btn btn-primary" @onclick="ConfirmSqlExplanation">
-				<i class="fas fa-check"></i> Execute Query
-			</button>
-		</div>
-	</div>
-}
 
 <!-- Unrelated Content Dialog -->
 <!-- Unrelated Content Dialog -->
@@ -581,4 +448,4 @@
 		</button>
 	</div>
 }
-
+<div class="celebration-container" id="celebrationContainer"></div>

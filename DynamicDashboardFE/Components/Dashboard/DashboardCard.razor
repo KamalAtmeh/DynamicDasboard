@@ -1,0 +1,285 @@
+﻿@using DynamicDashboardCommon.Models
+
+<div class="card shadow-sm dashboard-card h-100">
+    @if (Dashboard.IsFeatured)
+    {
+        <div class="dashboard-featured-badge">
+            <i class="fas fa-star"></i>
+        </div>
+    }
+
+    <div class="dashboard-card-preview">
+        <div class="dashboard-placeholder">
+            @if (Dashboard.Components.Count > 0)
+            {
+                <!-- Simple dashboard preview mockup -->
+                <div class="preview-grid">
+                    @foreach (var component in Dashboard.Components.Take(4))
+                    {
+                        <div class="preview-component"
+                             style="grid-column: span @(Math.Min(component.GridWidth, 12));
+                                    grid-row: span @(Math.Min(component.GridHeight, 2));">
+                            <div class="preview-component-inner @GetComponentClass(component.DataViewingTypeID)">
+                                <div class="preview-title">@component.Title</div>
+                                <div class="preview-content"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <i class="fas fa-chart-bar fa-2x text-muted"></i>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="dashboard-card-header">
+            <h5 class="card-title mb-1 text-truncate" title="@Dashboard.Title">@Dashboard.Title</h5>
+            <div class="dashboard-card-badges">
+                @if (Dashboard.IsAIGenerated)
+                {
+                    <span class="badge bg-primary" title="AI Generated">
+                        <i class="fas fa-magic"></i>
+                    </span>
+                }
+
+                <span class="badge @GetSharingBadgeClass(Dashboard.SharingStatus)"
+                      title="@Dashboard.SharingStatus.ToString()">
+                    <i class="fas @GetSharingIconClass(Dashboard.SharingStatus)"></i>
+                </span>
+
+                @if (Dashboard.ValidationStatus == DashboardValidationStatus.Validated)
+                {
+                    <span class="badge bg-success" title="Validated">
+                        <i class="fas fa-check"></i>
+                    </span>
+                }
+            </div>
+        </div>
+
+        <p class="card-text small text-muted dashboard-description">
+            @(string.IsNullOrEmpty(Dashboard.Description)
+                ? "No description provided"
+                : Dashboard.Description.Length > 120
+                ? Dashboard.Description.Substring(0, 120) + "..."
+                : Dashboard.Description)
+        </p>
+
+        <div class="dashboard-card-details">
+            <div class="dashboard-metadata">
+                <div class="metadata-item" title="Components">
+                    <i class="fas fa-th-large text-muted"></i>
+                    <span>@Dashboard.Components.Count</span>
+                </div>
+                <div class="metadata-item" title="Category">
+                    <i class="fas fa-folder text-muted"></i>
+                    <span>@Dashboard.CategoryName</span>
+                </div>
+                <div class="metadata-item" title="Last Updated">
+                    <i class="fas fa-clock text-muted"></i>
+                    <span>@Dashboard.LastUpdated.ToString("MMM d")</span>
+                </div>
+            </div>
+
+            <div class="dashboard-card-actions">
+                <button class="btn btn-primary btn-sm" @onclick="() => OnDashboardSelected.InvokeAsync(Dashboard)">
+                    <i class="fas fa-eye me-1"></i>
+                    View
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public DashboardModel Dashboard { get; set; }
+
+    [Parameter]
+    public EventCallback<DashboardModel> OnDashboardSelected { get; set; }
+
+    private string GetComponentClass(int dataViewingTypeId)
+    {
+        return dataViewingTypeId switch
+        {
+            1 => "preview-table",
+            2 => "preview-label",
+            3 => "preview-number",
+            4 => "preview-chart",
+            5 => "preview-card",
+            _ => "preview-chart"
+        };
+    }
+
+    private string GetSharingBadgeClass(DashboardSharingStatus status)
+    {
+        return status switch
+        {
+            DashboardSharingStatus.Private => "bg-secondary",
+            DashboardSharingStatus.Shared => "bg-info",
+            DashboardSharingStatus.Public => "bg-success",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetSharingIconClass(DashboardSharingStatus status)
+    {
+        return status switch
+        {
+            DashboardSharingStatus.Private => "fa-lock",
+            DashboardSharingStatus.Shared => "fa-users",
+            DashboardSharingStatus.Public => "fa-globe",
+            _ => "fa-lock"
+        };
+    }
+}
+
+<style>
+    .dashboard-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden;
+        cursor: pointer;
+        position: relative;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+
+    .dashboard-card-preview {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        height: 160px;
+        overflow: hidden;
+    }
+
+    .dashboard-placeholder {
+        height: 100%;
+        width: 100%;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .dashboard-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6px;
+    }
+
+    .dashboard-card-badges {
+        display: flex;
+        gap: 4px;
+    }
+
+    .dashboard-description {
+        min-height: 48px;
+        max-height: 48px;
+        overflow: hidden;
+    }
+
+    .dashboard-card-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .dashboard-metadata {
+        display: flex;
+        gap: 12px;
+    }
+
+    .metadata-item {
+        display: flex;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+        .metadata-item i {
+            margin-right: 4px;
+            font-size: 0.75rem;
+        }
+
+    .dashboard-featured-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ffc107;
+        color: #212529;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        z-index: 1;
+    }
+
+    /* Preview grid styling */
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-auto-rows: minmax(30px, auto);
+        gap: 5px;
+        height: 100%;
+    }
+
+    .preview-component {
+        min-height: 30px;
+    }
+
+    .preview-component-inner {
+        height: 100%;
+        border-radius: 3px;
+        background: white;
+        padding: 4px;
+        font-size: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .preview-title {
+        font-weight: bold;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #495057;
+        border-bottom: 1px dashed #e9ecef;
+        padding-bottom: 2px;
+        margin-bottom: 3px;
+    }
+
+    .preview-content {
+        height: calc(100% - 20px);
+    }
+
+    /* Component type styles */
+    .preview-chart {
+        background-image: linear-gradient(to bottom right, #e2f0fd, #c5e1fb);
+    }
+
+    .preview-table {
+        background-image: linear-gradient(to bottom right, #e2fdec, #c5fbd8);
+    }
+
+    .preview-number {
+        background-image: linear-gradient(to bottom right, #fde2e2, #fbc5c5);
+    }
+
+    .preview-label {
+        background-image: linear-gradient(to bottom right, #f8e2fd, #ecc5fb);
+    }
+
+    .preview-card {
+        background-image: linear-gradient(to bottom right, #fdf6e2, #fbefc5);
+    }
+</style>

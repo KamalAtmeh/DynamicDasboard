@@ -1,0 +1,751 @@
+﻿@* // File: DynamicDashboardFE/Components/DataDisplay/InteractiveDataTable.razor
+
+@using System.Text.Json
+@using System.Linq.Expressions
+@inject IJSRuntime JSRuntime
+
+<div class="data-table-container @(IsCompact ? "compact" : "")">
+    @if (IsLoading)
+    {
+        <div class="data-table-loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span>Loading data...</span>
+        </div>
+    }
+    else if (Data == null || !Data.Any())
+    {
+        <div class="data-table-empty">
+            <i class="fas fa-database"></i>
+            <p>@EmptyMessage</p>
+        </div>
+    }
+    else
+    {
+        <div class="data-table-header">
+            <div class="data-table-info">
+                <div class="data-table-count">
+                    <i class="fas fa-table me-2"></i>
+                    <span>@Data.Count items</span>
+                </div>
+                @if (SelectedRows.Any())
+                {
+                    <div class="data-table-selected">
+                        <i class="fas fa-check-square me-2"></i>
+                        <span>@SelectedRows.Count selected</span>
+                    </div>
+                }
+            </div>
+            <div class="data-table-actions">
+                <div class="data-table-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search..." @bind-value="SearchTerm" @bind-value:event="oninput" @onkeyup="HandleSearch" />
+                    @if (!string.IsNullOrEmpty(SearchTerm))
+                    {
+                        <button class="clear-search" @onclick="ClearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    }
+                </div>
+                <div class="data-table-tools">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" @onclick="ToggleColumnsDropdown">
+                            <i class="fas fa-columns me-1"></i> Columns
+                        </button>
+                        @if (ShowColumnsDropdown)
+                        {
+                            <div class="dropdown-menu show">
+                                @foreach (var column in AllColumns)
+                                {
+                                    <div class="dropdown-item">
+                                        <label class="column-toggle">
+                                            <input type="checkbox" checked="@IsColumnVisible(column)" @onchange="@(e => ToggleColumn(column, (bool)e.Value))" />
+                                            <span>@FormatColumnName(column)</span>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleCompactMode">
+                        <i class="fas @(IsCompact ? "fa-expand" : "fa-compress") me-1"></i>
+                        @(IsCompact ? "Expand" : "Compact")
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" @onclick="ToggleExportDropdown">
+                            <i class="fas fa-download me-1"></i> Export
+                        </button>
+                        @if (ShowExportDropdown)
+                        {
+                            <div class="dropdown-menu show">
+                                <button class="dropdown-item" @onclick="ExportToExcel">
+                                    <i class="fas fa-file-excel me-2"></i> Excel
+                                </button>
+                                <button class="dropdown-item" @onclick="ExportToCSV">
+                                    <i class="fas fa-file-csv me-2"></i> CSV
+                                </button>
+                                <button class="dropdown-item" @onclick="ExportToJSON">
+                                    <i class="fas fa-file-code me-2"></i> JSON
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive data-table-body @HighlightClass">
+            <table class="table">
+                <thead>
+                    <tr>
+                        @if (SelectionEnabled)
+                        {
+                            <th class="selection-column">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                         checked="@(Data.Count > 0 && SelectedRows.Count == Data.Count)" 
+                                         @onchange="ToggleAllRows" />
+                                </div>
+                            </th>
+                        }
+                        @foreach (var column in VisibleColumns)
+                        {
+                            <th class="@GetColumnClass(column) @(column == SortColumn ? (SortAscending ? "sort-asc" : "sort-desc") : "")"
+                                @onclick="() => SortByColumn(column)">
+                                <div class="th-content">
+                                    <span>@FormatColumnName(column)</span>
+                                    <span class="sort-icon">
+                                        @if (column == SortColumn)
+                                        {
+                                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down")"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-sort text-muted"></i>
+                                        }
+                                    </span>
+                                </div>
+                            </th>
+                        }
+                        @if (RowDetailsTemplate != null)
+                        {
+                            <th class="expand-column"></th>
+                        }
+                    </tr>
+                    @if (FilterEnabled)
+                    {
+                        <tr class="filter-row">
+                            @if (SelectionEnabled)
+                            {
+                                <th></th>
+                            }
+                            @foreach (var column in VisibleColumns)
+                            {
+                                <th>
+                                    <input type="text" class="form-control form-control-sm filter-input" 
+                                          placeholder="Filter" 
+                                          @bind="ColumnFilters[column]" 
+                                          @bind:event="oninput" 
+                                          @onkeyup="ApplyFilters" />
+                                </th>
+                            }
+                            @if (RowDetailsTemplate != null)
+                            {
+                                <th></th>
+                            }
+                        </tr>
+                    }
+                </thead>
+                <tbody>
+                    @foreach (var (row, index) in FilteredData.Select((r, i) => (r, i)))
+                    {
+                        var rowIndex = index;
+                        var isSelected = SelectedRows.Contains(row);
+                        var isExpanded = ExpandedRows.Contains(row);
+                        
+                        <tr class="@(isSelected ? "selected" : "") @(isExpanded ? "expanded" : "") @GetRowHighlightClass(row)" 
+                            @onclick="() => HandleRowClick(row)">
+                            @if (SelectionEnabled)
+                            {
+                                <td class="selection-column" @onclick:stopPropagation="true">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                              checked="@isSelected" 
+                                              @onchange="e => ToggleRowSelection(row, (bool)e.Value)" />
+                                    </div>
+                                </td>
+                            }
+                            @foreach (var column in VisibleColumns)
+                            {
+                                <td class="@GetCellClass(row, column)">
+                                    <div class="cell-content">
+                                        @if (CellTemplates.ContainsKey(column))
+                                        {
+                                            @CellTemplates[column](row.ContainsKey(column) ? row[column] : null)
+                                        }
+                                        else
+                                        {
+                                            @RenderCellValue(row, column)
+                                        }
+                                    </div>
+                                </td>
+                            }
+                            @if (RowDetailsTemplate != null)
+                            {
+                                <td class="expand-column" @onclick:stopPropagation="true">
+                                    <button class="btn btn-sm expand-btn" @onclick="() => ToggleRowExpansion(row)">
+                                        <i class="fas @(isExpanded ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                        
+                        @if (isExpanded && RowDetailsTemplate != null)
+                        {
+                            <tr class="details-row">
+                                <td colspan="@(VisibleColumns.Count + (SelectionEnabled ? 1 : 0) + 1)">
+                                    <div class="row-details animate__animated animate__fadeIn">
+                                        @RowDetailsTemplate(row)
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (PaginationEnabled)
+        {
+            <div class="data-table-footer">
+                <div class="data-table-pagination">
+                    <div class="page-size">
+                        <span>Show</span>
+                        <select class="form-select form-select-sm" @bind="PageSize">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span>entries</span>
+                    </div>
+                    
+                    <div class="pagination-info">
+                        Showing @(((CurrentPage - 1) * PageSize) + 1) to @Math.Min(CurrentPage * PageSize, FilteredData.Count) of @FilteredData.Count entries
+                    </div>
+                    
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm btn-outline-secondary @(CurrentPage == 1 ? "disabled" : "")" 
+                               @onclick="PreviousPage" disabled="@(CurrentPage == 1)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        
+                        @for (int i = StartPage; i <= EndPage; i++)
+                        {
+                            var page = i;
+                            <button class="btn btn-sm @(CurrentPage == page ? "btn-primary" : "btn-outline-secondary")" 
+                                   @onclick="() => GoToPage(page)">
+                                @page
+                            </button>
+                        }
+                        
+                        <button class="btn btn-sm btn-outline-secondary @(CurrentPage == TotalPages ? "disabled" : "")" 
+                               @onclick="NextPage" disabled="@(CurrentPage == TotalPages)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<Dictionary<string, object>> Data { get; set; }
+    [Parameter] public bool SelectionEnabled { get; set; } = false;
+    [Parameter] public bool FilterEnabled { get; set; } = true;
+    [Parameter] public bool PaginationEnabled { get; set; } = true;
+    [Parameter] public EventCallback<List<Dictionary<string, object>>> OnSelectionChanged { get; set; }
+    [Parameter] public EventCallback<Dictionary<string, object>> OnRowClicked { get; set; }
+    [Parameter] public string EmptyMessage { get; set; } = "No data available";
+    [Parameter] public bool IsLoading { get; set; } = false;
+    [Parameter] public RenderFragment<Dictionary<string, object>> RowDetailsTemplate { get; set; }
+    [Parameter] public Dictionary<string, Func<object, RenderFragment>> CellTemplates { get; set; } = new();
+    
+    // Highlighting parameters
+    [Parameter] public Func<Dictionary<string, object>, string> RowHighlightClassFunc { get; set; }
+    [Parameter] public Dictionary<string, Func<Dictionary<string, object>, string>> CellHighlightClassFuncs { get; set; } = new();
+    [Parameter] public EventCallback<List<Dictionary<string, object>>> OnExport { get; set; }
+    
+    private List<string> AllColumns = new();
+    private List<string> VisibleColumns = new();
+    private List<Dictionary<string, object>> FilteredData = new();
+    private Dictionary<string, string> ColumnFilters = new();
+    private HashSet<Dictionary<string, object>> SelectedRows = new();
+    private HashSet<Dictionary<string, object>> ExpandedRows = new();
+    
+    private string SearchTerm = "";
+    private bool IsCompact = false;
+    private string SortColumn = "";
+    private bool SortAscending = true;
+    private bool ShowColumnsDropdown = false;
+    private bool ShowExportDropdown = false;
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+    private string HighlightClass = "";
+    
+    private int TotalPages => FilteredData.Count == 0 ? 1 : (int)Math.Ceiling((double)FilteredData.Count / PageSize);
+    private int StartPage => Math.Max(1, CurrentPage - 2);
+    private int EndPage => Math.Min(TotalPages, StartPage + 4);
+    
+    protected override void OnParametersSet()
+    {
+        if (Data != null && Data.Any())
+        {
+            // Get all columns from first row
+            AllColumns = Data.First().Keys.ToList();
+            
+            // If visible columns not set, use all columns
+            if (!VisibleColumns.Any())
+            {
+                VisibleColumns = AllColumns.ToList();
+            }
+            
+            // Initialize column filters
+            foreach (var column in AllColumns)
+            {
+                if (!ColumnFilters.ContainsKey(column))
+                {
+                    ColumnFilters[column] = "";
+                }
+            }
+            
+            // Apply filters and sort
+            ApplyFiltersAndSort();
+        }
+        else
+        {
+            FilteredData = new List<Dictionary<string, object>>();
+        }
+    }
+
+    private void ApplyFiltersAndSort()
+    {
+        // First filter by column filters
+        var result = Data.AsEnumerable();
+        
+        // Apply search term across all columns
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            result = result.Where(row => 
+                row.Any(col => 
+                    col.Value != null && 
+                    col.Value.ToString().Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+                )
+            );
+        }
+        
+        // Apply column filters
+        foreach (var filter in ColumnFilters.Where(f => !string.IsNullOrWhiteSpace(f.Value)))
+        {
+            result = result.Where(row => 
+                row.ContainsKey(filter.Key) && 
+                row[filter.Key] != null && 
+                row[filter.Key].ToString().Contains(filter.Value, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+        
+        // Apply sorting
+        if (!string.IsNullOrEmpty(SortColumn))
+        {
+            result = SortAscending
+                ? result.OrderBy(row => row.ContainsKey(SortColumn) ? row[SortColumn] : null, new DataValueComparer())
+                : result.OrderByDescending(row => row.ContainsKey(SortColumn) ? row[SortColumn] : null, new DataValueComparer());
+        }
+        
+        FilteredData = result.ToList();
+    }
+
+    private void HandleSearch()
+    {
+        ApplyFiltersAndSort();
+        CurrentPage = 1;  // Reset to first page when searching
+    }
+
+    private void ClearSearch()
+    {
+        SearchTerm = "";
+        ApplyFiltersAndSort();
+        CurrentPage = 1;
+    }
+
+    private void ApplyFilters()
+    {
+        ApplyFiltersAndSort();
+        CurrentPage = 1;  // Reset to first page when filtering
+    }
+
+    private string FormatColumnName(string column)
+    {
+        if (string.IsNullOrEmpty(column)) return column;
+
+        // Replace underscores with spaces
+        var result = column.Replace("_", " ");
+
+        // Insert spaces before capital letters
+        result = System.Text.RegularExpressions.Regex.Replace(result, "([a-z])([A-Z])", "$1 $2");
+
+        // Capitalize the first letter of each word
+        var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+        return textInfo.ToTitleCase(result.ToLower());
+    }
+
+    private RenderFragment RenderCellValue(Dictionary<string, object> row, string column)
+    {
+        if (!row.ContainsKey(column) || row[column] == null)
+        {
+            return @<span class="empty-value">-</span>;
+        }
+        
+        var value = row[column];
+        
+        if (value is DateTime dateTime)
+        {
+            return @<span class="date-value">@dateTime.ToString("yyyy-MM-dd")</span>;
+        }
+        
+        if (value is bool boolean)
+        {
+            return @<span class="boolean-value">
+                <i class="fas @(boolean ? "fa-check text-success" : "fa-times text-danger")"></i>
+            </span>;
+        }
+        
+        if (value is decimal decimalValue)
+        {
+            return @<span class="numeric-value">@decimalValue.ToString("0.00")</span>;
+        }
+        
+        if (value is double doubleValue)
+        {
+            return @<span class="numeric-value">@doubleValue.ToString("0.00")</span>;
+        }
+        
+        if (value is int || value is long)
+        {
+            return @<span class="numeric-value">@value</span>;
+        }
+        
+        // Default string representation
+        string stringValue = value.ToString();
+        
+        // If it looks like a URL
+        if (stringValue.StartsWith("http"))
+        {
+            return @<a href="@stringValue" target="_blank" @onclick:stopPropagation="true">
+                <i class="fas fa-link me-1"></i>@stringValue
+            </a>;
+        }
+        
+        return @<span>@stringValue</span>;
+    }
+
+    private void SortByColumn(string column)
+    {
+        if (SortColumn == column)
+        {
+            // Same column, toggle direction
+            SortAscending = !SortAscending;
+        }
+        else
+        {
+            // New column, default to ascending
+            SortColumn = column;
+            SortAscending = true;
+        }
+        
+        ApplyFiltersAndSort();
+        
+        // Add pulse animation
+        HighlightClass = "highlight-sort";
+        InvokeAsync(async () => {
+            await Task.Delay(1000);
+            HighlightClass = "";
+            StateHasChanged();
+        });
+    }
+
+    private void ToggleAllRows(ChangeEventArgs e)
+    {
+        var isChecked = (bool)e.Value;
+        
+        if (isChecked)
+        {
+            SelectedRows = new HashSet<Dictionary<string, object>>(GetPagedData());
+        }
+        else
+        {
+            SelectedRows.Clear();
+        }
+        
+        OnSelectionChanged.InvokeAsync(SelectedRows.ToList());
+    }
+
+    private void ToggleRowSelection(Dictionary<string, object> row, bool isSelected)
+    {
+        if (isSelected)
+        {
+            SelectedRows.Add(row);
+        }
+        else
+        {
+            SelectedRows.Remove(row);
+        }
+        
+        OnSelectionChanged.InvokeAsync(SelectedRows.ToList());
+    }
+
+    private void HandleRowClick(Dictionary<string, object> row)
+    {
+        OnRowClicked.InvokeAsync(row);
+        
+        if (SelectionEnabled)
+        {
+            ToggleRowSelection(row, !SelectedRows.Contains(row));
+        }
+    }
+
+    private void ToggleRowExpansion(Dictionary<string, object> row)
+    {
+        if (ExpandedRows.Contains(row))
+        {
+            ExpandedRows.Remove(row);
+        }
+        else
+        {
+            ExpandedRows.Add(row);
+        }
+    }
+
+    private void ToggleColumnsDropdown()
+    {
+        ShowColumnsDropdown = !ShowColumnsDropdown;
+        ShowExportDropdown = false;
+    }
+
+    private void ToggleExportDropdown()
+    {
+        ShowExportDropdown = !ShowExportDropdown;
+        ShowColumnsDropdown = false;
+    }
+
+    private bool IsColumnVisible(string column)
+    {
+        return VisibleColumns.Contains(column);
+    }
+
+    private void ToggleColumn(string column, bool isVisible)
+    {
+        if (isVisible && !VisibleColumns.Contains(column))
+        {
+            VisibleColumns.Add(column);
+            // Restore original order
+            VisibleColumns = VisibleColumns.OrderBy(c => AllColumns.IndexOf(c)).ToList();
+        }
+        else if (!isVisible && VisibleColumns.Contains(column))
+        {
+            VisibleColumns.Remove(column);
+        }
+    }
+
+    private void ToggleCompactMode()
+    {
+        IsCompact = !IsCompact;
+    }
+
+    private List<Dictionary<string, object>> GetPagedData()
+    {
+        if (!PaginationEnabled)
+        {
+            return FilteredData;
+        }
+        
+        return FilteredData
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+
+    private void PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+        }
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            CurrentPage = page;
+        }
+    }
+
+    private string GetColumnClass(string column)
+    {
+        var type = GetColumnDataType(column);
+        return $"column-{type}";
+    }
+
+    private string GetCellClass(Dictionary<string, object> row, string column)
+    {
+        var classes = new List<string> { $"cell-{GetColumnDataType(column)}" };
+        
+        // Add custom cell highlight class if provided
+        if (CellHighlightClassFuncs.ContainsKey(column))
+        {
+            var highlightClass = CellHighlightClassFuncs[column](row);
+            if (!string.IsNullOrEmpty(highlightClass))
+            {
+                classes.Add(highlightClass);
+            }
+        }
+        
+        return string.Join(" ", classes);
+    }
+
+    private string GetRowHighlightClass(Dictionary<string, object> row)
+    {
+        if (RowHighlightClassFunc != null)
+        {
+            return RowHighlightClassFunc(row);
+        }
+        return "";
+    }
+
+    private string GetColumnDataType(string column)
+    {
+        if (Data == null || !Data.Any() || !Data.First().ContainsKey(column))
+        {
+            return "text";
+        }
+        
+        var firstNonNullValue = Data
+            .Where(r => r.ContainsKey(column) && r[column] != null)
+            .Select(r => r[column])
+            .FirstOrDefault();
+            
+        if (firstNonNullValue == null)
+        {
+            return "text";
+        }
+        
+        if (firstNonNullValue is bool)
+        {
+            return "boolean";
+        }
+        
+        if (firstNonNullValue is int || firstNonNullValue is long || 
+            firstNonNullValue is float || firstNonNullValue is double || 
+            firstNonNullValue is decimal)
+        {
+            return "numeric";
+        }
+        
+        if (firstNonNullValue is DateTime)
+        {
+            return "date";
+        }
+        
+        return "text";
+    }
+
+    // Export methods
+    private async Task ExportToExcel()
+    {
+        await OnExport.InvokeAsync(FilteredData);
+        await JSRuntime.InvokeVoidAsync("saveAsFile", "export.xlsx", await ConvertToExcelBase64());
+        ShowExportDropdown = false;
+    }
+
+    private async Task ExportToCSV()
+    {
+        string csv = ConvertToCSV();
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(csv);
+        string base64 = Convert.ToBase64String(bytes);
+        await JSRuntime.InvokeVoidAsync("saveAsFile", "export.csv", base64);
+        ShowExportDropdown = false;
+    }
+
+    private async Task ExportToJSON()
+    {
+        string json = JsonSerializer.Serialize(FilteredData, new JsonSerializerOptions { WriteIndented = true });
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+        string base64 = Convert.ToBase64String(bytes);
+        await JSRuntime.InvokeVoidAsync("saveAsFile", "export.json", base64);
+        ShowExportDropdown = false;
+    }
+
+    private string ConvertToCSV()
+    {
+        var sb = new System.Text.StringBuilder();
+        
+        // Add headers
+        sb.AppendLine(string.Join(",", VisibleColumns.Select(c => $"\"{c}\"")));
+        
+        // Add rows
+        foreach (var row in FilteredData)
+        {
+            var values = VisibleColumns.Select(column => {
+                var value = row.ContainsKey(column) ? row[column] : null;
+                if (value == null) return "\"\"";
+                return $"\"{value.ToString().Replace("\"", "\"\"")}\"";
+            });
+            sb.AppendLine(string.Join(",", values));
+        }
+        
+        return sb.ToString();
+    }
+
+    private async Task<string> ConvertToExcelBase64()
+    {
+        // For now we return a dummy value - in a real implementation you'd generate the Excel file
+        // This would typically call a server API to generate the Excel file
+        return "";
+    }
+
+    // Data comparer for consistent sorting of mixed types
+    private class DataValueComparer : IComparer<object>
+    {
+        public int Compare(object x, object y)
+        {
+            if (x == null && y == null) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+            
+            if (x.GetType() != y.GetType())
+            {
+                // Different types, convert to string for comparison
+                return string.Compare(x.ToString(), y.ToString(), StringComparison.OrdinalIgnoreCase);
+            }
+            
+            if (x is IComparable comparable)
+            {
+                return comparable.CompareTo(y);
+            }
+            
+            // Default to string comparison
+            return string.Compare(x.ToString(), y.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+} *@

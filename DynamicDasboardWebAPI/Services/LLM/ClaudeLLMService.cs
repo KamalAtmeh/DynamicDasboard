@@ -166,8 +166,9 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 // Schema relevance analysis
                 prompt.AppendLine("\nSchema Relevance Analysis:");
                 prompt.AppendLine("- Carefully analyze if the question involves data that exists in the schema");
-                prompt.AppendLine("- If the question is completely unrelated to the schema, set isSchemaRelated: false");
-                prompt.AppendLine("- If only parts of the question are unrelated, set hasPartiallyUnrelatedContent: true");
+                prompt.AppendLine("- If the question is completely unrelated to the schema dont generate SQL, set isSchemaRelated: false");
+                prompt.AppendLine("- If only parts of the question are unrelated dont generate SQL, set hasPartiallyUnrelatedContent: true");
+                prompt.AppendLine("- The question is partially unrelated, when part of the question does relate to the schema , and any other part doesnt");
                 prompt.AppendLine("- For unrelated questions, identify 3-5 topics that the schema actually contains");
                 prompt.AppendLine("- For unrelated questions, suggest 3 specific example questions related to the schema");
                 prompt.AppendLine("- For partially unrelated questions, list the unrelated parts in the unrelatedQuestionParts array");
@@ -271,8 +272,8 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 prompt.AppendLine("    \"Which shipping methods are used most frequently?\",");
                 prompt.AppendLine("    \"What's the average shipping time for each carrier?\"");
                 prompt.AppendLine("  ],");
-                prompt.AppendLine("  \"sqlQuery\": \"SELECT o.ShippingAddress, COUNT(*) AS OrderCount\\nFROM Orders o\\nGROUP BY o.ShippingAddress\\nORDER BY OrderCount DESC\\nLIMIT 10;\",");
-                prompt.AppendLine("  \"businessExplanation\": \"This query shows the top 10 shipping destinations by number of orders. Note that I can't provide information about weather at these destinations as that data isn't in the database.\",");
+                prompt.AppendLine("  \"sqlQuery\": \"\",");
+                prompt.AppendLine("  \"businessExplanation\": \"\",");
                 prompt.AppendLine("  \"dbType\": \"MySQL\",");
                 prompt.AppendLine("  \"dbNotes\": \"This query uses MySQL's LIMIT syntax. For SQL Server, use TOP 10 instead.\",");
                 prompt.AppendLine("  \"hasAmbiguities\": false,");
@@ -299,8 +300,8 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 prompt.AppendLine("  \"unrelatedQuestionParts\": [],");
                 prompt.AppendLine("  \"suggestedTopics\": [],");
                 prompt.AppendLine("  \"suggestedQuestions\": [],");
-                prompt.AppendLine("  \"sqlQuery\": \"SELECT c.FirstName, c.LastName, SUM(o.TotalAmount) AS TotalSpent\\nFROM Customers c\\nJOIN Orders o ON c.CustomerID = o.CustomerID\\nGROUP BY c.CustomerID, c.FirstName, c.LastName\\nORDER BY TotalSpent DESC\\nLIMIT 10;\",");
-                prompt.AppendLine("  \"businessExplanation\": \"This query retrieves the top 10 customers based on their total purchase amounts. It shows each customer's first and last name along with the total amount they've spent across all their orders.\",");
+                prompt.AppendLine("  \"sqlQuery\": \"SELECT c.column1, c.column2, SUM(o.column3) AS Total_Column3 nFROM Customers c nJOIN Orders o ON c.CustomerID = o.CustomerID nGROUP BY c.CustomerID, c.FirstName, c.LastName nORDER BY TotalSpent DESC nLIMIT 10;\",");
+                prompt.AppendLine("  \"businessExplanation\": \"This shows etc..\",");
                 prompt.AppendLine("  \"dbType\": \"MySQL\",");
                 prompt.AppendLine("  \"dbNotes\": \"For SQL Server, replace LIMIT with TOP 10.\",");
                 prompt.AppendLine("  \"hasAmbiguities\": true,");

@@ -1,0 +1,104 @@
+﻿@using DynamicDashboardCommon.Models
+
+
+<div class="component-table-container">
+    @if (Data == null || !Data.Any())
+    {
+        <div class="text-center py-4 text-muted">
+            <i class="fas fa-table fa-2x mb-2"></i>
+            <p>No data available</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                    <tr>
+                        @foreach (var column in Data.First().Keys)
+                        {
+                            <th>@FormatColumnName(column)</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Data)
+                    {
+                        <tr>
+                            @foreach (var column in row.Keys)
+                            {
+                                <td>@FormatCellValue(row[column])</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer d-flex justify-content-between align-items-center mt-2">
+            <div class="table-info small text-muted">
+                Showing @Data.Count rows
+            </div>
+            @if (Data.Count >= 25) // Arbitrary limit to show "Show more" button
+            {
+                <button class="btn btn-sm btn-link" @onclick="ShowMoreData">
+                    Show more rows
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public DashboardComponent Component { get; set; }
+
+    [Parameter]
+    public List<Dictionary<string, object>> Data { get; set; }
+
+    private string FormatColumnName(string columnName)
+    {
+        if (string.IsNullOrEmpty(columnName))
+            return string.Empty;
+
+        // Split by uppercase letters and underscores
+        var words = System.Text.RegularExpressions.Regex.Split(columnName, @"(?<!^)(?=[A-Z])|_");
+
+        // Capitalize each word and join with spaces
+        return string.Join(" ", words.Select(w => char.ToUpper(w[0]) + w.Substring(1).ToLower()));
+    }
+
+    private string FormatCellValue(object value)
+    {
+        if (value == null)
+            return string.Empty;
+
+        // Format based on type
+        if (value is DateTime dateTime)
+        {
+            return dateTime.ToString("yyyy-MM-dd");
+        }
+        else if (value is decimal || value is double || value is float)
+        {
+            // Try to parse as number for proper formatting
+            if (decimal.TryParse(value.ToString(), out decimal number))
+            {
+                // If it's a whole number, display without decimal places
+                if (number == Math.Floor(number))
+                {
+                    return number.ToString("N0");
+                }
+
+                // Otherwise, display with 2 decimal places
+                return number.ToString("N2");
+            }
+        }
+
+        return value.ToString();
+    }
+
+    private void ShowMoreData()
+    {
+        // Implementation for showing more data
+    }
+}

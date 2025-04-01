@@ -25,6 +25,21 @@
             Initializes the component, loads configuration settings, available databases, and example questions.
             </summary>
         </member>
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.UpdateAmbiguity(System.String,System.String)">
+            <summary>
+            Updates an ambiguity resolution with the selected value.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.UpdateParameter(System.String,System.String)">
+            <summary>
+            Updates a parameter with the selected value.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ConfirmSqlExplanation">
+            <summary>
+            Modified version of ConfirmSqlExplanation to include celebration animation.
+            </summary>
+        </member>
         <member name="M:DynamicDashboardFE.Pages.User.Dashboard.OnDatabaseSelectionChanged(Microsoft.AspNetCore.Components.ChangeEventArgs)">
             <summary>
             Handles database selection change.
@@ -56,11 +71,6 @@
         <member name="M:DynamicDashboardFE.Pages.User.Dashboard.AnalyzeQuestion">
             <summary>
             Analyzes user question
-            </summary>
-        </member>
-        <member name="M:DynamicDashboardFE.Pages.User.Dashboard.ConfirmSqlExplanation">
-            <summary>
-            Confirms SQL explanation and executes the query
             </summary>
         </member>
         <member name="M:DynamicDashboardFE.Pages.User.Dashboard.HandleErrorDismiss">

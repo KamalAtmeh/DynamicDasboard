@@ -237,19 +237,20 @@ namespace DynamicDasboardWebAPI.Services.LLM
 
             // Primary approach and priorities
             prompt.AppendLine("\nFollowing this approach:");
-            prompt.AppendLine("1. First, determine if the question is related to the provided database schema");
-            prompt.AppendLine("2. If related, generate a SQL query and explain the business meaning");
-            prompt.AppendLine("3. If not related (or partially unrelated), explain why and suggest alternative topics");
+            prompt.AppendLine("1. First, determine if the question is fully related to the provided database schema");
+            prompt.AppendLine("2. If fully related, generate a SQL query and explain the business meaning");
+            prompt.AppendLine("2. fully related, means all part of the question is related to the database schema");
+            prompt.AppendLine("3. If not related , explain why and suggest alternative topics");
             prompt.AppendLine("4. Identify adjustable parameters and potential ambiguities in related questions");
 
             // Schema relevance analysis
             prompt.AppendLine("\nSchema Relevance Analysis:");
             prompt.AppendLine("- Carefully analyze if the question involves data that exists in the schema");
             prompt.AppendLine("- If the question is completely unrelated to the schema, set isSchemaRelated: false");
-            prompt.AppendLine("- If only parts of the question are unrelated, set hasPartiallyUnrelatedContent: true");
-            prompt.AppendLine("- For unrelated questions, identify 3-5 topics that the schema actually contains");
-            prompt.AppendLine("- For unrelated questions, suggest 3 specific example questions related to the schema");
-            prompt.AppendLine("- For partially unrelated questions, list the unrelated parts in the unrelatedQuestionParts array");
+            prompt.AppendLine("- If some parts of the question is related and other not related we consider it as not related schema however set hasPartiallyUnrelatedContent: true and isSchemaRelated and list the unrelated parts in the unrelatedQuestionParts array");
+            prompt.AppendLine("- For completely unrelated questions, identify 3-5 topics that the schema actually contains");
+            prompt.AppendLine("- For completely unrelated questions, suggest 3 specific example questions related to the schema");
+
 
             // SQL generation requirements
             prompt.AppendLine("\nSQL Generation Rules (for related questions):");
@@ -258,7 +259,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("- If no database type is specified, use ANSI-standard SQL");
             prompt.AppendLine("- If a specific database type is specified (MySQL, SQL Server, Oracle, PostgreSQL, etc.), optimize the SQL for that platform");
             //prompt.AppendLine("- Qualify all column names with table aliases (e.g., users.name)");
-            prompt.AppendLine("-  you must use the exact column names as they appear in the database schema.Do not modify, rename, or normalize column names. however you need to Qualify all column names with table aliases (e.g., users.name)");
+            prompt.AppendLine("-  you must use the exact column names as they appear in the database schema.Do not modify, rename, or normalize column names. however you need to Qualify all column names with table aliases (e.g., Table1.column1)");
             prompt.AppendLine("- Handle NULL values appropriately");
             prompt.AppendLine("- Ensure GROUP BY includes all non-aggregated columns");
             prompt.AppendLine("- Use only SELECT queries (no data modification)");
@@ -273,7 +274,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("\nBusiness Explanation Rules:");
             prompt.AppendLine("1. Use natural, conversational language focused on business meaning");
             prompt.AppendLine("2. Explain what data will be retrieved and any filters or conditions");
-            prompt.AppendLine("3. Use defined descriptions instead of technical database terms");
+            prompt.AppendLine("3. Use business professional syntax instead of technical database terms");
             prompt.AppendLine("4. Highlight business insights the query provides");
 
             prompt.AppendLine("\nDatabase schema:");
@@ -339,7 +340,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("  ],");
             prompt.AppendLine("  \"sqlQuery\": \"\",");
             prompt.AppendLine("  \"businessExplanation\": \"\",");
-            prompt.AppendLine("  \"dbType\": \"ANSI-standard\",");
+            prompt.AppendLine("  \"dbType\": \"Oracle\",");
             prompt.AppendLine("  \"dbNotes\": \"\",");
             prompt.AppendLine("  \"hasAmbiguities\": false,");
             prompt.AppendLine("  \"detectedAmbiguities\": {},");
@@ -349,36 +350,23 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("```");
 
             // Example response for partially unrelated question
-            prompt.AppendLine("\nExample response for PARTIALLY UNRELATED question:");
+            prompt.AppendLine("\nExample response for PARTIALLY UNRELATED (some parts are related and other is unrelated to the schema) question:");
             prompt.AppendLine("```json");
             prompt.AppendLine("{");
-            prompt.AppendLine("  \"isSchemaRelated\": true,");
-            prompt.AppendLine("  \"schemaRelevanceMessage\": \"\",");
+            prompt.AppendLine("  \"isSchemaRelated\": false,");
+            prompt.AppendLine("  \"schemaRelevanceMessage\": \"Part of the question is not related to selected database 'weather in the shipping destination'\",");
             prompt.AppendLine("  \"hasPartiallyUnrelatedContent\": true,");
             prompt.AppendLine("  \"unrelatedQuestionParts\": [\"weather in the shipping destination\"],");
             prompt.AppendLine("  \"suggestedTopics\": [],");
-            prompt.AppendLine("  \"suggestedQuestions\": [");
-            prompt.AppendLine("    \"What are the most common shipping destinations for our orders?\",");
-            prompt.AppendLine("    \"Which shipping methods are used most frequently?\",");
-            prompt.AppendLine("    \"What's the average shipping time for each carrier?\"");
-            prompt.AppendLine("  ],");
-            prompt.AppendLine("  \"sqlQuery\": \"SELECT o.ShippingAddress, COUNT(*) AS OrderCount\\nFROM Orders o\\nGROUP BY o.ShippingAddress\\nORDER BY OrderCount DESC\\nLIMIT 10;\",");
-            prompt.AppendLine("  \"businessExplanation\": \"This query shows the top 10 shipping destinations by number of orders. Note that I can't provide information about weather at these destinations as that data isn't in the database.\",");
-            prompt.AppendLine("  \"dbType\": \"MySQL\",");
-            prompt.AppendLine("  \"dbNotes\": \"This query uses MySQL's LIMIT syntax. For SQL Server, use TOP 10 instead.\",");
+            prompt.AppendLine("  \"suggestedQuestions\": [],");
+            prompt.AppendLine("  \"sqlQuery\": \"\",");
+            prompt.AppendLine("  \"businessExplanation\": \"\",");
+            prompt.AppendLine("  \"dbType\": \"SQL Server\",");
+            prompt.AppendLine("  \"dbNotes\": \"\",");
             prompt.AppendLine("  \"hasAmbiguities\": false,");
             prompt.AppendLine("  \"detectedAmbiguities\": {},");
-            prompt.AppendLine("  \"adjustableParameters\": {");
-            prompt.AppendLine("    \"number of destinations\": {");
-            prompt.AppendLine("      \"defaultValue\": \"10\",");
-            prompt.AppendLine("      \"description\": \"The number of destinations to return\",");
-            prompt.AppendLine("      \"alternatives\": [\"5\", \"20\", \"All destinations\"],");
-            prompt.AppendLine("      \"parameterType\": \"number\"");
-            prompt.AppendLine("    }");
-            prompt.AppendLine("  },");
-            prompt.AppendLine("  \"termMapping\": {");
-            prompt.AppendLine("    \"ShippingAddress\": \"Delivery Location\"");
-            prompt.AppendLine("  }");
+            prompt.AppendLine("  \"adjustableParameters\": {},");
+            prompt.AppendLine("  \"termMapping\": {}");
             prompt.AppendLine("}");
             prompt.AppendLine("```");
 
@@ -392,8 +380,8 @@ namespace DynamicDasboardWebAPI.Services.LLM
             prompt.AppendLine("  \"unrelatedQuestionParts\": [],");
             prompt.AppendLine("  \"suggestedTopics\": [],");
             prompt.AppendLine("  \"suggestedQuestions\": [],");
-            prompt.AppendLine("  \"sqlQuery\": \"SELECT c.FirstName, c.LastName, SUM(o.TotalAmount) AS TotalSpent\\nFROM Customers c\\nJOIN Orders o ON c.CustomerID = o.CustomerID\\nGROUP BY c.CustomerID, c.FirstName, c.LastName\\nORDER BY TotalSpent DESC\\nLIMIT 10;\",");
-            prompt.AppendLine("  \"businessExplanation\": \"This query retrieves the top 10 customers based on their total purchase amounts. It shows each customer's first and last name along with the total amount they've spent across all their orders.\",");
+            prompt.AppendLine("  \"sqlQuery\": \"SELECT c.column1, c.column2, SUM(o.column3) AS Total_Column3 FROM Table1 c JOIN Table12 o ON c.Column5 = o.Column6 GROUP BY c.Column5, c.column1, c.column2 ORDER BY Column7 DESC LIMIT 10;\",");
+            prompt.AppendLine("  \"businessExplanation\": \"Business Explanation for the query as per the mentioned instructions\",");
             prompt.AppendLine("  \"dbType\": \"MySQL\",");
             prompt.AppendLine("  \"dbNotes\": \"For SQL Server, replace LIMIT with TOP 10.\",");
             prompt.AppendLine("  \"hasAmbiguities\": true,");

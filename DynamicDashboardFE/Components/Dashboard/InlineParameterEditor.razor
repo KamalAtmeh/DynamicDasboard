@@ -1,0 +1,85 @@
+﻿@* 
+
+@using System.Text.RegularExpressions
+
+<span class="inline-parameter-wrapper">
+    <span class="parameter-text @(IsEditing ? "editing" : "")" @onclick="ToggleEditor">
+        <span class="parameter-value @AnimationClass">@Value</span>
+        <i class="fas fa-edit parameter-edit-icon"></i>
+    </span>
+
+    @if (IsEditing)
+    {
+        <div class="parameter-popover animate__animated animate__fadeIn">
+            <div class="parameter-popover-header">
+                <span>@Label</span>
+                <button class="parameter-close-btn" @onclick="CloseEditor">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="parameter-options">
+                @foreach (var option in Options)
+                {
+                    <div class="parameter-option @(option == Value ? "selected" : "")"
+                         @onclick='() => SelectOption(option)'>
+                        @option
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</span>
+
+@code {
+    [Parameter] public string Label { get; set; }
+    [Parameter] public string Value { get; set; }
+    [Parameter] public List<string> Options { get; set; }
+    [Parameter] public EventCallback<string> OnValueChange { get; set; }
+
+    private bool IsEditing { get; set; } = false;
+    private string AnimationClass { get; set; } = "";
+
+    private void ToggleEditor()
+    {
+        IsEditing = !IsEditing;
+    }
+
+    private void CloseEditor()
+    {
+        IsEditing = false;
+    }
+
+    private async Task SelectOption(string option)
+    {
+        if (option != Value)
+        {
+            AnimationClass = "parameter-changing";
+            await Task.Delay(10); // Allow animation to start
+
+            Value = option;
+            await OnValueChange.InvokeAsync(option);
+
+            await Task.Delay(300); // Duration of the animation
+            AnimationClass = "parameter-changed";
+
+            await Task.Delay(1000); // Keep highlight for a short time
+            AnimationClass = "";
+        }
+
+        IsEditing = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initial pulse animation
+            AnimationClass = "parameter-pulse";
+            StateHasChanged();
+
+            await Task.Delay(2000);
+            AnimationClass = "";
+            StateHasChanged();
+        }
+    }
+} *@

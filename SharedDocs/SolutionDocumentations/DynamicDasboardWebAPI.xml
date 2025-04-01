@@ -95,6 +95,77 @@
             <param name="detailId">The test detail ID.</param>
             <returns>Comprehensive dataset comparison result.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.DashboardController">
+            <summary>
+            API controller for dashboard operations.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.#ctor(DynamicDasboardWebAPI.Services.IDashboardService,DynamicDasboardWebAPI.Services.ILogsService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.DashboardController"/> class.
+            </summary>
+            <param name="dashboardService">The dashboard service.</param>
+            <param name="logsService">The logs service.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GetAllDashboards(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Gets all dashboards with optional filtering.
+            </summary>
+            <param name="categoryId">Optional category ID filter.</param>
+            <param name="createdBy">Optional creator ID filter.</param>
+            <param name="sharingStatus">Optional sharing status filter (1=Private, 2=Shared, 3=Public).</param>
+            <returns>A collection of dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GetDashboardById(System.Int32)">
+            <summary>
+            Gets a dashboard by its ID.
+            </summary>
+            <param name="id">The dashboard ID.</param>
+            <returns>The dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.CreateDashboard(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Creates a new dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to create.</param>
+            <returns>The created dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.UpdateDashboard(System.Int32,DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Updates an existing dashboard.
+            </summary>
+            <param name="id">The ID of the dashboard to update.</param>
+            <param name="dashboard">The updated dashboard data.</param>
+            <returns>The updated dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.DeleteDashboard(System.Int32)">
+            <summary>
+            Deletes a dashboard.
+            </summary>
+            <param name="id">The ID of the dashboard to delete.</param>
+            <returns>Success indicator.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GetDashboardCategories(System.Boolean)">
+            <summary>
+            Gets all dashboard categories.
+            </summary>
+            <param name="activeOnly">Whether to return only active categories (default: true).</param>
+            <returns>A collection of dashboard categories.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.CreateDashboardCategory(DynamicDashboardCommon.Models.DashboardCategory)">
+            <summary>
+            Creates a new dashboard category.
+            </summary>
+            <param name="category">The category to create.</param>
+            <returns>The created category.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GenerateDashboardSuggestions(System.Int32)">
+            <summary>
+            Generates AI dashboard suggestions based on database schema.
+            </summary>
+            <param name="databaseId">The database ID to analyze.</param>
+            <returns>A list of suggested dashboards.</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.QueryController">
             <summary>
             Enhanced controller for processing natural language queries with a multi-step workflow:
@@ -484,6 +555,159 @@
             <param name="pageSize">The page size.</param>
             <returns>Tuple containing paginated test details and total count.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Repositories.DashboardRepository">
+            <summary>
+            Repository for handling CRUD operations for dashboards.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.#ctor(System.Data.IDbConnection,DynamicDasboardWebAPI.Utilities.DbConnectionFactory)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Repositories.DashboardRepository"/> class.
+            </summary>
+            <param name="appDbConnection">The database connection.</param>
+            <param name="connectionFactory">The connection factory.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.GetAllDashboardsAsync(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{DynamicDashboardCommon.Models.DashboardSharingStatus})">
+            <summary>
+            Gets all dashboards with optional filtering.
+            </summary>
+            <param name="categoryId">Optional category filter.</param>
+            <param name="createdBy">Optional creator filter.</param>
+            <param name="sharingStatus">Optional sharing status filter.</param>
+            <returns>A collection of dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.GetDashboardByIdAsync(System.Int32)">
+            <summary>
+            Gets a dashboard by its ID.
+            </summary>
+            <param name="dashboardId">The dashboard ID.</param>
+            <returns>The dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.CreateDashboardAsync(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Creates a new dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to create.</param>
+            <returns>The ID of the created dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.UpdateDashboardAsync(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Updates an existing dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to update.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.DeleteDashboardAsync(System.Int32)">
+            <summary>
+            Deletes a dashboard.
+            </summary>
+            <param name="dashboardId">The ID of the dashboard to delete.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.GetDashboardCategoriesAsync(System.Boolean)">
+            <summary>
+            Gets all dashboard categories.
+            </summary>
+            <param name="activeOnly">Whether to return only active categories.</param>
+            <returns>A collection of dashboard categories.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.CreateDashboardCategoryAsync(DynamicDashboardCommon.Models.DashboardCategory)">
+            <summary>
+            Creates a new dashboard category.
+            </summary>
+            <param name="category">The category to create.</param>
+            <returns>The ID of the created category.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.GetDashboardComponentsAsync(System.Int32,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Gets components for a dashboard.
+            </summary>
+            <param name="dashboardId">The dashboard ID.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>A collection of dashboard components.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.CreateDashboardComponentAsync(DynamicDashboardCommon.Models.DashboardComponent,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Creates a new dashboard component.
+            </summary>
+            <param name="component">The component to create.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>The ID of the created component.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.UpdateDashboardComponentAsync(DynamicDashboardCommon.Models.DashboardComponent,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Updates an existing dashboard component.
+            </summary>
+            <param name="component">The component to update.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.DeleteDashboardComponentAsync(System.Int32,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Deletes a dashboard component.
+            </summary>
+            <param name="componentId">The ID of the component to delete.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.DeleteDashboardComponentsAsync(System.Int32,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Deletes all components for a dashboard.
+            </summary>
+            <param name="dashboardId">The dashboard ID.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.GetComponentParametersAsync(System.Int32,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Gets parameters for a component.
+            </summary>
+            <param name="componentId">The component ID.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>A collection of component parameters.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.CreateComponentParameterAsync(DynamicDashboardCommon.Models.ComponentParameter,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Creates a new component parameter.
+            </summary>
+            <param name="parameter">The parameter to create.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>The ID of the created parameter.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.UpdateComponentParameterAsync(DynamicDashboardCommon.Models.ComponentParameter,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Updates an existing component parameter.
+            </summary>
+            <param name="parameter">The parameter to update.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.DeleteComponentParameterAsync(System.Int32,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Deletes a component parameter.
+            </summary>
+            <param name="parameterId">The ID of the parameter to delete.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Repositories.DashboardRepository.DeleteComponentParametersAsync(System.Int32,System.Data.IDbConnection,System.Data.IDbTransaction)">
+            <summary>
+            Deletes all parameters for a component.
+            </summary>
+            <param name="componentId">The component ID.</param>
+            <param name="connection">Optional connection to use.</param>
+            <param name="transaction">Optional transaction to use.</param>
+            <returns>True if successful.</returns>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.QueryRepository.ExecuteQueryAsync(System.String)">
             <summary>
             Executes a SQL query on the default DB and returns the results as a list of dictionaries.
@@ -754,6 +978,71 @@
             Gets details of a specific query by ID (default DB).
             </summary>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService">
+            <summary>
+            Service for generating dashboard suggestions using LLM.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.#ctor(DynamicDasboardWebAPI.Services.LLM.ILLMService,DynamicDasboardWebAPI.Services.DatabaseSchemaService,DynamicDasboardWebAPI.Services.ILogsService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DashboardGenerationService"/> class.
+            </summary>
+            <param name="llmService">The LLM service.</param>
+            <param name="schemaService">The schema service.</param>
+            <param name="logsService">The logs service.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32)">
+            <summary>
+            Generates dashboard suggestions based on database schema.
+            </summary>
+            <param name="databaseId">The database ID to analyze.</param>
+            <returns>A list of suggested dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.BuildDashboardGenerationPrompt(System.String)">
+            <summary>
+            Builds the prompt for dashboard generation.
+            </summary>
+            <param name="schema">The database schema string.</param>
+            <returns>The prompt for the LLM.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.ParseDashboardSuggestions(System.String,System.Int32)">
+            <summary>
+            Parses the LLM response to extract dashboard suggestions.
+            </summary>
+            <param name="llmResponse">The LLM response.</param>
+            <param name="databaseId">The database ID.</param>
+            <returns>A list of suggested dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.MapToDashboards(DynamicDasboardWebAPI.Services.DashboardGenerationService.DashboardSuggestions,System.Int32)">
+            <summary>
+            Maps suggestions to Dashboard objects.
+            </summary>
+            <param name="suggestions">The dashboard suggestions from LLM.</param>
+            <param name="databaseId">The database ID.</param>
+            <returns>A list of Dashboard objects.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetDataViewingTypeId(System.String)">
+            <summary>
+            Gets the data viewing type ID from its name.
+            </summary>
+            <param name="typeName">The type name.</param>
+            <returns>The type ID.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService.DashboardSuggestions">
+            <summary>
+            Root class for dashboard suggestions from LLM.
+            </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService.DashboardSuggestion">
+            <summary>
+            Individual dashboard suggestion from LLM.
+            </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService.ComponentSuggestion">
+            <summary>
+            Component suggestion from LLM.
+            </summary>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.QueryService">
             <summary>
             Enhanced service for processing natural language queries with a two-step confirmation process
@@ -827,6 +1116,94 @@
             <param name="databaseId">The database ID</param>
             <param name="validateRelations">Whether to validate relationship constraints</param>
             <returns>Validation result with error details if any</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.DashboardService">
+            <summary>
+            Service for managing dashboard operations.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.#ctor(DynamicDasboardWebAPI.Repositories.DashboardRepository,DynamicDasboardWebAPI.Services.ILogsService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DashboardService"/> class.
+            </summary>
+            <param name="dashboardRepository">The dashboard repository.</param>
+            <param name="logsService">The logs service.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.GetAllDashboardsAsync(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{DynamicDashboardCommon.Models.DashboardSharingStatus})">
+            <summary>
+            Gets all dashboards with optional filtering.
+            </summary>
+            <param name="categoryId">Optional category filter.</param>
+            <param name="createdBy">Optional creator filter.</param>
+            <param name="sharingStatus">Optional sharing status filter.</param>
+            <returns>A collection of dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.GetDashboardByIdAsync(System.Int32)">
+            <summary>
+            Gets a dashboard by its ID.
+            </summary>
+            <param name="dashboardId">The dashboard ID.</param>
+            <returns>The dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.CreateDashboardAsync(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Creates a new dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to create.</param>
+            <returns>The ID of the created dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.UpdateDashboardAsync(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Updates an existing dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to update.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.DeleteDashboardAsync(System.Int32)">
+            <summary>
+            Deletes a dashboard.
+            </summary>
+            <param name="dashboardId">The ID of the dashboard to delete.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.GetDashboardCategoriesAsync(System.Boolean)">
+            <summary>
+            Gets all dashboard categories.
+            </summary>
+            <param name="activeOnly">Whether to return only active categories.</param>
+            <returns>A collection of dashboard categories.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.CreateDashboardCategoryAsync(DynamicDashboardCommon.Models.DashboardCategory)">
+            <summary>
+            Creates a new dashboard category.
+            </summary>
+            <param name="category">The category to create.</param>
+            <returns>The ID of the created category.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.GenerateDashboardSuggestionsAsync(System.Int32)">
+            <summary>
+            Generates AI dashboard suggestions based on database schema.
+            </summary>
+            <param name="databaseId">The database ID to analyze.</param>
+            <returns>A list of suggested dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.ValidateDashboard(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Validates a dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to validate.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.ValidateComponent(DynamicDashboardCommon.Models.DashboardComponent)">
+            <summary>
+            Validates a dashboard component.
+            </summary>
+            <param name="component">The component to validate.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardService.ValidateParameter(DynamicDashboardCommon.Models.ComponentParameter)">
+            <summary>
+            Validates a component parameter.
+            </summary>
+            <param name="parameter">The parameter to validate.</param>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.DataStoryService">
             <summary>
@@ -945,6 +1322,81 @@
             <summary>
             Additional data for the insight as JSON
             </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.IDashboardGenerationService">
+            <summary>
+            Interface for dashboard generation services.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32)">
+            <summary>
+            Generates dashboard suggestions based on database schema.
+            </summary>
+            <param name="databaseId">The database ID to analyze.</param>
+            <returns>A list of suggested dashboards.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.IDashboardService">
+            <summary>
+            Interface for dashboard services.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.GetAllDashboardsAsync(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{DynamicDashboardCommon.Models.DashboardSharingStatus})">
+            <summary>
+            Gets all dashboards with optional filtering.
+            </summary>
+            <param name="categoryId">Optional category filter.</param>
+            <param name="createdBy">Optional creator filter.</param>
+            <param name="sharingStatus">Optional sharing status filter.</param>
+            <returns>A collection of dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.GetDashboardByIdAsync(System.Int32)">
+            <summary>
+            Gets a dashboard by its ID.
+            </summary>
+            <param name="dashboardId">The dashboard ID.</param>
+            <returns>The dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.CreateDashboardAsync(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Creates a new dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to create.</param>
+            <returns>The ID of the created dashboard.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.UpdateDashboardAsync(DynamicDashboardCommon.Models.DashboardModel)">
+            <summary>
+            Updates an existing dashboard.
+            </summary>
+            <param name="dashboard">The dashboard to update.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.DeleteDashboardAsync(System.Int32)">
+            <summary>
+            Deletes a dashboard.
+            </summary>
+            <param name="dashboardId">The ID of the dashboard to delete.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.GetDashboardCategoriesAsync(System.Boolean)">
+            <summary>
+            Gets all dashboard categories.
+            </summary>
+            <param name="activeOnly">Whether to return only active categories.</param>
+            <returns>A collection of dashboard categories.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.CreateDashboardCategoryAsync(DynamicDashboardCommon.Models.DashboardCategory)">
+            <summary>
+            Creates a new dashboard category.
+            </summary>
+            <param name="category">The category to create.</param>
+            <returns>The ID of the created category.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardService.GenerateDashboardSuggestionsAsync(System.Int32)">
+            <summary>
+            Generates AI dashboard suggestions based on database schema.
+            </summary>
+            <param name="databaseId">The database ID to analyze.</param>
+            <returns>A list of suggested dashboards.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(System.Int32,DynamicDashboardCommon.Models.Database)">
             <summary>

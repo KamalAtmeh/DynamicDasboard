@@ -1806,3 +1806,174 @@ body {
 .animate__fadeInUp {
     animation-duration: 0.4s;
 }
+
+
+
+/*Dashboard Inline Dialogue stylers for parameters*/
+/* Inline Parameter Editor Styles */
+
+.inline-parameter-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.parameter-text {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(var(--primary-rgb), 0.1);
+    border-radius: 4px;
+    padding: 3px 8px;
+    margin: 0 2px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+    .parameter-text:hover {
+        background: rgba(var(--primary-rgb), 0.2);
+        border-color: rgba(var(--primary-rgb), 0.3);
+    }
+
+    .parameter-text.editing {
+        background: rgba(var(--primary-rgb), 0.2);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+    }
+
+.parameter-value {
+    font-weight: 600;
+    color: var(--primary);
+    display: inline-block;
+    position: relative;
+}
+
+.parameter-edit-icon {
+    font-size: 12px;
+    margin-left: 6px;
+    opacity: 0.5;
+    color: var(--primary);
+    transition: opacity 0.2s ease;
+}
+
+.parameter-text:hover .parameter-edit-icon {
+    opacity: 1;
+}
+
+/* Parameter popover */
+.parameter-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 200px;
+    background: var(--light);
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    overflow: hidden;
+    border: 1px solid rgba(var(--gray-light-rgb), 0.7);
+}
+
+.parameter-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(var(--primary-rgb), 0.05);
+    border-bottom: 1px solid rgba(var(--gray-light-rgb), 0.7);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--dark);
+}
+
+.parameter-close-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: var(--gray);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+    .parameter-close-btn:hover {
+        background: rgba(var(--gray-light-rgb), 0.5);
+        color: var(--dark);
+    }
+
+.parameter-options {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.parameter-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+    .parameter-option:hover {
+        background: rgba(var(--primary-rgb), 0.1);
+    }
+
+    .parameter-option.selected {
+        background: rgba(var(--primary-rgb), 0.15);
+        font-weight: 500;
+        color: var(--primary);
+    }
+
+/* Animation classes */
+.parameter-pulse {
+    animation: parameter-pulse 2s ease-in-out;
+}
+
+.parameter-changing {
+    opacity: 0.3;
+    transform: scale(0.9);
+    transition: all 0.3s ease;
+}
+
+.parameter-changed {
+    opacity: 1;
+    transform: scale(1);
+    background: rgba(var(--success), 0.2);
+    color: var(--success);
+    transition: all 0.3s ease;
+}
+
+@keyframes parameter-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.3);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(var(--primary-rgb), 0);
+    }
+}
+
+/* Celebration animation container */
+.celebration-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 0;
+    opacity: 0;
+}

@@ -1,0 +1,544 @@
+﻿@page "/dashboard/{DashboardId:int}"
+@using DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid px-4 py-4 dashboard-viewer">
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="ms-3 h5 mb-0">Loading dashboard...</div>
+        </div>
+    }
+    else if (dashboard == null)
+    {
+        <div class="alert alert-danger">
+            <h4 class="alert-heading">Dashboard Not Found</h4>
+            <p>The requested dashboard could not be found or you don't have permission to view it.</p>
+            <hr>
+            <div class="d-flex">
+                <button class="btn btn-outline-danger" @onclick='() => NavigationManager.NavigateTo("/dashboard/marketplace")'>
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Return to Marketplace
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Dashboard Header -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h2 class="dashboard-title">
+                    @dashboard.Title
+                    @if (dashboard.IsAIGenerated)
+                    {
+                        <span class="badge bg-primary ms-2" title="AI Generated">
+                            <i class="fas fa-magic me-1"></i>
+                            AI Generated
+                        </span>
+                    }
+                </h2>
+                @if (!string.IsNullOrEmpty(dashboard.Description))
+                {
+                    <p class="text-muted dashboard-description">@dashboard.Description</p>
+                }
+            </div>
+            <div class="col-md-6 d-flex justify-content-end align-items-start">
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary" @onclick='() => NavigationManager.NavigateTo($"/dashboard/builder/{dashboard.DashboardID}")'>
+                        <i class="fas fa-edit me-2"></i>
+                        Edit Dashboard
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="RefreshData">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Refresh Data
+                    </button>
+                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" @onclick="ShareDashboard">
+                                <i class="fas fa-share-alt me-2"></i>
+                                Share Dashboard
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick="ExportDashboard">
+                                <i class="fas fa-file-export me-2"></i>
+                                Export Dashboard
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick="CloneDashboard">
+                                <i class="fas fa-clone me-2"></i>
+                                Clone Dashboard
+                            </button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item text-danger" @onclick="DeleteDashboard">
+                                <i class="fas fa-trash-alt me-2"></i>
+                                Delete Dashboard
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Filters (if any) -->
+        @if (dashboardFilters.Any())
+        {
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-filter me-2"></i>
+                                Dashboard Filters
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                @foreach (var filter in dashboardFilters)
+                                {
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">@filter.DisplayName</label>
+                                        @switch (filter.DataType)
+                                        {
+                                            case ParameterDataType.String:
+                                                <input type="text" class="form-control" 
+                                                       value="@filter.CurrentValue"
+                                                       @onchange="(e) => UpdateFilterValue(filter, e.Value?.ToString())" />
+                                                break;
+                                            case ParameterDataType.Number:
+                                                <input type="number" class="form-control" 
+                                                       value="@filter.CurrentValue"
+                                                       @onchange="(e) => UpdateFilterValue(filter, e.Value?.ToString())" />
+                                                break;
+                                            case ParameterDataType.Date:
+                                                <input type="date" class="form-control" 
+                                                       value="@filter.CurrentValue"
+                                                       @onchange="(e) => UpdateFilterValue(filter, e.Value?.ToString())" />
+                                                break;
+                                            case ParameterDataType.Boolean:
+                                                <select class="form-select"
+                                                        value="@filter.CurrentValue"
+                                                        @onchange="(e) => UpdateFilterValue(filter, e.Value?.ToString())">
+                                                    <option value="true">Yes</option>
+                                                    <option value="false">No</option>
+                                                </select>
+                                                break;
+                                            case ParameterDataType.Array:
+                                                @if (!string.IsNullOrEmpty(filter.Options))
+                                                {
+                                                    <select class="form-select" 
+                                                            value="@filter.CurrentValue"
+                                                            @onchange="(e) => UpdateFilterValue(filter, e.Value?.ToString())">
+                                                        @foreach (var option in filter.Options.Split(','))
+                                                        {
+                                                            <option value="@option.Trim()">@option.Trim()</option>
+                                                        }
+                                                    </select>
+                                                }
+                                                break;
+                                        }
+                                    </div>
+                                }
+                                <div class="col-md-12 mt-2">
+                                    <button class="btn btn-primary" @onclick="ApplyFilters">
+                                        <i class="fas fa-filter me-2"></i>
+                                        Apply Filters
+                                    </button>
+                                    <button class="btn btn-outline-secondary ms-2" @onclick="ResetFilters">
+                                        <i class="fas fa-undo me-2"></i>
+                                        Reset Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid" style="grid-template-columns: repeat(12, 1fr);">
+            @foreach (var component in dashboard.Components.Where(c => c.IsVisible).OrderBy(c => c.GridY).ThenBy(c => c.GridX))
+            {
+                <div class="dashboard-component" style="grid-column: @(component.GridX + 1) / span @component.GridWidth; grid-row: @(component.GridY + 1) / span @component.GridHeight;">
+                    <div class="card shadow-sm component-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center py-3">
+                            <h6 class="mb-0 component-title">@component.Title</h6>
+                            <div class="component-actions">
+                                @if (component.DataViewingTypeID != (int)DataViewingTypeEnum.Label)
+                                {
+                                    <button class="btn btn-sm btn-link text-muted" @onclick="() => RefreshComponentData(component)">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                }
+                                <div class="dropdown d-inline">
+                                    <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        @if (component.DataViewingTypeID != (int)DataViewingTypeEnum.Label)
+                                        {
+                                            <li>
+                                                <button class="dropdown-item" @onclick="() => ViewComponentDetails(component)">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    View Details
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" @onclick="() => ViewComponentData(component)">
+                                                    <i class="fas fa-table me-2"></i>
+                                                    View Data
+                                                </button>
+                                            </li>
+                                        }
+                                        <li>
+                                            <button class="dropdown-item" @onclick="() => ToggleComponentVisibility(component)">
+                                                <i class="fas fa-eye-slash me-2"></i>
+                                                Hide Component
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body component-body">
+                            @if (isComponentLoading[component.ComponentID])
+                            {
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Render component based on type -->
+                                @switch (component.DataViewingTypeID)
+                                {
+                                    case (int)DataViewingTypeEnum.Table:
+                                        <ComponentTable Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Label:
+                                        <ComponentLabel Component="component" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Number:
+                                        <ComponentNumber Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Chart:
+                                        <ComponentChart Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Card:
+                                        <ComponentCard Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    default:
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-exclamation-triangle mb-2"></i>
+                                            <p>Unknown component type.</p>
+                                        </div>
+                                        break;
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Empty State for No Components -->
+        @if (!dashboard.Components.Any(c => c.IsVisible))
+        {
+            <div class="alert alert-info my-4">
+                <h5><i class="fas fa-info-circle me-2"></i>This dashboard has no visible components</h5>
+                <p>Edit the dashboard to add visualization components.</p>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int DashboardId { get; set; }
+
+    private DashboardModel dashboard;
+    private bool isLoading = true;
+    private Dictionary<int, List<Dictionary<string, object>>> componentData = new Dictionary<int, List<Dictionary<string, object>>>();
+    private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
+    private List<ComponentParameter> dashboardFilters = new List<ComponentParameter>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboard();
+    }
+
+    private async Task LoadDashboard()
+    {
+        try
+        {
+            isLoading = true;
+            dashboard = await Http.GetFromJsonAsync<DashboardModel>($"api/dashboard/{DashboardId}");
+            
+            if (dashboard != null)
+            {
+                // Initialize component loading states
+                foreach (var component in dashboard.Components)
+                {
+                    isComponentLoading[component.ComponentID] = true;
+                }
+                
+                // Extract dashboard-level filters
+                dashboardFilters = dashboard.Components
+                    .SelectMany(c => c.Parameters)
+                    .Where(p => p.IsVisible)
+                    .GroupBy(p => p.Name)
+                    .Select(g => g.First())
+                    .ToList();
+                
+                // Start loading component data
+                await LoadComponentData();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading dashboard: {ex.Message}");
+            dashboard = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadComponentData()
+    {
+        if (dashboard == null)
+            return;
+        
+        // Load data for each component in parallel
+        var tasks = dashboard.Components
+            .Where(c => c.DataViewingTypeID != (int)DataViewingTypeEnum.Label) // Labels don't need data
+            .Select(c => LoadComponentDataAsync(c));
+        
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task LoadComponentDataAsync(DashboardComponent component)
+    {
+        try
+        {
+            isComponentLoading[component.ComponentID] = true;
+            StateHasChanged();
+            
+            // Create payload with query and parameters
+            var payload = new
+            {
+                SqlQuery = component.QueryText,
+                Parameters = component.Parameters?.Select(p => new
+                {
+                    p.Name,
+                    Value = p.CurrentValue ?? p.DefaultValue
+                }).ToList()
+            };
+            
+            // Execute query
+            var response = await Http.PostAsJsonAsync("api/query/execute", payload);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<QueryResult>();
+                componentData[component.ComponentID] = result.Data;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                ToastService.ShowError($"Error loading component data: {error}");
+                componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading component data: {ex.Message}");
+            componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+        }
+        finally
+        {
+            isComponentLoading[component.ComponentID] = false;
+            StateHasChanged();
+        }
+    }
+
+    private List<Dictionary<string, object>> GetComponentData(int componentId)
+    {
+        if (componentData.TryGetValue(componentId, out var data))
+        {
+            return data;
+        }
+        
+        return new List<Dictionary<string, object>>();
+    }
+
+    private async Task RefreshComponentData(DashboardComponent component)
+    {
+        await LoadComponentDataAsync(component);
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadComponentData();
+        ToastService.ShowSuccess("Dashboard data refreshed");
+    }
+
+    private void UpdateFilterValue(ComponentParameter filter, string value)
+    {
+        filter.CurrentValue = value;
+        
+        // Update the same parameter across all components
+        foreach (var component in dashboard.Components)
+        {
+            foreach (var param in component.Parameters.Where(p => p.Name == filter.Name))
+            {
+                param.CurrentValue = value;
+            }
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadComponentData();
+        ToastService.ShowSuccess("Filters applied");
+    }
+
+    private async Task ResetFilters()
+    {
+        // Reset all parameters to their default values
+        foreach (var filter in dashboardFilters)
+        {
+            filter.CurrentValue = filter.DefaultValue;
+        }
+        
+        // Update component parameters
+        foreach (var component in dashboard.Components)
+        {
+            foreach (var param in component.Parameters)
+            {
+                param.CurrentValue = param.DefaultValue;
+            }
+        }
+        
+        await LoadComponentData();
+        ToastService.ShowSuccess("Filters reset to defaults");
+    }
+
+    private void ViewComponentDetails(DashboardComponent component)
+    {
+        // Show component details modal
+    }
+
+    private void ViewComponentData(DashboardComponent component)
+    {
+        // Show component data modal
+    }
+
+    private void ToggleComponentVisibility(DashboardComponent component)
+    {
+        component.IsVisible = false;
+        StateHasChanged();
+    }
+
+    private async Task ShareDashboard()
+    {
+        // Implementation for sharing dashboard
+    }
+
+    private async Task ExportDashboard()
+    {
+        // Implementation for exporting dashboard
+    }
+
+    private async Task CloneDashboard()
+    {
+        // Implementation for cloning dashboard
+    }
+
+    private async Task DeleteDashboard()
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this dashboard?");
+        
+        if (confirmed)
+        {
+            try
+            {
+                var response = await Http.DeleteAsync($"api/dashboard/{DashboardId}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    ToastService.ShowSuccess("Dashboard deleted successfully");
+                    NavigationManager.NavigateTo("/dashboard/marketplace");
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    ToastService.ShowError($"Error deleting dashboard: {error}");
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Error deleting dashboard: {ex.Message}");
+            }
+        }
+    }
+
+    // Helper class
+    private class QueryResult
+    {
+        public List<Dictionary<string, object>> Data { get; set; }
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+}
+
+<style>
+    .dashboard-grid {
+        display: grid;
+        gap: 16px;
+        grid-auto-rows: minmax(200px, auto);
+    }
+    
+    .dashboard-component {
+        min-height: 200px;
+    }
+    
+    .component-card {
+        overflow: hidden;
+    }
+    
+    .component-body {
+        position: relative;
+        overflow: auto;
+        padding: 0.75rem;
+    }
+    
+    .component-title {
+        font-weight: 600;
+    }
+    
+    .dashboard-title {
+        margin-bottom: 0.25rem;
+    }
+    
+    .dashboard-description {
+        margin-bottom: 0;
+    }
+</style>
