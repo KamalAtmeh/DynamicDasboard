@@ -1,0 +1,1321 @@
+﻿@* @page "/dashboard/builder"
+@page "/dashboard/builder/{DashboardId:int}"
+@using DynamicDashboardCommon.Models
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+
+<div class="dashboard-builder @(isDragging ? "is-dragging" : "")">
+    <!-- Header Section -->
+    <div class="builder-header shadow-sm">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-icon me-2" @onclick='() => NavigationManager.NavigateTo("/marketplace")'>
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="dashboard-title-container">
+                    @if (isEditingTitle)
+                    {
+                        <input type="text" class="form-control dashboard-title-input" 
+                               @bind="dashboard.Title" 
+                               @blur="FinishTitleEdit" 
+                               @onkeydown="@HandleTitleKeyDown"
+                               @ref="titleInputRef" />
+                    }
+                    else
+                    {
+                        <h4 class="mb-0 dashboard-title" @onclick="StartTitleEdit">
+                            @(string.IsNullOrEmpty(dashboard.Title) ? "Untitled Dashboard" : dashboard.Title)
+                            <i class="fas fa-pencil-alt ms-2 edit-icon"></i>
+                        </h4>
+                    }
+                </div>
+            </div>
+            <div class="builder-actions">
+                <div class="btn-group me-2">
+                    <button class="btn btn-outline-secondary" title="Undo" @onclick="UndoAction" disabled="@(!canUndo)">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" title="Redo" @onclick="RedoAction" disabled="@(!canRedo)">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+                <div class="btn-group me-2">
+                    <button class="btn btn-outline-primary" title="Preview Dashboard" @onclick="PreviewDashboard">
+                        <i class="fas fa-eye me-1"></i>
+                        Preview
+                    </button>
+                    <button class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" @onclick='() => SetPreviewMode("desktop")'>
+                                <i class="fas fa-desktop me-2"></i>
+                                Desktop View
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick='() => SetPreviewMode("tablet")'>
+                                <i class="fas fa-tablet-alt me-2"></i>
+                                Tablet View
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick='() => SetPreviewMode("mobile")'>
+                                <i class="fas fa-mobile-alt me-2"></i>
+                                Mobile View
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Export Button with Dropdown -->
+                <div class="btn-group me-2">
+                    <button class="btn btn-outline-secondary" @onclick="ShowExportModal">
+                        <i class="fas fa-file-export me-1"></i>
+                        Export
+                    </button>
+                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" @onclick='() => ExportDashboard("pdf")'>
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                Export as PDF
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick='() => ExportDashboard("image")'>
+                                <i class="fas fa-file-image me-2 text-primary"></i>
+                                Export as Image
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick='() => ExportDashboard("excel")'>
+                                <i class="fas fa-file-excel me-2 text-success"></i>
+                                Export Data to Excel
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick='() => ExportDashboard("json")'>
+                                <i class="fas fa-file-code me-2 text-warning"></i>
+                                Export Configuration
+                            </button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item" @onclick="ShowScheduleExportModal">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Schedule Export
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" @onclick="SaveDashboard">
+                        <i class="fas fa-save me-1"></i>
+                        Save
+                    </button>
+                    <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" @onclick='() => SaveDashboardAs()'>
+                                <i class="fas fa-save me-2"></i>
+                                Save As...
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" @onclick='() => ShareDashboard()'>
+                                <i class="fas fa-share-alt me-2"></i>
+                                Share Dashboard
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="builder-tabs">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link @(activeTab == "design" ? "active" : "")" @onclick='() => SetActiveTab("design")'>
+                        <i class="fas fa-palette me-1"></i> Design
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => SetActiveTab("data")'>
+                        <i class="fas fa-database me-1"></i> Data
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(activeTab == "settings" ? "active" : "")" @onclick='() => SetActiveTab("settings")'>
+                        <i class="fas fa-cog me-1"></i> Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="builder-content">
+        <!-- Left Sidebar: Component Library -->
+        <div class="builder-sidebar builder-sidebar-left">
+            <BuilderComponentLibrary 
+                OnComponentSelected="AddComponent"
+                AvailableComponents="availableComponents"
+                SearchTerm="@componentSearchTerm"
+                OnSearchChanged="@((value) => componentSearchTerm = value)" />
+        </div>
+
+        <!-- Center: Canvas Area -->
+        <div class="builder-canvas-container">
+            <div class="builder-canvas-toolbar">
+                <div class="btn-group me-2">
+                    <button class="btn btn-sm btn-outline-secondary" title="Zoom Out" @onclick="ZoomOut">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary px-3">@(Math.Round(zoomLevel * 100))%</button>
+                    <button class="btn btn-sm btn-outline-secondary" title="Zoom In" @onclick="ZoomIn">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" title="Reset Zoom" @onclick="ResetZoom">
+                        <i class="fas fa-compress-arrows-alt"></i>
+                    </button>
+                </div>
+                <div class="form-check form-switch ms-2">
+                    <input class="form-check-input" type="checkbox" @bind="showGrid" id="showGridSwitch">
+                    <label class="form-check-label" for="showGridSwitch">Show Grid</label>
+                </div>
+                <div class="spacer"></div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" title="Add Row" @onclick="AddRow">
+                        <i class="fas fa-plus"></i> Add Row
+                    </button>
+                </div>
+            </div>
+
+            <div class="builder-canvas @(showGrid ? "show-grid" : "")" style="transform: scale(@zoomLevel);">
+                @if (!dashboard.Components.Any())
+                {
+                    <div class="empty-canvas-message">
+                        <div class="message-content">
+                            <i class="fas fa-shapes fa-3x mb-3 text-muted"></i>
+                            <h4>Your dashboard is empty</h4>
+                            <p class="text-muted">Drag components from the library to start building your dashboard</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="dashboard-grid" 
+                         style="grid-template-columns: repeat(12, 1fr); min-height: @(GetCanvasHeight())px;">
+                        @foreach (var component in dashboard.Components.Where(c => c.IsVisible).OrderBy(c => c.GridY).ThenBy(c => c.GridX))
+                        {
+                            <div class="dashboard-grid-item @(selectedComponentId == component.ComponentID ? "selected" : "")" 
+                                 style="grid-column: @(component.GridX + 1) / span @component.GridWidth; grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+                                 @onclick='() => SelectComponent(component.ComponentID)'
+                                 @onmousedown='(e) => StartDragComponent(e, component.ComponentID)'
+                                 @key="component.ComponentID">
+                                <div class="component-container">
+                                    <div class="component-header">
+                                        <span class="component-title">@component.Title</span>
+                                        <div class="component-controls">
+                                            <button class="btn btn-icon" title="Component Menu" @onclick:stopPropagation="true" @onclick="(e) => ShowComponentMenu(e, component)">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="component-content">
+                                        <!-- Component preview based on type -->
+                                        @switch (component.DataViewingTypeID)
+                                        {
+                                            case (int)DataViewingTypeEnum.Table:
+                                                <ComponentTable Component="component" Data="GetSampleData(component)" />
+                                                break;
+                                            case (int)DataViewingTypeEnum.Label:
+                                                <ComponentLabel Component="component" />
+                                                break;
+                                            case (int)DataViewingTypeEnum.Number:
+                                                <ComponentNumber Component="component" Data="GetSampleData(component)" />
+                                                break;
+                                            case (int)DataViewingTypeEnum.Chart:
+                                                <ComponentChart Component="component" Data="GetSampleData(component)" />
+                                                break;
+                                            case (int)DataViewingTypeEnum.Card:
+                                                <ComponentCard Component="component" Data="GetSampleData(component)" />
+                                                break;
+                                            default:
+                                                <div class="text-center text-muted pt-4">
+                                                    <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                                    <p>Component Preview</p>
+                                                </div>
+                                                break;
+                                        }
+                                    </div>
+                                    <div class="component-resize-handle" @onmousedown='(e) => StartResize(e, component.ComponentID)'></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Right Sidebar: Properties Panel -->
+        <div class="builder-sidebar builder-sidebar-right">
+            @if (selectedComponentId > 0)
+            {
+                <BuilderPropertyEditor 
+                    Component="GetSelectedComponent()"
+                    OnComponentUpdated="UpdateComponent"
+                    AvailableDataSources="availableDataSources"
+                    OnQueryChange="HandleQueryChange" />
+            }
+            else
+            {
+                <BuilderDashboardSettings
+                    Dashboard="dashboard"
+                    OnDashboardUpdated="UpdateDashboard"
+                    Categories="availableCategories" />
+            }
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <BuilderExportModal 
+        @ref="exportModal"
+        Dashboard="dashboard"
+        SelectedComponentId="selectedComponentId"
+        OnExportCompleted="HandleExportCompleted" />
+
+    <!-- Share Modal -->
+    <BuilderShareModal
+        @ref="shareModal"
+        Dashboard="dashboard"
+        OnShareCompleted="HandleShareCompleted" />
+
+    <!-- Save As Modal -->
+    <BuilderSaveAsModal
+        @ref="saveAsModal"
+        Dashboard="dashboard"
+        OnSaveAsCompleted="HandleSaveAsCompleted" />
+
+    <!-- Component Menu Context Menu (Positioned by JS) -->
+    @if (showComponentMenu)
+    {
+        <div class="component-context-menu" style="top: @(menuPosY)px; left: @(menuPosX)px;">
+            <ul class="context-menu-list">
+                <li>
+                    <button class="context-menu-item" @onclick="DuplicateComponent">
+                        <i class="fas fa-clone me-2"></i>
+                        Duplicate
+                    </button>
+                </li>
+                <li>
+                    <button class="context-menu-item" @onclick="RemoveComponent">
+                        <i class="fas fa-trash-alt me-2"></i>
+                        Remove
+                    </button>
+                </li>
+                <li class="context-menu-divider"></li>
+                <li>
+                    <button class="context-menu-item" @onclick="ExportComponentData">
+                        <i class="fas fa-file-export me-2"></i>
+                        Export Data
+                    </button>
+                </li>
+                <li>
+                    <button class="context-menu-item" @onclick="BringComponentForward">
+                        <i class="fas fa-level-up-alt me-2"></i>
+                        Bring Forward
+                    </button>
+                </li>
+                <li>
+                    <button class="context-menu-item" @onclick="SendComponentBackward">
+                        <i class="fas fa-level-down-alt me-2"></i>
+                        Send Backward
+                    </button>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int DashboardId { get; set; }
+
+    private DashboardModel dashboard = new DashboardModel();
+    private List<DashboardCategory> availableCategories = new List<DashboardCategory>();
+    private List<DataSource> availableDataSources = new List<DataSource>();
+    private List<ComponentTemplate> availableComponents = new List<ComponentTemplate>();
+    
+    private int selectedComponentId;
+    private string activeTab = "design";
+    private bool isEditingTitle;
+    private ElementReference titleInputRef;
+    private string componentSearchTerm = "";
+    
+    // Canvas state
+    private bool showGrid = true;
+    private double zoomLevel = 1.0;
+    private int lastGridY = 0;
+    
+    // Drag state
+    private bool isDragging;
+    private int dragComponentId;
+    private double dragStartX;
+    private double dragStartY;
+    private int originalGridX;
+    private int originalGridY;
+    
+    // Resize state
+    private bool isResizing;
+    private int resizeComponentId;
+    private int originalWidth;
+    private int originalHeight;
+    private double resizeStartX;
+    private double resizeStartY;
+    
+    // Component menu
+    private bool showComponentMenu;
+    private int menuPosX;
+    private int menuPosY;
+    private DashboardComponent contextMenuComponent;
+    
+    // History for undo/redo
+    private List<string> history = new List<string>();
+    private int historyIndex = -1;
+    private bool isUndoRedoAction;
+    private bool canUndo => historyIndex > 0;
+    private bool canRedo => historyIndex < history.Count - 1;
+    
+    // References to child components
+    private BuilderExportModal exportModal;
+    private BuilderShareModal shareModal;
+    private BuilderSaveAsModal saveAsModal;
+
+    // Other state
+    private bool hasUnsavedChanges;
+    private System.Timers.Timer autoSaveTimer;
+    private string previewMode = "desktop";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize auto-save timer
+        autoSaveTimer = new System.Timers.Timer(30000); // 30 seconds
+        autoSaveTimer.Elapsed += async (sender, e) => await AutoSave();
+        autoSaveTimer.AutoReset = true;
+        autoSaveTimer.Start();
+
+        // Load available categories
+        await LoadCategories();
+        
+        // Load available data sources
+        await LoadDataSources();
+        
+        // Load available component templates
+        await LoadComponentTemplates();
+        
+        // Load dashboard if ID is provided
+        if (DashboardId > 0)
+        {
+            await LoadDashboard();
+        }
+        else
+        {
+            // Create a new dashboard
+            dashboard = new DashboardModel
+            {
+                Title = "New Dashboard",
+                Description = "",
+                Components = new List<DashboardComponent>(),
+                CreatedAt = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow,
+                SharingStatus = DashboardSharingStatus.Private,
+                ValidationStatus = DashboardValidationStatus.Draft,
+                Tags = new List<string>()
+            };
+            
+            // Add initial dashboard state to history
+            AddToHistory();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Set up JS event handlers for drag and resize
+            await JSRuntime.InvokeVoidAsync("dashboardBuilder.init", DotNetObjectReference.Create(this));
+        }
+        
+        if (isEditingTitle)
+        {
+            await JSRuntime.InvokeVoidAsync("dashboardBuilder.focusElement", titleInputRef);
+        }
+    }
+
+    private async Task LoadDashboard()
+    {
+        try
+        {
+            dashboard = await Http.GetFromJsonAsync<DashboardModel>($"api/dashboard/{DashboardId}");
+            
+            if (dashboard != null)
+            {
+                // Add initial dashboard state to history
+                AddToHistory();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading dashboard: {ex.Message}");
+            dashboard = new DashboardModel();
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            availableCategories = await Http.GetFromJsonAsync<List<DashboardCategory>>("api/dashboard/categories") ?? new List<DashboardCategory>();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading categories: {ex.Message}");
+        }
+    }
+
+    private async Task LoadDataSources()
+    {
+        try
+        {
+            // Load data sources (databases)
+            var databases = await Http.GetFromJsonAsync<List<Database>>("api/databases") ?? new List<Database>();
+            availableDataSources = databases
+                .Where(db => db.IsActive)
+                .Select(db => new DataSource { Id = db.DatabaseID, Name = db.Name })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading data sources: {ex.Message}");
+        }
+    }
+
+    private async Task LoadComponentTemplates()
+    {
+        try
+        {
+            // We'll mock component templates for now
+            // In a real implementation, these would come from an API
+            availableComponents = new List<ComponentTemplate>
+            {
+                new ComponentTemplate
+                {
+                    Id = 1,
+                    Title = "Table",
+                    Description = "Display data in tabular format",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Table,
+                    Icon = "fa-table",
+                    Category = "Data Display"
+                },
+                new ComponentTemplate
+                {
+                    Id = 2,
+                    Title = "Bar Chart",
+                    Description = "Visualize data with bars",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Chart,
+                    Icon = "fa-chart-bar",
+                    Category = "Charts",
+                    VisualizationConfig = JsonSerializer.Serialize(new { chartType = "bar" })
+                },
+                new ComponentTemplate
+                {
+                    Id = 3,
+                    Title = "Line Chart",
+                    Description = "Visualize trends over time",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Chart,
+                    Icon = "fa-chart-line",
+                    Category = "Charts",
+                    VisualizationConfig = JsonSerializer.Serialize(new { chartType = "line" })
+                },
+                new ComponentTemplate
+                {
+                    Id = 4,
+                    Title = "Pie Chart",
+                    Description = "Display proportion of categories",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Chart,
+                    Icon = "fa-chart-pie",
+                    Category = "Charts",
+                    VisualizationConfig = JsonSerializer.Serialize(new { chartType = "pie" })
+                },
+                new ComponentTemplate
+                {
+                    Id = 5,
+                    Title = "KPI Card",
+                    Description = "Display key metrics with indicators",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Number,
+                    Icon = "fa-tachometer-alt",
+                    Category = "KPIs"
+                },
+                new ComponentTemplate
+                {
+                    Id = 6,
+                    Title = "Text Label",
+                    Description = "Add titles, descriptions, or notes",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Label,
+                    Icon = "fa-font",
+                    Category = "Text"
+                },
+                new ComponentTemplate
+                {
+                    Id = 7,
+                    Title = "Info Card",
+                    Description = "Display information in card format",
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Card,
+                    Icon = "fa-id-card",
+                    Category = "Data Display"
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading component templates: {ex.Message}");
+        }
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+    }
+
+    private void StartTitleEdit()
+    {
+        isEditingTitle = true;
+    }
+
+    private void FinishTitleEdit()
+    {
+        isEditingTitle = false;
+        UpdateDashboard(dashboard);
+    }
+
+    private void HandleTitleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            isEditingTitle = false;
+            UpdateDashboard(dashboard);
+        }
+        else if (e.Key == "Escape")
+        {
+            isEditingTitle = false;
+        }
+    }
+
+    private void SelectComponent(int componentId)
+    {
+        selectedComponentId = componentId;
+    }
+
+    private DashboardComponent GetSelectedComponent()
+    {
+        return dashboard.Components.FirstOrDefault(c => c.ComponentID == selectedComponentId);
+    }
+
+    private void UpdateComponent(DashboardComponent component)
+    {
+        var index = dashboard.Components.FindIndex(c => c.ComponentID == component.ComponentID);
+        if (index >= 0)
+        {
+            dashboard.Components[index] = component;
+            hasUnsavedChanges = true;
+            
+            // Add to history
+            AddToHistory();
+        }
+    }
+
+    private void UpdateDashboard(DashboardModel updatedDashboard)
+    {
+        dashboard = updatedDashboard;
+        hasUnsavedChanges = true;
+        
+        // Add to history
+        AddToHistory();
+    }
+
+    private void AddComponent(ComponentTemplate template)
+    {
+        // Find the highest ComponentID to assign a new unique ID
+        int nextId = dashboard.Components.Any() ? 
+            dashboard.Components.Max(c => c.ComponentID) + 1 : 1;
+        
+        // Find the highest GridY to place the component at the bottom
+        int gridY = dashboard.Components.Any() ?
+            dashboard.Components.Max(c => c.GridY + c.GridHeight) : 0;
+        
+        // Create new component
+        var component = new DashboardComponent
+        {
+            ComponentID = nextId,
+            DashboardID = dashboard.DashboardID,
+            Title = template.Title,
+            Description = template.Description,
+            DataViewingTypeID = template.DataViewingTypeID,
+            GridX = 0, // Start at left edge
+            GridY = gridY, // Place at the bottom
+            GridWidth = 6, // Default half width
+            GridHeight = 4, // Default height
+            IsVisible = true,
+            CreatedAt = DateTime.UtcNow,
+            LastUpdated = DateTime.UtcNow,
+            VisualizationConfig = template.VisualizationConfig
+        };
+        
+        // Add default query for data components
+        if (component.DataViewingTypeID != (int)DataViewingTypeEnum.Label)
+        {
+            component.QueryText = "SELECT * FROM Customers LIMIT 10"; // Default query
+            component.QueryIntent = "Show customer data";
+        }
+        
+        // Add component to dashboard
+        dashboard.Components.Add(component);
+        
+        // Select the new component
+        selectedComponentId = component.ComponentID;
+        
+        // Update last used grid Y
+        lastGridY = gridY + component.GridHeight;
+        
+        // Add to history
+        AddToHistory();
+        
+        hasUnsavedChanges = true;
+    }
+
+    private void StartDragComponent(MouseEventArgs e, int componentId)
+    {
+        var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == componentId);
+        if (component == null) return;
+        
+        isDragging = true;
+        dragComponentId = componentId;
+        dragStartX = e.ClientX;
+        dragStartY = e.ClientY;
+        originalGridX = component.GridX;
+        originalGridY = component.GridY;
+        
+        // Select the component being dragged
+        selectedComponentId = componentId;
+    }
+
+    private void StartResize(MouseEventArgs e, int componentId)
+    {
+        var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == componentId);
+        if (component == null) return;
+        
+        isResizing = true;
+        resizeComponentId = componentId;
+        resizeStartX = e.ClientX;
+        resizeStartY = e.ClientY;
+        originalWidth = component.GridWidth;
+        originalHeight = component.GridHeight;
+        
+        // Select the component being resized
+        selectedComponentId = componentId;
+    }
+
+    [JSInvokable]
+    public void OnDrag(double deltaX, double deltaY)
+    {
+        if (!isDragging) return;
+        
+        var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == dragComponentId);
+        if (component == null) return;
+        
+        // Convert pixel delta to grid cells
+        int cellWidth = 100; // Grid cell width in pixels
+        int cellHeight = 100; // Grid cell height in pixels
+        
+        int deltaGridX = (int)Math.Round(deltaX / cellWidth);
+        int deltaGridY = (int)Math.Round(deltaY / cellHeight);
+        
+        // Calculate new position
+        int newGridX = originalGridX + deltaGridX;
+        int newGridY = originalGridY + deltaGridY;
+        
+        // Apply grid bounds
+        newGridX = Math.Max(0, Math.Min(newGridX, 12 - component.GridWidth));
+        newGridY = Math.Max(0, newGridY);
+        
+        // Update component position
+        component.GridX = newGridX;
+        component.GridY = newGridY;
+        
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnDragEnd()
+    {
+        if (isDragging)
+        {
+            isDragging = false;
+            var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == dragComponentId);
+            if (component != null && (component.GridX != originalGridX || component.GridY != originalGridY))
+            {
+                // Add to history when position has changed
+                AddToHistory();
+                hasUnsavedChanges = true;
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void OnResize(double deltaX, double deltaY)
+    {
+        if (!isResizing) return;
+        
+        var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == resizeComponentId);
+        if (component == null) return;
+        
+        // Convert pixel delta to grid cells
+        int cellWidth = 100; // Grid cell width in pixels
+        int cellHeight = 100; // Grid cell height in pixels
+        
+        int deltaGridWidth = (int)Math.Round(deltaX / cellWidth);
+        int deltaGridHeight = (int)Math.Round(deltaY / cellHeight);
+        
+        // Calculate new size
+        int newGridWidth = originalWidth + deltaGridWidth;
+        int newGridHeight = originalHeight + deltaGridHeight;
+        
+        // Apply min/max constraints
+        newGridWidth = Math.Max(2, Math.Min(newGridWidth, 12));
+        newGridHeight = Math.Max(2, newGridHeight);
+        
+        // Apply grid bounds
+        newGridWidth = Math.Min(newGridWidth, 12 - component.GridX);
+        
+        // Update component size
+        component.GridWidth = newGridWidth;
+        component.GridHeight = newGridHeight;
+        
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnResizeEnd()
+    {
+        if (isResizing)
+        {
+            isResizing = false;
+            var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == resizeComponentId);
+            if (component != null && (component.GridWidth != originalWidth || component.GridHeight != originalHeight))
+            {
+                // Add to history when size has changed
+                AddToHistory();
+                hasUnsavedChanges = true;
+            }
+        }
+    }
+
+    private void ShowComponentMenu(MouseEventArgs e, DashboardComponent component)
+    {
+        contextMenuComponent = component;
+        menuPosX = (int)e.ClientX;
+        menuPosY = (int)e.ClientY;
+        showComponentMenu = true;
+    }
+
+    [JSInvokable]
+    public void CloseComponentMenu()
+    {
+        showComponentMenu = false;
+        StateHasChanged();
+    }
+
+    private void RemoveComponent()
+    {
+        if (contextMenuComponent != null)
+        {
+            dashboard.Components.RemoveAll(c => c.ComponentID == contextMenuComponent.ComponentID);
+            
+            if (selectedComponentId == contextMenuComponent.ComponentID)
+            {
+                selectedComponentId = 0;
+            }
+            
+            showComponentMenu = false;
+            AddToHistory();
+            hasUnsavedChanges = true;
+            
+            StateHasChanged();
+        }
+    }
+
+    private void DuplicateComponent()
+    {
+        if (contextMenuComponent != null)
+        {
+            // Find the highest ComponentID to assign a new unique ID
+            int nextId = dashboard.Components.Any() ? 
+                dashboard.Components.Max(c => c.ComponentID) + 1 : 1;
+            
+            // Clone the component
+            var clone = new DashboardComponent
+            {
+                ComponentID = nextId,
+                DashboardID = dashboard.DashboardID,
+                Title = $"{contextMenuComponent.Title} (Copy)",
+                Description = contextMenuComponent.Description,
+                DataViewingTypeID = contextMenuComponent.DataViewingTypeID,
+                GridX = contextMenuComponent.GridX,
+                GridY = contextMenuComponent.GridY + contextMenuComponent.GridHeight, // Place below original
+                GridWidth = contextMenuComponent.GridWidth,
+                GridHeight = contextMenuComponent.GridHeight,
+                QueryText = contextMenuComponent.QueryText,
+                QueryIntent = contextMenuComponent.QueryIntent,
+                VisualizationConfig = contextMenuComponent.VisualizationConfig,
+                FilterExpression = contextMenuComponent.FilterExpression,
+                IsVisible = true,
+                IsAIGenerated = contextMenuComponent.IsAIGenerated,
+                CreatedAt = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow
+            };
+            
+            // Clone parameters if any
+            if (contextMenuComponent.Parameters?.Any() == true)
+            {
+                clone.Parameters = contextMenuComponent.Parameters.Select(p => new ComponentParameter
+                {
+                    Name = p.Name,
+                    DisplayName = p.DisplayName,
+                    DefaultValue = p.DefaultValue,
+                    CurrentValue = p.CurrentValue,
+                    DataType = p.DataType,
+                    IsRequired = p.IsRequired,
+                    Options = p.Options,
+                    IsVisible = p.IsVisible,
+                    ValidationRules = p.ValidationRules,
+                    Description = p.Description
+                }).ToList();
+            }
+            
+            dashboard.Components.Add(clone);
+            
+            // Select the new component
+            selectedComponentId = clone.ComponentID;
+            
+            showComponentMenu = false;
+            AddToHistory();
+            hasUnsavedChanges = true;
+            
+            StateHasChanged();
+        }
+    }
+
+    private void BringComponentForward()
+    {
+        if (contextMenuComponent != null)
+        {
+            // Move component backward in Z-order (visual only, as grid handles actual layout)
+            var index = dashboard.Components.IndexOf(contextMenuComponent);
+            if (index < dashboard.Components.Count - 1)
+            {
+                dashboard.Components.RemoveAt(index);
+                dashboard.Components.Insert(index + 1, contextMenuComponent);
+                
+                showComponentMenu = false;
+                hasUnsavedChanges = true;
+                
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void SendComponentBackward()
+    {
+        if (contextMenuComponent != null)
+        {
+            // Move component forward in Z-order (visual only, as grid handles actual layout)
+            var index = dashboard.Components.IndexOf(contextMenuComponent);
+            if (index > 0)
+            {
+                dashboard.Components.RemoveAt(index);
+                dashboard.Components.Insert(index - 1, contextMenuComponent);
+                
+                showComponentMenu = false;
+                hasUnsavedChanges = true;
+                
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void ExportComponentData()
+    {
+        if (contextMenuComponent != null)
+        {
+            showComponentMenu = false;
+            
+            // Open export modal with specific component selected
+            selectedComponentId = contextMenuComponent.ComponentID;
+            exportModal.Show();
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviewDashboard()
+    {
+        // First save the dashboard if needed
+        if (hasUnsavedChanges && dashboard.DashboardID > 0)
+        {
+            await SaveDashboard();
+        }
+        
+        // If the dashboard has an ID, navigate to preview, otherwise show an error
+        if (dashboard.DashboardID > 0)
+        {
+            NavigationManager.NavigateTo($"/dashboard/view/{dashboard.DashboardID}?mode={previewMode}");
+        }
+        else
+        {
+            ToastService.ShowWarning("Save the dashboard first to preview it");
+        }
+    }
+
+    private void SetPreviewMode(string mode)
+    {
+        previewMode = mode;
+    }
+
+    private async Task SaveDashboard()
+    {
+        try
+        {
+            dashboard.LastUpdated = DateTime.UtcNow;
+            
+            if (dashboard.DashboardID > 0)
+            {
+                // Update existing dashboard
+                var response = await Http.PutAsJsonAsync($"api/dashboard/{dashboard.DashboardID}", dashboard);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    hasUnsavedChanges = false;
+                    ToastService.ShowSuccess("Dashboard saved successfully");
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    ToastService.ShowError($"Error saving dashboard: {error}");
+                }
+            }
+            else
+            {
+                // Create new dashboard
+                var response = await Http.PostAsJsonAsync("api/dashboard", dashboard);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    hasUnsavedChanges = false;
+                    
+                    // Get the created dashboard with ID
+                    var createdDashboard = await response.Content.ReadFromJsonAsync<DashboardModel>();
+                    if (createdDashboard != null)
+                    {
+                        dashboard = createdDashboard;
+                        
+                        // Update the URL to include the new dashboard ID
+                        NavigationManager.NavigateTo($"/dashboard/builder/{dashboard.DashboardID}", false);
+                        
+                        ToastService.ShowSuccess("Dashboard created successfully");
+                    }
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    ToastService.ShowError($"Error creating dashboard: {error}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error saving dashboard: {ex.Message}");
+        }
+    }
+
+    private void SaveDashboardAs()
+    {
+        saveAsModal.Show();
+    }
+
+    private void HandleSaveAsCompleted(DashboardModel newDashboard)
+    {
+        NavigationManager.NavigateTo($"/dashboard/builder/{newDashboard.DashboardID}");
+    }
+
+    private void ShareDashboard()
+    {
+        shareModal.Show();
+    }
+
+    private void HandleShareCompleted()
+    {
+        ToastService.ShowSuccess("Dashboard shared successfully");
+    }
+
+    private void ShowExportModal()
+    {
+        exportModal.Show();
+    }
+
+    private void ShowScheduleExportModal()
+    {
+        ToastService.ShowInfo("Schedule Export feature coming soon");
+    }
+
+    private void HandleExportCompleted(string format)
+    {
+        ToastService.ShowSuccess($"Dashboard exported as {format.ToUpper()} successfully");
+    }
+
+    private async Task ExportDashboard(string format)
+    {
+        // Use the export modal with a specific format
+        exportModal.SetFormat(format);
+        exportModal.Show();
+    }
+
+    private void AddRow()
+    {
+        // Add a row (2x6 layout) at the bottom of the dashboard
+        int gridY = dashboard.Components.Any() ?
+            dashboard.Components.Max(c => c.GridY + c.GridHeight) : 0;
+        
+        // Create left component
+        AddComponent(new ComponentTemplate
+        {
+            Id = 1,
+            Title = "New Component",
+            Description = "Left",
+            DataViewingTypeID = (int)DataViewingTypeEnum.Table,
+            Icon = "fa-table",
+            Category = "Data Display"
+        });
+        
+        // Get added component and adjust position
+        var leftComponent = dashboard.Components.Last();
+        leftComponent.GridX = 0;
+        leftComponent.GridY = gridY;
+        leftComponent.GridWidth = 6;
+        
+        // Create right component
+        AddComponent(new ComponentTemplate
+        {
+            Id = 2,
+            Title = "New Component",
+            Description = "Right",
+            DataViewingTypeID = (int)DataViewingTypeEnum.Table,
+            Icon = "fa-table",
+            Category = "Data Display"
+        });
+        
+        // Get added component and adjust position
+        var rightComponent = dashboard.Components.Last();
+        rightComponent.GridX = 6;
+        rightComponent.GridY = gridY;
+        rightComponent.GridWidth = 6;
+        
+        AddToHistory();
+    }
+
+    private void ZoomIn()
+    {
+        zoomLevel = Math.Min(zoomLevel + 0.1, 2.0);
+    }
+
+    private void ZoomOut()
+    {
+        zoomLevel = Math.Max(zoomLevel - 0.1, 0.5);
+    }
+
+    private void ResetZoom()
+    {
+        zoomLevel = 1.0;
+    }
+
+    private int GetCanvasHeight()
+    {
+        // Calculate canvas height based on components
+        if (!dashboard.Components.Any())
+        {
+            return 600; // Default height
+        }
+        
+        int maxY = dashboard.Components.Max(c => c.GridY + c.GridHeight);
+        return maxY * 100 + 100; // 100px per row
+    }
+
+    private List<Dictionary<string, object>> GetSampleData(DashboardComponent component)
+    {
+        // Generate sample data for component preview
+        var result = new List<Dictionary<string, object>>();
+        
+        switch (component.DataViewingTypeID)
+        {
+            case (int)DataViewingTypeEnum.Table:
+                // Sample table data
+                for (int i = 1; i <= 5; i++)
+                {
+                    result.Add(new Dictionary<string, object>
+                    {
+                        { "ID", i },
+                        { "Name", $"Sample {i}" },
+                        { "Value", Random.Shared.Next(100, 1000) },
+                        { "Date", DateTime.Now.AddDays(-i) }
+                    });
+                }
+                break;
+                
+            case (int)DataViewingTypeEnum.Number:
+                // Sample KPI data
+                result.Add(new Dictionary<string, object>
+                {
+                    { "Value", Random.Shared.Next(1000, 10000) },
+                    { "Change", Random.Shared.Next(-10, 20) }
+                });
+                break;
+                
+            case (int)DataViewingTypeEnum.Chart:
+                // Sample chart data
+                for (int i = 1; i <= 5; i++)
+                {
+                    result.Add(new Dictionary<string, object>
+                    {
+                        { "Category", $"Category {i}" },
+                        { "Value", Random.Shared.Next(10, 100) }
+                    });
+                }
+                break;
+                
+            case (int)DataViewingTypeEnum.Card:
+                // Sample card data
+                result.Add(new Dictionary<string, object>
+                {
+                    { "Title", "Sample Card" },
+                    { "Value", Random.Shared.Next(100, 1000) },
+                    { "Description", "Sample description text" }
+                });
+                break;
+        }
+        
+        return result;
+    }
+
+    private void HandleQueryChange(string query)
+    {
+        var component = GetSelectedComponent();
+        if (component != null)
+        {
+            component.QueryText = query;
+            UpdateComponent(component);
+        }
+    }
+
+    private void AddToHistory()
+    {
+        if (isUndoRedoAction)
+        {
+            isUndoRedoAction = false;
+            return;
+        }
+        
+        // Serialize current dashboard state
+        string state = JsonSerializer.Serialize(dashboard);
+        
+        // Remove any forward history
+        if (historyIndex >= 0 && historyIndex < history.Count - 1)
+        {
+            history.RemoveRange(historyIndex + 1, history.Count - historyIndex - 1);
+        }
+        
+        // Add current state to history
+        history.Add(state);
+        historyIndex = history.Count - 1;
+    }
+
+    private void UndoAction()
+    {
+        if (canUndo)
+        {
+            isUndoRedoAction = true;
+            historyIndex--;
+            
+            // Deserialize dashboard state
+            dashboard = JsonSerializer.Deserialize<DashboardModel>(history[historyIndex]) ?? dashboard;
+            
+            hasUnsavedChanges = true;
+        }
+    }
+
+    private void RedoAction()
+    {
+        if (canRedo)
+        {
+            isUndoRedoAction = true;
+            historyIndex++;
+            
+            // Deserialize dashboard state
+            dashboard = JsonSerializer.Deserialize<DashboardModel>(history[historyIndex]) ?? dashboard;
+            
+            hasUnsavedChanges = true;
+        }
+    }
+
+    private async Task AutoSave()
+    {
+        if (hasUnsavedChanges && dashboard.DashboardID > 0)
+        {
+            await SaveDashboard();
+        }
+    }
+
+    public void Dispose()
+    {
+        // Clean up timers and JS interop
+        autoSaveTimer?.Dispose();
+    }
+
+    // Helper class for component templates
+    private class ComponentTemplate
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int DataViewingTypeID { get; set; }
+        public string Icon { get; set; }
+        public string Category { get; set; }
+        public string VisualizationConfig { get; set; }
+    }
+
+    // Helper class for data sources
+    private class DataSource
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+} *@
