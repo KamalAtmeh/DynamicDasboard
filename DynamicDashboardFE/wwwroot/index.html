@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,17 +5,298 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dynamic Dashboard System</title>
     <base href="/" />
+
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- YOUR ORIGINAL CUSTOM CSS -->
     <link href="css/app.css" rel="stylesheet" />
     <link href="DynamicDashboardFE.styles.css" rel="stylesheet">
     <link href="css/interactive-table.css" rel="stylesheet" />
 
-    <!--<link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>-->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- MudBlazor CSS (NEW) - Loaded after your styles -->
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+
+    <link href="css/dashboard-builder.css" rel="stylesheet" />
+
+    <!-- CSS Overrides to protect your original design from MudBlazor's global styles -->
+    <style>
+        /* ============================================ */
+        /* PRESERVE ORIGINAL DESIGN - DO NOT REMOVE    */
+        /* These overrides prevent MudBlazor from      */
+        /* breaking your existing styles               */
+        /* ============================================ */
+
+        /* Preserve your font family */
+        html, body {
+            font-family: 'Inter', sans-serif !important;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Preserve your app-container */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Preserve your sidebar gradient */
+        .sidebar {
+            background: linear-gradient(180deg, #2A4365 0%, #1e365b 100%) !important;
+            width: 260px;
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 200;
+        }
+
+        /* Preserve your main-content layout */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Preserve your header */
+        .header {
+            height: 70px;
+            background: #F7FAFC !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* Preserve your footer */
+        .footer {
+            background: #F7FAFC !important;
+            padding: 15px 30px;
+            border-top: 1px solid #E2E8F0;
+        }
+
+        /* Preserve your content area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background: #f5f7fb;
+        }
+
+        /* Preserve sidebar header */
+        .sidebar-header {
+            padding: 25px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Preserve sidebar logo */
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            color: white !important;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+            .sidebar-logo i {
+                margin-right: 10px;
+                font-size: 1.5rem;
+            }
+
+        /* Preserve theme toggle button */
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .theme-toggle:hover {
+                background: rgba(255,255,255,0.2);
+            }
+
+        /* Preserve header search */
+        .header-search {
+            position: relative;
+            margin-left: 20px;
+        }
+
+            .header-search input {
+                padding: 10px 15px 10px 40px;
+                border: 1px solid #E2E8F0;
+                border-radius: 8px;
+                background: #f5f7fb;
+                width: 300px;
+                font-family: 'Inter', sans-serif;
+            }
+
+            .header-search i {
+                position: absolute;
+                left: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #718096;
+            }
+
+        /* Preserve header actions */
+        .header-actions {
+            display: flex;
+            margin-right: 20px;
+        }
+
+        .header-action-btn {
+            background: none;
+            border: none;
+            color: #4A5568;
+            font-size: 16px;
+            padding: 8px;
+            border-radius: 50%;
+            margin-left: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+            .header-action-btn:hover {
+                background: #E2E8F0;
+                color: #2A4365;
+            }
+
+        .notification-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #F56565;
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 10px;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        /* Preserve user profile */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 50px;
+            transition: all 0.2s ease;
+        }
+
+            .user-profile:hover {
+                background: #E2E8F0;
+            }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6, #2A4365);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 10px;
+            position: relative;
+        }
+
+            .avatar .status {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                width: 10px;
+                height: 10px;
+                background: #48BB78;
+                border-radius: 50%;
+                border: 2px solid white;
+            }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #1A202C;
+            font-size: 14px;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        /* Preserve toggle sidebar button */
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: #1A202C;
+            font-size: 20px;
+            cursor: pointer;
+            margin-right: 15px;
+            display: none;
+        }
+
+        /* Loading progress */
+        .loading-progress {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .loading-progress-text:after {
+            content: "Loading...";
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            color: #2A4365;
+        }
+
+        /* ============================================ */
+        /* MudBlazor Component Scoping                 */
+        /* These ensure MudBlazor components work      */
+        /* without affecting your existing design      */
+        /* ============================================ */
+
+        /* MudBlazor dialogs should appear above everything */
+        .mud-dialog-container {
+            z-index: 10000 !important;
+        }
+
+        .mud-popover-provider {
+            z-index: 10001 !important;
+        }
+
+        .mud-snackbar-provider {
+            z-index: 10002 !important;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
@@ -25,11 +305,24 @@
         </div>
     </div>
 
+    <!-- Blazor WebAssembly -->
     <script src="_framework/blazor.webassembly.js"></script>
+
+    <!-- YOUR ORIGINAL SCRIPTS -->
     <script src="JS/dashboard.js"></script>
     <script src="js/animations.js"></script>
     <script src="js/data-export.js" defer></script>
+
+    <!-- Charts - ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Charts - ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <!-- MudBlazor JS (NEW - Required for MudBlazor components) -->
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
+    <!-- ApexCharts Blazor Integration (NEW - Required for Blazor-ApexCharts) -->
+    <script src="_content/Blazor-ApexCharts/js/blazor-apex-charts.js"></script>
 </body>
 </html>

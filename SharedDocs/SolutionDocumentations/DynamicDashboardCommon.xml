@@ -9,6 +9,56 @@
             Enum representing the supported database types in the application.
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Enums.ChartTypeEnum">
+            <summary>
+            Enum representing chart types for visualization components.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.NumberFormatEnum">
+            <summary>
+            Enum representing number format types for KPI/Number components.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.TextAlignEnum">
+            <summary>
+            Enum representing text alignment options.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.FontSizeEnum">
+            <summary>
+            Enum representing font size options.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.LegendPositionEnum">
+            <summary>
+            Enum representing chart legend position options.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.ComponentCategoryEnum">
+            <summary>
+            Enum representing component template categories.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.TrendComparisonEnum">
+            <summary>
+            Enum representing trend comparison types for KPI components.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.InteractionTypeEnum">
+            <summary>
+            Enum representing component interaction types.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.TableDensityEnum">
+            <summary>
+            Enum representing table density options.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Enums.CacheStrategyEnum">
+            <summary>
+            Enum representing component cache strategies.
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Helper.ApplicationHelper.SqlValidationHelper">
             <summary>
             Utility class for SQL script validation against database schema
@@ -37,7 +87,371 @@
             <param name="sqlScript">SQL script to analyze</param>
             <returns>Collection of referenced database objects</returns>
         </member>
+        <member name="T:DynamicDashboardCommon.Helper.ColorSchemeHelper">
+            <summary>
+            Helper class for color scheme operations.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ColorSchemeHelper.GetAllSchemes">
+            <summary>
+            Gets all available color schemes.
+            </summary>
+            <returns>List of all color schemes.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ColorSchemeHelper.GetByKey(System.String)">
+            <summary>
+            Gets a color scheme by its key.
+            </summary>
+            <param name="key">The scheme key.</param>
+            <returns>The color scheme or default if not found.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ColorSchemeHelper.GetDefaultScheme">
+            <summary>
+            Gets the default color scheme.
+            </summary>
+            <returns>The default color scheme.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ColorSchemeHelper.GetColorByIndex(System.String,System.Int32)">
+            <summary>
+            Gets a color from a scheme by index, cycling through colors if index exceeds count.
+            </summary>
+            <param name="schemeKey">The scheme key.</param>
+            <param name="index">The color index.</param>
+            <returns>The color hex value.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ColorSchemeHelper.GetRandomColor(System.String)">
+            <summary>
+            Generates a random color from a scheme.
+            </summary>
+            <param name="schemeKey">The scheme key.</param>
+            <returns>A random color from the scheme.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.ColorSchemeHelper.GetAvatarColor(System.String)">
+            <summary>
+            Gets avatar color based on a string (for consistent user avatars).
+            </summary>
+            <param name="input">The input string (e.g., email or name).</param>
+            <returns>A consistent color for the input.</returns>
+        </member>
         <!-- Badly formed XML comment ignored for member "T:DynamicDashboardCommon.Helper.DictionaryObjectConverter" -->
+        <member name="T:DynamicDashboardCommon.Models.ComponentTemplate">
+            <summary>
+            Represents a template for creating dashboard components.
+            Templates are predefined component configurations that users can drag onto the canvas.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.TemplateID">
+            <summary>
+            Gets or sets the unique identifier for the template.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.Title">
+            <summary>
+            Gets or sets the template title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.Description">
+            <summary>
+            Gets or sets the template description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.DataViewingTypeID">
+            <summary>
+            Gets or sets the data viewing type ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.Icon">
+            <summary>
+            Gets or sets the FontAwesome icon class (without 'fa-' prefix).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.Category">
+            <summary>
+            Gets or sets the category for grouping templates.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.VisualizationConfig">
+            <summary>
+            Gets or sets the default visualization configuration JSON.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.DefaultQuery">
+            <summary>
+            Gets or sets the default SQL query template.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.DefaultGridWidth">
+            <summary>
+            Gets or sets the default grid width.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.DefaultGridHeight">
+            <summary>
+            Gets or sets the default grid height.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.IsActive">
+            <summary>
+            Gets or sets whether this template is active.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.DisplayOrder">
+            <summary>
+            Gets or sets the display order within the category.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.ThumbnailUrl">
+            <summary>
+            Gets or sets the thumbnail image URL.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.Tags">
+            <summary>
+            Gets or sets the tags for searchability.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.CreatedAt">
+            <summary>
+            Gets or sets when this template was created.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.LastUpdated">
+            <summary>
+            Gets or sets when this template was last updated.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.MinDatabaseVersion">
+            <summary>
+            Gets or sets the minimum required database version for this template.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentTemplate.UsageCount">
+            <summary>
+            Gets or sets the usage count for analytics.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ComponentDataSource">
+            <summary>
+            Represents a data source available for components.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentDataSource.Id">
+            <summary>
+            Gets or sets the data source ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentDataSource.Name">
+            <summary>
+            Gets or sets the data source name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentDataSource.DatabaseType">
+            <summary>
+            Gets or sets the database type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentDataSource.IsActive">
+            <summary>
+            Gets or sets whether the data source is active.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ComponentDataSource.SchemaInfo">
+            <summary>
+            Gets or sets the schema information.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryValidationRequest">
+            <summary>
+            Request model for validating a SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationRequest.QueryText">
+            <summary>
+            Gets or sets the SQL query to validate.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationRequest.DatabaseId">
+            <summary>
+            Gets or sets the database ID to validate against.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationRequest.IncludeSampleData">
+            <summary>
+            Gets or sets whether to return sample data.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationRequest.MaxSampleRows">
+            <summary>
+            Gets or sets the maximum rows to return for sample data.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryValidationResponse">
+            <summary>
+            Response model for query validation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.IsValid">
+            <summary>
+            Gets or sets whether the query is valid.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.Message">
+            <summary>
+            Gets or sets the validation message.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.ErrorDetails">
+            <summary>
+            Gets or sets the error details if validation failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.SampleData">
+            <summary>
+            Gets or sets the sample data if requested.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.Columns">
+            <summary>
+            Gets or sets the column information.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.EstimatedRowCount">
+            <summary>
+            Gets or sets the estimated row count.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryValidationResponse.ExecutionTimeMs">
+            <summary>
+            Gets or sets the execution time in milliseconds.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryColumnInfo">
+            <summary>
+            Information about a query result column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryColumnInfo.Name">
+            <summary>
+            Gets or sets the column name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryColumnInfo.DataType">
+            <summary>
+            Gets or sets the column data type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryColumnInfo.IsNullable">
+            <summary>
+            Gets or sets whether the column is nullable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryColumnInfo.Ordinal">
+            <summary>
+            Gets or sets the column ordinal position.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryGenerationRequest">
+            <summary>
+            Request model for generating SQL from natural language.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationRequest.QueryIntent">
+            <summary>
+            Gets or sets the natural language query intent.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationRequest.DatabaseId">
+            <summary>
+            Gets or sets the database ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationRequest.DataViewingTypeID">
+            <summary>
+            Gets or sets the component type for context.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationRequest.AdditionalContext">
+            <summary>
+            Gets or sets additional context for the LLM.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.QueryGenerationResponse">
+            <summary>
+            Response model for query generation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationResponse.Success">
+            <summary>
+            Gets or sets whether the generation was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationResponse.GeneratedQuery">
+            <summary>
+            Gets or sets the generated SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationResponse.Explanation">
+            <summary>
+            Gets or sets the explanation of the generated query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationResponse.Warnings">
+            <summary>
+            Gets or sets any warnings or suggestions.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationResponse.ErrorMessage">
+            <summary>
+            Gets or sets the error message if generation failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.QueryGenerationResponse.AlternativeQueries">
+            <summary>
+            Gets or sets suggested alternative queries.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ColorScheme">
+            <summary>
+            Color scheme definition for visualizations.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColorScheme.Key">
+            <summary>
+            Gets or sets the scheme key/identifier.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColorScheme.Name">
+            <summary>
+            Gets or sets the display name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColorScheme.Colors">
+            <summary>
+            Gets or sets the list of colors in this scheme.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColorScheme.IsDarkTheme">
+            <summary>
+            Gets or sets whether this is a dark theme scheme.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ColorSchemes">
+            <summary>
+            Static class containing predefined color schemes.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColorSchemes.All">
+            <summary>
+            Gets all available color schemes.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.ColorSchemes.GetByKey(System.String)">
+            <summary>
+            Gets a color scheme by key.
+            </summary>
+            <param name="key">The scheme key.</param>
+            <returns>The color scheme or default if not found.</returns>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.DashboardCategory">
             <summary>
             Represents a business category for dashboards.
@@ -398,6 +812,735 @@
         <member name="T:DynamicDashboardCommon.Models.DataViewingTypeEnum">
             <summary>
             Enum representing predefined data viewing types
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.VisualizationConfig">
+            <summary>
+            Represents the visualization configuration for a dashboard component.
+            This model is serialized to JSON and stored in the VisualizationConfig column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.BackgroundColor">
+            <summary>
+            Gets or sets the background color of the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.BorderRadius">
+            <summary>
+            Gets or sets the border radius in pixels.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Padding">
+            <summary>
+            Gets or sets the padding in pixels.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowShadow">
+            <summary>
+            Gets or sets whether to show shadow.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.PrimaryColor">
+            <summary>
+            Gets or sets the primary color for the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.SecondaryColor">
+            <summary>
+            Gets or sets the secondary color for the component.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ColorScheme">
+            <summary>
+            Gets or sets the color scheme key.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.BorderColor">
+            <summary>
+            Gets or sets the border color.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.BorderWidth">
+            <summary>
+            Gets or sets the border width in pixels.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.CustomCssClass">
+            <summary>
+            Gets or sets custom CSS class names.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ChartType">
+            <summary>
+            Gets or sets the chart type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ChartTypeString">
+            <summary>
+            Gets or sets the chart type as string for JSON serialization compatibility.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowLegend">
+            <summary>
+            Gets or sets whether to show the chart legend.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.LegendPosition">
+            <summary>
+            Gets or sets the legend position.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowDataLabels">
+            <summary>
+            Gets or sets whether to show data labels on the chart.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowGridLines">
+            <summary>
+            Gets or sets whether to show grid lines.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableAnimation">
+            <summary>
+            Gets or sets whether to enable chart animations.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.AnimationDuration">
+            <summary>
+            Gets or sets the animation duration in milliseconds.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.XAxisLabel">
+            <summary>
+            Gets or sets the X-axis label.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.YAxisLabel">
+            <summary>
+            Gets or sets the Y-axis label.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.XAxisField">
+            <summary>
+            Gets or sets the data field for X-axis.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.YAxisField">
+            <summary>
+            Gets or sets the data field for Y-axis.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ColorByField">
+            <summary>
+            Gets or sets the field used for color grouping.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IsStacked">
+            <summary>
+            Gets or sets whether to stack series (for bar/area charts).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowTooltip">
+            <summary>
+            Gets or sets whether to show tooltips on hover.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.YAxisMin">
+            <summary>
+            Gets or sets the minimum Y-axis value (null for auto).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.YAxisMax">
+            <summary>
+            Gets or sets the maximum Y-axis value (null for auto).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IsHorizontal">
+            <summary>
+            Gets or sets whether the chart is horizontal.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DoughnutInnerRadius">
+            <summary>
+            Gets or sets the inner radius for doughnut charts (0-1).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Series">
+            <summary>
+            Gets or sets the series configuration for multi-series charts.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowHeader">
+            <summary>
+            Gets or sets whether to show the table header.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.StripedRows">
+            <summary>
+            Gets or sets whether to use striped rows.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.HoverEffect">
+            <summary>
+            Gets or sets whether to enable row hover effect.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableSorting">
+            <summary>
+            Gets or sets whether to enable sorting.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DefaultSortColumn">
+            <summary>
+            Gets or sets the default sort column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DefaultSortDirection">
+            <summary>
+            Gets or sets the default sort direction (asc/desc).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnablePagination">
+            <summary>
+            Gets or sets whether to enable pagination.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.PageSize">
+            <summary>
+            Gets or sets the page size for pagination.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.PageSizeOptions">
+            <summary>
+            Gets or sets available page size options.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableColumnResize">
+            <summary>
+            Gets or sets whether to enable column resizing.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableColumnReorder">
+            <summary>
+            Gets or sets whether to enable column reordering.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableRowSelection">
+            <summary>
+            Gets or sets whether to enable row selection.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.AllowMultiSelect">
+            <summary>
+            Gets or sets whether to allow multiple row selection.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowRowNumbers">
+            <summary>
+            Gets or sets whether to show row numbers.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.TableDensity">
+            <summary>
+            Gets or sets the table density.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableSearch">
+            <summary>
+            Gets or sets whether to enable search/filtering.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowColumnFilters">
+            <summary>
+            Gets or sets whether to show column filters.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.FixedHeader">
+            <summary>
+            Gets or sets whether table has fixed header when scrolling.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.MaxHeight">
+            <summary>
+            Gets or sets the maximum table height in pixels (null for auto).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Columns">
+            <summary>
+            Gets or sets the column configurations.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ConditionalFormats">
+            <summary>
+            Gets or sets conditional formatting rules for the table.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Icon">
+            <summary>
+            Gets or sets the icon for the card (FontAwesome class without fa- prefix).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IconColor">
+            <summary>
+            Gets or sets the icon color.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IconBackgroundColor">
+            <summary>
+            Gets or sets the icon background color.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.NumberFormat">
+            <summary>
+            Gets or sets the number format.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.CurrencySymbol">
+            <summary>
+            Gets or sets the currency symbol for currency format.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.CurrencyCode">
+            <summary>
+            Gets or sets the currency code (USD, EUR, etc.).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DecimalPlaces">
+            <summary>
+            Gets or sets the number of decimal places.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ThousandsSeparator">
+            <summary>
+            Gets or sets the thousands separator.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DecimalSeparator">
+            <summary>
+            Gets or sets the decimal separator.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowTrend">
+            <summary>
+            Gets or sets whether to show trend indicator.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.TrendComparison">
+            <summary>
+            Gets or sets the trend comparison type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.TargetValue">
+            <summary>
+            Gets or sets the target value for comparison.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.PositiveIsGood">
+            <summary>
+            Gets or sets whether positive trend is good (affects color).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ValueField">
+            <summary>
+            Gets or sets the value field name from query results.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ComparisonField">
+            <summary>
+            Gets or sets the comparison value field name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.LabelField">
+            <summary>
+            Gets or sets the label field name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Prefix">
+            <summary>
+            Gets or sets prefix text before the value.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Suffix">
+            <summary>
+            Gets or sets suffix text after the value.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowSparkline">
+            <summary>
+            Gets or sets whether to show sparkline.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.SparklineField">
+            <summary>
+            Gets or sets the sparkline data field.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.Thresholds">
+            <summary>
+            Gets or sets threshold values for color coding.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.TextContent">
+            <summary>
+            Gets or sets the text content for label components.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.FontSize">
+            <summary>
+            Gets or sets the font size.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.CustomFontSize">
+            <summary>
+            Gets or sets custom font size in pixels (overrides FontSize enum if set).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.FontFamily">
+            <summary>
+            Gets or sets the font family.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.TextAlign">
+            <summary>
+            Gets or sets the text alignment.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.TextColor">
+            <summary>
+            Gets or sets the text color.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IsBold">
+            <summary>
+            Gets or sets whether the text is bold.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IsItalic">
+            <summary>
+            Gets or sets whether the text is italic.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.IsUnderline">
+            <summary>
+            Gets or sets whether the text is underlined.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.LineHeight">
+            <summary>
+            Gets or sets the line height multiplier.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableMarkdown">
+            <summary>
+            Gets or sets whether to enable markdown rendering.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableDrilldown">
+            <summary>
+            Gets or sets whether drill-down is enabled.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DrilldownTargetId">
+            <summary>
+            Gets or sets the drill-down target component ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DrilldownUrl">
+            <summary>
+            Gets or sets the drill-down URL (for external navigation).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.DrilldownParameter">
+            <summary>
+            Gets or sets the drill-down parameter name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableCrossFilter">
+            <summary>
+            Gets or sets whether cross-filtering is enabled.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.CrossFilterTargets">
+            <summary>
+            Gets or sets the cross-filter target component IDs.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.CrossFilterField">
+            <summary>
+            Gets or sets the field to use for cross-filtering.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.EnableExport">
+            <summary>
+            Gets or sets whether data export is enabled.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ExportFormats">
+            <summary>
+            Gets or sets the allowed export formats.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowFullscreenButton">
+            <summary>
+            Gets or sets whether to show fullscreen button.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.VisualizationConfig.ShowRefreshButton">
+            <summary>
+            Gets or sets whether to show refresh button.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.ToJson">
+            <summary>
+            Serializes the configuration to JSON string.
+            </summary>
+            <returns>JSON string representation.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.FromJson(System.String)">
+            <summary>
+            Deserializes a JSON string to VisualizationConfig.
+            </summary>
+            <param name="json">The JSON string.</param>
+            <returns>VisualizationConfig instance.</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.GetJsonOptions">
+            <summary>
+            Gets the JSON serializer options.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.CreateChartDefault(DynamicDashboardCommon.Enums.ChartTypeEnum)">
+            <summary>
+            Creates a default configuration for a chart component.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.CreateTableDefault">
+            <summary>
+            Creates a default configuration for a table component.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.CreateKpiDefault">
+            <summary>
+            Creates a default configuration for a KPI/Number component.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.CreateLabelDefault">
+            <summary>
+            Creates a default configuration for a label component.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.CreateCardDefault">
+            <summary>
+            Creates a default configuration for a card component.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.VisualizationConfig.CreateDefault(DynamicDashboardCommon.Models.DataViewingTypeEnum)">
+            <summary>
+            Creates default configuration based on data viewing type.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ChartSeriesConfig">
+            <summary>
+            Configuration for a chart series.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.Name">
+            <summary>
+            Gets or sets the series name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.DataField">
+            <summary>
+            Gets or sets the data field for this series.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.Color">
+            <summary>
+            Gets or sets the series color.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.ChartType">
+            <summary>
+            Gets or sets the chart type for this series (for mixed charts).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.UseSecondaryAxis">
+            <summary>
+            Gets or sets whether this series uses the secondary Y-axis.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.LineStyle">
+            <summary>
+            Gets or sets the line style (solid, dashed, dotted).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.PointStyle">
+            <summary>
+            Gets or sets the point style for line charts.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartSeriesConfig.Fill">
+            <summary>
+            Gets or sets whether to fill area under line.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TableColumnConfig">
+            <summary>
+            Configuration for a table column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Field">
+            <summary>
+            Gets or sets the column field name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Header">
+            <summary>
+            Gets or sets the column header text.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Width">
+            <summary>
+            Gets or sets the column width (e.g., "100px", "20%", "auto").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.MinWidth">
+            <summary>
+            Gets or sets the minimum column width.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.MaxWidth">
+            <summary>
+            Gets or sets the maximum column width.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Align">
+            <summary>
+            Gets or sets the column alignment.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Sortable">
+            <summary>
+            Gets or sets whether the column is sortable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Visible">
+            <summary>
+            Gets or sets whether the column is visible.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Frozen">
+            <summary>
+            Gets or sets whether the column is frozen (fixed position).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Format">
+            <summary>
+            Gets or sets the format type (text, number, currency, percent, date, boolean).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.FormatString">
+            <summary>
+            Gets or sets the format string for date/number formatting.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Order">
+            <summary>
+            Gets or sets the display order of the column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.WrapText">
+            <summary>
+            Gets or sets whether to wrap text in this column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TableColumnConfig.Template">
+            <summary>
+            Gets or sets a custom template for rendering cell content.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ConditionalFormatRule">
+            <summary>
+            Conditional formatting rule for tables.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Name">
+            <summary>
+            Gets or sets the rule name/identifier.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Field">
+            <summary>
+            Gets or sets the target field.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Condition">
+            <summary>
+            Gets or sets the condition type (equals, greaterThan, lessThan, between, contains).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Value">
+            <summary>
+            Gets or sets the comparison value.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Value2">
+            <summary>
+            Gets or sets the secondary value for "between" conditions.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.BackgroundColor">
+            <summary>
+            Gets or sets the background color when condition is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.TextColor">
+            <summary>
+            Gets or sets the text color when condition is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Icon">
+            <summary>
+            Gets or sets the icon to display when condition is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.IsActive">
+            <summary>
+            Gets or sets whether the rule is active.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRule.Priority">
+            <summary>
+            Gets or sets the priority (lower number = higher priority).
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ThresholdConfig">
+            <summary>
+            Threshold configuration for KPI color coding.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ThresholdConfig.Value">
+            <summary>
+            Gets or sets the threshold value.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ThresholdConfig.Operator">
+            <summary>
+            Gets or sets the comparison operator (lt, lte, gt, gte, eq).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ThresholdConfig.Color">
+            <summary>
+            Gets or sets the color when threshold is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ThresholdConfig.Icon">
+            <summary>
+            Gets or sets the icon when threshold is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ThresholdConfig.Label">
+            <summary>
+            Gets or sets the label for this threshold.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisRequest">

@@ -1,0 +1,580 @@
+﻿@using DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject IToastService ToastService
+
+<div class="modal @(isVisible ? "show d-block" : "")" tabindex="-1" role="dialog"
+     style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <!-- Header -->
+            <div class="modal-header bg-gradient-share text-white border-0">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon me-3">
+                        <i class="fas fa-share-alt fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0">Share Dashboard</h5>
+                        <small class="opacity-75">Invite others to view or edit</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" @onclick="Hide" aria-label="Close"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body p-4">
+                @if (isLoading)
+                {
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Share Link Section -->
+                    <div class="share-link-section mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-link me-2 text-primary"></i>Share Link
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control bg-light" readonly value="@shareLink" />
+                            <button class="btn btn-outline-primary" type="button" @onclick="CopyLink" title="Copy link">
+                                <i class="fas @(linkCopied ? "fa-check" : "fa-copy")"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 d-flex align-items-center gap-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="publicAccess" @bind="isPublicAccess">
+                                <label class="form-check-label small" for="publicAccess">Anyone with link can view</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add People Section -->
+                    <div class="add-people-section mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-user-plus me-2 text-primary"></i>Add People
+                        </label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Enter email or name..."
+                                   @bind="searchTerm" @bind:event="oninput" @onkeydown="HandleSearchKeyDown" />
+                            <select class="form-select" style="max-width: 140px;" @bind="newUserPermission">
+                                <option value="view">Can view</option>
+                                <option value="edit">Can edit</option>
+                                <option value="admin">Full access</option>
+                            </select>
+                            <button class="btn btn-primary" type="button" @onclick="AddRecipient" disabled="@string.IsNullOrWhiteSpace(searchTerm)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <!-- Search Results Dropdown -->
+                        @if (searchResults.Any())
+                        {
+                            <div class="search-results-dropdown">
+                                @foreach (var user in searchResults)
+                                {
+                                    <div class="search-result-item" @onclick="() => SelectUser(user)">
+                                        <div class="user-avatar">
+                                            @(GetInitials(user.Name))
+                                        </div>
+                                        <div class="user-info">
+                                            <span class="user-name">@user.Name</span>
+                                            <span class="user-email">@user.Email</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Current Shares Section -->
+                    <div class="current-shares-section">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-users me-2 text-primary"></i>People with Access
+                        </label>
+
+                        <div class="shares-list">
+                            <!-- Owner -->
+                            <div class="share-item owner">
+                                <div class="user-avatar owner-avatar">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">You (Owner)</span>
+                                    <span class="user-email">Full access</span>
+                                </div>
+                                <div class="permission-badge owner-badge">Owner</div>
+                            </div>
+
+                            <!-- Shared Users -->
+                            @foreach (var share in sharedUsers)
+                            {
+                                <div class="share-item">
+                                    <div class="user-avatar" style="background-color: @GetAvatarColor(share.Email)">
+                                        @(GetInitials(share.Name))
+                                    </div>
+                                    <div class="user-info">
+                                        <span class="user-name">@share.Name</span>
+                                        <span class="user-email">@share.Email</span>
+                                    </div>
+                                    <div class="share-controls">
+                                        <select class="form-select form-select-sm"
+                                                value="@share.Permission"
+                                                @onchange="e => UpdatePermission(share, e.Value?.ToString())">
+                                            <option value="view">Can view</option>
+                                            <option value="edit">Can edit</option>
+                                            <option value="admin">Full access</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-danger ms-2"
+                                                @onclick="() => RemoveShare(share)" title="Remove access">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (!sharedUsers.Any())
+                            {
+                                <div class="empty-shares text-center py-4">
+                                    <i class="fas fa-user-friends fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No one else has access yet</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Optional Message -->
+                    <div class="message-section mt-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-comment me-2 text-primary"></i>Add a Message (Optional)
+                        </label>
+                        <textarea class="form-control" rows="2" placeholder="Add a personal message..."
+                                  @bind="shareMessage" maxlength="500"></textarea>
+                        <small class="text-muted">@(shareMessage?.Length ?? 0)/500 characters</small>
+                    </div>
+
+                    <!-- Notification Options -->
+                    <div class="notification-options mt-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notifyByEmail" @bind="notifyByEmail">
+                            <label class="form-check-label" for="notifyByEmail">
+                                <i class="fas fa-envelope me-1"></i> Notify people by email
+                            </label>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" @onclick="Hide">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" @onclick="SaveSharing" disabled="@isSaving">
+                    @if (isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    <i class="fas fa-share me-2"></i>Share
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-share {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .modal-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .share-link-section .input-group {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .share-link-section .form-control {
+        border-right: none;
+    }
+
+    .search-results-dropdown {
+        position: absolute;
+        width: calc(100% - 2rem);
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 1050;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .search-result-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+        .search-result-item:hover {
+            background: #f8f9fa;
+        }
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .owner-avatar {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .user-name {
+        font-weight: 500;
+        color: #2d3748;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-email {
+        font-size: 0.75rem;
+        color: #718096;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .shares-list {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .share-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+        .share-item:last-child {
+            border-bottom: none;
+        }
+
+        .share-item.owner {
+            background: #f8f9fa;
+        }
+
+    .share-controls {
+        display: flex;
+        align-items: center;
+    }
+
+        .share-controls .form-select {
+            width: auto;
+            min-width: 120px;
+        }
+
+    .permission-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .owner-badge {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    .empty-shares {
+        background: #f8f9fa;
+    }
+
+    .form-check-input:checked {
+        background-color: #11998e;
+        border-color: #11998e;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public DashboardModel Dashboard { get; set; }
+
+    [Parameter]
+    public EventCallback OnShareCompleted { get; set; }
+
+    private bool isVisible = false;
+    private bool isLoading = false;
+    private bool isSaving = false;
+    private bool linkCopied = false;
+    private bool isPublicAccess = false;
+    private bool notifyByEmail = true;
+
+    private string shareLink = "";
+    private string searchTerm = "";
+    private string newUserPermission = "view";
+    private string shareMessage = "";
+
+    private List<UserSearchResult> searchResults = new();
+    private List<SharedUser> sharedUsers = new();
+
+    public void Show()
+    {
+        isVisible = true;
+        isLoading = true;
+        linkCopied = false;
+        StateHasChanged();
+
+        _ = LoadShareData();
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+        searchTerm = "";
+        searchResults.Clear();
+        StateHasChanged();
+    }
+
+    private async Task LoadShareData()
+    {
+        try
+        {
+            if (Dashboard != null)
+            {
+                // Generate share link
+                shareLink = $"{GetBaseUrl()}/dashboard/view/{Dashboard.DashboardID}";
+
+                // Load existing shares
+                var response = await Http.GetAsync($"api/dashboard/{Dashboard.DashboardID}/shares");
+                if (response.IsSuccessStatusCode)
+                {
+                    sharedUsers = await response.Content.ReadFromJsonAsync<List<SharedUser>>() ?? new();
+                }
+
+                isPublicAccess = Dashboard.SharingStatus == DashboardSharingStatus.Public;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading share data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetBaseUrl()
+    {
+        // This would typically come from configuration
+        return "https://yourdomain.com";
+    }
+
+    private async Task CopyLink()
+    {
+        try
+        {
+            // Note: JSRuntime would need to be injected for actual clipboard access
+            // await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", shareLink);
+            linkCopied = true;
+            ToastService.ShowSuccess("Link copied to clipboard!");
+
+            await Task.Delay(2000);
+            linkCopied = false;
+            StateHasChanged();
+        }
+        catch
+        {
+            ToastService.ShowError("Failed to copy link");
+        }
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await SearchUsers();
+        }
+    }
+
+    private async Task SearchUsers()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
+        {
+            searchResults.Clear();
+            return;
+        }
+
+        try
+        {
+            var response = await Http.GetAsync($"api/users/search?term={Uri.EscapeDataString(searchTerm)}");
+            if (response.IsSuccessStatusCode)
+            {
+                searchResults = await response.Content.ReadFromJsonAsync<List<UserSearchResult>>() ?? new();
+            }
+        }
+        catch
+        {
+            searchResults.Clear();
+        }
+        StateHasChanged();
+    }
+
+    private void SelectUser(UserSearchResult user)
+    {
+        searchTerm = user.Email;
+        searchResults.Clear();
+        StateHasChanged();
+    }
+
+    private void AddRecipient()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm)) return;
+
+        // Check if already added
+        if (sharedUsers.Any(u => u.Email.Equals(searchTerm, StringComparison.OrdinalIgnoreCase)))
+        {
+            ToastService.ShowWarning("This user already has access");
+            return;
+        }
+
+        var newShare = new SharedUser
+            {
+                Email = searchTerm,
+                Name = searchTerm.Split('@')[0], // Use email prefix as name if not found
+                Permission = newUserPermission,
+                AddedAt = DateTime.UtcNow
+            };
+
+        sharedUsers.Add(newShare);
+        searchTerm = "";
+        searchResults.Clear();
+        StateHasChanged();
+    }
+
+    private void UpdatePermission(SharedUser share, string permission)
+    {
+        share.Permission = permission;
+    }
+
+    private void RemoveShare(SharedUser share)
+    {
+        sharedUsers.Remove(share);
+        StateHasChanged();
+    }
+
+    private async Task SaveSharing()
+    {
+        if (Dashboard == null) return;
+
+        try
+        {
+            isSaving = true;
+            StateHasChanged();
+
+            var shareRequest = new
+            {
+                DashboardId = Dashboard.DashboardID,
+                IsPublic = isPublicAccess,
+                SharedUsers = sharedUsers.Select(u => new
+                {
+                    u.Email,
+                    u.Permission
+                }).ToList(),
+                Message = shareMessage,
+                NotifyByEmail = notifyByEmail
+            };
+
+            var response = await Http.PostAsJsonAsync($"api/dashboard/{Dashboard.DashboardID}/share", shareRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess("Dashboard shared successfully!");
+                await OnShareCompleted.InvokeAsync();
+                Hide();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                ToastService.ShowError($"Failed to share: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error sharing dashboard: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+
+    private string GetAvatarColor(string email)
+    {
+        var colors = new[] { "#667eea", "#f093fb", "#4facfe", "#43e97b", "#fa709a", "#fee140" };
+        var hash = email.GetHashCode();
+        return colors[Math.Abs(hash) % colors.Length];
+    }
+
+    private class UserSearchResult
+    {
+        public int UserId { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+    }
+
+    private class SharedUser
+    {
+        public int UserId { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Permission { get; set; }
+        public DateTime AddedAt { get; set; }
+    }
+}

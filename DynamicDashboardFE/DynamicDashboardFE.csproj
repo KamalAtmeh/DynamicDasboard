@@ -25,6 +25,11 @@
     <PackageReference Include="Northwoods.GoJS" Version="3.0.19" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.3" />
     <PackageReference Include="System.Text.Json" Version="9.0.3" />
+    <!-- MudBlazor - UI Components -->
+    <PackageReference Include="MudBlazor" Version="7.15.0" />
+
+    <!-- ApexCharts for Blazor -->
+    <PackageReference Include="Blazor-ApexCharts" Version="3.6.0" />
   </ItemGroup>
 
   <ItemGroup>

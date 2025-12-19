@@ -1,0 +1,391 @@
+﻿@using DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IToastService ToastService
+
+<div class="modal @(isVisible ? "show d-block" : "")" tabindex="-1" role="dialog"
+     style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <!-- Header -->
+            <div class="modal-header bg-gradient-primary text-white border-0">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon me-3">
+                        <i class="fas fa-file-export fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0">Export Dashboard</h5>
+                        <small class="opacity-75">Choose format and options</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" @onclick="Hide" aria-label="Close"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body p-4">
+                @if (isExporting)
+                {
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Exporting...</span>
+                        </div>
+                        <p class="text-muted mb-0">Preparing your export...</p>
+                        <div class="progress mt-3" style="height: 6px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width: @exportProgress%"></div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Export Format Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-file-alt me-2 text-primary"></i>Export Format
+                        </label>
+                        <div class="row g-3">
+                            @foreach (var format in exportFormats)
+                            {
+                                <div class="col-md-4">
+                                    <div class="export-format-card @(selectedFormat == format.Key ? "selected" : "")"
+                                         @onclick='() => SelectFormat(format.Key)'>
+                                        <div class="format-icon">
+                                            <i class="@format.Value.Icon"></i>
+                                        </div>
+                                        <div class="format-info">
+                                            <span class="format-name">@format.Value.Name</span>
+                                            <small class="format-desc">@format.Value.Description</small>
+                                        </div>
+                                        @if (selectedFormat == format.Key)
+                                        {
+                                            <div class="format-check">
+                                                <i class="fas fa-check-circle text-success"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Export Options -->
+                    <div class="export-options">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-cog me-2 text-primary"></i>Export Options
+                        </label>
+
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <!-- Component Selection -->
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Components to Export</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="componentSelection"
+                                               id="exportAll" checked="@(exportAllComponents)"
+                                               @onchange='() => exportAllComponents = true'>
+                                        <label class="form-check-label" for="exportAll">
+                                            All Components (@(Dashboard?.Components?.Count ?? 0))
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="componentSelection"
+                                               id="exportSelected" checked="@(!exportAllComponents)"
+                                               @onchange='() => exportAllComponents = false'>
+                                        <label class="form-check-label" for="exportSelected">
+                                            Selected Component Only
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Include Options -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="includeData"
+                                                   @bind="includeData">
+                                            <label class="form-check-label" for="includeData">Include Data</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="includeCharts"
+                                                   @bind="includeCharts">
+                                            <label class="form-check-label" for="includeCharts">Include Charts</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="includeFilters"
+                                                   @bind="includeFilters">
+                                            <label class="form-check-label" for="includeFilters">Include Filters</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="includeTimestamp"
+                                                   @bind="includeTimestamp">
+                                            <label class="form-check-label" for="includeTimestamp">Add Timestamp</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Page Size (for PDF) -->
+                                @if (selectedFormat == "pdf")
+                                {
+                                    <div class="mt-3">
+                                        <label class="form-label small text-muted">Page Size</label>
+                                        <select class="form-select form-select-sm" @bind="pageSize">
+                                            <option value="A4">A4</option>
+                                            <option value="Letter">Letter</option>
+                                            <option value="A3">A3</option>
+                                            <option value="Legal">Legal</option>
+                                        </select>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" @onclick="Hide" disabled="@isExporting">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" @onclick="Export" disabled="@isExporting">
+                    <i class="fas fa-download me-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .modal-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .export-format-card {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: white;
+        position: relative;
+    }
+
+        .export-format-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .export-format-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+
+    .format-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        background: #f8f9fa;
+        color: #667eea;
+    }
+
+    .export-format-card.selected .format-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .format-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .format-name {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .format-desc {
+        color: #718096;
+        font-size: 0.75rem;
+    }
+
+    .format-check {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: #667eea;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public DashboardModel Dashboard { get; set; }
+
+    [Parameter]
+    public int SelectedComponentId { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnExportCompleted { get; set; }
+
+    private bool isVisible = false;
+    private bool isExporting = false;
+    private int exportProgress = 0;
+    private string selectedFormat = "pdf";
+    private bool exportAllComponents = true;
+    private bool includeData = true;
+    private bool includeCharts = true;
+    private bool includeFilters = true;
+    private bool includeTimestamp = true;
+    private string pageSize = "A4";
+
+    private Dictionary<string, ExportFormatInfo> exportFormats = new()
+    {
+        { "pdf", new ExportFormatInfo { Name = "PDF", Icon = "fas fa-file-pdf", Description = "Best for printing" } },
+        { "excel", new ExportFormatInfo { Name = "Excel", Icon = "fas fa-file-excel", Description = "Editable spreadsheet" } },
+        { "csv", new ExportFormatInfo { Name = "CSV", Icon = "fas fa-file-csv", Description = "Raw data export" } },
+        { "png", new ExportFormatInfo { Name = "Image", Icon = "fas fa-file-image", Description = "Dashboard snapshot" } },
+        { "json", new ExportFormatInfo { Name = "JSON", Icon = "fas fa-file-code", Description = "Configuration backup" } },
+        { "html", new ExportFormatInfo { Name = "HTML", Icon = "fas fa-file-code", Description = "Web page export" } }
+    };
+
+    public void Show()
+    {
+        isVisible = true;
+        isExporting = false;
+        exportProgress = 0;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+        StateHasChanged();
+    }
+
+    public void SetFormat(string format)
+    {
+        if (exportFormats.ContainsKey(format.ToLower()))
+        {
+            selectedFormat = format.ToLower();
+        }
+    }
+
+    private void SelectFormat(string format)
+    {
+        selectedFormat = format;
+    }
+
+    private async Task Export()
+    {
+        if (Dashboard == null)
+        {
+            ToastService.ShowError("No dashboard to export");
+            return;
+        }
+
+        try
+        {
+            isExporting = true;
+            exportProgress = 0;
+            StateHasChanged();
+
+            // Simulate export progress
+            for (int i = 0; i <= 100; i += 10)
+            {
+                exportProgress = i;
+                StateHasChanged();
+                await Task.Delay(100);
+            }
+
+            var exportRequest = new
+            {
+                DashboardId = Dashboard.DashboardID,
+                Format = selectedFormat,
+                ExportAllComponents = exportAllComponents,
+                SelectedComponentId = exportAllComponents ? 0 : SelectedComponentId,
+                IncludeData = includeData,
+                IncludeCharts = includeCharts,
+                IncludeFilters = includeFilters,
+                IncludeTimestamp = includeTimestamp,
+                PageSize = pageSize
+            };
+
+            var response = await Http.PostAsJsonAsync($"api/dashboard/{Dashboard.DashboardID}/export", exportRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsByteArrayAsync();
+                var fileName = $"{Dashboard.Title}_{DateTime.Now:yyyyMMdd_HHmmss}.{selectedFormat}";
+
+                // Trigger browser download
+                await JSRuntime.InvokeVoidAsync("downloadFileFromBytes", fileName, content, GetMimeType(selectedFormat));
+
+                await OnExportCompleted.InvokeAsync(selectedFormat);
+                Hide();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                ToastService.ShowError($"Export failed: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Export error: {ex.Message}");
+        }
+        finally
+        {
+            isExporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetMimeType(string format)
+    {
+        return format switch
+        {
+            "pdf" => "application/pdf",
+            "excel" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "csv" => "text/csv",
+            "png" => "image/png",
+            "json" => "application/json",
+            "html" => "text/html",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private class ExportFormatInfo
+    {
+        public string Name { get; set; }
+        public string Icon { get; set; }
+        public string Description { get; set; }
+    }
+}

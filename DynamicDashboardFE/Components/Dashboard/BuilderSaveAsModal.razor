@@ -1,0 +1,512 @@
+﻿@using DynamicDashboardCommon.Models
+@inject HttpClient Http
+@inject IToastService ToastService
+
+<div class="modal @(isVisible ? "show d-block" : "")" tabindex="-1" role="dialog"
+     style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <!-- Header -->
+            <div class="modal-header bg-gradient-saveas text-white border-0">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon me-3">
+                        <i class="fas fa-copy fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0">Save As New Dashboard</h5>
+                        <small class="opacity-75">Create a copy with a new name</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" @onclick="Hide" aria-label="Close"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body p-4">
+                <EditForm Model="saveAsModel" OnValidSubmit="HandleSave">
+                    <DataAnnotationsValidator />
+
+                    <!-- Dashboard Title -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-heading me-2 text-primary"></i>Dashboard Title
+                            <span class="text-danger">*</span>
+                        </label>
+                        <InputText class="form-control form-control-lg"
+                                   @bind-Value="saveAsModel.Title"
+                                   placeholder="Enter dashboard title..." />
+                        <ValidationMessage For="@(() => saveAsModel.Title)" class="text-danger small" />
+                        <small class="text-muted">@(saveAsModel.Title?.Length ?? 0)/100 characters</small>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-align-left me-2 text-primary"></i>Description
+                        </label>
+                        <InputTextArea class="form-control"
+                                       @bind-Value="saveAsModel.Description"
+                                       rows="3"
+                                       placeholder="Enter a brief description..." />
+                        <small class="text-muted">@(saveAsModel.Description?.Length ?? 0)/500 characters</small>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-folder me-2 text-primary"></i>Category
+                            <span class="text-danger">*</span>
+                        </label>
+                        <InputSelect class="form-select" @bind-Value="saveAsModel.CategoryID">
+                            <option value="0">Select a category...</option>
+                            @if (categories != null)
+                            {
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category.CategoryID">@category.CategoryID</option>
+                                }
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => saveAsModel.CategoryID)" class="text-danger small" />
+                    </div>
+
+                    <!-- Copy Options -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-cog me-2 text-primary"></i>Copy Options
+                        </label>
+                        <div class="card border-0 bg-light">
+                            <div class="card-body py-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="copyComponents"
+                                           @bind="saveAsModel.CopyComponents">
+                                    <label class="form-check-label" for="copyComponents">
+                                        <i class="fas fa-th-large me-1 text-muted"></i>
+                                        Copy all components (@(Dashboard?.Components?.Count ?? 0))
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="copyFilters"
+                                           @bind="saveAsModel.CopyFilters">
+                                    <label class="form-check-label" for="copyFilters">
+                                        <i class="fas fa-filter me-1 text-muted"></i>
+                                        Copy filter configurations
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="copyStyles"
+                                           @bind="saveAsModel.CopyStyles">
+                                    <label class="form-check-label" for="copyStyles">
+                                        <i class="fas fa-palette me-1 text-muted"></i>
+                                        Copy visual styles and themes
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="copyParameters"
+                                           @bind="saveAsModel.CopyParameters">
+                                    <label class="form-check-label" for="copyParameters">
+                                        <i class="fas fa-sliders-h me-1 text-muted"></i>
+                                        Copy parameter configurations
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visibility -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-eye me-2 text-primary"></i>Visibility
+                        </label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visibility" id="visPrivate"
+                                       checked="@(saveAsModel.SharingStatus == DashboardSharingStatus.Private)"
+                                       @onchange='() => saveAsModel.SharingStatus = DashboardSharingStatus.Private'>
+                                <label class="form-check-label" for="visPrivate">
+                                    <i class="fas fa-lock me-1"></i> Private
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visibility" id="visShared"
+                                       checked="@(saveAsModel.SharingStatus == DashboardSharingStatus.Shared)"
+                                       @onchange='() => saveAsModel.SharingStatus = DashboardSharingStatus.Shared'>
+                                <label class="form-check-label" for="visShared">
+                                    <i class="fas fa-users me-1"></i> Shared
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visibility" id="visPublic"
+                                       checked="@(saveAsModel.SharingStatus == DashboardSharingStatus.Public)"
+                                       @onchange='() => saveAsModel.SharingStatus = DashboardSharingStatus.Public'>
+                                <label class="form-check-label" for="visPublic">
+                                    <i class="fas fa-globe me-1"></i> Public
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-tags me-2 text-primary"></i>Tags
+                        </label>
+                        <div class="tags-input-container">
+                            <div class="tags-list mb-2">
+                                @foreach (var tag in saveAsModel.Tags)
+                                {
+                                    <span class="tag-badge">
+                                        @tag
+                                        <button type="button" class="tag-remove" @onclick="() => RemoveTag(tag)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </span>
+                                }
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" placeholder="Add a tag..."
+                                       @bind="newTag" @bind:event="oninput"
+                                       @onkeydown="HandleTagKeyDown" />
+                                <button class="btn btn-outline-secondary" type="button" @onclick="AddTag">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" @onclick="Hide" disabled="@isSaving">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" @onclick="HandleSave" disabled="@isSaving">
+                    @if (isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-save me-2"></i>
+                        <span>Save as New</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-saveas {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .modal-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .tags-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .tag-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .tag-remove {
+        background: none;
+        border: none;
+        color: white;
+        opacity: 0.7;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        font-size: 0.75rem;
+    }
+
+        .tag-remove:hover {
+            opacity: 1;
+        }
+
+    .card.bg-light {
+        background-color: #f8f9fa !important;
+    }
+
+    .form-control-lg {
+        font-size: 1.1rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .input-group-sm .form-control {
+        border-radius: 6px 0 0 6px;
+    }
+
+    .input-group-sm .btn {
+        border-radius: 0 6px 6px 0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public DashboardModel Dashboard { get; set; }
+
+    [Parameter]
+    public EventCallback<DashboardModel> OnSaveAsCompleted { get; set; }
+
+    private bool isVisible = false;
+    private bool isSaving = false;
+    private string newTag = "";
+    private List<DashboardCategory> categories = new();
+
+    private SaveAsModel saveAsModel = new SaveAsModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    public void Show()
+    {
+        isVisible = true;
+        InitializeModel();
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+        StateHasChanged();
+    }
+
+    private void InitializeModel()
+    {
+        if (Dashboard != null)
+        {
+            saveAsModel = new SaveAsModel
+                {
+                    Title = $"{Dashboard.Title} (Copy)",
+                    Description = Dashboard.Description,
+                    CategoryID = Dashboard.CategoryID,
+                    DatabaseID = Dashboard.DatabaseID,
+                    SharingStatus = DashboardSharingStatus.Private,
+                    Tags = Dashboard.Tags?.ToList() ?? new List<string>(),
+                    CopyComponents = true,
+                    CopyFilters = true,
+                    CopyStyles = true,
+                    CopyParameters = true
+                };
+        }
+        else
+        {
+            saveAsModel = new SaveAsModel
+                {
+                    Title = "New Dashboard",
+                    SharingStatus = DashboardSharingStatus.Private,
+                    Tags = new List<string>(),
+                    CopyComponents = true,
+                    CopyFilters = true,
+                    CopyStyles = true,
+                    CopyParameters = true
+                };
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await Http.GetFromJsonAsync<List<DashboardCategory>>("api/dashboard/categories") ?? new();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading categories: {ex.Message}");
+        }
+    }
+
+    private void HandleTagKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTag();
+        }
+    }
+
+    private void AddTag()
+    {
+        if (!string.IsNullOrWhiteSpace(newTag) && !saveAsModel.Tags.Contains(newTag.Trim()))
+        {
+            saveAsModel.Tags.Add(newTag.Trim());
+            newTag = "";
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveTag(string tag)
+    {
+        saveAsModel.Tags.Remove(tag);
+        StateHasChanged();
+    }
+
+    private async Task HandleSave()
+    {
+        // Validate
+        if (string.IsNullOrWhiteSpace(saveAsModel.Title))
+        {
+            ToastService.ShowError("Please enter a dashboard title");
+            return;
+        }
+
+        if (saveAsModel.CategoryID <= 0)
+        {
+            ToastService.ShowError("Please select a category");
+            return;
+        }
+
+        try
+        {
+            isSaving = true;
+            StateHasChanged();
+
+            // Create new dashboard based on current one
+            var newDashboard = new DashboardModel
+                {
+                    Title = saveAsModel.Title.Trim(),
+                    Description = saveAsModel.Description?.Trim(),
+                    CategoryID = saveAsModel.CategoryID,
+                    DatabaseID = saveAsModel.DatabaseID > 0 ? saveAsModel.DatabaseID : Dashboard?.DatabaseID ?? 0,
+                    SharingStatus = saveAsModel.SharingStatus,
+                    ValidationStatus = DashboardValidationStatus.Draft,
+                    Tags = saveAsModel.Tags,
+                    CreatedAt = DateTime.UtcNow,
+                    LastUpdated = DateTime.UtcNow,
+                    Components = new List<DashboardComponent>()
+                };
+
+            // Copy components if selected
+            if (saveAsModel.CopyComponents && Dashboard?.Components != null)
+            {
+                foreach (var component in Dashboard.Components)
+                {
+                    var newComponent = new DashboardComponent
+                        {
+                            Title = component.Title,
+                            Description = component.Description,
+                            DataViewingTypeID = component.DataViewingTypeID,
+                            GridX = component.GridX,
+                            GridY = component.GridY,
+                            GridWidth = component.GridWidth,
+                            GridHeight = component.GridHeight,
+                            QueryText = component.QueryText,
+                            QueryIntent = component.QueryIntent,
+                            IsVisible = component.IsVisible,
+                            IsAIGenerated = component.IsAIGenerated,
+                            CreatedAt = DateTime.UtcNow,
+                            LastUpdated = DateTime.UtcNow
+                        };
+
+                    // Copy visualization config (styles) if selected
+                    if (saveAsModel.CopyStyles)
+                    {
+                        newComponent.VisualizationConfig = component.VisualizationConfig;
+                    }
+
+                    // Copy filter expression if selected
+                    if (saveAsModel.CopyFilters)
+                    {
+                        newComponent.FilterExpression = component.FilterExpression;
+                    }
+
+                    // Copy parameters if selected
+                    if (saveAsModel.CopyParameters && component.Parameters != null)
+                    {
+                        newComponent.Parameters = component.Parameters.Select(p => new ComponentParameter
+                            {
+                                Name = p.Name,
+                                DisplayName = p.DisplayName,
+                                DefaultValue = p.DefaultValue,
+                                CurrentValue = p.CurrentValue,
+                                DataType = p.DataType,
+                                IsRequired = p.IsRequired,
+                                Options = p.Options,
+                                IsVisible = p.IsVisible,
+                                ValidationRules = p.ValidationRules,
+                                Description = p.Description
+                            }).ToList();
+                    }
+
+                    newDashboard.Components.Add(newComponent);
+                }
+            }
+
+            // Save to API
+            var response = await Http.PostAsJsonAsync("api/dashboard", newDashboard);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var createdDashboard = await response.Content.ReadFromJsonAsync<DashboardModel>();
+
+                if (createdDashboard != null)
+                {
+                    ToastService.ShowSuccess($"Dashboard '{saveAsModel.Title}' created successfully!");
+                    await OnSaveAsCompleted.InvokeAsync(createdDashboard);
+                    Hide();
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                ToastService.ShowError($"Failed to create dashboard: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error creating dashboard: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private class SaveAsModel
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int CategoryID { get; set; }
+        public int DatabaseID { get; set; }
+        public DashboardSharingStatus SharingStatus { get; set; }
+        public List<string> Tags { get; set; } = new();
+        public bool CopyComponents { get; set; } = true;
+        public bool CopyFilters { get; set; } = true;
+        public bool CopyStyles { get; set; } = true;
+        public bool CopyParameters { get; set; } = true;
+    }
+}

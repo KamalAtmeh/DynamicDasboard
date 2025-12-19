@@ -391,7 +391,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>A collection of dashboard components.</returns>
-        private async Task<IEnumerable<DashboardComponent>> GetDashboardComponentsAsync(
+        public async Task<IEnumerable<DashboardComponent>> GetDashboardComponentsAsync(
             int dashboardId, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
@@ -438,7 +438,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>The ID of the created component.</returns>
-        private async Task<int> CreateDashboardComponentAsync(
+        public async Task<int> CreateDashboardComponentAsync(
             DashboardComponent component, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
@@ -514,7 +514,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>True if successful.</returns>
-        private async Task<bool> UpdateDashboardComponentAsync(
+        public async Task<bool> UpdateDashboardComponentAsync(
             DashboardComponent component, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
@@ -624,7 +624,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>True if successful.</returns>
-        private async Task<bool> DeleteDashboardComponentAsync(
+        public async Task<bool> DeleteDashboardComponentAsync(
             int componentId, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = "DELETE FROM DashboardComponents WHERE ComponentID = @ComponentID";
@@ -670,7 +670,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>True if successful.</returns>
-        private async Task<bool> DeleteDashboardComponentsAsync(
+        public async Task<bool> DeleteDashboardComponentsAsync(
             int dashboardId, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             if (connection != null)
@@ -725,7 +725,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>A collection of component parameters.</returns>
-        private async Task<IEnumerable<ComponentParameter>> GetComponentParametersAsync(
+        public async Task<IEnumerable<ComponentParameter>> GetComponentParametersAsync(
             int componentId, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
@@ -755,7 +755,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>The ID of the created parameter.</returns>
-        private async Task<int> CreateComponentParameterAsync(
+        public async Task<int> CreateComponentParameterAsync(
             ComponentParameter parameter, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
@@ -788,7 +788,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>True if successful.</returns>
-        private async Task<bool> UpdateComponentParameterAsync(
+        public async Task<bool> UpdateComponentParameterAsync(
             ComponentParameter parameter, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
@@ -827,7 +827,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>True if successful.</returns>
-        private async Task<bool> DeleteComponentParameterAsync(
+        public async Task<bool> DeleteComponentParameterAsync(
             int parameterId, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = "DELETE FROM ComponentParameters WHERE ParameterID = @ParameterID";
@@ -854,7 +854,7 @@ namespace DynamicDasboardWebAPI.Repositories
         /// <param name="connection">Optional connection to use.</param>
         /// <param name="transaction">Optional transaction to use.</param>
         /// <returns>True if successful.</returns>
-        private async Task<bool> DeleteComponentParametersAsync(
+        public async Task<bool> DeleteComponentParametersAsync(
             int componentId, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = "DELETE FROM ComponentParameters WHERE ComponentID = @ComponentID";

@@ -1,0 +1,540 @@
+﻿@using DynamicDashboardCommon.Models
+
+<div class="component-library">
+    <!-- Search -->
+    <div class="library-search mb-3">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-transparent border-end-0">
+                <i class="fas fa-search text-muted"></i>
+            </span>
+            <input type="text" class="form-control border-start-0 ps-0"
+                   placeholder="Search components..."
+                   value="@SearchTerm"
+                   @oninput="HandleSearchInput" />
+            @if (!string.IsNullOrEmpty(SearchTerm))
+            {
+                <button class="btn btn-outline-secondary border-start-0" type="button"
+                        @onclick="ClearSearch">
+                    <i class="fas fa-times"></i>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="library-categories mb-3">
+        <div class="category-tabs">
+            <button class="category-tab @(selectedCategory == "All" ? "active" : "")"
+                    @onclick='() => SelectCategory("All")'>
+                <i class="fas fa-th me-1"></i>All
+            </button>
+            @foreach (var category in GetCategories())
+            {
+                <button class="category-tab @(selectedCategory == category ? "active" : "")"
+                        @onclick="() => SelectCategory(category)">
+                    <i class="@GetCategoryIcon(category) me-1"></i>@category
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Components List -->
+    <div class="library-components">
+        @if (FilteredComponents.Any())
+        {
+            @foreach (var category in GetFilteredCategories())
+            {
+                <div class="component-category mb-3">
+                    @if (selectedCategory == "All")
+                    {
+                        <div class="category-header">
+                            <i class="@GetCategoryIcon(category) me-2"></i>
+                            <span>@category</span>
+                            <span class="badge bg-secondary ms-auto">@GetCategoryCount(category)</span>
+                        </div>
+                    }
+
+                    <div class="component-grid">
+                        @foreach (var component in GetComponentsByCategory(category))
+                        {
+                            <div class="component-card"
+                                 draggable="true"
+                                 @ondragstart="() => HandleDragStart(component)"
+                                 @ondragend="HandleDragEnd"
+                                 @onclick="() => SelectComponent(component)"
+                                 title="@component.Description">
+                                <div class="component-icon">
+                                    <i class="fas @component.Icon"></i>
+                                </div>
+                                <div class="component-info">
+                                    <span class="component-name">@component.Title</span>
+                                    <span class="component-desc">@TruncateText(component.Description, 40)</span>
+                                </div>
+                                <div class="component-add">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-library text-center py-4">
+                <i class="fas fa-puzzle-piece fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-2">No components found</p>
+                @if (!string.IsNullOrEmpty(SearchTerm))
+                {
+                    <button class="btn btn-sm btn-outline-primary" @onclick="ClearSearch">
+                        Clear search
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Quick Add Section -->
+    <div class="quick-add-section mt-3 pt-3 border-top">
+        <div class="quick-add-header mb-2">
+            <i class="fas fa-bolt text-warning me-2"></i>
+            <span class="fw-semibold">Quick Add</span>
+        </div>
+        <div class="quick-add-buttons">
+            <button class="btn btn-sm btn-outline-primary me-2 mb-2"
+                    @onclick="() => QuickAddComponent(DataViewingTypeEnum.Table)"
+                    title="Add a data table">
+                <i class="fas fa-table me-1"></i>Table
+            </button>
+            <button class="btn btn-sm btn-outline-success me-2 mb-2"
+                    @onclick="() => QuickAddComponent(DataViewingTypeEnum.Chart)"
+                    title="Add a chart">
+                <i class="fas fa-chart-bar me-1"></i>Chart
+            </button>
+            <button class="btn btn-sm btn-outline-info me-2 mb-2"
+                    @onclick="() => QuickAddComponent(DataViewingTypeEnum.Number)"
+                    title="Add a KPI card">
+                <i class="fas fa-tachometer-alt me-1"></i>KPI
+            </button>
+            <button class="btn btn-sm btn-outline-secondary mb-2"
+                    @onclick="() => QuickAddComponent(DataViewingTypeEnum.Label)"
+                    title="Add a text label">
+                <i class="fas fa-font me-1"></i>Text
+            </button>
+        </div>
+    </div>
+
+    <!-- Drag Preview (hidden, used by JS) -->
+    <div id="drag-preview" class="drag-preview" style="display: none;">
+        <i class="fas fa-grip-vertical me-2"></i>
+        <span class="drag-preview-text"></span>
+    </div>
+</div>
+
+<style>
+    .component-library {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        background: #f8f9fa;
+        overflow: hidden;
+    }
+
+    .library-search .input-group {
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .library-search .form-control {
+        border: none;
+        box-shadow: none !important;
+    }
+
+    .library-search .input-group-text {
+        border: none;
+    }
+
+    .category-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .category-tab {
+        padding: 0.375rem 0.75rem;
+        border: none;
+        background: white;
+        border-radius: 20px;
+        font-size: 0.8125rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .category-tab:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .category-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+    .library-components {
+        flex: 1;
+        overflow-y: auto;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+    }
+
+    .category-header {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .component-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .component-card {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 10px;
+        cursor: grab;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+        .component-card:hover {
+            border-color: #667eea;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .component-card:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+
+        .component-card.dragging {
+            opacity: 0.5;
+            border-color: #667eea;
+        }
+
+    .component-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
+        .component-icon i {
+            font-size: 1rem;
+            color: #667eea;
+        }
+
+    .component-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .component-name {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #2d3748;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .component-desc {
+        font-size: 0.75rem;
+        color: #718096;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .component-add {
+        opacity: 0;
+        transition: opacity 0.2s;
+        color: #667eea;
+        font-size: 1.25rem;
+    }
+
+    .component-card:hover .component-add {
+        opacity: 1;
+    }
+
+    .quick-add-section {
+        flex-shrink: 0;
+    }
+
+    .quick-add-header {
+        font-size: 0.8125rem;
+        color: #495057;
+    }
+
+    .quick-add-buttons {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+        .quick-add-buttons .btn {
+            border-radius: 20px;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+        }
+
+    .empty-library {
+        color: #718096;
+    }
+
+    .drag-preview {
+        position: fixed;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        pointer-events: none;
+        z-index: 9999;
+    }
+
+    /* Scrollbar styling */
+    .library-components::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .library-components::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .library-components::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 3px;
+    }
+
+        .library-components::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<ComponentTemplate> OnComponentSelected { get; set; }
+
+    [Parameter]
+    public List<ComponentTemplate> AvailableComponents { get; set; } = new();
+
+    [Parameter]
+    public string SearchTerm { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> OnSearchChanged { get; set; }
+
+    private string selectedCategory = "All";
+    private ComponentTemplate draggingComponent = null;
+
+    private List<ComponentTemplate> FilteredComponents => AvailableComponents
+        .Where(c => string.IsNullOrEmpty(SearchTerm) ||
+                    c.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    c.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
+        .Where(c => selectedCategory == "All" || c.Category == selectedCategory)
+        .ToList();
+
+    private IEnumerable<string> GetCategories()
+    {
+        return AvailableComponents
+            .Select(c => c.Category)
+            .Distinct()
+            .OrderBy(c => c);
+    }
+
+    private IEnumerable<string> GetFilteredCategories()
+    {
+        if (selectedCategory != "All")
+        {
+            return new[] { selectedCategory };
+        }
+
+        return FilteredComponents
+            .Select(c => c.Category)
+            .Distinct()
+            .OrderBy(c => c);
+    }
+
+    private IEnumerable<ComponentTemplate> GetComponentsByCategory(string category)
+    {
+        return FilteredComponents.Where(c => c.Category == category);
+    }
+
+    private int GetCategoryCount(string category)
+    {
+        return FilteredComponents.Count(c => c.Category == category);
+    }
+
+    private string GetCategoryIcon(string category)
+    {
+        return category?.ToLower() switch
+        {
+            "charts" => "fas fa-chart-pie",
+            "data display" => "fas fa-table",
+            "kpis" => "fas fa-tachometer-alt",
+            "text" => "fas fa-font",
+            "filters" => "fas fa-filter",
+            "maps" => "fas fa-map-marked-alt",
+            "media" => "fas fa-image",
+            _ => "fas fa-puzzle-piece"
+        };
+    }
+
+    private async Task HandleSearchInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        await OnSearchChanged.InvokeAsync(value);
+    }
+
+    private async Task ClearSearch()
+    {
+        await OnSearchChanged.InvokeAsync("");
+    }
+
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    private void HandleDragStart(ComponentTemplate component)
+    {
+        draggingComponent = component;
+    }
+
+    private void HandleDragEnd()
+    {
+        draggingComponent = null;
+    }
+
+    private async Task SelectComponent(ComponentTemplate component)
+    {
+        await OnComponentSelected.InvokeAsync(component);
+    }
+
+    private async Task QuickAddComponent(DataViewingTypeEnum type)
+    {
+        var template = AvailableComponents.FirstOrDefault(c => c.DataViewingTypeID == (int)type);
+
+        if (template == null)
+        {
+            // Create a default template if not found
+            template = new ComponentTemplate
+                {
+                    Id = 0,
+                    Title = GetDefaultTitle(type),
+                    Description = GetDefaultDescription(type),
+                    DataViewingTypeID = (int)type,
+                    Icon = GetDefaultIcon(type),
+                    Category = GetDefaultCategory(type)
+                };
+        }
+
+        await OnComponentSelected.InvokeAsync(template);
+    }
+
+    private string GetDefaultTitle(DataViewingTypeEnum type)
+    {
+        return type switch
+        {
+            DataViewingTypeEnum.Table => "Data Table",
+            DataViewingTypeEnum.Chart => "Chart",
+            DataViewingTypeEnum.Number => "KPI Card",
+            DataViewingTypeEnum.Label => "Text Label",
+            DataViewingTypeEnum.Card => "Info Card",
+            _ => "New Component"
+        };
+    }
+
+    private string GetDefaultDescription(DataViewingTypeEnum type)
+    {
+        return type switch
+        {
+            DataViewingTypeEnum.Table => "Display data in tabular format",
+            DataViewingTypeEnum.Chart => "Visualize data with charts",
+            DataViewingTypeEnum.Number => "Display key metrics",
+            DataViewingTypeEnum.Label => "Add text content",
+            DataViewingTypeEnum.Card => "Display information card",
+            _ => "Dashboard component"
+        };
+    }
+
+    private string GetDefaultIcon(DataViewingTypeEnum type)
+    {
+        return type switch
+        {
+            DataViewingTypeEnum.Table => "fa-table",
+            DataViewingTypeEnum.Chart => "fa-chart-bar",
+            DataViewingTypeEnum.Number => "fa-tachometer-alt",
+            DataViewingTypeEnum.Label => "fa-font",
+            DataViewingTypeEnum.Card => "fa-id-card",
+            _ => "fa-puzzle-piece"
+        };
+    }
+
+    private string GetDefaultCategory(DataViewingTypeEnum type)
+    {
+        return type switch
+        {
+            DataViewingTypeEnum.Table => "Data Display",
+            DataViewingTypeEnum.Chart => "Charts",
+            DataViewingTypeEnum.Number => "KPIs",
+            DataViewingTypeEnum.Label => "Text",
+            DataViewingTypeEnum.Card => "Data Display",
+            _ => "Other"
+        };
+    }
+
+    private string TruncateText(string text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+            return text;
+
+        return text.Substring(0, maxLength - 3) + "...";
+    }
+
+    // Component Template class (should match the one in DashboardBuilder)
+    public class ComponentTemplate
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int DataViewingTypeID { get; set; }
+        public string Icon { get; set; }
+        public string Category { get; set; }
+        public string VisualizationConfig { get; set; }
+    }
+}
