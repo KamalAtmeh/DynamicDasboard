@@ -5,6 +5,7 @@
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
 
+
 <PageTitle>Dashboard Builder - DataVision</PageTitle>
 
 <!-- ============================================================ -->
@@ -226,8 +227,8 @@
                                             {
                                                 <div class="db-component-card"
                                                      draggable="true"
-                                                     @ondragstart="() => StartDrag(comp)"
-                                                     @ondragend="EndDrag"
+                                                     @ondragstart="async () => await StartDragWithJS(comp)"
+                                                     @ondragend="async () => await EndDragWithJS()"
                                                      @onclick="() => AddComponent(comp)">
                                                     <div class="db-component-icon" style="background: @comp.Color;">
                                                         <i class="@comp.Icon"></i>
@@ -341,9 +342,11 @@
             <div class="db-canvas-wrapper">
                 <div class="db-canvas-scroll" style="transform: scale(@_zoom); transform-origin: top center;">
                     <div class="db-canvas @(_showGrid ? "show-grid" : "") @(_deviceMode)"
+                         @ref="_canvasRef"
                          @ondragover="HandleDragOver"
-                         @ondragover:preventDefault
+                         @ondragover:preventDefault="true"
                          @ondrop="HandleDrop"
+                         @ondrop:preventDefault="true"
                          @onclick="DeselectAll">
                         
                         @if (!_components.Any())
@@ -393,8 +396,8 @@
                                         <!-- Component Header (Drag Handle) -->
                                         <div class="db-item-header"
                                              draggable="true"
-                                             @ondragstart="() => StartDragExisting(comp)"
-                                             @ondragend="EndDrag">
+                                             @ondragstart="async () => await StartDragExistingWithJS(comp)"
+                                             @ondragend="async () => await EndDragWithJS()">
                                             <div class="db-item-drag">
                                                 <i class="fas fa-grip-vertical"></i>
                                             </div>
@@ -579,12 +582,12 @@
                                             </div>
                                             <div class="db-field">
                                                 <label>Shadow</label>
-                                                <textarea rows="2" @bind="selected.Description" @bind:after="MarkChanged"></textarea>
+                                                <select @bind="selected.Shadow" @bind:after="MarkChanged">
                                                     <option value="none">None</option>
                                                     <option value="sm">Small</option>
                                                     <option value="md">Medium</option>
                                                     <option value="lg">Large</option>
-                                              
+                                                </select>
                                             </div>
                                         </div>
                                     }
@@ -932,6 +935,92 @@
                 break;
         }
     };
+
+    // Add these fields at the top of your @code section
+    private DotNetObjectReference<DashboardBuilder>? _dotNetRef;
+    private ElementReference _canvasRef;
+
+    // Add this lifecycle method
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("DashboardBuilder.init");
+            await JSRuntime.InvokeVoidAsync("DashboardBuilder.setupKeyboardShortcuts", _dotNetRef);
+        }
+    }
+
+    // Add these JS callback methods
+    [JSInvokable]
+    public void OnKeyboardSave()
+    {
+        SaveDashboard();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnKeyboardUndo()
+    {
+        Undo();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnKeyboardRedo()
+    {
+        Redo();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnKeyboardDelete()
+    {
+        if (_selectedComponentId > 0)
+        {
+            var comp = _components.FirstOrDefault(c => c.Id == _selectedComponentId);
+            if (comp != null)
+            {
+                DeleteComponent(comp);
+                StateHasChanged();
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void OnKeyboardDuplicate()
+    {
+        if (_selectedComponentId > 0)
+        {
+            var comp = _components.FirstOrDefault(c => c.Id == _selectedComponentId);
+            if (comp != null)
+            {
+                DuplicateComponent(comp);
+                StateHasChanged();
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void OnComponentResized(int componentId, int newWidth, int newHeight)
+    {
+        var comp = _components.FirstOrDefault(c => c.Id == componentId);
+        if (comp != null)
+        {
+            comp.GridWidth = newWidth;
+            comp.GridHeight = newHeight;
+            SaveToHistory();
+            MarkChanged();
+            StateHasChanged();
+        }
+    }
+
+    // Cleanup
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+
 }
 @* ============================================================ *@
 @* CODE SECTION - ALL LOGIC, STATE & INTERACTIVITY              *@
@@ -1414,22 +1503,46 @@
     }
 
     // ==================== DRAG & DROP ====================
-    private void StartDrag(ComponentTemplate template)
+    private async Task StartDragWithJS(ComponentTemplate template)
     {
         _isDragging = true;
         _draggedTemplate = template;
         _draggedComponent = null;
         _draggedWidth = template.DefaultWidth;
         _draggedHeight = template.DefaultHeight;
+
+        // Call JS for visual effects
+        await JSRuntime.InvokeVoidAsync("DashboardBuilder.startDrag", null, new
+        {
+            name = template.Name,
+            type = template.Type,
+            icon = template.Icon,
+            color = template.Color,
+            defaultWidth = template.DefaultWidth,
+            defaultHeight = template.DefaultHeight
+        });
     }
 
-    private void StartDragExisting(CanvasComponent component)
+    private async Task EndDragWithJS()
+    {
+        _isDragging = false;
+        _draggedTemplate = null;
+        _draggedComponent = null;
+
+        await JSRuntime.InvokeVoidAsync("DashboardBuilder.endDrag");
+    }
+
+
+    private async Task StartDragExistingWithJS(CanvasComponent component)
     {
         _isDragging = true;
         _draggedTemplate = null;
         _draggedComponent = component;
         _draggedWidth = component.GridWidth;
         _draggedHeight = component.GridHeight;
+
+        // Call JS for visual effects
+        await JSRuntime.InvokeVoidAsync("DashboardBuilder.startDragExisting", null, component.Id, component.GridWidth, component.GridHeight);
     }
 
     private void EndDrag()

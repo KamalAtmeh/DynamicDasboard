@@ -2231,3 +2231,172 @@ body.is-dragging-active {
 .db-resize-se:hover {
     cursor: nwse-resize;
 }
+
+/* ==================== JS DRAG & DROP ENHANCEMENTS ==================== */
+
+/* Drag Ghost */
+.db-drag-ghost {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--db-bg-secondary);
+    border: 2px solid var(--db-primary);
+    border-radius: var(--db-border-radius);
+    box-shadow: var(--db-shadow-lg);
+    z-index: 10000;
+    pointer-events: none;
+    animation: ghostPop 0.15s ease;
+}
+
+@keyframes ghostPop {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.db-ghost-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+.db-drag-ghost span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--db-text);
+}
+
+/* JS Drop Indicator */
+.db-drop-indicator-js {
+    position: absolute;
+    background: rgba(var(--db-primary-rgb), 0.1);
+    border: 2px dashed var(--db-primary);
+    border-radius: var(--db-border-radius);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+    animation: indicatorPulse 1s ease infinite;
+}
+
+@keyframes indicatorPulse {
+    0%, 100% {
+        opacity: 1;
+        border-color: var(--db-primary);
+    }
+
+    50% {
+        opacity: 0.7;
+        border-color: var(--db-primary-light);
+    }
+}
+
+.db-drop-indicator-js .db-drop-indicator-inner {
+    width: 48px;
+    height: 48px;
+    background: var(--db-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    box-shadow: var(--db-shadow-lg);
+}
+
+/* Dragging States */
+body.is-dragging-active {
+    cursor: grabbing !important;
+    user-select: none;
+}
+
+    body.is-dragging-active * {
+        cursor: grabbing !important;
+    }
+
+.db-component-card.is-dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.db-grid-item.is-dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    box-shadow: var(--db-shadow-xl);
+}
+
+.db-canvas.drag-over {
+    background-color: rgba(var(--db-primary-rgb), 0.03);
+    border: 2px dashed var(--db-primary);
+}
+
+/* Improved Component Cards - More Draggable Feel */
+.db-component-card {
+    cursor: grab;
+    touch-action: none;
+}
+
+    .db-component-card:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+    }
+
+/* Grid Item Drag Handle */
+.db-item-header {
+    cursor: grab;
+    touch-action: none;
+}
+
+    .db-item-header:active {
+        cursor: grabbing;
+    }
+
+.db-item-drag {
+    cursor: grab;
+}
+
+    .db-item-drag:hover {
+        color: var(--db-primary);
+    }
+
+/* Improved Resize Handles */
+.db-resize-handle {
+    opacity: 0;
+    transition: opacity var(--db-transition), background var(--db-transition);
+}
+
+.db-grid-item:hover .db-resize-handle,
+.db-grid-item.selected .db-resize-handle {
+    opacity: 1;
+}
+
+.db-resize-handle:hover {
+    background: var(--db-primary-dark);
+    transform: scale(1.2);
+}
+
+.db-resize-e:hover {
+    cursor: ew-resize;
+}
+
+.db-resize-s:hover {
+    cursor: ns-resize;
+}
+
+.db-resize-se:hover {
+    cursor: nwse-resize;
+}
