@@ -46,7 +46,7 @@
 							</div>
 						}
 						<div class="col-12">
-							<button class="btn btn-primary" @onclick="TestDatabaseConnection">
+							<button class="btn btn-primary green" @onclick="TestDatabaseConnection">
 								<i class="fas fa-plug me-2"></i>Test Connection
 							</button>
 							@if (!string.IsNullOrEmpty(connectionStatus))
@@ -84,7 +84,7 @@
 						<input type="text" class="form-control p-3"
 							placeholder="e.g., Show me top 10 customers by total order value"
 							@bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
-						<button class="btn btn-primary px-4" @onclick="AnalyzeQuestion" disabled="@(isLoading || string.IsNullOrWhiteSpace(userQuestion))">
+						<button class="btn btn-primary green px-4" @onclick="AnalyzeQuestion" disabled="@(isLoading || string.IsNullOrWhiteSpace(userQuestion))">
 							@if (isLoading && currentStep == QueryStep.Analysis)
 							{
 								<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -178,7 +178,7 @@
 								<button class="btn btn-outline-secondary" @onclick="ResetWorkflow">
 									<i class="fas fa-times me-1"></i> Start Over
 								</button>
-								<button class="btn btn-primary" @onclick="ConfirmUnderstanding">
+								<button class="btn btn-primary green" @onclick="ConfirmUnderstanding">
 									<i class="fas fa-check me-1"></i> Yes, That's What I Mean
 								</button>
 							</div>
@@ -208,7 +208,7 @@
 								<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Confirmation">
 									<i class="fas fa-arrow-left me-1"></i> Back
 								</button>
-								<button class="btn btn-primary" @onclick="ExecuteQuery">
+								<button class="btn btn-primary green" @onclick="ExecuteQuery">
 									@if (isLoading && currentStep == QueryStep.SqlGeneration)
 									{
 										<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -364,7 +364,7 @@
 						<div class="input-group">
 							<input type="text" class="form-control p-3" placeholder="e.g., Show me top 10 customers by total order value"
 							@bind="userQuestion" @bind:event="oninput" @onkeypress="OnKeyPress" />
-							<button class="btn btn-primary px-4" @onclick="ProcessQuestion" disabled="@isLoading">
+							<button class="btn btn-primary green px-4" @onclick="ProcessQuestion" disabled="@isLoading">
 								@if (isLoading)
 								{
 									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -404,7 +404,7 @@
 						placeholder="SELECT * FROM Customers"
 						@bind="directSqlQuery"></textarea>
 						<div class="d-flex justify-content-end mt-2">
-							<button class="btn btn-primary px-4" @onclick="ExecuteDirectSql" disabled="@isLoading">
+							<button class="btn btn-primary green px-4" @onclick="ExecuteDirectSql" disabled="@isLoading">
 								@if (isLoading)
 								{
 									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -426,7 +426,7 @@
 						<label class="form-label fw-bold mb-2">Upload Excel file with questions</label>
 						<div class="input-group mb-3">
 							<InputFile OnChange="OnFileSelected" class="form-control" accept=".xlsx,.xls" />
-							<button class="btn btn-primary" @onclick="ProcessExcelFile" disabled="@(isLoading || selectedFile == null)">
+							<button class="btn btn-primary green" @onclick="ProcessExcelFile" disabled="@(isLoading || selectedFile == null)">
 								@if (isLoading)
 								{
 									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>

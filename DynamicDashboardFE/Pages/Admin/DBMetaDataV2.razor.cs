@@ -142,7 +142,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error loading databases: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error loading databases: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -166,7 +166,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error loading database: {ex.Message + ", "  + ex.StackTrace + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error loading database: {ex.Message + ", " + ex.StackTrace + ", " + ex.StackTrace}");
             }
             finally
             {
@@ -194,7 +194,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error loading schema: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error loading schema: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -211,7 +211,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error refreshing schema: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error refreshing schema: {ex.Message + ", " + ex.StackTrace}");
             }
             finally
             {
@@ -266,7 +266,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error saving table changes: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error saving table changes: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -286,7 +286,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error updating table status: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error updating table status: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -355,7 +355,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error saving column changes: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error saving column changes: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -375,7 +375,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error updating column status: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error updating column status: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -608,8 +608,8 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                relationshipErrorMessage = $"Error: {ex.Message + ", "  + ex.StackTrace}";
-                toastService.ShowError($"Error: {ex.Message + ", "  + ex.StackTrace}");
+                relationshipErrorMessage = $"Error: {ex.Message + ", " + ex.StackTrace}";
+                toastService.ShowError($"Error: {ex.Message + ", " + ex.StackTrace}");
             }
             finally
             {
@@ -731,7 +731,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -751,7 +751,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error updating relationship status: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error updating relationship status: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -893,7 +893,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying suggestions: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error applying suggestions: {ex.Message + ", " + ex.StackTrace}");
             }
             finally
             {
@@ -1015,7 +1015,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying conflict resolution: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error applying conflict resolution: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -1057,7 +1057,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying suggestion: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error applying suggestion: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -1173,7 +1173,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error: {ex.Message + ", "  + ex.StackTrace}");
+                toastService.ShowError($"Error: {ex.Message + ", " + ex.StackTrace}");
             }
         }
 
@@ -1791,7 +1791,7 @@ namespace DynamicDashboardFE.Pages.Admin
                 formulaValidationResult = new QueryValidationResult
                 {
                     IsValid = false,
-                    ErrorMessage = $"Validation error: {ex.Message + ", "  + ex.StackTrace}"
+                    ErrorMessage = $"Validation error: {ex.Message + ", " + ex.StackTrace}"
                 };
             }
             finally
@@ -1978,12 +1978,13 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to clear cache: {ex.Message + ", "  + ex.StackTrace}");
+                Console.WriteLine($"Failed to clear cache: {ex.Message + ", " + ex.StackTrace}");
                 // Don't throw - cache clear failure shouldn't block page load
             }
         }
 
 
-
     }
+
+
 }

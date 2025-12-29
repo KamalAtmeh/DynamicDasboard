@@ -27,7 +27,7 @@
                     </button>
                 }
             </div>
-            <button class="btn btn-primary ms-2" @onclick='() => NavigationManager.NavigateTo("/dashboard/builder")'>
+            <button class="btn btn-primary green ms-2" @onclick='() => NavigationManager.NavigateTo("/dashboard/builder")'>
                 <i class="fas fa-plus me-2"></i>
                 Create Dashboard
             </button>
@@ -101,7 +101,7 @@
                         <i class="fas fa-sync me-2"></i>
                         Reset Filters
                     </button>
-                    <button class="btn btn-primary" @onclick='() => NavigationManager.NavigateTo("/dashboard/builder")'>
+                    <button class="btn btn-primary green" @onclick='() => NavigationManager.NavigateTo("/dashboard/builder")'>
                         <i class="fas fa-plus me-2"></i>
                         Create a Dashboard
                     </button>
@@ -191,7 +191,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CloseGenerationModal">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="GenerateDashboards" disabled="@(selectedDatabaseId == 0 || isGenerating)">
+                    <button type="button" class="btn btn-primary green" @onclick="GenerateDashboards" disabled="@(selectedDatabaseId == 0 || isGenerating)">
                         <i class="fas fa-magic me-2"></i>
                         Generate Dashboards
                     </button>
@@ -243,15 +243,15 @@
 
     private async Task LoadCategories()
     {
-        try
-        {
-            categories = await Http.GetFromJsonAsync<List<DashboardCategory>>("api/dashboard/categories") ?? new List<DashboardCategory>();
-        }
-        catch (Exception ex)
-        {
-            ToastService.ShowError($"Error loading categories: {ex.Message}");
-            categories = new List<DashboardCategory>();
-        }
+        // try
+        // {
+        //     categories = await Http.GetFromJsonAsync<List<DashboardCategory>>("api/dashboard/categories") ?? new List<DashboardCategory>();
+        // }
+        // catch (Exception ex)
+        // {
+        //     ToastService.ShowError($"Error loading categories: {ex.Message}");
+        //     categories = new List<DashboardCategory>();
+        // }
     }
 
     private async Task LoadDatabases()

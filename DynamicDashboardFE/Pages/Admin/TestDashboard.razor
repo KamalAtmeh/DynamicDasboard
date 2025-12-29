@@ -106,7 +106,7 @@
 						</div>
 
 						<div class="form-actions">
-							<button class="btn btn-primary" @onclick="RunTests" disabled="@(isUploading || !CanRunTests())">
+							<button class="btn btn-primary green" @onclick="RunTests" disabled="@(isUploading || !CanRunTests())">
 								@if (isUploading)
 								{
 									<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -486,7 +486,7 @@
 							<button class="btn btn-outline-secondary" @onclick="ClearJsonInput">
 								<i class="fas fa-eraser me-2"></i>Clear
 							</button>
-							<button class="btn btn-primary" @onclick="ImportJsonTestCases" disabled="@string.IsNullOrWhiteSpace(jsonTestCases)">
+							<button class="btn btn-primary green" @onclick="ImportJsonTestCases" disabled="@string.IsNullOrWhiteSpace(jsonTestCases)">
 								<i class="fas fa-file-excel me-2"></i>Generate Excel Template
 							</button>
 						</div>
@@ -707,7 +707,7 @@
             }
         </div>
         <div class="modal-footer">
-            <button class="btn btn-primary" @onclick="CloseComparisonView">
+            <button class="btn btn-primary green" @onclick="CloseComparisonView">
                 <i class="fas fa-check me-2"></i>Close
             </button>
         </div>

@@ -107,7 +107,7 @@ namespace DynamicDasboardWebAPI.Services
                 var response = await _llmService.GenerateSchemaAnalysisAsync(prompt);
 
                 // Parse LLM response
-                return ParseLLMSchemaAnalysisResponse(response);
+                return ParseSchemaAnalysisResponse(response);
             }
             catch (Exception ex)
             {
@@ -157,30 +157,30 @@ namespace DynamicDasboardWebAPI.Services
             prompt.AppendLine("      \"isLookupColumn\": true/false");
             prompt.AppendLine("    }");
             prompt.AppendLine("  ],");
-            prompt.AppendLine("  \"potentialConflicts\": [");
-            prompt.AppendLine("    {");
-            prompt.AppendLine("      \"type\": \"Table\", // or \"Column\"");
-            prompt.AppendLine("      \"conflictDescription\": \"Description of the conflict\",");
-            prompt.AppendLine("      \"items\": [");
-            prompt.AppendLine("        {");
-            prompt.AppendLine("          \"name\": \"conflicting_name\",");
-            prompt.AppendLine("          \"tableName\": \"table_name\", // only for columns");
-            prompt.AppendLine("          \"suggestedResolution\": \"Suggested way to resolve the conflict\"");
-            prompt.AppendLine("        }");
-            prompt.AppendLine("      ]");
-            prompt.AppendLine("    }");
-            prompt.AppendLine("  ],");
-            //prompt.AppendLine("  \"suggestedRelationships\": [");
+            //prompt.AppendLine("  \"potentialConflicts\": [");
             //prompt.AppendLine("    {");
-            //prompt.AppendLine("      \"sourceTable\": \"source_table\",");
-            //prompt.AppendLine("      \"sourceColumn\": \"source_column\",");
-            //prompt.AppendLine("      \"targetTable\": \"target_table\",");
-            //prompt.AppendLine("      \"targetColumn\": \"target_column\",");
-            //prompt.AppendLine("      \"relationshipType\": \"OneToMany\", // or \"ManyToOne\", \"OneToOne\", \"ManyToMany\"");
-            //prompt.AppendLine("      \"confidence\": 0.85, // confidence score between 0 and 1");
-            //prompt.AppendLine("      \"reasoning\": \"Explanation for why this relationship might exist\"");
+            //prompt.AppendLine("      \"type\": \"Table\", // or \"Column\"");
+            //prompt.AppendLine("      \"conflictDescription\": \"Description of the conflict\",");
+            //prompt.AppendLine("      \"items\": [");
+            //prompt.AppendLine("        {");
+            //prompt.AppendLine("          \"name\": \"conflicting_name\",");
+            //prompt.AppendLine("          \"tableName\": \"table_name\", // only for columns");
+            //prompt.AppendLine("          \"suggestedResolution\": \"Suggested way to resolve the conflict\"");
+            //prompt.AppendLine("        }");
+            //prompt.AppendLine("      ]");
             //prompt.AppendLine("    }");
             //prompt.AppendLine("  ],");
+            prompt.AppendLine("  \"suggestedRelationships\": [");
+            prompt.AppendLine("    {");
+            prompt.AppendLine("      \"sourceTable\": \"source_table\",");
+            prompt.AppendLine("      \"sourceColumn\": \"source_column\",");
+            prompt.AppendLine("      \"targetTable\": \"target_table\",");
+            prompt.AppendLine("      \"targetColumn\": \"target_column\",");
+            prompt.AppendLine("      \"relationshipType\": \"OneToMany\", // or \"ManyToOne\", \"OneToOne\", \"ManyToMany\"");
+            //prompt.AppendLine("      \"confidence\": 0.85, // confidence score between 0 and 1");
+            prompt.AppendLine("      \"reasoning\": \"Explanation for why this relationship might exist\"");
+            prompt.AppendLine("    }");
+            prompt.AppendLine("  ],");
             //prompt.AppendLine("  \"unclearElements\": [");
             //prompt.AppendLine("    {");
             //prompt.AppendLine("      \"type\": \"Table\", // or \"Column\"");
@@ -196,8 +196,8 @@ namespace DynamicDasboardWebAPI.Services
             prompt.AppendLine("\nGuidelines:");
             prompt.AppendLine("1. Provide business-oriented, non-technical friendly names and descriptions");
             prompt.AppendLine("2. For lookup columns (foreign keys), indicate isLookupColumn as true");
-            prompt.AppendLine("3. Identify naming conflicts where similar names between tables or columns in same table might cause confusion");
-            // prompt.AppendLine("4. Suggest logical relationships based on column names and data types");
+            //prompt.AppendLine("3. Identify naming conflicts where similar names between tables or columns in same table might cause confusion");
+            prompt.AppendLine("4. Suggest logical relationships based on column names and data types up to 20 relation");
             prompt.AppendLine("5. Focus on clarity and usability for non-technical users");
             prompt.AppendLine("6. Keep your response in pure JSON format with no additional text");
 
@@ -262,6 +262,133 @@ namespace DynamicDasboardWebAPI.Services
                 };
             }
         }
+
+        private SchemaAnalysisResult ParseSchemaAnalysisResponse(string response)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(response))
+                {
+                    return new SchemaAnalysisResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Empty response from LLM"
+                    };
+                }
+
+                // Clean the response (remove markdown, find JSON)
+                var cleanedJson = CleanJsonResponse(response);
+
+                // Parse using LLM DTO (flat structure)
+                var llmResponse = JsonSerializer.Deserialize<LlmSchemaAnalysisResponse>(
+                    cleanedJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (llmResponse == null)
+                {
+                    return new SchemaAnalysisResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Failed to parse LLM response"
+                    };
+                }
+
+                // Map to our model structure
+                var analysisData = new SchemaAnalysisData
+                {
+                    TableDescriptions = llmResponse.TableDescriptions ?? new List<TableDescription>(),
+                    ColumnDescriptions = llmResponse.ColumnDescriptions ?? new List<ColumnDescription>(),
+                    PotentialConflicts = llmResponse.PotentialConflicts ?? new List<PotentialConflict>(),
+                    UnclearElements = llmResponse.UnclearElements ?? new List<UnclearElement>(),
+
+                    // Map flat relationships to nested structure
+                    SuggestedRelationships = MapLlmRelationships(llmResponse.SuggestedRelationships)
+                };
+
+                return new SchemaAnalysisResult
+                {
+                    Success = true,
+                    AnalysisData = analysisData
+                };
+            }
+            catch (JsonException ex)
+            {
+                return new SchemaAnalysisResult
+                {
+                    Success = false,
+                    ErrorMessage = $"JSON parsing error: {ex.Message}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SchemaAnalysisResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Unexpected error: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Maps flat LLM relationship structure to nested model structure
+        /// </summary>
+        private List<SuggestedRelationship> MapLlmRelationships(List<LlmSuggestedRelationship> llmRelationships)
+        {
+            if (llmRelationships == null || !llmRelationships.Any())
+                return new List<SuggestedRelationship>();
+
+            return llmRelationships.Select(lr => new SuggestedRelationship
+            {
+                RelationshipType = lr.RelationshipType ?? "ManyToOne",
+                Confidence = lr.Confidence > 0 ? lr.Confidence : 0.9,
+                Reasoning = lr.Reasoning,
+                SourceTable = new RelationshipDetails
+                {
+                    TableName = lr.SourceTable,
+                    ColumnName = lr.SourceColumn
+                },
+                TargetTable = new RelationshipDetails
+                {
+                    TableName = lr.TargetTable,
+                    ColumnName = lr.TargetColumn
+                }
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Cleans LLM response by removing markdown and extracting JSON
+        /// </summary>
+        private string CleanJsonResponse(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+                return "{}";
+
+            var cleaned = response.Trim();
+
+            // Remove markdown code blocks
+            if (cleaned.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+                cleaned = cleaned.Substring(7);
+            else if (cleaned.StartsWith("```"))
+                cleaned = cleaned.Substring(3);
+
+            if (cleaned.EndsWith("```"))
+                cleaned = cleaned.Substring(0, cleaned.Length - 3);
+
+            cleaned = cleaned.Trim();
+
+            // Find JSON boundaries
+            int start = cleaned.IndexOf('{');
+            int end = cleaned.LastIndexOf('}');
+
+            if (start >= 0 && end > start)
+                return cleaned.Substring(start, end - start + 1);
+
+            return cleaned;
+        }
+
+
+
+
 
         /// <summary>
         /// Applies analysis results to update the database schema
@@ -380,7 +507,7 @@ namespace DynamicDasboardWebAPI.Services
             var prompt = new StringBuilder();
 
             prompt.AppendLine("You are an expert database analyst and business intelligence specialist.");
-            prompt.AppendLine("Based on the database schema below, suggest business terms that users might search for.");
+            prompt.AppendLine("Based on the database schema below, suggest up to 20 business terms that users might search for.");
             prompt.AppendLine("Think about common business concepts, metrics, and language that relates to this data model.");
 
             prompt.AppendLine("\nFor each term, provide:");

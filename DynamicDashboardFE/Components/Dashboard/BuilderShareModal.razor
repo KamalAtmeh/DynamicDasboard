@@ -64,7 +64,7 @@
                                 <option value="edit">Can edit</option>
                                 <option value="admin">Full access</option>
                             </select>
-                            <button class="btn btn-primary" type="button" @onclick="AddRecipient" disabled="@string.IsNullOrWhiteSpace(searchTerm)">
+                            <button class="btn btn-primary green" type="button" @onclick="AddRecipient" disabled="@string.IsNullOrWhiteSpace(searchTerm)">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
@@ -172,7 +172,7 @@
                 <button type="button" class="btn btn-outline-secondary" @onclick="Hide">
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary" @onclick="SaveSharing" disabled="@isSaving">
+                <button type="button" class="btn btn-primary green" @onclick="SaveSharing" disabled="@isSaving">
                     @if (isSaving)
                     {
                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>

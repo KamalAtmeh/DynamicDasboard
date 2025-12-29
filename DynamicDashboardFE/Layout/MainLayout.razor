@@ -5,25 +5,17 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<MudThemeProvider />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
-
-
-
-<div class="app-container" style=" display: flex; opacity: 1; animation: 0.5s ease 0s 1 normal forwards running fadeIn;">
+<div class="app-container" style="display: flex; opacity: 1; animation: 0.5s ease 0s 1 normal forwards running fadeIn;">
     <aside class="sidebar">
         <div class="sidebar-header">
-            <a href="#" class="sidebar-logo">
-                <i class="fas fa-chart-pie"></i>
-                <span>DataVision</span>
+            <a href="/" class="sidebar-logo">
+                <img src="/images/moi-logo.png" alt="Ministry Logo" class="sidebar-logo-img" />
+                <div class="sidebar-title">
+                    منصة تحليل<br />المعلومات الموحدة
+                </div>
             </a>
-            <button class="theme-toggle" id="themeToggle">
-                <i class="fas fa-moon"></i>
-            </button>
         </div>
-        <NavMenu  />
+        <NavMenu />
     </aside>
     <BlazoredToasts Position="ToastPosition.TopRight"
                     Timeout="3"
@@ -31,7 +23,7 @@
     <div class="main-content">
         <header class="header">
             <div class="header-left">
-                <button class="toggle-sidebar">
+                <button class="toggle-sidebar" @onclick="ToggleNavMenu">
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="header-search">
@@ -40,6 +32,7 @@
                 </div>
             </div>
             <div class="header-right">
+                @* Hidden header action buttons
                 <div class="header-actions">
                     <button class="header-action-btn">
                         <i class="fas fa-sync-alt"></i>
@@ -56,14 +49,15 @@
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
+                *@
                 <div class="user-profile">
                     <div class="avatar">
                         <span>JS</span>
                         <span class="status"></span>
                     </div>
                     <div class="user-info">
-                        <span class="user-name">John Smith</span>
-                        <span class="user-role">Data Analyst</span>
+                        <span class="user-name">Admin User</span>
+                        <span class="user-role">Admin</span>
                     </div>
                 </div>
             </div>
@@ -72,7 +66,7 @@
             @Body
         </main>
         <footer class="footer">
-            <div>© 2025 DataVision Dashboard. All rights reserved.</div>
+            <div>© 2025 منصة تحليل المعلومات الموحدة. All rights reserved.</div>
         </footer>
     </div>
 </div>
@@ -85,7 +79,6 @@
     {
         if (firstRender)
         {
-            // Initialize sidebar state from local storage
             var storedState = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "sidebarState");
             if (!string.IsNullOrEmpty(storedState) && storedState == "collapsed")
             {
@@ -93,19 +86,15 @@
                 StateHasChanged();
             }
         }
-        // ToastService toastService = new ToastService();
-        // toastService.ShowSuccess("Welcome to Dynamic Dashboard");
     }
 
     private async Task ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
-        // Save state to local storage
         await JSRuntime.InvokeVoidAsync("localStorage.setItem", "sidebarState", collapseNavMenu ? "collapsed" : "expanded");
     }
 
     public void Dispose()
     {
-        // Clean up any resources
     }
 }

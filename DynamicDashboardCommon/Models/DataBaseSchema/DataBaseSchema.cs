@@ -233,4 +233,30 @@ namespace DynamicDashboardCommon.Models
         public string SchemaString { get; set; }
         public string AnalysisMode { get; set; }
     }
+
+    /// <summary>
+    /// DTO for parsing LLM suggested relationship (flat structure)
+    /// </summary>
+    public class LlmSuggestedRelationship
+    {
+        public string SourceTable { get; set; }
+        public string SourceColumn { get; set; }
+        public string TargetTable { get; set; }
+        public string TargetColumn { get; set; }
+        public string RelationshipType { get; set; }
+        public double Confidence { get; set; } = 0.9;
+        public string Reasoning { get; set; }
+    }
+
+    /// <summary>
+    /// DTO for parsing complete LLM analysis response
+    /// </summary>
+    public class LlmSchemaAnalysisResponse
+    {
+        public List<TableDescription> TableDescriptions { get; set; }
+        public List<ColumnDescription> ColumnDescriptions { get; set; }
+        public List<PotentialConflict> PotentialConflicts { get; set; }
+        public List<LlmSuggestedRelationship> SuggestedRelationships { get; set; }
+        public List<UnclearElement> UnclearElements { get; set; }
+    }
 }

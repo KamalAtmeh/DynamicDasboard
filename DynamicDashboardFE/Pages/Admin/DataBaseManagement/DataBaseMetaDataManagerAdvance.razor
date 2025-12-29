@@ -44,7 +44,7 @@
 				<i class="fas fa-exclamation-triangle me-2"></i>
 				@errorMessage
 				<div class="mt-3">
-					<button class="btn btn-primary" @onclick="LoadSchema">Try Again</button>
+					<button class="btn btn-primary green" @onclick="LoadSchema">Try Again</button>
 					<button class="btn btn-secondary ms-2" @onclick="GoBack">Go Back</button>
 				</div>
 			</div>
@@ -300,7 +300,7 @@
 									</div>
 								</div>
 								<div>
-									<button class="btn btn-primary" @onclick="ShowAddRelationshipModal">
+									<button class="btn btn-primary green" @onclick="ShowAddRelationshipModal">
 										<i class="fas fa-plus me-2"></i>Add Relationship
 									</button>
 									<button class="btn btn-success ms-2" @onclick="SaveAllChanges">
@@ -407,7 +407,7 @@
 										<div class="alert alert-info">
 											<i class="fas fa-info-circle me-2"></i>
 											No schema analysis has been performed yet.
-											<button class="btn btn-primary ms-3" @onclick="RunSchemaAnalysis">
+											<button class="btn btn-primary green ms-3" @onclick="RunSchemaAnalysis">
 												<i class="fas fa-magic me-2"></i>Analyze Schema
 											</button>
 										</div>
@@ -757,7 +757,7 @@
 																	<p>@element.Suggestion</p>
 																</div>
 																<div class="card-footer">
-																	<button class="btn btn-primary" @onclick="() => ApplyUnclearElementSuggestion(element)">
+																	<button class="btn btn-primary green" @onclick="() => ApplyUnclearElementSuggestion(element)">
 																		Apply Suggestion
 																	</button>
 																</div>
@@ -845,7 +845,7 @@
 									<div class="alert alert-info m-3">
 										<i class="fas fa-info-circle me-2"></i>
 										Schema visualization is disabled.
-										<button class="btn btn-primary ms-3" @onclick="ToggleSchemaVisualization">
+										<button class="btn btn-primary green ms-3" @onclick="ToggleSchemaVisualization">
 											<i class="fas fa-project-diagram me-2"></i>Enable Visualization
 										</button>
 									</div>
@@ -1032,7 +1032,7 @@
 													</label>
 												</div>
 
-												<button class="btn btn-primary" @onclick="FindAndReplace"
+												<button class="btn btn-primary green" @onclick="FindAndReplace"
 														disabled="@(!CanPerformFindReplace())">
 													<i class="fas fa-search me-2"></i>Find and Replace
 												</button>
@@ -1100,7 +1100,7 @@
 													}
 												</div>
 
-												<button class="btn btn-primary" @onclick="ApplyTemplate"
+												<button class="btn btn-primary green" @onclick="ApplyTemplate"
 														disabled="@(!CanApplyTemplate())">
 													<i class="fas fa-magic me-2"></i>Apply Template
 												</button>
@@ -1549,7 +1549,7 @@
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" @onclick="CloseTableModal">Close</button>
-					<button type="button" class="btn btn-primary" @onclick="SaveTableChanges">
+					<button type="button" class="btn btn-primary green" @onclick="SaveTableChanges">
 						<i class="fas fa-save me-2"></i>Save Changes
 					</button>
 				</div>
@@ -1705,7 +1705,7 @@
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" @onclick="CloseColumnModal">Close</button>
-					<button type="button" class="btn btn-primary" @onclick="SaveColumnChanges">
+					<button type="button" class="btn btn-primary green" @onclick="SaveColumnChanges">
 						<i class="fas fa-save me-2"></i>Save Changes
 					</button>
 				</div>
@@ -1806,7 +1806,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" @onclick="CloseRelationshipModals">Cancel</button>
-						<button type="button" class="btn btn-primary" @onclick="AddRelationship"
+						<button type="button" class="btn btn-primary green" @onclick="AddRelationship"
 								disabled="@(!IsRelationshipValid(newRelationship))">
 							Add Relationship
 						</button>
@@ -1902,7 +1902,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" @onclick="CloseRelationshipModals">Cancel</button>
-						<button type="button" class="btn btn-primary" @onclick="UpdateRelationship"
+						<button type="button" class="btn btn-primary green" @onclick="UpdateRelationship"
 								disabled="@(!IsRelationshipValid(editingRelationship))">
 							Update Relationship
 						</button>

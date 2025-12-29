@@ -1593,6 +1593,16 @@
             Model for schema analysis requests
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.LlmSuggestedRelationship">
+            <summary>
+            DTO for parsing LLM suggested relationship (flat structure)
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.LlmSchemaAnalysisResponse">
+            <summary>
+            DTO for parsing complete LLM analysis response
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisResult">
             <summary>
             Represents the result of a schema analysis operation.

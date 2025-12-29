@@ -56,7 +56,7 @@
                 <div class="scene-indicator">
                     <span>@(currentScene + 1) of @dataStory.Scenes.Count</span>
                 </div>
-                <button class="btn btn-primary @(currentScene >= dataStory.Scenes.Count - 1 ? "disabled" : "")"
+                <button class="btn btn-primary green @(currentScene >= dataStory.Scenes.Count - 1 ? "disabled" : "")"
                 @onclick="NextScene" disabled="@(currentScene >= dataStory.Scenes.Count - 1)">
                     Next <i class="fas fa-chevron-right"></i>
                 </button>
@@ -145,7 +145,7 @@
                 <i class="fas fa-chart-pie"></i>
                 <h3>No data story available</h3>
                 <p>There's not enough data to create a story, or the data doesn't contain patterns we can visualize.</p>
-                <button class="btn btn-primary" @onclick="ReturnToDashboard">
+                <button class="btn btn-primary green" @onclick="ReturnToDashboard">
                     Back to Dashboard
                 </button>
             </div>

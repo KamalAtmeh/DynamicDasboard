@@ -90,7 +90,7 @@
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary btn-sm" @onclick="SaveDashboard">
+                    <button class="btn btn-primary green btn-sm" @onclick="SaveDashboard">
                         <i class="fas fa-save me-1"></i> Save
                     </button>
                 </div>
@@ -502,7 +502,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary" @onclick="CloseTemplateSelector">Cancel</button>
-                <button class="btn btn-primary" @onclick="ConfirmTemplateSelection" disabled="@(selectedTemplate == null)">
+                <button class="btn btn-primary green" @onclick="ConfirmTemplateSelection" disabled="@(selectedTemplate == null)">
                     <i class="fas fa-check me-1"></i>
                     Use Template
                 </button>
@@ -542,7 +542,7 @@
                 <button class="btn btn-outline-secondary" @onclick="CopySQLToClipboard">
                     <i class="fas fa-copy me-1"></i> Copy
                 </button>
-                <button class="btn btn-primary" @onclick="CloseSQLModal">Close</button>
+                <button class="btn btn-primary green" @onclick="CloseSQLModal">Close</button>
             </div>
         </div>
     }

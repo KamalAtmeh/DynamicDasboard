@@ -24,7 +24,7 @@
 		<div class="card shadow-sm mb-4">
 			<div class="card-header bg-light d-flex justify-content-between align-items-center">
 				<h5 class="mb-0">Connected Databases</h5>
-				<button class="btn btn-primary" @onclick="ShowDatabaseForm">
+				<button class="btn btn-primary green" @onclick="ShowDatabaseForm">
 					<i class="fas fa-plus me-2"></i>Add Database
 				</button>
 			</div>
@@ -48,7 +48,16 @@
 									<td>@db.FriendlyName</td>
 									<td>@db.DatabaseTypeName</td>
 									<td>@(db.Description?.Length > 50 ? db.Description.Substring(0, 47) + "..." : db.Description)</td>
-									<td>@db.CreatedBy</td> <!-- temp -->
+									<td>
+										@if (db.CreatedBy > 0)
+										{
+											<span class="text-muted">@GetUserName(db.CreatedBy)</span>
+										}
+										else
+										{
+											<span class="text-muted">System</span>
+										}
+									</td>
 									<td>
 										@if (db.IsActive == true)
 										{
@@ -64,13 +73,13 @@
 											<button class="btn btn-sm btn-primary" @onclick="() => NavigateToMetadataManager(db.DatabaseID)">
 												<i class="fas fa-cogs me-1"></i> Manage Metadata
 											</button>
-											<button class="btn btn-sm btn-info" @onclick="() => TestConnection(db)">
+											<button class="btn btn-sm btn-primary" @onclick="() => TestConnection(db)">
 												<i class="fas fa-plug me-1"></i> Test
 											</button>
-											<button class="btn btn-sm btn-warning" @onclick="() => EditDatabase(db)">
+											<button class="btn btn-sm btn-primary" @onclick="() => EditDatabase(db)">
 												<i class="fas fa-edit me-1"></i> Edit
 											</button>
-											<button class="btn btn-sm btn-danger" @onclick="() => DeleteDatabase(db.DatabaseID)">
+											<button class="btn btn-sm btn-primary" @onclick="() => DeleteDatabase(db.DatabaseID)">
 												<i class="fas fa-trash me-1"></i> Delete
 											</button>
 										</div>
@@ -86,7 +95,7 @@
 
 	<!-- Database Form Modal -->
 	<div class="modal fade @(showDatabaseForm ? "show" : "")" tabindex="-1" style="display: @(showDatabaseForm ? "block" : "none")">
-		<div class="modal-dialog modal-lg">
+		<div class="modal-dialog modal-lg modal-edit-database">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">@(isEditMode ? "Edit Database" : "Add Database")</h5>
@@ -156,13 +165,17 @@
 					<button type="button" class="btn btn-success me-2" @onclick="TestConnectionFromForm">
 						<i class="fas fa-plug me-1"></i> Test Connection
 					</button>
-					<button type="button" class="btn btn-primary" @onclick="SaveDatabase">
+					<button type="button" class="btn btn-primary green" @onclick="SaveDatabase">
 						<i class="fas fa-save me-1"></i> Save
 					</button>
 				</div>
 			</div>
 		</div>
 	</div>
+
+
+
+
 	<div class="modal-backdrop fade @(showDatabaseForm ? "show" : "")" style="display: @(showDatabaseForm ? "block" : "none")"></div>
 </div>
 
@@ -397,5 +410,19 @@
 		// NavigationManager.NavigateTo($"/admin/database-metadata-json-analysis/{databaseId}");
 		NavigationManager.NavigateTo($"/admin/DBMetaDataV2/{databaseId}");
 
+	}
+
+	private string GetUserName(int userId)
+	{
+		// TODO: Replace with actual user lookup from Users table/service
+		// For now, return a placeholder based on ID
+		var userNames = new Dictionary<int, string>
+		{
+			{ 1, "Admin" },
+			{ 2, "System" },
+			{ 3, "Admin User" }
+		};
+
+		return userNames.TryGetValue(userId, out var name) ? name : $"User {userId}";
 	}
 }

@@ -1563,6 +1563,16 @@
             Parses LLM response into a SchemaAnalysisResult object
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.MapLlmRelationships(System.Collections.Generic.List{DynamicDashboardCommon.Models.LlmSuggestedRelationship})">
+            <summary>
+            Maps flat LLM relationship structure to nested model structure
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.CleanJsonResponse(System.String)">
+            <summary>
+            Cleans LLM response by removing markdown and extracting JSON
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Services.SchemaAnalysisService.ApplySchemaAnalysisResultsAsync(System.Int32,DynamicDashboardCommon.Models.SchemaAnalysisData)">
             <summary>
             Applies analysis results to update the database schema

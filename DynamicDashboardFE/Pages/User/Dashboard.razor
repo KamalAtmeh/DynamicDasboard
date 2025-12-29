@@ -10,7 +10,7 @@
 	<h1 class="page-title">Dashboard</h1>
 
 	<div class="page-actions">
-		<button class="btn btn-primary">
+		<button class="btn btn-primary green">
 			<i class="fas fa-plus"></i> New Dashboard
 		</button>
 		<button class="btn btn-success">
@@ -55,7 +55,7 @@
 					<i class="fas fa-microphone"></i>
 				</button>
 			</div>
-			<button class="btn btn-primary" @onclick="AnalyzeQuestion" disabled="@isLoading">
+			<button class="btn btn-primary green" @onclick="AnalyzeQuestion" disabled="@isLoading">
 				@if (isLoading)
 				{
 					<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -267,7 +267,7 @@
 			}
 		</div>
 		<div class="dialog-footer">
-			<button class="btn btn-primary" @onclick="() => showSqlModal = false">
+			<button class="btn btn-primary green" @onclick="() => showSqlModal = false">
 				<i class="fas fa-check me-2"></i>Got it
 			</button>
 		</div>
@@ -357,7 +357,7 @@
 			<button class="btn btn-outline-secondary" @onclick="() => currentStep = QueryStep.Input">
 				<i class="fas fa-times me-2"></i> Cancel
 			</button>
-			<button class="btn btn-primary" @onclick="ConfirmSqlExplanation">
+			<button class="btn btn-primary green" @onclick="ConfirmSqlExplanation">
 				<i class="fas fa-check me-2"></i> Execute Query
 			</button>
 		</div>
@@ -414,7 +414,7 @@
 			}
 		</div>
 		<div class="dialog-footer">
-			<button class="btn btn-primary" @onclick="() => showUnrelatedDialog = false">
+			<button class="btn btn-primary green" @onclick="() => showUnrelatedDialog = false">
 				Got it
 			</button>
 		</div>

@@ -13,14 +13,14 @@
     --builder-text: #1E293B;
     --builder-text-secondary: #64748B;
     --builder-text-muted: #94A3B8;
-    --builder-primary: #3B82F6;
+    --builder-primary: #28a745;
     --builder-primary-light: #60A5FA;
     --builder-primary-dark: #2563EB;
     --builder-success: #10B981;
     --builder-warning: #F59E0B;
     --builder-danger: #EF4444;
     --builder-purple: #8B5CF6;
-    --builder-ai-gradient: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #3B82F6 100%);
+    --builder-ai-gradient: linear-gradient(135deg, #28a745 0%, #20c997 50%, #38b2ac 100%);
     --header-height: 56px;
     --sidebar-width: 280px;
     --canvas-min-height: 600px;

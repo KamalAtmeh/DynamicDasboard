@@ -51,10 +51,10 @@
 					<i class="fas @(analysisStep >= 3 ? "fa-check-circle text-success" : (analysisStep == 2 ? "fa-spinner fa-spin text-primary" : "fa-circle text-muted"))"></i>
 					<span>Detecting relationships</span>
 				</div>
-				<div class="step @(analysisStep >= 4 ? "completed" : "")">
+@* 				<div class="step @(analysisStep >= 4 ? "completed" : "")">
 					<i class="fas @(analysisStep >= 4 ? "fa-check-circle text-success" : (analysisStep == 3 ? "fa-spinner fa-spin text-primary" : "fa-circle text-muted"))"></i>
 					<span>Generating suggestions</span>
-				</div>
+				</div> *@
 			</div>
 
 @* 			<div class="mt-4">
@@ -339,7 +339,7 @@
 				</div>
 
 				<div class="btn-group">
-					<button class="btn btn-primary" @onclick="RunSchemaAnalysis" disabled="@(isLoading || isAnalyzing)">
+					<button class="btn btn-primary green" @onclick="RunSchemaAnalysis" disabled="@(isLoading || isAnalyzing)">
 						@if (isAnalyzing)
 						{
 							<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -690,7 +690,7 @@
 									</table>
 								</div>
 								<div class="d-flex justify-content-end mt-3">
-									<button type="button" class="btn btn-primary" @onclick="SaveColumnChanges">
+									<button type="button" class="btn btn-primary green" @onclick="SaveColumnChanges">
 										<i class="fas fa-save me-2"></i> Save Column Changes
 									</button>
 								</div>
@@ -718,7 +718,7 @@
 								<i class="fas fa-link me-2"></i>
 								Database Relationships
 							</h5>
-							<button class="btn btn-primary btn-sm" @onclick="CreateNewRelationship">
+							<button class="btn btn-primary green btn-sm" @onclick="CreateNewRelationship">
 								<i class="fas fa-plus me-2"></i>New Relationship
 							</button>
 						</div>
@@ -928,7 +928,7 @@
 										}
 										<div class="d-flex justify-content-end">
 											<button class="btn btn-secondary me-2" @onclick="CloseRelationshipEditor">Cancel</button>
-											<button class="btn btn-primary" @onclick="SaveRelationship" disabled="@isSavingRelationship">
+											<button class="btn btn-primary green" @onclick="SaveRelationship" disabled="@isSavingRelationship">
 												@if (isSavingRelationship)
 												{
 													<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -965,7 +965,7 @@
 									<i class="fas fa-search fa-3x text-muted mb-3"></i>
 									<h5>No Analysis Available</h5>
 									<p class="text-muted">Click the "Analyze Schema" button to analyze your database structure.</p>
-									<button class="btn btn-primary mt-2" @onclick="RunSchemaAnalysis">
+									<button class="btn btn-primary green mt-2" @onclick="RunSchemaAnalysis">
 										<i class="fas fa-magic me-2"></i>Analyze Schema
 									</button>
 								</div>
@@ -1001,7 +1001,7 @@
 											}
 										</p>
 										<div class="d-flex justify-content-center gap-2">
-											<button class="btn btn-primary" @onclick="RunSchemaAnalysis">
+											<button class="btn btn-primary green" @onclick="RunSchemaAnalysis">
 												<i class="fas fa-redo me-2"></i>Try Again
 											</button>
 											<button class="btn btn-outline-secondary" @onclick='() => activeTab = "tables"'>
@@ -1026,10 +1026,40 @@
 											</span>
 										</button>
 									</li>
-									<!-- ... other existing tabs ... -->
+									<li class="nav-item" role="presentation">
+										<button class="nav-link @(analysisTab == "columns" ? "active" : "")"
+												@onclick='() => analysisTab = "columns"'>
+											<i class="fas fa-columns me-2"></i>
+											Column Suggestions
+											<span class="badge rounded-pill bg-primary ms-1">
+												@(analysisResult.AnalysisData?.ColumnDescriptions?.Count ?? 0)
+											</span>
+										</button>
+									</li>
+									<li class="nav-item" role="presentation">
+										<button class="nav-link @(analysisTab == "relationships" ? "active" : "")"
+												@onclick='() => analysisTab = "relationships"'>
+											<i class="fas fa-link me-2"></i>
+											Suggested Relationships
+											<span class="badge rounded-pill bg-success ms-1">
+												@(analysisResult.AnalysisData?.SuggestedRelationships?.Count ?? 0)
+											</span>
+										</button>
+									</li>
+									<li class="nav-item" role="presentation">
+										<button class="nav-link @(analysisTab == "conflicts" ? "active" : "")"
+												@onclick='() => analysisTab = "conflicts"'>
+											<i class="fas fa-exclamation-triangle me-2"></i>
+											Potential Enhancements
+											<span class="badge rounded-pill bg-warning text-dark ms-1">
+												@(analysisResult.AnalysisData?.PotentialConflicts?.Count ?? 0)
+											</span>
+										</button>
+									</li>
+									
 
 									@* ADD THIS NEW TAB *@
-									<li class="nav-item" role="presentation">
+	@* 								<li class="nav-item" role="presentation">
 										<button class="nav-link @(analysisTab == "termSuggestions" ? "active" : "")"
 												@onclick='() => analysisTab = "termSuggestions"'>
 											<i class="fas fa-language me-2"></i>
@@ -1039,7 +1069,7 @@
 												<span class="spinner-border spinner-border-sm ms-1"></span>
 											}
 										</button>
-									</li>
+									</li> *@
 								</ul>
 
 								<!-- Analysis Tab Content -->
@@ -1249,7 +1279,7 @@
 															<h6 class="mb-0">
 																<i class="fas fa-link me-2 text-success"></i>
 																Suggested @relationship.RelationshipType Relationship
-																<span class="badge bg-success ms-2">@(relationship.Confidence * 100)% Confidence</span>
+																<span class="badge bg-success ms-2" style="display:none;">@(relationship.Confidence * 100)% Confidence</span>
 															</h6>
 														</div>
 														<div class="card-body">
@@ -1264,7 +1294,7 @@
 																<label class="form-label">Reasoning</label>
 																<p class="p-2 bg-light rounded">@relationship.Reasoning</p>
 															</div>
-															<button class="btn btn-primary" @onclick="() => AddSuggestedRelationship(relationship)">
+															<button class="btn btn-primary green" @onclick="() => AddSuggestedRelationship(relationship)">
 																<i class="fas fa-plus me-2"></i> Add Relationship
 															</button>
 														</div>
@@ -1308,7 +1338,7 @@
 																<label class="form-label">Suggestion</label>
 																<p class="p-2 bg-light rounded">@element.Suggestion</p>
 															</div>
-															<button class="btn btn-primary" @onclick="() => ApplyUnclearElementSuggestion(element)">
+															<button class="btn btn-primary green" @onclick="() => ApplyUnclearElementSuggestion(element)">
 																<i class="fas fa-check me-2"></i> Apply Suggestion
 															</button>
 														</div>
@@ -1335,7 +1365,7 @@
 									<i class="fas fa-check-double me-2"></i>
 									<span>Accept All Suggestions</span>
 								</button>
-								<button class="btn btn-primary me-2" @onclick="SuggestTermMappings" disabled="@isSuggestingTerms">
+								<button class="btn btn-primary green me-2" @onclick="SuggestTermMappings" disabled="@isSuggestingTerms">
 									@if (isSuggestingTerms)
 									{
 										<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -1586,7 +1616,7 @@
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-secondary" @onclick="CloseColumnSuggestionModal">Close</button>
-				<button type="button" class="btn btn-primary" @onclick="ApplyColumnSuggestion">Apply Suggestion</button>
+				<button type="button" class="btn btn-primary green" @onclick="ApplyColumnSuggestion">Apply Suggestion</button>
 			</div>
 		</div>
 	</div>
@@ -1995,7 +2025,7 @@
 				else
 				{
 					<button type="button" class="btn btn-secondary" @onclick="CloseFormulaModal">Close</button>
-					<button type="button" class="btn btn-primary" @onclick="EnableFormulaEditing">
+					<button type="button" class="btn btn-primary green" @onclick="EnableFormulaEditing">
 						<i class="fas fa-edit me-2"></i>Edit Formula
 					</button>
 				}
