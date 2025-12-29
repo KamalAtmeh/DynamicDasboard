@@ -1,0 +1,655 @@
+@* ============================================================================
+   AI COMPONENT ASSISTANT - Slide-Out Panel
+   Integrated into Dashboard Builder for AI-powered component generation
+   Single Request → Single Response (Stateless per component)
+   ============================================================================ *@
+
+@using DynamicDashboardCommon.Models
+@using System.Text.Json
+@inject HttpClient Http
+@inject IToastService ToastService
+
+<div class="ai-assistant-overlay @(IsOpen ? "open" : "")" @onclick="ClosePanel"></div>
+
+<div class="ai-assistant-panel @(IsOpen ? "open" : "")">
+    <!-- Panel Header -->
+    <div class="ai-panel-header">
+        <div class="ai-header-title">
+            <div class="ai-icon-wrapper">
+                <i class="fas fa-magic"></i>
+                <span class="ai-pulse"></span>
+            </div>
+            <div>
+                <h3>AI Component Assistant</h3>
+                <span class="ai-subtitle">Generate components for your dashboard</span>
+            </div>
+        </div>
+        <button class="btn-close-panel" @onclick="ClosePanel">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Panel Body -->
+    <div class="ai-panel-body">
+        <!-- Step 1: Template Info -->
+        <div class="ai-section">
+            <div class="section-header">
+                <span class="step-badge">1</span>
+                <h4>Selected Template</h4>
+            </div>
+            <div class="template-preview-card">
+                <div class="template-icon">
+                    <i class="@GetTemplateIcon()"></i>
+                </div>
+                <div class="template-info">
+                    <span class="template-name">@SelectedTemplate?.Name</span>
+                    <span class="template-slots">@SelectedTemplate?.ComponentSlots.Count component slots</span>
+                </div>
+                <button class="btn-change-template" @onclick="OnChangeTemplate">
+                    <i class="fas fa-exchange-alt"></i>
+                    Change
+                </button>
+            </div>
+            
+            <!-- Component Slots Preview -->
+            <div class="slots-preview">
+                @if (SelectedTemplate?.ComponentSlots != null)
+                {
+                    @foreach (var slot in SelectedTemplate.ComponentSlots)
+                    {
+                        <div class="slot-chip @(GetSlotStatusClass(slot))">
+                            <i class="@GetSlotIcon(slot.Type)"></i>
+                            <span>@slot.Label</span>
+                            @if (GeneratedComponents.ContainsKey(slot.Id))
+                            {
+                                <i class="fas fa-check-circle status-icon"></i>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Step 2: Data Source -->
+        <div class="ai-section">
+            <div class="section-header">
+                <span class="step-badge">2</span>
+                <h4>Data Source</h4>
+            </div>
+            <div class="form-group">
+                <label>Select Database</label>
+                <div class="custom-select-wrapper">
+                    <select class="custom-select" @bind="SelectedDatabaseId" @bind:after="OnDatabaseChanged">
+                        <option value="0">-- Select a database --</option>
+                        @foreach (var db in AvailableDatabases)
+                        {
+                            <option value="@db.DatabaseID">@db.Name</option>
+                        }
+                    </select>
+                    <i class="fas fa-database select-icon"></i>
+                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                </div>
+                @if (SelectedDatabaseId > 0)
+                {
+                    <div class="db-info-badge">
+                        <i class="fas fa-table"></i>
+                        <span>@SelectedDatabaseTables tables available</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Step 3: Describe Purpose (Optional) -->
+        <div class="ai-section">
+            <div class="section-header">
+                <span class="step-badge">3</span>
+                <h4>Dashboard Purpose <span class="optional-tag">Optional</span></h4>
+            </div>
+            <div class="form-group">
+                <label>What insights do you need?</label>
+                <textarea class="custom-textarea" 
+                          rows="3" 
+                          placeholder="e.g., Track visa application processing times, monitor service center performance, analyze citizen satisfaction trends..."
+                          @bind="DashboardPurpose"></textarea>
+                <div class="textarea-hint">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>The more specific you are, the better the AI suggestions will be</span>
+                </div>
+            </div>
+            
+            <!-- Quick Suggestions -->
+            <div class="quick-suggestions">
+                <span class="suggestions-label">Quick suggestions:</span>
+                <div class="suggestion-chips">
+                    @foreach (var suggestion in QuickSuggestions)
+                    {
+                        <button class="suggestion-chip" @onclick="() => ApplySuggestion(suggestion)">
+                            @suggestion
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="ai-section generate-section">
+            <button class="btn-generate @(CanGenerate ? "" : "disabled")" 
+                    @onclick="GenerateComponents" 
+                    disabled="@(!CanGenerate || IsGenerating)">
+                @if (IsGenerating)
+                {
+                    <div class="spinner"></div>
+                    <span>Generating Components...</span>
+                }
+                else
+                {
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <span>Generate All Components</span>
+                }
+            </button>
+            @if (!CanGenerate && SelectedDatabaseId == 0)
+            {
+                <span class="generate-hint">Please select a database first</span>
+            }
+        </div>
+
+        <!-- Generated Components -->
+        @if (GeneratedComponents.Any() || IsGenerating)
+        {
+            <div class="ai-section results-section">
+                <div class="section-header">
+                    <span class="step-badge success">
+                        <i class="fas fa-check"></i>
+                    </span>
+                    <h4>Generated Components</h4>
+                    <span class="results-count">@GeneratedComponents.Count of @SelectedTemplate?.ComponentSlots.Count</span>
+                </div>
+
+                <div class="generated-components-list">
+                    @foreach (var slot in SelectedTemplate?.ComponentSlots ?? new List<BuilderComponentSlot>())
+                    {
+                        <div class="generated-component-card @(GeneratedComponents.ContainsKey(slot.Id) ? "generated" : "pending")">
+                            <div class="component-card-header">
+                                <div class="component-type-badge @GetSlotColorClass(slot.Type)">
+                                    <i class="@GetSlotIcon(slot.Type)"></i>
+                                    <span>@slot.Type</span>
+                                </div>
+                                <span class="slot-label">@slot.Label</span>
+                            </div>
+
+                            @if (GeneratedComponents.TryGetValue(slot.Id, out var component))
+                            {
+                                <div class="component-card-body">
+                                    <div class="component-title-row">
+                                        <h5 class="component-title">@component.Title</h5>
+                                        <div class="component-actions">
+                                            <button class="btn-action-sm" title="Regenerate" 
+                                                    @onclick="() => RegenerateComponent(slot.Id)">
+                                                <i class="fas fa-rotate"></i>
+                                            </button>
+                                            <button class="btn-action-sm" title="Edit" 
+                                                    @onclick="() => EditComponent(slot.Id)">
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="component-description">@component.Description</p>
+
+                                    <!-- SQL Preview -->
+                                    <div class="sql-preview">
+                                        <div class="sql-header">
+                                            <i class="fas fa-code"></i>
+                                            <span>SQL Query</span>
+                                            <button class="btn-copy" @onclick="() => CopySQL(component.QueryText)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <pre class="sql-code">@component.QueryText</pre>
+                                    </div>
+
+                                    <!-- Component Status -->
+                                    <div class="component-status">
+                                        <div class="status-item @(component.IsAccepted ? "accepted" : "")">
+                                            <input type="checkbox" 
+                                                   id="accept-@slot.Id" 
+                                                   checked="@component.IsAccepted"
+                                                   @onchange="() => ToggleAccept(slot.Id)" />
+                                            <label for="accept-@slot.Id">
+                                                <i class="fas fa-check-circle"></i>
+                                                Accept
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (IsGenerating)
+                            {
+                                <div class="component-card-body loading">
+                                    <div class="skeleton-line title"></div>
+                                    <div class="skeleton-line desc"></div>
+                                    <div class="skeleton-line desc short"></div>
+                                    <div class="skeleton-block sql"></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="component-card-body empty">
+                                    <i class="fas fa-hourglass-half"></i>
+                                    <span>Waiting for generation...</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Panel Footer -->
+    <div class="ai-panel-footer">
+        <button class="btn-secondary" @onclick="ClosePanel">
+            <i class="fas fa-times"></i>
+            Cancel
+        </button>
+        <button class="btn-primary @(CanApply ? "" : "disabled")" 
+                @onclick="ApplyComponents" 
+                disabled="@(!CanApply)">
+            <i class="fas fa-check"></i>
+            Apply @AcceptedCount Components
+        </button>
+    </div>
+</div>
+
+@code {
+    // ========== Parameters ==========
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public DynamicDashboardCommon.Models.BuilderDashboardTemplate SelectedTemplate { get; set; }
+    [Parameter] public EventCallback OnChangeTemplateRequested { get; set; }
+    [Parameter] public EventCallback<List<AIGeneratedComponent>> OnComponentsApplied { get; set; }
+    [Parameter] public List<Database> AvailableDatabases { get; set; } = new();
+
+    // ========== State ==========
+    private int SelectedDatabaseId { get; set; }
+    private int SelectedDatabaseTables { get; set; } = 24; // Mock
+    private string DashboardPurpose { get; set; } = "";
+    private bool IsGenerating { get; set; }
+    private Dictionary<string, AIGeneratedComponent> GeneratedComponents { get; set; } = new();
+
+    // ========== Quick Suggestions (MOI Context) ==========
+    private List<string> QuickSuggestions = new()
+    {
+        "Visa processing metrics",
+        "Service center performance",
+        "Citizen satisfaction trends",
+        "Traffic violations analysis",
+        "ID issuance statistics"
+    };
+
+    // ========== Computed Properties ==========
+    private bool CanGenerate => SelectedDatabaseId > 0 && SelectedTemplate != null;
+    private bool CanApply => GeneratedComponents.Any(c => c.Value.IsAccepted);
+    private int AcceptedCount => GeneratedComponents.Count(c => c.Value.IsAccepted);
+
+    // ========== Lifecycle ==========
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AvailableDatabases.Any())
+        {
+            // Load mock databases
+            AvailableDatabases = GetMockDatabases();
+        }
+    }
+
+    // ========== Event Handlers ==========
+    private async Task ClosePanel()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task OnChangeTemplate()
+    {
+        await OnChangeTemplateRequested.InvokeAsync();
+    }
+
+    private void OnDatabaseChanged()
+    {
+        // Reset generated components when database changes
+        GeneratedComponents.Clear();
+        
+        // Update table count (mock)
+        SelectedDatabaseTables = SelectedDatabaseId switch
+        {
+            1 => 32, // MOI Services DB
+            2 => 18, // Traffic Management
+            3 => 24, // Citizen Portal
+            _ => 0
+        };
+    }
+
+    private void ApplySuggestion(string suggestion)
+    {
+        DashboardPurpose = suggestion;
+    }
+
+    private async Task GenerateComponents()
+    {
+        if (!CanGenerate) return;
+
+        IsGenerating = true;
+        GeneratedComponents.Clear();
+        StateHasChanged();
+
+        try
+        {
+            // Simulate AI generation delay
+            await Task.Delay(800);
+
+            // Generate component for each slot
+            foreach (var slot in SelectedTemplate?.ComponentSlots ?? new List<BuilderComponentSlot>())
+            {
+                var component = GenerateMockComponent(slot);
+                GeneratedComponents[slot.Id] = component;
+                StateHasChanged();
+                
+                // Stagger the generation for visual effect
+                await Task.Delay(400);
+            }
+
+            ToastService.ShowSuccess($"Generated {GeneratedComponents.Count} components successfully!");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error generating components: {ex.Message}");
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    private async Task RegenerateComponent(string slotId)
+    {
+        var slot = SelectedTemplate?.ComponentSlots.FirstOrDefault(s => s.Id == slotId);
+        if (slot == null) return;
+
+        ToastService.ShowInfo($"Regenerating {slot.Label}...");
+        
+        await Task.Delay(600);
+        
+        var newComponent = GenerateMockComponent(slot, regenerate: true);
+        GeneratedComponents[slotId] = newComponent;
+        
+        ToastService.ShowSuccess($"{slot.Label} regenerated!");
+    }
+
+    private void EditComponent(string slotId)
+    {
+        // This would open the property panel for manual editing
+        ToastService.ShowInfo("Opening component editor...");
+    }
+
+    private void ToggleAccept(string slotId)
+    {
+        if (GeneratedComponents.TryGetValue(slotId, out var component))
+        {
+            component.IsAccepted = !component.IsAccepted;
+        }
+    }
+
+    private async Task CopySQL(string sql)
+    {
+        // In real implementation, use JSRuntime to copy to clipboard
+        ToastService.ShowSuccess("SQL copied to clipboard!");
+    }
+
+    private async Task ApplyComponents()
+    {
+        var acceptedComponents = GeneratedComponents
+            .Where(c => c.Value.IsAccepted)
+            .Select(c => c.Value)
+            .ToList();
+
+        await OnComponentsApplied.InvokeAsync(acceptedComponents);
+        await ClosePanel();
+        
+        ToastService.ShowSuccess($"Applied {acceptedComponents.Count} components to dashboard!");
+    }
+
+    // ========== Mock Data Generation (MOI Context) ==========
+    private AIGeneratedComponent GenerateMockComponent(BuilderComponentSlot slot, bool regenerate = false)
+    {
+        var random = new Random();
+        
+        return slot.Type switch
+        {
+            "KPI" => GenerateKPIComponent(slot, regenerate),
+            "Chart" => GenerateChartComponent(slot, regenerate),
+            "Table" => GenerateTableComponent(slot, regenerate),
+            "Card" => GenerateCardComponent(slot, regenerate),
+            _ => GenerateGenericComponent(slot)
+        };
+    }
+
+    private AIGeneratedComponent GenerateKPIComponent(BuilderComponentSlot slot, bool regenerate)
+    {
+        var kpiOptions = new List<(string Title, string Desc, string SQL)>
+        {
+            ("Total Visa Applications", "Count of all visa applications received this period",
+             "SELECT COUNT(*) as TotalApplications\nFROM VisaApplications\nWHERE ApplicationDate >= DATEADD(month, -1, GETDATE())"),
+            
+            ("Pending Requests", "Number of pending service requests across all categories",
+             "SELECT COUNT(*) as PendingCount\nFROM ServiceRequests\nWHERE Status = 'Pending'"),
+            
+            ("Avg Processing Time", "Average time to process citizen requests in hours",
+             "SELECT AVG(DATEDIFF(hour, SubmittedAt, CompletedAt)) as AvgHours\nFROM ServiceRequests\nWHERE Status = 'Completed'"),
+            
+            ("Citizen Satisfaction", "Average satisfaction rating from feedback surveys",
+             "SELECT ROUND(AVG(Rating), 1) as AvgRating\nFROM CitizenFeedback\nWHERE FeedbackDate >= DATEADD(month, -1, GETDATE())"),
+            
+            ("Active Service Centers", "Number of service centers currently operational",
+             "SELECT COUNT(*) as ActiveCenters\nFROM ServiceCenters\nWHERE IsActive = 1")
+        };
+
+        var selected = kpiOptions[regenerate ? new Random().Next(kpiOptions.Count) : Math.Abs(slot.Id.GetHashCode()) % kpiOptions.Count];
+
+        return new AIGeneratedComponent
+            {
+            SlotId = slot.Id,
+            Title = selected.Title,
+            Description = selected.Desc,
+            ComponentType = "KPI",
+            QueryText = selected.SQL,
+            QueryIntent = selected.Desc,
+            IsAccepted = true,
+            VisualizationConfig = JsonSerializer.Serialize(new { format = "number", icon = "fa-chart-line" })
+        };
+    }
+
+    private AIGeneratedComponent GenerateChartComponent(BuilderComponentSlot slot, bool regenerate)
+    {
+        var chartOptions = new List<(string Title, string Desc, string SQL, string ChartType)>
+        {
+            ("Applications by Service Type", "Distribution of applications across different service categories",
+             "SELECT ServiceType, COUNT(*) as ApplicationCount\nFROM ServiceRequests\nGROUP BY ServiceType\nORDER BY ApplicationCount DESC", "bar"),
+            
+            ("Monthly Visa Trends", "Trend of visa applications over the past 12 months",
+             "SELECT FORMAT(ApplicationDate, 'MMM yyyy') as Month,\n       COUNT(*) as Applications\nFROM VisaApplications\nWHERE ApplicationDate >= DATEADD(year, -1, GETDATE())\nGROUP BY FORMAT(ApplicationDate, 'MMM yyyy')\nORDER BY MIN(ApplicationDate)", "line"),
+            
+            ("Service Center Performance", "Comparison of request volumes across service centers",
+             "SELECT sc.CenterName, COUNT(sr.RequestID) as Requests\nFROM ServiceCenters sc\nLEFT JOIN ServiceRequests sr ON sc.CenterID = sr.CenterID\nGROUP BY sc.CenterName\nORDER BY Requests DESC", "bar"),
+            
+            ("Request Status Distribution", "Breakdown of requests by current status",
+             "SELECT Status, COUNT(*) as Count\nFROM ServiceRequests\nGROUP BY Status", "pie"),
+            
+            ("Processing Time by Category", "Average processing time comparison across service types",
+             "SELECT ServiceType,\n       AVG(DATEDIFF(hour, SubmittedAt, CompletedAt)) as AvgHours\nFROM ServiceRequests\nWHERE Status = 'Completed'\nGROUP BY ServiceType", "bar")
+        };
+
+        var selected = chartOptions[regenerate ? new Random().Next(chartOptions.Count) : Math.Abs(slot.Id.GetHashCode()) % chartOptions.Count];
+
+        return new AIGeneratedComponent
+            {
+            SlotId = slot.Id,
+            Title = selected.Title,
+            Description = selected.Desc,
+            ComponentType = "Chart",
+            QueryText = selected.SQL,
+            QueryIntent = selected.Desc,
+            IsAccepted = true,
+            VisualizationConfig = JsonSerializer.Serialize(new { chartType = selected.ChartType, showLegend = true })
+        };
+    }
+
+    private AIGeneratedComponent GenerateTableComponent(BuilderComponentSlot slot, bool regenerate)
+    {
+        var tableOptions = new List<(string Title, string Desc, string SQL)>
+        {
+            ("Recent Applications", "Latest visa and permit applications submitted",
+             "SELECT TOP 10\n       ApplicationID,\n       ApplicantName,\n       ServiceType,\n       Status,\n       SubmittedAt,\n       ProcessingCenter\nFROM ServiceRequests\nORDER BY SubmittedAt DESC"),
+            
+            ("Pending Approvals", "Applications awaiting administrative approval",
+             "SELECT ApplicationID,\n       ApplicantName,\n       ServiceType,\n       SubmittedAt,\n       AssignedOfficer,\n       Priority\nFROM ServiceRequests\nWHERE Status = 'Pending Approval'\nORDER BY Priority DESC, SubmittedAt ASC"),
+            
+            ("Service Center Summary", "Overview of all active service centers",
+             "SELECT CenterName,\n       Region,\n       TodayVisitors,\n       AvgWaitTime,\n       SatisfactionScore,\n       StaffCount\nFROM ServiceCenters\nWHERE IsActive = 1\nORDER BY TodayVisitors DESC"),
+            
+            ("Top Officers by Volume", "Officers with highest processed requests this month",
+             "SELECT OfficerName,\n       Department,\n       ProcessedCount,\n       AvgProcessingTime,\n       SatisfactionRating\nFROM vw_OfficerPerformance\nWHERE Month = MONTH(GETDATE())\nORDER BY ProcessedCount DESC")
+        };
+
+        var selected = tableOptions[regenerate ? new Random().Next(tableOptions.Count) : Math.Abs(slot.Id.GetHashCode()) % tableOptions.Count];
+
+        return new AIGeneratedComponent
+            {
+            SlotId = slot.Id,
+            Title = selected.Title,
+            Description = selected.Desc,
+            ComponentType = "Table",
+            QueryText = selected.SQL,
+            QueryIntent = selected.Desc,
+            IsAccepted = true,
+            VisualizationConfig = JsonSerializer.Serialize(new { pageSize = 10, sortable = true, filterable = true })
+        };
+    }
+
+    private AIGeneratedComponent GenerateCardComponent(BuilderComponentSlot slot, bool regenerate)
+    {
+        return new AIGeneratedComponent
+            {
+            SlotId = slot.Id,
+            Title = "Service Highlights",
+            Description = "Key highlights and announcements for the current period",
+            ComponentType = "Card",
+            QueryText = "SELECT Title, Description, Priority\nFROM Announcements\nWHERE IsActive = 1\nORDER BY Priority DESC",
+            QueryIntent = "Display important announcements and highlights",
+            IsAccepted = true,
+            VisualizationConfig = JsonSerializer.Serialize(new { style = "info-card" })
+        };
+    }
+
+    private AIGeneratedComponent GenerateGenericComponent(BuilderComponentSlot slot)
+    {
+        return new AIGeneratedComponent
+            {
+            SlotId = slot.Id,
+            Title = $"Component for {slot.Label}",
+            Description = "Auto-generated component based on template slot",
+            ComponentType = slot.Type,
+            QueryText = "-- Custom SQL will be generated based on your data",
+            QueryIntent = "Display relevant data for this component",
+            IsAccepted = false,
+            VisualizationConfig = "{}"
+        };
+    }
+
+    // ========== Mock Database List ==========
+    private List<Database> GetMockDatabases()
+    {
+        return new List<Database>
+        {
+            new Database { DatabaseID = 1, Name = "MOI Services Database", IsActive = true },
+            new Database { DatabaseID = 2, Name = "Traffic Management System", IsActive = true },
+            new Database { DatabaseID = 3, Name = "Citizen Portal Database", IsActive = true },
+            new Database { DatabaseID = 4, Name = "HR & Administration", IsActive = true }
+        };
+    }
+
+    // ========== Helper Methods ==========
+    private string GetTemplateIcon()
+    {
+        return SelectedTemplate?.Icon ?? "fas fa-th-large";
+    }
+
+    private string GetSlotIcon(string type)
+    {
+        return type switch
+        {
+            "KPI" => "fas fa-tachometer-alt",
+            "Chart" => "fas fa-chart-bar",
+            "Table" => "fas fa-table",
+            "Card" => "fas fa-id-card",
+            "Filter" => "fas fa-filter",
+            _ => "fas fa-puzzle-piece"
+        };
+    }
+
+    private string GetSlotStatusClass(BuilderComponentSlot slot)
+    {
+        if (GeneratedComponents.TryGetValue(slot.Id, out var comp))
+        {
+            return comp.IsAccepted ? "accepted" : "generated";
+        }
+        return "";
+    }
+
+    private string GetSlotColorClass(string type)
+    {
+        return type switch
+        {
+            "KPI" => "type-kpi",
+            "Chart" => "type-chart",
+            "Table" => "type-table",
+            "Card" => "type-card",
+            _ => "type-default"
+        };
+    }
+
+    // ========== Data Models ==========
+    // public class DashboardTemplate
+    // {
+    //     public int Id { get; set; }
+    //     public string Name { get; set; } = "";
+    //     public string Icon { get; set; } = "fas fa-th-large";
+    //     public string Description { get; set; } = "";
+    //     public List<ComponentSlot> ComponentSlots { get; set; } = new();
+    // }
+
+    // public class ComponentSlot
+    // {
+    //     public string Id { get; set; } = "";
+    //     public string Label { get; set; } = "";
+    //     public string Type { get; set; } = ""; // KPI, Chart, Table, Card, Filter
+    //     public int GridX { get; set; }
+    //     public int GridY { get; set; }
+    //     public int GridWidth { get; set; } = 4;
+    //     public int GridHeight { get; set; } = 3;
+    // }
+
+    // public class GeneratedComponentResult
+    // {
+    //     public string SlotId { get; set; } = "";
+    //     public string Title { get; set; } = "";
+    //     public string Description { get; set; } = "";
+    //     public string ComponentType { get; set; } = "";
+    //     public string QueryText { get; set; } = "";
+    //     public string QueryIntent { get; set; } = "";
+    //     public string VisualizationConfig { get; set; } = "{}";
+    //     public bool IsAccepted { get; set; }
+    //     public int GridX { get; set; }
+    //     public int GridY { get; set; }
+    //     public int GridWidth { get; set; }
+    //     public int GridHeight { get; set; }
+    // }
+}

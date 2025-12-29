@@ -27,6 +27,7 @@ namespace DynamicDashboardCommon.Helper
 
         public static T Get<T>(string key)
         {
+            return default;
             if (_cache.TryGetValue(key, out var item) &&
                 _expiryTimes.TryGetValue(key, out var expiry) &&
                 DateTime.UtcNow < expiry)
@@ -41,7 +42,7 @@ namespace DynamicDashboardCommon.Helper
 
         public static async Task<T> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, TimeSpan? duration = null)
         {
-            // Try to get from cache first
+            // Try to get from cache first (no lock needed for read)
             if (_cache.TryGetValue(key, out var cachedItem) &&
                 _expiryTimes.TryGetValue(key, out var expiry) &&
                 DateTime.UtcNow < expiry)
@@ -54,7 +55,7 @@ namespace DynamicDashboardCommon.Helper
             await _lock.WaitAsync();
             try
             {
-                // Check again in case another thread already added it
+                // Double-check in case another thread already added it
                 if (_cache.TryGetValue(key, out cachedItem) &&
                     _expiryTimes.TryGetValue(key, out expiry) &&
                     DateTime.UtcNow < expiry)
@@ -79,20 +80,43 @@ namespace DynamicDashboardCommon.Helper
             }
         }
 
+        /// <summary>
+        /// Add or update a cache entry - FIXED VERSION
+        /// </summary>
         public static async Task AddOrUpdateAsync<T>(string key, T value, TimeSpan? duration = null)
         {
+            
             await _lock.WaitAsync();
             try
             {
-                if (_cache.ContainsKey(key))
-                {
-                    await RemoveAsync(key);
-                }
-                //TODO : Removed Temp, Also to check if we need browser cache at all or we need to replace it
-              //  _cache.TryAdd(key, value);
+                // Remove existing entry WITHOUT calling RemoveAsync (to avoid deadlock)
+                _cache.TryRemove(key, out _);
+                _expiryTimes.TryRemove(key, out _);
 
+                // Add the new value - ENABLED (was commented out!)
+                _cache.TryAdd(key, value);
+                _expiryTimes[key] = DateTime.UtcNow.Add(duration ?? _defaultDuration);
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
 
-             //   _expiryTimes[key] = DateTime.UtcNow.Add(duration ?? _defaultDuration);
+        /// <summary>
+        /// Synchronous version for non-async contexts
+        /// </summary>
+        public static void AddOrUpdate<T>(string key, T value, TimeSpan? duration = null)
+        {
+            
+            _lock.Wait();
+            try
+            {
+                _cache.TryRemove(key, out _);
+                _expiryTimes.TryRemove(key, out _);
+
+                _cache.TryAdd(key, value);
+                _expiryTimes[key] = DateTime.UtcNow.Add(duration ?? _defaultDuration);
             }
             finally
             {
@@ -102,6 +126,7 @@ namespace DynamicDashboardCommon.Helper
 
         public static async Task RemoveAsync(string key)
         {
+            return;
             await _lock.WaitAsync();
             try
             {
@@ -114,8 +139,16 @@ namespace DynamicDashboardCommon.Helper
             }
         }
 
+        public static void Remove(string key)
+        {
+          
+            _cache.TryRemove(key, out _);
+            _expiryTimes.TryRemove(key, out _);
+        }
+
         public static async Task ClearAsync()
         {
+            
             await _lock.WaitAsync();
             try
             {
@@ -128,10 +161,34 @@ namespace DynamicDashboardCommon.Helper
             }
         }
 
+        /// <summary>
+        /// Invalidate cache for a specific database
+        /// </summary>
+        public static async Task InvalidateDatabaseCacheAsync(int databaseId)
+        {
+            var keysToRemove = _cache.Keys
+                .Where(k => k.Contains($"_{databaseId}") || k.EndsWith($"_{databaseId}"))
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                _cache.TryRemove(key, out _);
+                _expiryTimes.TryRemove(key, out _);
+            }
+        }
+
+        /// <summary>
+        /// Get cache statistics for debugging
+        /// </summary>
+        public static (long Hits, long Misses, int ItemCount) GetStatistics()
+        {
+            return (_hits, _misses, _cache.Count);
+        }
+
         private static void CleanupExpiredItems(object state)
         {
-            // Avoid taking the lock in the timer to prevent potential deadlocks
-            Task.Run(async () =>
+            // Run cleanup without blocking
+            Task.Run(() =>
             {
                 var now = DateTime.UtcNow;
                 var expiredKeys = _expiryTimes
@@ -139,25 +196,12 @@ namespace DynamicDashboardCommon.Helper
                     .Select(kvp => kvp.Key)
                     .ToList();
 
-                if (expiredKeys.Count > 0)
+                foreach (var key in expiredKeys)
                 {
-                    await _lock.WaitAsync();
-                    try
-                    {
-                        foreach (var key in expiredKeys)
-                        {
-                            _cache.TryRemove(key, out _);
-                            _expiryTimes.TryRemove(key, out _);
-                        }
-                    }
-                    finally
-                    {
-                        _lock.Release();
-                    }
+                    _cache.TryRemove(key, out _);
+                    _expiryTimes.TryRemove(key, out _);
                 }
             });
         }
-
-
     }
 }

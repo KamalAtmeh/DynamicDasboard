@@ -6,6 +6,286 @@
 @inject NavigationManager NavigationManager
 @inject IToastService toastService
 
+@* ============================================ *@
+@* FULL PAGE LOADING OVERLAY FOR LLM ANALYSIS  *@
+@* ============================================ *@
+@if (isAnalyzing)
+{
+	<div class="llm-loading-overlay">
+		<div class="llm-loading-content">
+			<div class="llm-loading-icon">
+				<div class="brain-animation">
+					<i class="fas fa-brain fa-4x text-primary pulse-glow"></i>
+				</div>
+				<div class="orbit-container">
+					<div class="orbit-dot dot1"></div>
+					<div class="orbit-dot dot2"></div>
+					<div class="orbit-dot dot3"></div>
+				</div>
+			</div>
+
+			<h3 class="mt-4 mb-2">AI Analyzing Database Schema</h3>
+			<p class="text-muted mb-4">@analysisLoadingMessage</p>
+
+			@* Replace the progress section with this simpler version *@
+			<div class="progress-container">
+				<div class="progress" style="width: 350px; height: 8px;">
+					<div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+						 role="progressbar"
+						 style="width: 100%">
+					</div>
+				</div>
+				
+			</div>
+
+			<div class="analysis-steps mt-4">
+				<div class="step @(analysisStep >= 1 ? "completed" : "")">
+					<i class="fas @(analysisStep >= 1 ? "fa-check-circle text-success" : "fa-circle text-muted")"></i>
+					<span>Reading schema structure</span>
+				</div>
+				<div class="step @(analysisStep >= 2 ? "completed" : "")">
+					<i class="fas @(analysisStep >= 2 ? "fa-check-circle text-success" : (analysisStep == 1 ? "fa-spinner fa-spin text-primary" : "fa-circle text-muted"))"></i>
+					<span>Analyzing tables & columns</span>
+				</div>
+				<div class="step @(analysisStep >= 3 ? "completed" : "")">
+					<i class="fas @(analysisStep >= 3 ? "fa-check-circle text-success" : (analysisStep == 2 ? "fa-spinner fa-spin text-primary" : "fa-circle text-muted"))"></i>
+					<span>Detecting relationships</span>
+				</div>
+				<div class="step @(analysisStep >= 4 ? "completed" : "")">
+					<i class="fas @(analysisStep >= 4 ? "fa-check-circle text-success" : (analysisStep == 3 ? "fa-spinner fa-spin text-primary" : "fa-circle text-muted"))"></i>
+					<span>Generating suggestions</span>
+				</div>
+			</div>
+
+@* 			<div class="mt-4">
+				<small class="text-warning">
+					<i class="fas fa-info-circle me-1"></i>
+					This may take 1-3 minutes depending on schema complexity
+				</small>
+			</div> *@
+
+			<button class="btn btn-outline-secondary mt-3" @onclick="CancelAnalysis">
+				<i class="fas fa-times me-2"></i>Cancel
+			</button>
+		</div>
+	</div>
+}
+
+@* ============================================ *@
+@* CSS STYLES FOR LOADING OVERLAY              *@
+@* ============================================ *@
+<style>
+	/* Full page overlay */
+	.llm-loading-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.85);
+		backdrop-filter: blur(8px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 9999;
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	@@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+
+	.llm-loading-content {
+		background: linear-gradient(145deg, #ffffff, #f8f9fa);
+		padding: 3rem 4rem;
+		border-radius: 20px;
+		text-align: center;
+		box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+		max-width: 500px;
+		position: relative;
+		overflow: hidden;
+	}
+
+		.llm-loading-content::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 4px;
+			background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+			background-size: 200% 100%;
+			animation: shimmer 2s infinite;
+		}
+
+	@@keyframes shimmer {
+		0% {
+			background-position: -200% 0;
+		}
+
+		100% {
+			background-position: 200% 0;
+		}
+	}
+
+	/* Brain animation */
+	.llm-loading-icon {
+		position: relative;
+		width: 120px;
+		height: 120px;
+		margin: 0 auto;
+	}
+
+	.brain-animation {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 2;
+	}
+
+	.pulse-glow {
+		animation: pulseGlow 2s ease-in-out infinite;
+	}
+
+	@@keyframes pulseGlow {
+		0%, 100% {
+			text-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+			transform: scale(1);
+		}
+
+		50% {
+			text-shadow: 0 0 40px rgba(102, 126, 234, 0.8), 0 0 60px rgba(118, 75, 162, 0.4);
+			transform: scale(1.1);
+		}
+	}
+
+	/* Orbiting dots */
+	.orbit-container {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		animation: rotate 4s linear infinite;
+	}
+
+	@@keyframes rotate {
+		from {
+			transform: rotate(0deg);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.orbit-dot {
+		position: absolute;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #667eea, #764ba2);
+		box-shadow: 0 0 10px rgba(102, 126, 234, 0.6);
+	}
+
+	.dot1 {
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+	}
+
+	.dot2 {
+		bottom: 10px;
+		left: 10px;
+		animation-delay: -1.3s;
+	}
+
+	.dot3 {
+		bottom: 10px;
+		right: 10px;
+		animation-delay: -2.6s;
+	}
+
+	/* Progress container */
+	.progress-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	/* Analysis steps */
+	.analysis-steps {
+		text-align: left;
+		padding: 1rem 1.5rem;
+		background: #f8f9fa;
+		border-radius: 10px;
+	}
+
+		.analysis-steps .step {
+			display: flex;
+			align-items: center;
+			padding: 0.5rem 0;
+			color: #6c757d;
+			transition: all 0.3s ease;
+		}
+
+			.analysis-steps .step.completed {
+				color: #212529;
+			}
+
+			.analysis-steps .step i {
+				margin-right: 12px;
+				width: 20px;
+				text-align: center;
+			}
+
+	/* DB Health Badge */
+	.health-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.5rem 1rem;
+		border-radius: 50px;
+		font-weight: 600;
+		font-size: 1rem;
+	}
+
+		.health-badge i {
+			margin-right: 8px;
+		}
+
+	.health-excellent {
+		background: linear-gradient(135deg, #28a745, #20c997);
+		color: white;
+	}
+
+	.health-good {
+		background: linear-gradient(135deg, #17a2b8, #6610f2);
+		color: white;
+	}
+
+	.health-fair {
+		background: linear-gradient(135deg, #007bff, #6f42c1);
+		color: white;
+	}
+
+	.health-needs-work {
+		background: linear-gradient(135deg, #ffc107, #fd7e14);
+		color: #212529;
+	}
+
+	.health-poor {
+		background: linear-gradient(135deg, #dc3545, #e83e8c);
+		color: white;
+	}
+</style>
+
 <div class="container-fluid py-0">
 	<!-- Enhanced Header with Database Selection -->
 	<div class="row mb-4 align-items-center">
@@ -260,9 +540,9 @@
 														<div><strong>Name:</strong> @tableAnalysis.SuggestedName</div>
 														<div><strong>Description:</strong> @tableAnalysis.SuggestedDescription</div>
 													</div>
-													<button class="btn btn-sm btn-outline-primary mt-2" @onclick="() => ApplyTableSuggestion()">
+@* 													<button class="btn btn-sm btn-outline-primary mt-2" @onclick="() => ApplyTableSuggestion()">
 														<i class="fas fa-magic me-1"></i> Apply Suggestion
-													</button>
+													</button> *@
 												</div>
 											</div>
 										</div>
@@ -692,15 +972,50 @@
 							}
 							else if (!analysisResult.Success)
 							{
-								<div class="alert alert-danger">
-									<h5><i class="fas fa-exclamation-circle me-2"></i>Analysis Failed</h5>
-									<p>@analysisResult.ErrorMessage</p>
+								<div class="card border-0 shadow-sm">
+									<div class="card-body text-center py-5">
+										<div class="mb-4">
+											<div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center"
+												 style="width: 80px; height: 80px;">
+												<i class="fas fa-hourglass-half fa-2x text-warning"></i>
+											</div>
+										</div>
+										<h5 class="text-secondary mb-3">Analysis Wasn't Completed</h5>
+										<p class="text-muted mb-4" style="max-width: 400px; margin: 0 auto;">
+											@if (!string.IsNullOrEmpty(analysisResult.ErrorMessage))
+											{
+												@if (analysisResult.ErrorMessage.Contains("timeout") ||
+																				analysisResult.ErrorMessage.Contains("100 seconds") ||
+																				analysisResult.ErrorMessage.Contains("cancelled"))
+												{
+													<span>The analysis took longer than expected. </span>
+												}
+												else
+												{
+													<span>Something interrupted the analysis process.</span>
+												}
+											}
+											else
+											{
+												<span>Something interrupted the analysis process.</span>
+											}
+										</p>
+										<div class="d-flex justify-content-center gap-2">
+											<button class="btn btn-primary" @onclick="RunSchemaAnalysis">
+												<i class="fas fa-redo me-2"></i>Try Again
+											</button>
+											<button class="btn btn-outline-secondary" @onclick='() => activeTab = "tables"'>
+												<i class="fas fa-arrow-left me-2"></i>Back to Tables
+											</button>
+										</div>
+									</div>
 								</div>
 							}
 							else
 							{
 								<!-- Analysis Results Navigation Tabs -->
 								<ul class="nav nav-tabs mb-3" id="analysisResultsTabs" role="tablist">
+									<!-- existing tabs -->
 									<li class="nav-item" role="presentation">
 										<button class="nav-link @(analysisTab == "tables" ? "active" : "")"
 												@onclick='() => analysisTab = "tables"'>
@@ -711,54 +1026,18 @@
 											</span>
 										</button>
 									</li>
+									<!-- ... other existing tabs ... -->
+
+									@* ADD THIS NEW TAB *@
 									<li class="nav-item" role="presentation">
-										<button class="nav-link @(analysisTab == "columns" ? "active" : "")"
-												@onclick='() => analysisTab = "columns"'>
-											<i class="fas fa-columns me-2"></i>
-											Column Suggestions
-											<span class="badge rounded-pill bg-primary ms-1">
-												@(analysisResult.AnalysisData?.ColumnDescriptions?.Count ?? 0)
-											</span>
-										</button>
-									</li>
-									<li class="nav-item" role="presentation">
-										<button class="nav-link @(analysisTab == "conflicts" ? "active" : "")"
-												@onclick='() => analysisTab = "conflicts"'>
-											<i class="fas fa-exclamation-triangle me-2"></i>
-											Conflicts
-											<span class="badge rounded-pill bg-warning text-dark ms-1">
-												@(analysisResult.AnalysisData?.PotentialConflicts?.Count ?? 0)
-											</span>
-										</button>
-									</li>
-									<li class="nav-item" role="presentation">
-										<button class="nav-link @(analysisTab == "relationships" ? "active" : "")"
-												@onclick='() => analysisTab = "relationships"'>
-											<i class="fas fa-link me-2"></i>
-											Suggested Relationships
-											<span class="badge rounded-pill bg-success ms-1">
-												@(analysisResult.AnalysisData?.SuggestedRelationships?.Count ?? 0)
-											</span>
-										</button>
-									</li>
-									<li class="nav-item" role="presentation">
-										<button class="nav-link @(activeTab == "termMappings" ? "active" : "")"
-												@onclick='() => SetActiveTab("termMappings")'>
+										<button class="nav-link @(analysisTab == "termSuggestions" ? "active" : "")"
+												@onclick='() => analysisTab = "termSuggestions"'>
 											<i class="fas fa-language me-2"></i>
-											Term Mappings
-											<span class="badge rounded-pill bg-primary ms-1">
-												@(schemaObj?.TermMappings?.Count ?? 0)
-											</span>
-										</button>
-									</li>
-									<li class="nav-item" role="presentation">
-										<button class="nav-link @(analysisTab == "unclear" ? "active" : "")"
-												@onclick='() => analysisTab = "unclear"'>
-											<i class="fas fa-question-circle me-2"></i>
-											Unclear Elements
-											<span class="badge rounded-pill bg-info ms-1">
-												@(analysisResult.AnalysisData?.UnclearElements?.Count ?? 0)
-											</span>
+											Term Suggestions
+											@if (isSuggestingTerms)
+											{
+												<span class="spinner-border spinner-border-sm ms-1"></span>
+											}
 										</button>
 									</li>
 								</ul>
@@ -767,13 +1046,13 @@
 								<div class="tab-content" id="analysisResultsTabContent">
 									@if (analysisTab == "tables")
 									{
-										<!-- Table Suggestions Tab -->
+										<!-- Table Analsysi Tab -->
 										<div class="tab-pane fade show active">
 											@if (analysisResult.AnalysisData?.TableDescriptions?.Any() != true)
 											{
 												<div class="alert alert-info">
 													<i class="fas fa-info-circle me-2"></i>
-													No table suggestions available.
+													No Table Analsysi available.
 												</div>
 											}
 											else
@@ -789,21 +1068,32 @@
 															</tr>
 														</thead>
 														<tbody>
-															@foreach (var suggestion in analysisResult.AnalysisData.TableDescriptions)
-															{
+														
+																@foreach (var suggestion in analysisResult.AnalysisData.TableDescriptions)
+																{
 																<tr>
 																	<td>@suggestion.TableName</td>
 																	<td>@suggestion.SuggestedName</td>
 																	<td>@suggestion.SuggestedDescription</td>
 																	<td>
-																		<button class="btn btn-sm btn-outline-primary"
-																				@onclick="() => ApplyTableSuggestion(suggestion)">
-																			<i class="fas fa-check me-1"></i> Apply
-																		</button>
+																			@if (appliedTableSuggestions.Contains(suggestion.TableName))
+																			{
+																			<span class="badge bg-success px-3 py-2">
+																				<i class="fas fa-check me-1"></i> Applied
+																			</span>
+																			}
+																			else
+																			{
+																			<button class="btn btn-sm btn-outline-primary"
+																					@onclick="() => ApplyTableSuggestion(suggestion)">
+																				<i class="fas fa-magic me-1"></i> Apply
+																			</button>
+																			}
 																	</td>
 																</tr>
-															}
+																}
 														</tbody>
+
 													</table>
 												</div>
 											}
@@ -817,7 +1107,7 @@
 											{
 												<div class="alert alert-info">
 													<i class="fas fa-info-circle me-2"></i>
-													No column suggestions available.
+													No column Analysis available.
 												</div>
 											}
 											else
@@ -834,32 +1124,41 @@
 																<th>Actions</th>
 															</tr>
 														</thead>
+														@* In the column suggestions section, replace the Apply button *@
 														<tbody>
-															@foreach (var suggestion in analysisResult.AnalysisData.ColumnDescriptions)
-															{
+														
+																@foreach (var suggestion in analysisResult.AnalysisData.ColumnDescriptions)
+																{
+																	var columnKey = $"{suggestion.TableName}_{suggestion.ColumnName}";
 																<tr>
 																	<td>@suggestion.TableName</td>
 																	<td>@suggestion.ColumnName</td>
 																	<td>@suggestion.SuggestedName</td>
 																	<td>@suggestion.SuggestedDescription</td>
 																	<td>
-																		@if (suggestion.IsLookupColumn)
-																		{
-																			<i class="fas fa-check text-success"></i>
-																		}
-																		else
-																		{
-																			<i class="fas fa-times text-danger"></i>
-																		}
+																			@if (suggestion.IsLookupColumn)
+																			{
+																			<span class="badge bg-info me-1">Lookup</span>
+																			}
 																	</td>
 																	<td>
-																		<button class="btn btn-sm btn-outline-primary"
-																				@onclick="() => ApplyColumnSuggestion(suggestion)">
-																			<i class="fas fa-check me-1"></i> Apply
-																		</button>
+																			@if (appliedColumnSuggestions.Contains(columnKey))
+																			{
+																			<span class="badge bg-success px-3 py-2">
+																				<i class="fas fa-check me-1"></i> Applied
+																			</span>
+																			}
+																			else
+																			{
+																			<button class="btn btn-sm btn-outline-primary"
+																					@onclick="() => ApplyColumnSuggestion(suggestion)">
+																				<i class="fas fa-magic me-1"></i> Apply
+																			</button>
+																			}
 																	</td>
 																</tr>
-															}
+																}
+													
 														</tbody>
 													</table>
 												</div>
@@ -874,7 +1173,7 @@
 											{
 												<div class="alert alert-success">
 													<i class="fas fa-check-circle me-2"></i>
-													No potential conflicts detected in the schema.
+													No potential Suggestions detected in the schema.
 												</div>
 											}
 											else

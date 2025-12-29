@@ -224,6 +224,13 @@
         <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateSchema(System.Int32,DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
             Update an existing schema entry.
+            Accepts both schema ID (primary key) and database ID (foreign key)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateSchemaByDatabaseId(System.Int32,System.Text.Json.JsonElement)">
+            <summary>
+            Update schema by DatabaseID - designed for frontend use
+            Bypasses automatic model validation for partial updates
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.GetSchemaByDataBaseID(System.Int32)">
@@ -259,6 +266,11 @@
         <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.UpdateRelationshipActiveStatus(System.Int32,System.String,System.Boolean)">
             <summary>
             Updates the active status of a relationship
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.ClearAllCache">
+            <summary>
+            Clear all cache
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.SchemaAnalysisController.AnalyzeDatabaseSchema(System.Int32)">
@@ -1425,12 +1437,21 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.DeserializeSchema(System.String)">
             <summary>
-            Deserializes a JSON schema string into a DatabaseSchema object.
+            Deserializes JSON schema string into DatabaseSchema object.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.SerializeSchema(DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
             Serializes a DatabaseSchema object to a JSON string.
+            </summary>
+            <summary>
+            Serializes ONLY the schema content (Tables, Relationships, etc.)
+            DOES NOT include SchemaData string or database metadata (ID, DataBaseID, etc.)
+            This prevents recursive nesting of JSON.
+            </summary>
+            <summary>
+            Serializes schema content to JSON for storage in SchemaData column.
+            Explicitly includes only content properties to prevent recursive nesting.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.FindTableById(DynamicDashboardCommon.Models.DatabaseSchema,System.Int32)">
@@ -1503,6 +1524,17 @@
             </summary>
             <param name="schema">The DatabaseSchema object</param>
             <returns>Dictionary mapping technical terms to friendly terms</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.GetSchemaObject(System.Int32,System.Boolean,System.Boolean)">
+            <summary>
+            Gets complete schema object with DB metadata and JSON content merged.
+            Normalizes relationship types and ensures all required properties are initialized.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DatabaseSchemaService.NormalizeRelationshipType(System.String)">
+            <summary>
+            Normalizes relationship type to ensure consistent casing for dropdown binding
+            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.SchemaAnalysisService">
             <summary>

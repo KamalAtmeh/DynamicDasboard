@@ -1,1917 +1,1172 @@
 ﻿@page "/dashboard/builder"
 @page "/dashboard/builder/{DashboardId:int}"
+@using DynamicDashboardCommon.Models
+@using DynamicDashboardCommon.Enums
+@using Microsoft.AspNetCore.Components.Web
 @using System.Text.Json
-@inject IJSRuntime JSRuntime
+@inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IToastService ToastService
+@inject IJSRuntime JSRuntime
 
+<PageTitle>Dashboard Builder - @(string.IsNullOrEmpty(dashboard.Title) ? "New Dashboard" : dashboard.Title)</PageTitle>
 
-<PageTitle>Dashboard Builder - DataVision</PageTitle>
-
-<!-- ============================================================ -->
-<!-- DASHBOARD BUILDER - MODERN INTERACTIVE UI                    -->
-<!-- ============================================================ -->
-
-<div class="db-builder @(_isDragging ? "is-dragging" : "") @(_darkMode ? "dark-mode" : "")">
-    
-    <!-- ==================== TOP HEADER BAR ==================== -->
-    <header class="db-header">
-        <div class="db-header-left">
-            <button class="db-btn-icon db-btn-back" @onclick="NavigateBack" title="Back to Marketplace">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            
-            <div class="db-logo">
-                <i class="fas fa-cube"></i>
-            </div>
-            
-            <div class="db-title-section">
-                @if (_isEditingTitle)
-                {
-                    <input type="text" 
-                           class="db-title-input" 
-                           @bind="_dashboardTitle" 
-                           @bind:event="oninput"
-                           @onblur="() => _isEditingTitle = false"
-                           @onkeydown="HandleTitleKeyDown"
-                           placeholder="Enter dashboard name..." />
-                }
-                else
-                {
-                    <h1 class="db-title" @onclick="() => _isEditingTitle = true">
-                        @(string.IsNullOrEmpty(_dashboardTitle) ? "Untitled Dashboard" : _dashboardTitle)
-                        <i class="fas fa-pen db-title-edit-icon"></i>
-                    </h1>
-                }
-                
-                <div class="db-title-meta">
-                    @if (_hasUnsavedChanges)
+<div class="dashboard-builder @(isDragging ? "is-dragging" : "") @(showAIPanel ? "ai-panel-open" : "")">
+    <!-- Header Section -->
+    <div class="builder-header shadow-sm">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-icon me-2" @onclick='() => NavigationManager.NavigateTo("/marketplace")'>
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="dashboard-title-container">
+                    @if (isEditingTitle)
                     {
-                        <span class="db-badge db-badge-warning">
+                        <input type="text" class="form-control dashboard-title-input"
+                               value="@dashboard.Title"
+                               @oninput="HandleTitleInput"
+                               @onblur="FinishTitleEdit"
+                               @onkeydown="HandleTitleKeyDown" />
+                    }
+                    else
+                    {
+                        <h4 class="mb-0 dashboard-title" @onclick="StartTitleEdit">
+                            @(string.IsNullOrEmpty(dashboard.Title) ? "Untitled Dashboard" : dashboard.Title)
+                            <i class="fas fa-pen edit-icon"></i>
+                        </h4>
+                    }
+                    @if (hasUnsavedChanges)
+                    {
+                        <span class="unsaved-indicator">
                             <i class="fas fa-circle"></i> Unsaved changes
                         </span>
                     }
-                    else
-                    {
-                        <span class="db-badge db-badge-success">
-                            <i class="fas fa-check-circle"></i> Saved
-                        </span>
-                    }
-                    <span class="db-meta-text">Last edited: Just now</span>
+                </div>
+            </div>
+
+            <!-- Center Tabs -->
+            <div class="builder-tabs">
+                <ul class="nav nav-pills">
+                    <li class="nav-item">
+                        <a class="nav-link @(activeTab == "design" ? "active" : "")" @onclick='() => SetActiveTab("design")'>
+                            <i class="fas fa-palette me-1"></i> Design
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(activeTab == "data" ? "active" : "")" @onclick='() => SetActiveTab("data")'>
+                            <i class="fas fa-database me-1"></i> Data
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(activeTab == "settings" ? "active" : "")" @onclick='() => SetActiveTab("settings")'>
+                            <i class="fas fa-cog me-1"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right Actions -->
+            <div class="builder-actions">
+                <div class="btn-group me-2">
+                    <button class="btn btn-outline-secondary btn-sm" title="Undo (Ctrl+Z)" @onclick="Undo" disabled="@(!canUndo)">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" title="Redo (Ctrl+Y)" @onclick="Redo" disabled="@(!canRedo)">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+
+                <!-- AI Generate Button -->
+                <button class="btn btn-ai-generate me-2" @onclick="OpenTemplateSelector" title="Generate with AI">
+                    <i class="fas fa-magic me-1"></i>
+                    <span>Generate with AI</span>
+                    <span class="ai-badge">✨</span>
+                </button>
+
+                <div class="btn-group me-2">
+                    <button class="btn btn-outline-secondary btn-sm" title="Preview" @onclick="PreviewDashboard">
+                        <i class="fas fa-eye me-1"></i> Preview
+                    </button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-sm" @onclick="SaveDashboard">
+                        <i class="fas fa-save me-1"></i> Save
+                    </button>
                 </div>
             </div>
         </div>
-        
-        <div class="db-header-center">
-            <div class="db-view-switcher">
-                <button class="db-view-btn @(_activeView == "design" ? "active" : "")" 
-                        @onclick='() => SetActiveView("design")'>
-                    <i class="fas fa-pencil-ruler"></i>
-                    <span>Design</span>
-                </button>
-                <button class="db-view-btn @(_activeView == "preview" ? "active" : "")" 
-                        @onclick='() => SetActiveView("preview")'>
-                    <i class="fas fa-eye"></i>
-                    <span>Preview</span>
-                </button>
-                <button class="db-view-btn @(_activeView == "code" ? "active" : "")" 
-                        @onclick='() => SetActiveView("code")'>
-                    <i class="fas fa-code"></i>
-                    <span>Code</span>
-                </button>
-                <div class="db-view-slider" style="transform: translateX(@(GetViewSliderPosition())px);"></div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="builder-content">
+        <!-- Left Sidebar: Component Library -->
+        <div class="builder-sidebar builder-sidebar-left">
+            <div class="sidebar-header">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-puzzle-piece me-2"></i>Components
+                </h6>
+                <div class="sidebar-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search components..."
+                           value="@componentSearchTerm"
+                           @oninput="HandleSearchInput" />
+                </div>
             </div>
-        </div>
-        
-        <div class="db-header-right">
-            <!-- Undo/Redo -->
-            <div class="db-btn-group">
-                <button class="db-btn-icon" @onclick="Undo" disabled="@(!CanUndo)" title="Undo (Ctrl+Z)">
-                    <i class="fas fa-undo"></i>
-                </button>
-                <button class="db-btn-icon" @onclick="Redo" disabled="@(!CanRedo)" title="Redo (Ctrl+Y)">
-                    <i class="fas fa-redo"></i>
-                </button>
-            </div>
-            
-            <div class="db-header-divider"></div>
-            
-            <!-- Device Preview -->
-            <div class="db-device-switcher">
-                <button class="db-btn-icon @(_deviceMode == "desktop" ? "active" : "")" 
-                        @onclick='() => SetDeviceMode("desktop")' title="Desktop">
-                    <i class="fas fa-desktop"></i>
-                </button>
-                <button class="db-btn-icon @(_deviceMode == "tablet" ? "active" : "")" 
-                        @onclick='() => SetDeviceMode("tablet")' title="Tablet">
-                    <i class="fas fa-tablet-alt"></i>
-                </button>
-                <button class="db-btn-icon @(_deviceMode == "mobile" ? "active" : "")" 
-                        @onclick='() => SetDeviceMode("mobile")' title="Mobile">
-                    <i class="fas fa-mobile-alt"></i>
-                </button>
-            </div>
-            
-            <div class="db-header-divider"></div>
-            
-            <!-- Dark Mode Toggle -->
-            <button class="db-btn-icon" @onclick="ToggleDarkMode" title="Toggle Dark Mode">
-                <i class="fas @(_darkMode ? "fa-sun" : "fa-moon")"></i>
-            </button>
-            
-            <div class="db-header-divider"></div>
-            
-            <!-- Action Buttons -->
-            <button class="db-btn db-btn-secondary" @onclick="PreviewDashboard">
-                <i class="fas fa-play"></i>
-                <span>Preview</span>
-            </button>
-            
-            <button class="db-btn db-btn-primary" @onclick="SaveDashboard">
-                <i class="fas fa-save"></i>
-                <span>Save</span>
-                <span class="db-btn-badge">⌘S</span>
-            </button>
-            
-            <div class="db-dropdown">
-                <button class="db-btn-icon" @onclick="ToggleMoreMenu">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-                @if (_showMoreMenu)
+
+            <div class="component-library">
+                @foreach (var category in GetFilteredComponentCategories())
                 {
-                    <div class="db-dropdown-menu">
-                        <button class="db-dropdown-item" @onclick="ExportDashboard">
-                            <i class="fas fa-file-export"></i> Export as JSON
-                        </button>
-                        <button class="db-dropdown-item" @onclick="ExportAsImage">
-                            <i class="fas fa-image"></i> Export as Image
-                        </button>
-                        <button class="db-dropdown-item" @onclick="ShareDashboard">
-                            <i class="fas fa-share-alt"></i> Share Dashboard
-                        </button>
-                        <div class="db-dropdown-divider"></div>
-                        <button class="db-dropdown-item" @onclick="DuplicateDashboard">
-                            <i class="fas fa-copy"></i> Duplicate
-                        </button>
-                        <button class="db-dropdown-item db-text-danger" @onclick="DeleteDashboard">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
+                    <div class="component-category">
+                        <div class="category-header" @onclick="() => ToggleCategory(category.Key)">
+                            <span>@category.Key</span>
+                            <i class="fas @(expandedCategories.Contains(category.Key) ? "fa-chevron-down" : "fa-chevron-right")"></i>
+                        </div>
+                        @if (expandedCategories.Contains(category.Key))
+                        {
+                            <div class="category-items">
+                                @foreach (var component in category.Value)
+                                {
+                                    <div class="component-item" @onclick="() => AddComponent(component)">
+                                        <div class="component-icon">
+                                            <i class="fas @component.Icon"></i>
+                                        </div>
+                                        <div class="component-info">
+                                            <span class="component-name">@component.Title</span>
+                                            <span class="component-desc">@component.Description</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
                 }
             </div>
-        </div>
-    </header>
-    
-    <!-- ==================== MAIN BUILDER AREA ==================== -->
-    <div class="db-main">
-        
-        <!-- ========== LEFT PANEL: COMPONENTS ========== -->
-        <aside class="db-panel db-panel-left @(_leftPanelCollapsed ? "collapsed" : "")">
-            <div class="db-panel-toggle" @onclick="() => _leftPanelCollapsed = !_leftPanelCollapsed">
-                <i class="fas @(_leftPanelCollapsed ? "fa-chevron-right" : "fa-chevron-left")"></i>
+
+            <!-- Templates Section -->
+            <div class="sidebar-section">
+                <h6 class="sidebar-title">
+                    <i class="fas fa-layer-group me-2"></i>Quick Templates
+                </h6>
+                <div class="template-quick-list">
+                    @foreach (var template in dashboardTemplates.Take(3))
+                    {
+                        <div class="template-quick-item" @onclick="() => ApplyTemplate(template)">
+                            <i class="@template.Icon"></i>
+                            <span>@template.Name</span>
+                        </div>
+                    }
+                    <button class="btn btn-link btn-sm" @onclick="OpenTemplateSelector">
+                        View All Templates →
+                    </button>
+                </div>
             </div>
-            
-            @if (!_leftPanelCollapsed)
-            {
-                <div class="db-panel-header">
-                    <div class="db-panel-tabs">
-                        <button class="db-panel-tab @(_leftPanelTab == "components" ? "active" : "")"
-                                @onclick='() => _leftPanelTab = "components"'>
-                            <i class="fas fa-shapes"></i>
-                            <span>Components</span>
+        </div>
+
+        <!-- Center: Canvas Area -->
+        <div class="builder-canvas-container">
+            <div class="builder-canvas-toolbar">
+                <div class="toolbar-left">
+                    <div class="btn-group me-2">
+                        <button class="btn btn-sm btn-outline-secondary" title="Zoom Out" @onclick="ZoomOut">
+                            <i class="fas fa-search-minus"></i>
                         </button>
-                        <button class="db-panel-tab @(_leftPanelTab == "templates" ? "active" : "")"
-                                @onclick='() => _leftPanelTab = "templates"'>
-                            <i class="fas fa-layer-group"></i>
-                            <span>Templates</span>
+                        <button class="btn btn-sm btn-outline-secondary px-3">@(Math.Round(zoomLevel * 100))%</button>
+                        <button class="btn btn-sm btn-outline-secondary" title="Zoom In" @onclick="ZoomIn">
+                            <i class="fas fa-search-plus"></i>
                         </button>
-                    </div>
-                </div>
-                
-                <div class="db-panel-body">
-                    @if (_leftPanelTab == "components")
-                    {
-                        <!-- Search -->
-                        <div class="db-search">
-                            <i class="fas fa-search"></i>
-                            <input type="text" 
-                                   placeholder="Search components..." 
-                                   @bind="_componentSearch"
-                                   @bind:event="oninput" />
-                            @if (!string.IsNullOrEmpty(_componentSearch))
-                            {
-                                <button class="db-search-clear" @onclick='() => _componentSearch = ""'>
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            }
-                        </div>
-                        
-                        <!-- Component Categories -->
-                        <div class="db-component-list">
-                            @foreach (var category in GetFilteredCategories())
-                            {
-                                <div class="db-component-category @(_expandedCategories.Contains(category.Name) ? "expanded" : "")">
-                                    <div class="db-category-header" @onclick="() => ToggleCategory(category.Name)">
-                                        <div class="db-category-info">
-                                            <i class="@category.Icon db-category-icon"></i>
-                                            <span>@category.Name</span>
-                                            <span class="db-category-count">@category.Components.Count()</span>
-                                        </div>
-                                        <i class="fas fa-chevron-down db-category-arrow"></i>
-                                    </div>
-                                    
-                                    @if (_expandedCategories.Contains(category.Name))
-                                    {
-                                        <div class="db-category-content">
-                                            @foreach (var comp in category.Components)
-                                            {
-                                                <div class="db-component-card"
-                                                     draggable="true"
-                                                     @ondragstart="async () => await StartDragWithJS(comp)"
-                                                     @ondragend="async () => await EndDragWithJS()"
-                                                     @onclick="() => AddComponent(comp)">
-                                                    <div class="db-component-icon" style="background: @comp.Color;">
-                                                        <i class="@comp.Icon"></i>
-                                                    </div>
-                                                    <div class="db-component-details">
-                                                        <span class="db-component-name">@comp.Name</span>
-                                                        <span class="db-component-desc">@comp.Description</span>
-                                                    </div>
-                                                    <div class="db-component-add">
-                                                        <i class="fas fa-plus"></i>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <!-- Templates -->
-                        <div class="db-templates-grid">
-                            @foreach (var template in _templates)
-                            {
-                                <div class="db-template-card" @onclick="() => ApplyTemplate(template)">
-                                    <div class="db-template-preview" style="background: @template.PreviewGradient;">
-                                        <i class="@template.Icon"></i>
-                                    </div>
-                                    <div class="db-template-info">
-                                        <span class="db-template-name">@template.Name</span>
-                                        <span class="db-template-desc">@template.ComponentCount components</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
-            }
-        </aside>
-        
-        <!-- ========== CENTER: CANVAS ========== -->
-        <main class="db-canvas-container">
-            <!-- Canvas Toolbar -->
-            <div class="db-canvas-toolbar">
-                <div class="db-toolbar-left">
-                    <!-- Zoom Controls -->
-                    <div class="db-zoom-control">
-                        <button class="db-btn-icon-sm" @onclick="ZoomOut" disabled="@(_zoom <= 0.25)">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <div class="db-zoom-slider">
-                            <input type="range" min="25" max="200" @bind="_zoomPercent" @bind:event="oninput" />
-                        </div>
-                        <button class="db-btn-icon-sm" @onclick="ZoomIn" disabled="@(_zoom >= 2)">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <span class="db-zoom-value">@(_zoomPercent)%</span>
-                        <button class="db-btn-icon-sm" @onclick="ResetZoom" title="Reset Zoom">
+                        <button class="btn btn-sm btn-outline-secondary" title="Reset Zoom" @onclick="ResetZoom">
                             <i class="fas fa-compress-arrows-alt"></i>
                         </button>
                     </div>
-                    
-                    <div class="db-toolbar-divider"></div>
-                    
-                    <!-- Grid Toggle -->
-                    <label class="db-toggle">
-                        <input type="checkbox" @bind="_showGrid" />
-                        <span class="db-toggle-track">
-                            <span class="db-toggle-thumb"></span>
-                        </span>
-                        <span class="db-toggle-label">
-                            <i class="fas fa-th"></i> Grid
-                        </span>
-                    </label>
-                    
-                    <!-- Snap Toggle -->
-                    <label class="db-toggle">
-                        <input type="checkbox" @bind="_snapToGrid" />
-                        <span class="db-toggle-track">
-                            <span class="db-toggle-thumb"></span>
-                        </span>
-                        <span class="db-toggle-label">
-                            <i class="fas fa-magnet"></i> Snap
-                        </span>
-                    </label>
+                    <div class="form-check form-switch ms-2">
+                        <input class="form-check-input" type="checkbox" checked="@showGrid" @onchange="HandleGridToggle" id="showGridSwitch">
+                        <label class="form-check-label" for="showGridSwitch">Show Grid</label>
+                    </div>
                 </div>
-                
-                <div class="db-toolbar-center">
-                    <span class="db-canvas-size">
-                        <i class="fas fa-vector-square"></i>
-                        12 columns × @(GetCanvasRows()) rows
-                    </span>
+
+                <div class="toolbar-center">
+                    @if (selectedDatabaseId > 0)
+                    {
+                        <div class="selected-db-badge">
+                            <i class="fas fa-database"></i>
+                            <span>@GetSelectedDatabaseName()</span>
+                        </div>
+                    }
                 </div>
-                
-                <div class="db-toolbar-right">
-                    <button class="db-btn-icon-sm" @onclick="AddRow" title="Add Row">
-                        <i class="fas fa-plus"></i>
-                        <span>Add Row</span>
-                    </button>
-                    
-                    <div class="db-toolbar-divider"></div>
-                    
-                    <button class="db-btn-icon-sm db-text-danger" @onclick="ClearCanvas" title="Clear All">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Canvas Wrapper -->
-            <div class="db-canvas-wrapper">
-                <div class="db-canvas-scroll" style="transform: scale(@_zoom); transform-origin: top center;">
-                    <div class="db-canvas @(_showGrid ? "show-grid" : "") @(_deviceMode)"
-                         @ref="_canvasRef"
-                         @ondragover="HandleDragOver"
-                         @ondragover:preventDefault="true"
-                         @ondrop="HandleDrop"
-                         @ondrop:preventDefault="true"
-                         @onclick="DeselectAll">
-                        
-                        @if (!_components.Any())
-                        {
-                            <!-- Empty State -->
-                            <div class="db-canvas-empty">
-                                <div class="db-empty-animation">
-                                    <div class="db-empty-icon">
-                                        <i class="fas fa-layer-group"></i>
-                                    </div>
-                                    <div class="db-empty-circles">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
-                                </div>
-                                <h2>Start Building Your Dashboard</h2>
-                                <p>Drag and drop components from the left panel, or choose a template to get started quickly.</p>
-                                <div class="db-empty-actions">
-                                    <button class="db-btn db-btn-primary db-btn-lg" @onclick="ShowAIBuilder">
-                                        <i class="fas fa-magic"></i>
-                                        <span>Generate with AI</span>
-                                    </button>
-                                    <button class="db-btn db-btn-secondary db-btn-lg" @onclick='() => _leftPanelTab = "templates"'>
-                                        <i class="fas fa-th-large"></i>
-                                        <span>Browse Templates</span>
-                                    </button>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <!-- Grid with Components -->
-                            <div class="db-grid" style="grid-template-rows: repeat(@(_canvasRows), minmax(80px, auto));">
-                                @foreach (var comp in _components.OrderBy(c => c.GridY).ThenBy(c => c.GridX))
-                                {
-                                    <div class="db-grid-item @(comp.Id == _selectedComponentId ? "selected" : "") @(comp.IsHovered ? "hovered" : "")"
-                                         style="grid-column: @(comp.GridX + 1) / span @comp.GridWidth; 
-                                                grid-row: @(comp.GridY + 1) / span @comp.GridHeight;
-                                                --item-color: @comp.Color;"
-                                         @onclick="() => SelectComponent(comp.Id)"
-                                         @onclick:stopPropagation="true"
-                                         @onmouseenter="() => comp.IsHovered = true"
-                                         @onmouseleave="() => comp.IsHovered = false"
-                                         @key="comp.Id">
-                                        
-                                        <!-- Component Header (Drag Handle) -->
-                                        <div class="db-item-header"
-                                             draggable="true"
-                                             @ondragstart="async () => await StartDragExistingWithJS(comp)"
-                                             @ondragend="async () => await EndDragWithJS()">
-                                            <div class="db-item-drag">
-                                                <i class="fas fa-grip-vertical"></i>
-                                            </div>
-                                            <span class="db-item-title">@comp.Title</span>
-                                            <div class="db-item-actions">
-                                                <button class="db-btn-micro" @onclick="() => DuplicateComponent(comp)" @onclick:stopPropagation="true" title="Duplicate">
-                                                    <i class="fas fa-copy"></i>
-                                                </button>
-                                                <button class="db-btn-micro" @onclick="() => DeleteComponent(comp)" @onclick:stopPropagation="true" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Component Content -->
-                                        <div class="db-item-content">
-                                            @RenderComponent(comp)
-                                        </div>
-                                        
-                                        <!-- Resize Handles -->
-                                        @if (comp.Id == _selectedComponentId)
-                                        {
-                                            <div class="db-resize-handle db-resize-e" @onmousedown='(e) => StartResize(e, comp, "e")' @onmousedown:stopPropagation="true"></div>
-                                            <div class="db-resize-handle db-resize-s" @onmousedown='(e) => StartResize(e, comp, "s")' @onmousedown:stopPropagation="true"></div>
-                                            <div class="db-resize-handle db-resize-se" @onmousedown='(e) => StartResize(e, comp, "se")' @onmousedown:stopPropagation="true"></div>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        }
-                        
-                        <!-- Drop Zone Indicator -->
-                        @if (_isDragging)
-                        {
-                            <div class="db-drop-indicator" style="grid-column: @(_dropX + 1) / span @_draggedWidth; grid-row: @(_dropY + 1) / span @_draggedHeight;">
-                                <div class="db-drop-indicator-inner">
-                                    <i class="fas fa-plus"></i>
-                                </div>
-                            </div>
-                        }
+
+                <div class="toolbar-right">
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" title="Add Row" @onclick="AddRow">
+                            <i class="fas fa-plus"></i> Add Row
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" title="Clear Canvas" @onclick="ClearCanvas">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        </main>
-        
-        <!-- ========== RIGHT PANEL: PROPERTIES ========== -->
-        <aside class="db-panel db-panel-right @(_rightPanelCollapsed ? "collapsed" : "")">
-            <div class="db-panel-toggle" @onclick="() => _rightPanelCollapsed = !_rightPanelCollapsed">
-                <i class="fas @(_rightPanelCollapsed ? "fa-chevron-left" : "fa-chevron-right")"></i>
-            </div>
-            
-            @if (!_rightPanelCollapsed)
-            {
-                @if (_selectedComponentId > 0)
+
+            <div class="builder-canvas @(showGrid ? "show-grid" : "")" style="transform: scale(@zoomLevel);">
+                @if (!dashboard.Components.Any())
                 {
-                    var selected = _components.FirstOrDefault(c => c.Id == _selectedComponentId);
-                    if (selected != null)
-                    {
-                        <!-- Component Properties -->
-                        <div class="db-panel-header">
-                            <div class="db-selected-component">
-                                <div class="db-selected-icon" style="background: @selected.Color;">
-                                    <i class="@selected.Icon"></i>
-                                </div>
-                                <div class="db-selected-info">
-                                    <span class="db-selected-type">@selected.Type</span>
-                                    <span class="db-selected-name">@selected.Title</span>
-                                </div>
+                    <div class="empty-canvas-message">
+                        <div class="message-content">
+                            <div class="empty-icon">
+                                <i class="fas fa-shapes"></i>
+                            </div>
+                            <h4>Start Building Your Dashboard</h4>
+                            <p class="text-muted">Drag components from the library or use AI to generate components</p>
+                            <div class="empty-actions">
+                                <button class="btn btn-outline-primary me-2" @onclick="OpenTemplateSelector">
+                                    <i class="fas fa-layer-group me-1"></i>
+                                    Choose Template
+                                </button>
+                                <button class="btn btn-ai-generate" @onclick="OpenTemplateSelector">
+                                    <i class="fas fa-magic me-1"></i>
+                                    Generate with AI
+                                </button>
                             </div>
                         </div>
-                        
-                        <div class="db-panel-body">
-                            <!-- Quick Actions -->
-                            <div class="db-quick-actions">
-                                <button class="db-quick-btn" @onclick="() => DuplicateComponent(selected)" title="Duplicate">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                                <button class="db-quick-btn" @onclick="() => MoveUp(selected)" title="Move Up" disabled="@(selected.GridY == 0)">
-                                    <i class="fas fa-arrow-up"></i>
-                                </button>
-                                <button class="db-quick-btn" @onclick="() => MoveDown(selected)" title="Move Down">
-                                    <i class="fas fa-arrow-down"></i>
-                                </button>
-                                <button class="db-quick-btn db-text-danger" @onclick="() => DeleteComponent(selected)" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Property Sections -->
-                            <div class="db-property-sections">
-                                <!-- General -->
-                                <div class="db-property-section">
-                                    <div class="db-section-header" @onclick='() => ToggleSection("general")'>
-                                        <span><i class="fas fa-cog"></i> General</span>
-                                        <i class="fas @(_expandedSections.Contains("general") ? "fa-chevron-up" : "fa-chevron-down")"></i>
-                                    </div>
-                                    @if (_expandedSections.Contains("general"))
-                                    {
-                                        <div class="db-section-content">
-                                            <div class="db-field">
-                                                <label>Title</label>
-                                                <input type="text" @bind="selected.Title" @bind:after="MarkChanged" />
-                                            </div>
-                                            <div class="db-field">
-                                                <label>Description</label>
-                                                <textarea rows="2" @bind="selected.Description" @oninput="MarkChanged"></textarea>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                                
-                                <!-- Layout -->
-                                <div class="db-property-section">
-                                    <div class="db-section-header" @onclick='() => ToggleSection("layout")'>
-                                        <span><i class="fas fa-expand-arrows-alt"></i> Layout</span>
-                                        <i class="fas @(_expandedSections.Contains("layout") ? "fa-chevron-up" : "fa-chevron-down")"></i>
-                                    </div>
-                                    @if (_expandedSections.Contains("layout"))
-                                    {
-                                        <div class="db-section-content">
-                                            <div class="db-field-row">
-                                                <div class="db-field db-field-half">
-                                                    <label>Width</label>
-                                                    <div class="db-number-input">
-                                                        <button @onclick="() => { selected.GridWidth = Math.Max(1, selected.GridWidth - 1); MarkChanged(); }">-</button>
-                                                        <input type="number" min="1" max="12" @bind="selected.GridWidth" @oninput="MarkChanged" />
-                                                        <button @onclick="() => { selected.GridWidth = Math.Min(12, selected.GridWidth + 1); MarkChanged(); }">+</button>
-                                                    </div>
-                                                </div>
-                                                <div class="db-field db-field-half">
-                                                    <label>Height</label>
-                                                    <div class="db-number-input">
-                                                        <button @onclick="() => { selected.GridHeight = Math.Max(1, selected.GridHeight - 1); MarkChanged(); }">-</button>
-                                                        <input type="number" min="1" max="8" @bind="selected.GridHeight" @oninput="MarkChanged" />
-                                                        <button @onclick="() => { selected.GridHeight = Math.Min(8, selected.GridHeight + 1); MarkChanged(); }">+</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="db-field-row">
-                                                <div class="db-field db-field-half">
-                                                    <label>Column (X)</label>
-                                                    <input type="number" min="0" max="11" @bind="selected.GridX" @oninput="MarkChanged" />
-                                                </div>
-                                                <div class="db-field db-field-half">
-                                                    <label>Row (Y)</label>
-                                                    <input type="number" min="0" @bind="selected.GridY" @oninput="MarkChanged" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                                
-                                <!-- Appearance -->
-                                <div class="db-property-section">
-                                    <div class="db-section-header" @onclick='() => ToggleSection("appearance")'>
-                                        <span><i class="fas fa-palette"></i> Appearance</span>
-                                        <i class="fas @(_expandedSections.Contains("appearance") ? "fa-chevron-up" : "fa-chevron-down")"></i>
-                                    </div>
-                                    @if (_expandedSections.Contains("appearance"))
-                                    {
-                                        <div class="db-section-content">
-                                            <div class="db-field">
-                                                <label>Color Theme</label>
-                                                <div class="db-color-picker">
-                                                    @foreach (var color in _colorOptions)
-                                                    {
-                                                        <button class="db-color-option @(selected.Color == color ? "selected" : "")"
-                                                                style="background: @color;"
-                                                                @onclick="() => { selected.Color = color; MarkChanged(); }">
-                                                            @if (selected.Color == color)
-                                                            {
-                                                                <i class="fas fa-check"></i>
-                                                            }
-                                                        </button>
-                                                    }
-                                                </div>
-                                            </div>
-                                            <div class="db-field">
-                                                <label>Border Radius</label>
-                                                <input type="range" min="0" max="24" @bind="selected.BorderRadius" @oninput="MarkChanged" />
-                                                <span class="db-range-value">@(selected.BorderRadius)px</span>
-                                            </div>
-                                            <div class="db-field">
-                                                <label>Shadow</label>
-                                                <select @bind="selected.Shadow" @bind:after="MarkChanged">
-                                                    <option value="none">None</option>
-                                                    <option value="sm">Small</option>
-                                                    <option value="md">Medium</option>
-                                                    <option value="lg">Large</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                                
-                                <!-- Data (for Charts/Tables) -->
-                                @if (selected.Type == "Chart" || selected.Type == "Table")
-                                {
-                                    <div class="db-property-section">
-                                        <div class="db-section-header" @onclick='() => ToggleSection("data")'>
-                                            <span><i class="fas fa-database"></i> Data</span>
-                                            <i class="fas @(_expandedSections.Contains("data") ? "fa-chevron-up" : "fa-chevron-down")"></i>
-                                        </div>
-                                        @if (_expandedSections.Contains("data"))
-                                        {
-                                            <div class="db-section-content">
-                                                <div class="db-field">
-                                                    <label>Data Source</label>
-                                                    <select @bind="selected.Shadow" @bind:after="MarkChanged">
-                                                        <option value="0">-- Select --</option>
-                                                        <option value="1">Sales Database</option>
-                                                        <option value="2">Analytics Database</option>
-                                                        <option value="3">Test Automation DB</option>
-                                                    </select>
-                                                </div>
-                                                <div class="db-field">
-                                                    <label>Query</label>
-                                                    <textarea rows="3" class="db-code-input" @bind="selected.Query" @oninput="MarkChanged"
-                                                              placeholder="SELECT * FROM ..."></textarea>
-                                                </div>
-                                                <button class="db-btn db-btn-sm db-btn-secondary">
-                                                    <i class="fas fa-play"></i> Test Query
-                                                </button>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                                
-                                <!-- Chart Options -->
-                                @if (selected.Type == "Chart")
-                                {
-                                    <div class="db-property-section">
-                                        <div class="db-section-header" @onclick='() => ToggleSection("chartOptions")'>
-                                            <span><i class="fas fa-chart-bar"></i> Chart Options</span>
-                                            <i class="fas @(_expandedSections.Contains("chartOptions") ? "fa-chevron-up" : "fa-chevron-down")"></i>
-                                        </div>
-                                        @if (_expandedSections.Contains("chartOptions"))
-                                        {
-                                            <div class="db-section-content">
-                                                <div class="db-field">
-                                                    <label>Chart Type</label>
-                                                    <div class="db-chart-type-picker">
-                                                        <button class='@(selected.ChartType == "bar" ? "active" : "")'
-                                                                @onclick='() => { selected.ChartType = "bar"; MarkChanged(); }'>
-                                                            <i class="fas fa-chart-bar"></i>
-                                                        </button>
-                                                        <button class='@(selected.ChartType == "line" ? "active" : "")'
-                                                                @onclick='() => { selected.ChartType = "line"; MarkChanged(); }'>
-                                                            <i class="fas fa-chart-line"></i>
-                                                        </button>
-                                                        <button class='@(selected.ChartType == "area" ? "active" : "")'
-                                                                @onclick='() => { selected.ChartType = "area"; MarkChanged(); }'>
-                                                            <i class="fas fa-chart-area"></i>
-                                                        </button>
-                                                        <button class='@(selected.ChartType == "pie" ? "active" : "")'
-                                                                @onclick='() => { selected.ChartType = "pie"; MarkChanged(); }'>
-                                                            <i class="fas fa-chart-pie"></i>
-                                                        </button>
-                                                        <button class='@(selected.ChartType == "donut" ? "active" : "")'
-                                                                @onclick='() => { selected.ChartType = "donut"; MarkChanged(); }'>
-                                                            <i class="fas fa-circle-notch"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div class="db-field">
-                                                    <label class="db-checkbox">
-                                                        <input type="checkbox" @bind="selected.ShowLegend" @bind:after="MarkChanged" />
-                                                        <span>Show Legend</span>
-                                                    </label>
-                                                </div>
-                                                <div class="db-field">
-                                                    <label class="db-checkbox">
-                                                        <input type="checkbox" @bind="selected.ShowDataLabels" @bind:after="MarkChanged" />
-                                                        <span>Show Data Labels</span>
-                                                    </label>
-                                                </div>
-                                                <div class="db-field">
-                                                    <label class="db-checkbox">
-                                                        <input type="checkbox" @bind="selected.EnableAnimation" @bind:after="MarkChanged" />
-                                                        <span>Enable Animation</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
+                    </div>
                 }
                 else
                 {
-                    <!-- Dashboard Properties -->
-                    <div class="db-panel-header">
-                        <div class="db-panel-title">
-                            <i class="fas fa-sliders-h"></i>
-                            <span>Dashboard Settings</span>
-                        </div>
-                    </div>
-                    
-                    <div class="db-panel-body">
-                        <div class="db-property-sections">
-                            <!-- Basic Info -->
-                            <div class="db-property-section expanded">
-                                <div class="db-section-header">
-                                    <span><i class="fas fa-info-circle"></i> Basic Info</span>
-                                </div>
-                                <div class="db-section-content">
-                                    <div class="db-field">
-                                        <label>Dashboard Name</label>
-                                        <input type="text" @bind="_dashboardTitle" @bind:event="oninput" />
+                    <div class="dashboard-grid" style="grid-template-columns: repeat(12, 1fr); min-height: @(GetCanvasHeight())px;">
+                        @foreach (var component in dashboard.Components.Where(c => c.IsVisible).OrderBy(c => c.GridY).ThenBy(c => c.GridX))
+                        {
+                            <div class="dashboard-grid-item @(selectedComponentId == component.ComponentID ? "selected" : "") @(component.IsAIGenerated ? "ai-generated" : "")"
+                                 style="grid-column: @(component.GridX + 1) / span @component.GridWidth; grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+                                 @onclick="() => SelectComponent(component.ComponentID)"
+                                 @key="component.ComponentID">
+                                <div class="component-container">
+                                    <div class="component-header">
+                                        <span class="component-title">
+                                            @if (component.IsAIGenerated)
+                                            {
+                                                <i class="fas fa-magic ai-indicator" title="AI Generated"></i>
+                                            }
+                                            @component.Title
+                                        </span>
+                                        <div class="component-controls">
+                                            <button class="btn btn-icon" title="Delete"
+                                                    @onclick="() => RemoveComponentById(component.ComponentID)"
+                                                    @onclick:stopPropagation="true">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="db-field">
-                                        <label>Description</label>
-                                        <textarea rows="3" @bind="_dashboardDescription"></textarea>
+                                    <div class="component-content">
+                                        @switch (component.DataViewingTypeID)
+                                        {
+                                            case (int)DataViewingTypeEnum.Number:
+                                                <div class="component-preview kpi-preview">
+                                                    <div class="kpi-value">@GetMockKPIValue(component)</div>
+                                                    <div class="kpi-label">@component.Title</div>
+                                                    <div class="kpi-trend positive">
+                                                        <i class="fas fa-arrow-up"></i> 12.5%
+                                                    </div>
+                                                </div>
+                                                break;
+                                            case (int)DataViewingTypeEnum.Chart:
+                                                <div class="component-preview chart-preview">
+                                                    <div class="mock-chart-bars">
+                                                        <div class="bar" style="height: 60%"></div>
+                                                        <div class="bar" style="height: 80%"></div>
+                                                        <div class="bar" style="height: 45%"></div>
+                                                        <div class="bar" style="height: 90%"></div>
+                                                        <div class="bar" style="height: 70%"></div>
+                                                        <div class="bar" style="height: 55%"></div>
+                                                    </div>
+                                                </div>
+                                                break;
+                                            case (int)DataViewingTypeEnum.Table:
+                                                <div class="component-preview table-preview">
+                                                    <i class="fas fa-table"></i>
+                                                    <span>Data Table</span>
+                                                </div>
+                                                break;
+                                            default:
+                                                <div class="component-preview default-preview">
+                                                    <i class="fas fa-chart-bar"></i>
+                                                    <span>Component</span>
+                                                </div>
+                                                break;
+                                        }
                                     </div>
-                                    <div class="db-field">
-                                        <label>Category</label>
-                                        <select @bind="_dashboardCategory">
-                                            <option value="">-- Select --</option>
-                                            <option value="sales">Sales & Revenue</option>
-                                            <option value="marketing">Marketing</option>
-                                            <option value="operations">Operations</option>
-                                            <option value="hr">Human Resources</option>
-                                            <option value="finance">Finance</option>
-                                            <option value="custom">Custom</option>
-                                        </select>
-                                    </div>
-                                    <div class="db-field">
-                                        <label>Tags</label>
-                                        <input type="text" @bind="_dashboardTags" placeholder="sales, monthly, kpi" />
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Settings -->
-                            <div class="db-property-section expanded">
-                                <div class="db-section-header">
-                                    <span><i class="fas fa-cog"></i> Settings</span>
-                                </div>
-                                <div class="db-section-content">
-                                    <div class="db-field">
-                                        <label>Auto Refresh</label>
-                                        <select @bind="_autoRefresh">
-                                            <option value="0">Disabled</option>
-                                            <option value="30">Every 30 seconds</option>
-                                            <option value="60">Every 1 minute</option>
-                                            <option value="300">Every 5 minutes</option>
-                                            <option value="600">Every 10 minutes</option>
-                                        </select>
-                                    </div>
-                                    <div class="db-field">
-                                        <label>Visibility</label>
-                                        <select @bind="_visibility">
-                                            <option value="private">Private (Only me)</option>
-                                            <option value="team">Team</option>
-                                            <option value="public">Public</option>
-                                        </select>
-                                    </div>
-                                    <div class="db-field">
-                                        <label class="db-checkbox">
-                                            <input type="checkbox" @bind="_enableFilters" />
-                                            <span>Enable Global Filters</span>
-                                        </label>
-                                    </div>
-                                    <div class="db-field">
-                                        <label class="db-checkbox">
-                                            <input type="checkbox" @bind="_enableExport" />
-                                            <span>Allow Export</span>
-                                        </label>
-                                    </div>
+                                    @if (component.IsAIGenerated && !string.IsNullOrEmpty(component.QueryText))
+                                    {
+                                        <div class="sql-badge" title="Click to view SQL"
+                                             @onclick="() => ShowSQLPreview(component)"
+                                             @onclick:stopPropagation="true">
+                                            <i class="fas fa-code"></i>
+                                        </div>
+                                    }
                                 </div>
                             </div>
-                        </div>
+                        }
                     </div>
                 }
+            </div>
+        </div>
+
+        <!-- Right Sidebar: Properties Panel -->
+        <div class="builder-sidebar builder-sidebar-right">
+            @if (selectedComponentId > 0 && GetSelectedComponent() != null)
+            {
+                var selectedComponent = GetSelectedComponent();
+                <div class="property-panel">
+                    <div class="panel-header">
+                        <h6>
+                            <i class="fas fa-sliders-h me-2"></i>
+                            Component Properties
+                        </h6>
+                        <button class="btn btn-icon" @onclick="DeselectComponent">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="panel-body">
+                        <!-- Basic Info -->
+                        <div class="property-section">
+                            <div class="section-header">Basic Info</div>
+                            <div class="property-group">
+                                <label>Title</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       value="@selectedComponent.Title"
+                                       @onchange="e => UpdateComponentTitle(selectedComponent, e)" />
+                            </div>
+                            <div class="property-group">
+                                <label>Description</label>
+                                <textarea class="form-control form-control-sm" rows="2"
+                                          @onchange="e => UpdateComponentDescription(selectedComponent, e)">@selectedComponent.Description</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Position & Size -->
+                        <div class="property-section">
+                            <div class="section-header">Position & Size</div>
+                            <div class="property-row">
+                                <div class="property-group half">
+                                    <label>Width</label>
+                                    <input type="number" class="form-control form-control-sm"
+                                           value="@selectedComponent.GridWidth" min="1" max="12"
+                                           @onchange="e => UpdateComponentWidth(selectedComponent, e)" />
+                                </div>
+                                <div class="property-group half">
+                                    <label>Height</label>
+                                    <input type="number" class="form-control form-control-sm"
+                                           value="@selectedComponent.GridHeight" min="1" max="8"
+                                           @onchange="e => UpdateComponentHeight(selectedComponent, e)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Source -->
+                        @if (!string.IsNullOrEmpty(selectedComponent.QueryText))
+                        {
+                            <div class="property-section">
+                                <div class="section-header">Data Source</div>
+                                <div class="property-group">
+                                    <label>SQL Query</label>
+                                    <div class="sql-editor">
+                                        <pre>@selectedComponent.QueryText</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (selectedComponent.IsAIGenerated)
+                        {
+                            <div class="ai-generated-badge">
+                                <i class="fas fa-magic"></i>
+                                <span>AI Generated Component</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="panel-footer">
+                        <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveComponentById(selectedComponent.ComponentID)">
+                            <i class="fas fa-trash-alt me-1"></i> Delete
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DuplicateComponent(selectedComponent)">
+                            <i class="fas fa-clone me-1"></i> Duplicate
+                        </button>
+                    </div>
+                </div>
             }
-        </aside>
+            else
+            {
+                <!-- Dashboard Settings -->
+                <div class="dashboard-settings-panel">
+                    <div class="panel-header">
+                        <h6>
+                            <i class="fas fa-cog me-2"></i>
+                            Dashboard Settings
+                        </h6>
+                    </div>
+
+                    <div class="panel-body">
+                        <div class="property-section">
+                            <div class="section-header">General</div>
+                            <div class="property-group">
+                                <label>Title</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       value="@dashboard.Title"
+                                       @onchange="HandleDashboardTitleChange" />
+                            </div>
+                            <div class="property-group">
+                                <label>Description</label>
+                                <textarea class="form-control form-control-sm" rows="3"
+                                          @onchange="HandleDashboardDescriptionChange">@dashboard.Description</textarea>
+                            </div>
+                        </div>
+
+                        <div class="property-section">
+                            <div class="section-header">Data Source</div>
+                            <div class="property-group">
+                                <label>Database</label>
+                                <select class="form-select form-select-sm" value="@selectedDatabaseId" @onchange="HandleDatabaseSelection">
+                                    <option value="0">-- Select Database --</option>
+                                    @foreach (var db in availableDatabases)
+                                    {
+                                        <option value="@db.DatabaseID">@db.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="property-section">
+                            <div class="section-header">Category</div>
+                            <div class="property-group">
+                                <label>Dashboard Category</label>
+                                <select class="form-select form-select-sm" value="@dashboard.CategoryID" @onchange="HandleCategoryChange">
+                                    @foreach (var cat in availableCategories)
+                                    {
+                                        <option value="@cat.CategoryID">@cat.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
-    
-    <!-- ==================== AI BUILDER MODAL ==================== -->
-    @if (_showAIModal)
+
+    <!-- Template Selector Modal -->
+    @if (showTemplateSelector)
     {
-        <div class="db-modal-overlay" @onclick="() => _showAIModal = false">
-            <div class="db-modal db-modal-lg" @onclick:stopPropagation="true">
-                <div class="db-modal-header">
-                    <div class="db-modal-title">
-                        <i class="fas fa-magic"></i>
-                        <span>AI Dashboard Generator</span>
-                    </div>
-                    <button class="db-btn-icon" @onclick="() => _showAIModal = false">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="db-modal-body">
-                    <div class="db-ai-prompt">
-                        <label>Describe the dashboard you want to create:</label>
-                        <textarea rows="4" @bind="_aiPrompt" 
-                                  placeholder="Example: Create a sales dashboard showing monthly revenue, top products, customer distribution by region, and recent orders table"></textarea>
-                    </div>
-                    <div class="db-ai-options">
-                        <div class="db-field">
-                            <label>Data Source</label>
-                            <select @bind="_aiDataSource">
-                                <option value="1">Sales Database</option>
-                                <option value="2">Analytics Database</option>
-                                <option value="3">Test Automation DB</option>
-                            </select>
+        <div class="modal-overlay" @onclick="CloseTemplateSelector"></div>
+        <div class="template-selector-modal">
+            <div class="modal-header">
+                <h5>
+                    <i class="fas fa-layer-group me-2"></i>
+                    Choose a Template
+                </h5>
+                <button class="btn btn-icon" @onclick="CloseTemplateSelector">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-subtitle">Select a layout template to start building your dashboard</p>
+
+                <div class="template-grid">
+                    @foreach (var template in dashboardTemplates)
+                    {
+                        <div class="template-card @(selectedTemplate?.Id == template.Id ? "selected" : "")"
+                             @onclick="() => SelectTemplate(template)">
+                            <div class="template-preview">
+                                <div class="template-layout @template.LayoutClass">
+                                    @foreach (var slot in template.ComponentSlots)
+                                    {
+                                        <div class="slot-preview @slot.Type.ToLower()"
+                                             style="grid-column: span @slot.GridWidth; grid-row: span @slot.GridHeight;">
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="template-info">
+                                <span class="template-name">@template.Name</span>
+                                <span class="template-slots-count">@template.ComponentSlots.Count components</span>
+                            </div>
+                            @if (selectedTemplate?.Id == template.Id)
+                            {
+                                <div class="selected-indicator">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            }
                         </div>
-                        <div class="db-field">
-                            <label>Style</label>
-                            <select @bind="_aiStyle">
-                                <option value="modern">Modern</option>
-                                <option value="minimal">Minimal</option>
-                                <option value="corporate">Corporate</option>
-                                <option value="vibrant">Vibrant</option>
-                            </select>
-                        </div>
-                    </div>
+                    }
                 </div>
-                <div class="db-modal-footer">
-                    <button class="db-btn db-btn-secondary" @onclick="() => _showAIModal = false">Cancel</button>
-                    <button class="db-btn db-btn-primary" @onclick="GenerateWithAI">
-                        <i class="fas fa-magic"></i>
-                        <span>Generate Dashboard</span>
-                    </button>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" @onclick="CloseTemplateSelector">Cancel</button>
+                <button class="btn btn-primary" @onclick="ConfirmTemplateSelection" disabled="@(selectedTemplate == null)">
+                    <i class="fas fa-check me-1"></i>
+                    Use Template
+                </button>
+                <button class="btn btn-ai-generate" @onclick="OpenAIPanel" disabled="@(selectedTemplate == null || selectedDatabaseId == 0)">
+                    <i class="fas fa-magic me-1"></i>
+                    Generate with AI
+                </button>
+            </div>
+
+            @if (selectedDatabaseId == 0)
+            {
+                <div class="db-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Please select a database in Dashboard Settings to use AI generation</span>
                 </div>
+            }
+        </div>
+    }
+
+    <!-- SQL Preview Modal -->
+    @if (showSQLModal)
+    {
+        <div class="modal-overlay" @onclick="CloseSQLModal"></div>
+        <div class="sql-modal">
+            <div class="modal-header">
+                <h5><i class="fas fa-code me-2"></i>SQL Query</h5>
+                <button class="btn btn-icon" @onclick="CloseSQLModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="sql-content">
+                    <pre>@sqlModalContent</pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" @onclick="CopySQLToClipboard">
+                    <i class="fas fa-copy me-1"></i> Copy
+                </button>
+                <button class="btn btn-primary" @onclick="CloseSQLModal">Close</button>
             </div>
         </div>
     }
-    
-    <!-- ==================== TOAST / NOTIFICATION ==================== -->
-    @if (_showNotification)
-    {
-        <div class="db-notification @_notificationType">
-            <i class="fas @GetNotificationIcon()"></i>
-            <span>@_notificationMessage</span>
-        </div>
-    }
+
+    <!-- AI Component Assistant Panel -->
+    <AIComponentAssistant IsOpen="@showAIPanel"
+                          IsOpenChanged="@HandleAIPanelClose"
+                          SelectedTemplate="@selectedTemplate"
+                          AvailableDatabases="@availableDatabases"
+                          OnChangeTemplateRequested="@(async () => HandleChangeTemplateRequest())"
+                          OnComponentsApplied="HandleAIComponentsApplied" />
 </div>
 
-<!-- ============================================================ -->
-<!-- COMPONENT RENDERING                                          -->
-<!-- ============================================================ -->
 @code {
-    private RenderFragment RenderComponent(CanvasComponent comp) => __builder =>
-    {
-        switch (comp.Type)
-        {
-            case "Chart":
-                <div class="db-chart-preview">
-                    @if (comp.ChartType == "pie" || comp.ChartType == "donut")
-                    {
-                        <ApexChart TItem="ChartData" Title="" Height="@((int)(comp.GridHeight * 80 - 60))">
-                            <ApexPointSeries TItem="ChartData"
-                                             Items="_pieChartData"
-                                             SeriesType="@(comp.ChartType == "donut" ? SeriesType.Donut : SeriesType.Pie)"
-                                             XValue="@(e => e.Label)"
-                                             YValue="@(e => e.Value)"
-                                             OrderBy="e => e.X" />
-                        </ApexChart>
-                    }
-                    else
-                    {
-                        <ApexChart TItem="ChartData" Title="" Height="@((int)(comp.GridHeight * 80 - 60))">
-                            <ApexPointSeries TItem="ChartData"
-                                             Items="_lineChartData"
-                                             SeriesType="@GetSeriesType(comp.ChartType)"
-                                             Name="Sales"
-                                             XValue="@(e => e.Label)"
-                                             YValue="@(e => e.Value)" />
-                        </ApexChart>
-                    }
-                </div>
-                break;
-                
-            case "KPI":
-                <div class="db-kpi-preview">
-                    <div class="db-kpi-icon" style="background: @(comp.Color)20; color: @comp.Color;">
-                        <i class="@comp.KpiIcon"></i>
-                    </div>
-                    <div class="db-kpi-content">
-                        <span class="db-kpi-value">@comp.KpiValue</span>
-                        <span class="db-kpi-label">@comp.Title</span>
-                    </div>
-                    <div class="db-kpi-trend @(comp.KpiTrend >= 0 ? "positive" : "negative")">
-                        <i class="fas @(comp.KpiTrend >= 0 ? "fa-arrow-up" : "fa-arrow-down")"></i>
-                        @Math.Abs(comp.KpiTrend)%
-                    </div>
-                </div>
-                break;
-                
-            case "Table":
-                <div class="db-table-preview">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in _sampleTableData.Take(comp.GridHeight > 2 ? 5 : 3))
-                            {
-                                <tr>
-                                    <td>@row.Name</td>
-                                    <td><span class="db-status-badge @row.StatusClass">@row.Status</span></td>
-                                    <td>@row.Value</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                break;
-                
-            case "Text":
-                <div class="db-text-preview">
-                    <p>@(string.IsNullOrEmpty(comp.TextContent) ? "Click to edit text content..." : comp.TextContent)</p>
-                </div>
-                break;
-                
-            case "Image":
-                <div class="db-image-preview">
-                    <i class="fas fa-image"></i>
-                    <span>Click to add image</span>
-                </div>
-                break;
-                
-            default:
-                <div class="db-placeholder-preview">
-                    <i class="@comp.Icon"></i>
-                    <span>@comp.Title</span>
-                </div>
-                break;
-        }
-    };
+    [Parameter]
+    public int DashboardId { get; set; }
 
-    // Add these fields at the top of your @code section
-    private DotNetObjectReference<DashboardBuilder>? _dotNetRef;
-    private ElementReference _canvasRef;
+    // ========== Core State ==========
+    private DashboardModel dashboard = new DashboardModel();
+    private List<DashboardCategory> availableCategories = new();
+    private List<Database> availableDatabases = new();
+    private List<BuilderComponentTemplate> availableComponents = new();
+    private int selectedDatabaseId;
 
-    // Add this lifecycle method
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("DashboardBuilder.init");
-            await JSRuntime.InvokeVoidAsync("DashboardBuilder.setupKeyboardShortcuts", _dotNetRef);
-        }
-    }
+    private int selectedComponentId;
+    private string activeTab = "design";
+    private bool isEditingTitle;
+    private string componentSearchTerm = "";
+    private HashSet<string> expandedCategories = new() { "Charts", "KPIs", "Data Display" };
 
-    // Add these JS callback methods
-    [JSInvokable]
-    public void OnKeyboardSave()
-    {
-        SaveDashboard();
-        StateHasChanged();
-    }
+    // ========== Canvas State ==========
+    private bool showGrid = true;
+    private double zoomLevel = 1.0;
+    private bool isDragging;
 
-    [JSInvokable]
-    public void OnKeyboardUndo()
-    {
-        Undo();
-        StateHasChanged();
-    }
+    // ========== History (Undo/Redo) ==========
+    private List<string> history = new();
+    private int historyIndex = -1;
+    private bool canUndo => historyIndex > 0;
+    private bool canRedo => historyIndex < history.Count - 1;
 
-    [JSInvokable]
-    public void OnKeyboardRedo()
-    {
-        Redo();
-        StateHasChanged();
-    }
+    // ========== AI Panel State ==========
+    private bool showAIPanel;
+    private bool showTemplateSelector;
+    private BuilderDashboardTemplate selectedTemplate;
+    private List<BuilderDashboardTemplate> dashboardTemplates = new();
 
-    [JSInvokable]
-    public void OnKeyboardDelete()
+    // ========== SQL Modal State ==========
+    private bool showSQLModal;
+    private string sqlModalContent = "";
+
+    // ========== Other State ==========
+    private bool hasUnsavedChanges;
+
+    // ========== Lifecycle ==========
+    protected override void OnInitialized()
     {
-        if (_selectedComponentId > 0)
-        {
-            var comp = _components.FirstOrDefault(c => c.Id == _selectedComponentId);
-            if (comp != null)
+        InitializeTemplates();
+        InitializeComponents();
+        LoadDatabases();
+        LoadCategories();
+
+        dashboard = new DashboardModel
             {
-                DeleteComponent(comp);
-                StateHasChanged();
-            }
-        }
+                Title = "New MOI Dashboard",
+                Description = "Public services performance dashboard",
+                Components = new List<DashboardComponent>(),
+                CreatedAt = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow,
+                SharingStatus = DashboardSharingStatus.Private,
+                ValidationStatus = DashboardValidationStatus.Draft,
+                Tags = new List<string>()
+            };
+        AddToHistory();
     }
 
-    [JSInvokable]
-    public void OnKeyboardDuplicate()
+    // ========== Data Loading ==========
+    private void LoadDatabases()
     {
-        if (_selectedComponentId > 0)
+        availableDatabases = new List<Database>
         {
-            var comp = _components.FirstOrDefault(c => c.Id == _selectedComponentId);
-            if (comp != null)
-            {
-                DuplicateComponent(comp);
-                StateHasChanged();
-            }
-        }
+            new Database { DatabaseID = 1, Name = "MOI Services Database", IsActive = true },
+            new Database { DatabaseID = 2, Name = "Traffic Management System", IsActive = true },
+            new Database { DatabaseID = 3, Name = "Citizen Portal Database", IsActive = true },
+            new Database { DatabaseID = 4, Name = "HR & Administration", IsActive = true }
+        };
     }
 
-    [JSInvokable]
-    public void OnComponentResized(int componentId, int newWidth, int newHeight)
+    private void LoadCategories()
     {
-        var comp = _components.FirstOrDefault(c => c.Id == componentId);
-        if (comp != null)
+        availableCategories = new List<DashboardCategory>
         {
-            comp.GridWidth = newWidth;
-            comp.GridHeight = newHeight;
-            SaveToHistory();
-            MarkChanged();
-            StateHasChanged();
-        }
+            new DashboardCategory { CategoryID = 1, Name = "Operations", IsActive = true },
+            new DashboardCategory { CategoryID = 2, Name = "Performance", IsActive = true },
+            new DashboardCategory { CategoryID = 3, Name = "Citizen Services", IsActive = true },
+            new DashboardCategory { CategoryID = 4, Name = "Executive", IsActive = true }
+        };
     }
 
-    // Cleanup
-    public void Dispose()
+    private void InitializeTemplates()
     {
-        _dotNetRef?.Dispose();
-    }
-
-}
-@* ============================================================ *@
-@* CODE SECTION - ALL LOGIC, STATE & INTERACTIVITY              *@
-@* ============================================================ *@
-
-@code {
-    // ==================== PARAMETERS ====================
-    [Parameter] public int DashboardId { get; set; }
-
-    // ==================== STATE ====================
-    // Header State
-    private string _dashboardTitle = "My Awesome Dashboard";
-    private string _dashboardDescription = "";
-    private string _dashboardCategory = "sales";
-    private string _dashboardTags = "";
-    private bool _isEditingTitle = false;
-    private bool _hasUnsavedChanges = false;
-    private string _activeView = "design";
-    private string _deviceMode = "desktop";
-    private bool _darkMode = false;
-    private bool _showMoreMenu = false;
-
-    // Panel State
-    private bool _leftPanelCollapsed = false;
-    private bool _rightPanelCollapsed = false;
-    private string _leftPanelTab = "components";
-    private string _componentSearch = "";
-    private HashSet<string> _expandedCategories = new() { "Charts", "Data Display" };
-    private HashSet<string> _expandedSections = new() { "general", "layout", "appearance" };
-
-    // Canvas State
-    private double _zoom = 1.0;
-    private int _zoomPercent = 100;
-    private bool _showGrid = true;
-    private bool _snapToGrid = true;
-    private int _canvasRows = 6;
-
-    // Drag & Drop State
-    private bool _isDragging = false;
-    private ComponentTemplate? _draggedTemplate = null;
-    private CanvasComponent? _draggedComponent = null;
-    private int _draggedWidth = 4;
-    private int _draggedHeight = 2;
-    private int _dropX = 0;
-    private int _dropY = 0;
-
-    // Selection State
-    private int _selectedComponentId = 0;
-
-    // Component Data
-    private List<CanvasComponent> _components = new();
-    private int _nextComponentId = 1;
-
-    // Dashboard Settings
-    private int _autoRefresh = 0;
-    private string _visibility = "private";
-    private bool _enableFilters = true;
-    private bool _enableExport = true;
-
-    // AI Modal State
-    private bool _showAIModal = false;
-    private string _aiPrompt = "";
-    private int _aiDataSource = 1;
-    private string _aiStyle = "modern";
-
-    // Notification State
-    private bool _showNotification = false;
-    private string _notificationMessage = "";
-    private string _notificationType = "success";
-
-    // History for Undo/Redo
-    private Stack<string> _undoStack = new();
-    private Stack<string> _redoStack = new();
-
-    // Color Options
-    private List<string> _colorOptions = new()
-    {
-        "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
-        "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1"
-    };
-
-    // ==================== SAMPLE DATA ====================
-    private List<ChartData> _lineChartData = new()
-    {
-        new ChartData { Label = "Jan", Value = 65 },
-        new ChartData { Label = "Feb", Value = 78 },
-        new ChartData { Label = "Mar", Value = 52 },
-        new ChartData { Label = "Apr", Value = 91 },
-        new ChartData { Label = "May", Value = 83 },
-        new ChartData { Label = "Jun", Value = 107 }
-    };
-
-    private List<ChartData> _pieChartData = new()
-    {
-        new ChartData { Label = "Product A", Value = 35 },
-        new ChartData { Label = "Product B", Value = 25 },
-        new ChartData { Label = "Product C", Value = 20 },
-        new ChartData { Label = "Product D", Value = 20 }
-    };
-
-    private List<TableRowData> _sampleTableData = new()
-    {
-        new TableRowData { Name = "Project Alpha", Status = "Active", StatusClass = "success", Value = "$12,500" },
-        new TableRowData { Name = "Project Beta", Status = "Pending", StatusClass = "warning", Value = "$8,200" },
-        new TableRowData { Name = "Project Gamma", Status = "Completed", StatusClass = "info", Value = "$15,800" },
-        new TableRowData { Name = "Project Delta", Status = "Active", StatusClass = "success", Value = "$6,400" },
-        new TableRowData { Name = "Project Epsilon", Status = "On Hold", StatusClass = "danger", Value = "$3,100" }
-    };
-
-    // ==================== COMPONENT LIBRARY ====================
-    private List<ComponentCategory> _componentCategories = new()
-    {
-        new ComponentCategory
+        dashboardTemplates = new List<BuilderDashboardTemplate>
         {
-            Name = "Charts",
-            Icon = "fas fa-chart-pie",
-            Components = new List<ComponentTemplate>
+            new BuilderDashboardTemplate
             {
-                new() { Name = "Bar Chart", Type = "Chart", Icon = "fas fa-chart-bar", Description = "Compare values across categories", Color = "#3B82F6", DefaultWidth = 6, DefaultHeight = 3, ChartType = "bar" },
-                new() { Name = "Line Chart", Type = "Chart", Icon = "fas fa-chart-line", Description = "Show trends over time", Color = "#10B981", DefaultWidth = 6, DefaultHeight = 3, ChartType = "line" },
-                new() { Name = "Area Chart", Type = "Chart", Icon = "fas fa-chart-area", Description = "Visualize volume over time", Color = "#8B5CF6", DefaultWidth = 6, DefaultHeight = 3, ChartType = "area" },
-                new() { Name = "Pie Chart", Type = "Chart", Icon = "fas fa-chart-pie", Description = "Show proportions of a whole", Color = "#F59E0B", DefaultWidth = 4, DefaultHeight = 3, ChartType = "pie" },
-                new() { Name = "Donut Chart", Type = "Chart", Icon = "fas fa-circle-notch", Description = "Pie chart with center space", Color = "#EC4899", DefaultWidth = 4, DefaultHeight = 3, ChartType = "donut" }
-            }
-        },
-        new ComponentCategory
-        {
-            Name = "Data Display",
-            Icon = "fas fa-table",
-            Components = new List<ComponentTemplate>
-            {
-                new() { Name = "Data Table", Type = "Table", Icon = "fas fa-table", Description = "Display tabular data", Color = "#6366F1", DefaultWidth = 8, DefaultHeight = 3 },
-                new() { Name = "KPI Card", Type = "KPI", Icon = "fas fa-tachometer-alt", Description = "Show key metrics", Color = "#10B981", DefaultWidth = 3, DefaultHeight = 2 },
-                new() { Name = "Stat Card", Type = "KPI", Icon = "fas fa-hashtag", Description = "Display statistics", Color = "#3B82F6", DefaultWidth = 3, DefaultHeight = 2 },
-                new() { Name = "Progress Card", Type = "KPI", Icon = "fas fa-tasks", Description = "Show progress metrics", Color = "#F59E0B", DefaultWidth = 3, DefaultHeight = 2 }
-            }
-        },
-        new ComponentCategory
-        {
-            Name = "Content",
-            Icon = "fas fa-font",
-            Components = new List<ComponentTemplate>
-            {
-                new() { Name = "Text Block", Type = "Text", Icon = "fas fa-align-left", Description = "Add text content", Color = "#64748B", DefaultWidth = 6, DefaultHeight = 2 },
-                new() { Name = "Heading", Type = "Text", Icon = "fas fa-heading", Description = "Section heading", Color = "#475569", DefaultWidth = 12, DefaultHeight = 1 },
-                new() { Name = "Image", Type = "Image", Icon = "fas fa-image", Description = "Add an image", Color = "#06B6D4", DefaultWidth = 4, DefaultHeight = 3 }
-            }
-        },
-        new ComponentCategory
-        {
-            Name = "Filters",
-            Icon = "fas fa-filter",
-            Components = new List<ComponentTemplate>
-            {
-                new() { Name = "Date Range", Type = "Filter", Icon = "fas fa-calendar-alt", Description = "Filter by date range", Color = "#8B5CF6", DefaultWidth = 3, DefaultHeight = 1 },
-                new() { Name = "Dropdown", Type = "Filter", Icon = "fas fa-caret-square-down", Description = "Single select filter", Color = "#06B6D4", DefaultWidth = 2, DefaultHeight = 1 },
-                new() { Name = "Search Box", Type = "Filter", Icon = "fas fa-search", Description = "Text search filter", Color = "#64748B", DefaultWidth = 3, DefaultHeight = 1 }
-            }
-        }
-    };
-
-    // ==================== TEMPLATES ====================
-    private List<DashboardTemplate> _templates = new()
-    {
-        new() { Name = "Sales Overview", Icon = "fas fa-chart-line", PreviewGradient = "linear-gradient(135deg, #3B82F6, #8B5CF6)", ComponentCount = 6 },
-        new() { Name = "Marketing Dashboard", Icon = "fas fa-bullhorn", PreviewGradient = "linear-gradient(135deg, #10B981, #06B6D4)", ComponentCount = 8 },
-        new() { Name = "Financial Report", Icon = "fas fa-dollar-sign", PreviewGradient = "linear-gradient(135deg, #F59E0B, #EF4444)", ComponentCount = 7 },
-        new() { Name = "Operations Monitor", Icon = "fas fa-cogs", PreviewGradient = "linear-gradient(135deg, #6366F1, #EC4899)", ComponentCount = 5 },
-        new() { Name = "HR Analytics", Icon = "fas fa-users", PreviewGradient = "linear-gradient(135deg, #14B8A6, #22D3EE)", ComponentCount = 6 },
-        new() { Name = "Blank Canvas", Icon = "fas fa-plus", PreviewGradient = "linear-gradient(135deg, #94A3B8, #CBD5E1)", ComponentCount = 0 }
-    };
-
-    // ==================== LIFECYCLE ====================
-    protected override async Task OnInitializedAsync()
-    {
-        // Initialize with some sample components for demo
-        if (DashboardId == 0)
-        {
-            // Add sample components for demonstration
-            AddSampleComponents();
-        }
-
-        SaveToHistory();
-    }
-
-    private void AddSampleComponents()
-    {
-        _components = new List<CanvasComponent>
-        {
-            new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = "KPI",
-                Title = "Total Revenue",
-                Icon = "fas fa-dollar-sign",
-                Color = "#10B981",
-                GridX = 0, GridY = 0, GridWidth = 3, GridHeight = 2,
-                KpiValue = "$128,430", KpiIcon = "fas fa-dollar-sign", KpiTrend = 12.5m
+                Id = 1,
+                Name = "Executive Overview",
+                Icon = "fas fa-tachometer-alt",
+                LayoutClass = "layout-executive",
+                Description = "High-level KPIs with trend chart",
+                ComponentSlots = new List<BuilderComponentSlot>
+                {
+                    new BuilderComponentSlot { Id = "kpi1", Label = "KPI 1", Type = "KPI", GridX = 0, GridY = 0, GridWidth = 3, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "kpi2", Label = "KPI 2", Type = "KPI", GridX = 3, GridY = 0, GridWidth = 3, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "kpi3", Label = "KPI 3", Type = "KPI", GridX = 6, GridY = 0, GridWidth = 3, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "kpi4", Label = "KPI 4", Type = "KPI", GridX = 9, GridY = 0, GridWidth = 3, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "chart1", Label = "Main Chart", Type = "Chart", GridX = 0, GridY = 2, GridWidth = 8, GridHeight = 4 },
+                    new BuilderComponentSlot { Id = "table1", Label = "Data Table", Type = "Table", GridX = 8, GridY = 2, GridWidth = 4, GridHeight = 4 }
+                }
             },
-            new CanvasComponent
+            new BuilderDashboardTemplate
             {
-                Id = _nextComponentId++,
-                Type = "KPI",
-                Title = "Active Users",
-                Icon = "fas fa-users",
-                Color = "#3B82F6",
-                GridX = 3, GridY = 0, GridWidth = 3, GridHeight = 2,
-                KpiValue = "8,642", KpiIcon = "fas fa-users", KpiTrend = 8.2m
-            },
-            new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = "KPI",
-                Title = "Conversion Rate",
-                Icon = "fas fa-percentage",
-                Color = "#F59E0B",
-                GridX = 6, GridY = 0, GridWidth = 3, GridHeight = 2,
-                KpiValue = "24.8%", KpiIcon = "fas fa-percentage", KpiTrend = -2.4m
-            },
-            new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = "KPI",
-                Title = "Avg. Order Value",
-                Icon = "fas fa-shopping-cart",
-                Color = "#8B5CF6",
-                GridX = 9, GridY = 0, GridWidth = 3, GridHeight = 2,
-                KpiValue = "$284", KpiIcon = "fas fa-shopping-cart", KpiTrend = 5.7m
-            },
-            new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = "Chart",
-                Title = "Revenue Trend",
-                Icon = "fas fa-chart-line",
-                Color = "#3B82F6",
-                GridX = 0, GridY = 2, GridWidth = 8, GridHeight = 3,
-                ChartType = "area",
-                ShowLegend = true,
-                EnableAnimation = true
-            },
-            new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = "Chart",
-                Title = "Sales by Category",
+                Id = 2,
+                Name = "Service Metrics",
                 Icon = "fas fa-chart-pie",
-                Color = "#10B981",
-                GridX = 8, GridY = 2, GridWidth = 4, GridHeight = 3,
-                ChartType = "donut",
-                ShowLegend = true,
-                EnableAnimation = true
+                LayoutClass = "layout-metrics",
+                Description = "Service performance with breakdown",
+                ComponentSlots = new List<BuilderComponentSlot>
+                {
+                    new BuilderComponentSlot { Id = "kpi1", Label = "Total Requests", Type = "KPI", GridX = 0, GridY = 0, GridWidth = 4, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "kpi2", Label = "Completed", Type = "KPI", GridX = 4, GridY = 0, GridWidth = 4, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "kpi3", Label = "Pending", Type = "KPI", GridX = 8, GridY = 0, GridWidth = 4, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "chart1", Label = "Trend Chart", Type = "Chart", GridX = 0, GridY = 2, GridWidth = 6, GridHeight = 4 },
+                    new BuilderComponentSlot { Id = "chart2", Label = "Distribution", Type = "Chart", GridX = 6, GridY = 2, GridWidth = 6, GridHeight = 4 }
+                }
             },
-            new CanvasComponent
+            new BuilderDashboardTemplate
             {
-                Id = _nextComponentId++,
-                Type = "Table",
-                Title = "Recent Orders",
-                Icon = "fas fa-table",
-                Color = "#6366F1",
-                GridX = 0, GridY = 5, GridWidth = 12, GridHeight = 3
+                Id = 3,
+                Name = "Simple Analytics",
+                Icon = "fas fa-chart-bar",
+                LayoutClass = "layout-simple",
+                Description = "Basic analytics view",
+                ComponentSlots = new List<BuilderComponentSlot>
+                {
+                    new BuilderComponentSlot { Id = "kpi1", Label = "Metric 1", Type = "KPI", GridX = 0, GridY = 0, GridWidth = 6, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "kpi2", Label = "Metric 2", Type = "KPI", GridX = 6, GridY = 0, GridWidth = 6, GridHeight = 2 },
+                    new BuilderComponentSlot { Id = "chart1", Label = "Main Chart", Type = "Chart", GridX = 0, GridY = 2, GridWidth = 12, GridHeight = 5 }
+                }
             }
         };
-
-        _canvasRows = 8;
     }
 
-    // ==================== HEADER ACTIONS ====================
-    private void NavigateBack()
+    private void InitializeComponents()
     {
-        NavigationManager.NavigateTo("/marketplace");
-    }
-
-    private void HandleTitleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" || e.Key == "Escape")
+        availableComponents = new List<BuilderComponentTemplate>
         {
-            _isEditingTitle = false;
+            new BuilderComponentTemplate { Id = 1, Title = "Bar Chart", Description = "Compare values", Icon = "fa-chart-bar", Category = "Charts", DataViewingTypeID = (int)DataViewingTypeEnum.Chart },
+            new BuilderComponentTemplate { Id = 2, Title = "Line Chart", Description = "Show trends", Icon = "fa-chart-line", Category = "Charts", DataViewingTypeID = (int)DataViewingTypeEnum.Chart },
+            new BuilderComponentTemplate { Id = 3, Title = "Pie Chart", Description = "Show proportions", Icon = "fa-chart-pie", Category = "Charts", DataViewingTypeID = (int)DataViewingTypeEnum.Chart },
+            new BuilderComponentTemplate { Id = 5, Title = "KPI Card", Description = "Single metric", Icon = "fa-tachometer-alt", Category = "KPIs", DataViewingTypeID = (int)DataViewingTypeEnum.Number },
+            new BuilderComponentTemplate { Id = 6, Title = "KPI with Trend", Description = "Metric with sparkline", Icon = "fa-chart-line", Category = "KPIs", DataViewingTypeID = (int)DataViewingTypeEnum.Number },
+            new BuilderComponentTemplate { Id = 8, Title = "Data Table", Description = "Tabular data", Icon = "fa-table", Category = "Data Display", DataViewingTypeID = (int)DataViewingTypeEnum.Table },
+            new BuilderComponentTemplate { Id = 9, Title = "Info Card", Description = "Information display", Icon = "fa-id-card", Category = "Data Display", DataViewingTypeID = (int)DataViewingTypeEnum.Card }
+        };
+    }
+
+    // ========== Event Handlers ==========
+    private void HandleTitleInput(ChangeEventArgs e)
+    {
+        dashboard.Title = e.Value?.ToString() ?? "";
+    }
+
+    private void HandleSearchInput(ChangeEventArgs e)
+    {
+        componentSearchTerm = e.Value?.ToString() ?? "";
+    }
+
+    private void HandleGridToggle(ChangeEventArgs e)
+    {
+        showGrid = (bool)(e.Value ?? true);
+    }
+
+    private void HandleDatabaseSelection(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int dbId))
+        {
+            selectedDatabaseId = dbId;
         }
     }
 
-    private void SetActiveView(string view)
+    private void HandleCategoryChange(ChangeEventArgs e)
     {
-        _activeView = view;
+        if (int.TryParse(e.Value?.ToString(), out int catId))
+        {
+            dashboard.CategoryID = catId;
+        }
     }
 
-    private int GetViewSliderPosition()
+    private void HandleDashboardTitleChange(ChangeEventArgs e)
     {
-        return _activeView switch
+        dashboard.Title = e.Value?.ToString() ?? "";
+        hasUnsavedChanges = true;
+    }
+
+    private void HandleDashboardDescriptionChange(ChangeEventArgs e)
+    {
+        dashboard.Description = e.Value?.ToString() ?? "";
+        hasUnsavedChanges = true;
+    }
+
+    private void HandleAIPanelClose(bool isOpen)
+    {
+        showAIPanel = isOpen;
+    }
+
+    private void HandleChangeTemplateRequest()
+    {
+        showAIPanel = false;
+        showTemplateSelector = true;
+    }
+
+    private void HandleAIComponentsApplied(List<AIGeneratedComponent> generatedComponents)
+    {
+        foreach (var generated in generatedComponents)
         {
-            "design" => 0,
-            "preview" => 100,
-            "code" => 200,
-            _ => 0
+            var slot = selectedTemplate?.ComponentSlots?.FirstOrDefault(s => s.Id == generated.SlotId);
+            var existingComponent = dashboard.Components.FirstOrDefault(c => c.Title == slot?.Label);
+
+            if (existingComponent != null)
+            {
+                existingComponent.Title = generated.Title;
+                existingComponent.Description = generated.Description;
+                existingComponent.QueryText = generated.QueryText;
+                existingComponent.QueryIntent = generated.QueryIntent;
+                existingComponent.VisualizationConfig = generated.VisualizationConfig;
+                existingComponent.IsAIGenerated = true;
+                existingComponent.DataViewingTypeID = GetDataViewingTypeForSlot(generated.ComponentType);
+            }
+            else
+            {
+                var newComponent = new DashboardComponent
+                    {
+                        ComponentID = dashboard.Components.Any() ? dashboard.Components.Max(c => c.ComponentID) + 1 : 1,
+                        Title = generated.Title,
+                        Description = generated.Description,
+                        QueryText = generated.QueryText,
+                        QueryIntent = generated.QueryIntent,
+                        VisualizationConfig = generated.VisualizationConfig,
+                        DataViewingTypeID = GetDataViewingTypeForSlot(generated.ComponentType),
+                        GridX = generated.GridX,
+                        GridY = generated.GridY,
+                        GridWidth = generated.GridWidth > 0 ? generated.GridWidth : 6,
+                        GridHeight = generated.GridHeight > 0 ? generated.GridHeight : 3,
+                        IsVisible = true,
+                        IsAIGenerated = true
+                    };
+                dashboard.Components.Add(newComponent);
+            }
+        }
+
+        hasUnsavedChanges = true;
+        AddToHistory();
+        StateHasChanged();
+    }
+
+    // ========== Component Property Update Handlers ==========
+    private void UpdateComponentTitle(DashboardComponent component, ChangeEventArgs e)
+    {
+        component.Title = e.Value?.ToString() ?? "";
+        hasUnsavedChanges = true;
+        AddToHistory();
+    }
+
+    private void UpdateComponentDescription(DashboardComponent component, ChangeEventArgs e)
+    {
+        component.Description = e.Value?.ToString() ?? "";
+        hasUnsavedChanges = true;
+        AddToHistory();
+    }
+
+    private void UpdateComponentWidth(DashboardComponent component, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int width))
+        {
+            component.GridWidth = Math.Clamp(width, 1, 12);
+            hasUnsavedChanges = true;
+            AddToHistory();
+        }
+    }
+
+    private void UpdateComponentHeight(DashboardComponent component, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int height))
+        {
+            component.GridHeight = Math.Clamp(height, 1, 8);
+            hasUnsavedChanges = true;
+            AddToHistory();
+        }
+    }
+
+    // ========== Template Methods ==========
+    private void OpenTemplateSelector()
+    {
+        showTemplateSelector = true;
+    }
+
+    private void CloseTemplateSelector()
+    {
+        showTemplateSelector = false;
+    }
+
+    private void SelectTemplate(BuilderDashboardTemplate template)
+    {
+        selectedTemplate = template;
+    }
+
+    private void ConfirmTemplateSelection()
+    {
+        if (selectedTemplate != null)
+        {
+            ApplyTemplate(selectedTemplate);
+            CloseTemplateSelector();
+        }
+    }
+
+    private void ApplyTemplate(BuilderDashboardTemplate template)
+    {
+        dashboard.Components.Clear();
+
+        int componentId = 1;
+        foreach (var slot in template.ComponentSlots)
+        {
+            var component = new DashboardComponent
+                {
+                    ComponentID = componentId++,
+                    Title = slot.Label,
+                    Description = $"Placeholder for {slot.Label}",
+                    DataViewingTypeID = GetDataViewingTypeForSlot(slot.Type),
+                    GridX = slot.GridX,
+                    GridY = slot.GridY,
+                    GridWidth = slot.GridWidth,
+                    GridHeight = slot.GridHeight,
+                    IsVisible = true,
+                    IsAIGenerated = false
+                };
+            dashboard.Components.Add(component);
+        }
+
+        selectedTemplate = template;
+        hasUnsavedChanges = true;
+        AddToHistory();
+
+        ToastService.ShowSuccess($"Applied '{template.Name}' template");
+    }
+
+    private int GetDataViewingTypeForSlot(string slotType)
+    {
+        return slotType switch
+        {
+            "KPI" => (int)DataViewingTypeEnum.Number,
+            "Chart" => (int)DataViewingTypeEnum.Chart,
+            "Table" => (int)DataViewingTypeEnum.Table,
+            "Card" => (int)DataViewingTypeEnum.Card,
+            _ => (int)DataViewingTypeEnum.Label
         };
     }
 
-    private void SetDeviceMode(string mode)
+    private void OpenAIPanel()
     {
-        _deviceMode = mode;
+        if (selectedDatabaseId == 0)
+        {
+            ToastService.ShowWarning("Please select a database first");
+            return;
+        }
+
+        showTemplateSelector = false;
+        showAIPanel = true;
     }
 
-    private void ToggleDarkMode()
+    // ========== Component Library Methods ==========
+    private Dictionary<string, List<BuilderComponentTemplate>> GetFilteredComponentCategories()
     {
-        _darkMode = !_darkMode;
-        ShowNotification(_darkMode ? "Dark mode enabled" : "Light mode enabled", "info");
+        var filtered = availableComponents.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(componentSearchTerm))
+        {
+            filtered = filtered.Where(c =>
+                c.Title.Contains(componentSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                c.Description.Contains(componentSearchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return filtered.GroupBy(c => c.Category).ToDictionary(g => g.Key, g => g.ToList());
     }
 
-    private void ToggleMoreMenu()
+    private void ToggleCategory(string category)
     {
-        _showMoreMenu = !_showMoreMenu;
+        if (expandedCategories.Contains(category))
+            expandedCategories.Remove(category);
+        else
+            expandedCategories.Add(category);
     }
 
-    // ==================== SAVE & EXPORT ====================
-    private void SaveDashboard()
+    // ========== Component Operations ==========
+    private void AddComponent(BuilderComponentTemplate template)
     {
-        _hasUnsavedChanges = false;
-        ShowNotification("Dashboard saved successfully!", "success");
-        ToastService.ShowSuccess("Dashboard saved!");
+        int nextId = dashboard.Components.Any() ? dashboard.Components.Max(c => c.ComponentID) + 1 : 1;
+        int gridY = dashboard.Components.Any() ? dashboard.Components.Max(c => c.GridY + c.GridHeight) : 0;
+
+        var newComponent = new DashboardComponent
+            {
+                ComponentID = nextId,
+                Title = template.Title,
+                Description = template.Description,
+                DataViewingTypeID = template.DataViewingTypeID,
+                GridX = 0,
+                GridY = gridY,
+                GridWidth = 6,
+                GridHeight = 3,
+                IsVisible = true,
+                IsAIGenerated = false
+            };
+
+        dashboard.Components.Add(newComponent);
+        selectedComponentId = nextId;
+        hasUnsavedChanges = true;
+        AddToHistory();
     }
 
-    private void PreviewDashboard()
+    private DashboardComponent GetSelectedComponent()
     {
-        _activeView = "preview";
-        ShowNotification("Preview mode activated", "info");
+        return dashboard.Components.FirstOrDefault(c => c.ComponentID == selectedComponentId);
     }
 
-    private void ExportDashboard()
+    private void SelectComponent(int componentId)
     {
-        _showMoreMenu = false;
-        ShowNotification("Dashboard exported as JSON", "success");
-        ToastService.ShowSuccess("Dashboard exported!");
+        selectedComponentId = componentId;
     }
 
-    private void ExportAsImage()
+    private void DeselectComponent()
     {
-        _showMoreMenu = false;
-        ShowNotification("Dashboard exported as image", "success");
+        selectedComponentId = 0;
     }
 
-    private void ShareDashboard()
+    private void RemoveComponentById(int componentId)
     {
-        _showMoreMenu = false;
-        ShowNotification("Share link copied to clipboard!", "success");
-        ToastService.ShowSuccess("Share link copied!");
+        dashboard.Components.RemoveAll(c => c.ComponentID == componentId);
+        if (selectedComponentId == componentId)
+            selectedComponentId = 0;
+        hasUnsavedChanges = true;
+        AddToHistory();
     }
 
-    private void DuplicateDashboard()
+    private void DuplicateComponent(DashboardComponent component)
     {
-        _showMoreMenu = false;
-        ShowNotification("Dashboard duplicated", "success");
+        int nextId = dashboard.Components.Max(c => c.ComponentID) + 1;
+        var clone = new DashboardComponent
+            {
+                ComponentID = nextId,
+                Title = component.Title + " (Copy)",
+                Description = component.Description,
+                DataViewingTypeID = component.DataViewingTypeID,
+                GridX = component.GridX,
+                GridY = component.GridY + component.GridHeight,
+                GridWidth = component.GridWidth,
+                GridHeight = component.GridHeight,
+                QueryText = component.QueryText,
+                QueryIntent = component.QueryIntent,
+                VisualizationConfig = component.VisualizationConfig,
+                IsVisible = true,
+                IsAIGenerated = component.IsAIGenerated
+            };
+
+        dashboard.Components.Add(clone);
+        selectedComponentId = nextId;
+        hasUnsavedChanges = true;
+        AddToHistory();
     }
 
-    private void DeleteDashboard()
+    // ========== SQL Methods ==========
+    private void ShowSQLPreview(DashboardComponent component)
     {
-        _showMoreMenu = false;
-        // Would show confirmation modal in real app
+        sqlModalContent = component.QueryText ?? "No SQL query available";
+        showSQLModal = true;
     }
 
-    // ==================== UNDO / REDO ====================
-    private bool CanUndo => _undoStack.Count > 1;
-    private bool CanRedo => _redoStack.Count > 0;
-
-    private void SaveToHistory()
+    private void CloseSQLModal()
     {
-        var state = JsonSerializer.Serialize(_components);
-        _undoStack.Push(state);
-        _redoStack.Clear();
+        showSQLModal = false;
+    }
+
+    private async Task CopySQLToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sqlModalContent);
+        ToastService.ShowSuccess("SQL copied to clipboard!");
+    }
+
+    // ========== Canvas Methods ==========
+    private int GetCanvasHeight()
+    {
+        if (!dashboard.Components.Any()) return 600;
+        return (dashboard.Components.Max(c => c.GridY + c.GridHeight) + 2) * 80;
+    }
+
+    private void ZoomIn() => zoomLevel = Math.Min(zoomLevel + 0.1, 2.0);
+    private void ZoomOut() => zoomLevel = Math.Max(zoomLevel - 0.1, 0.5);
+    private void ResetZoom() => zoomLevel = 1.0;
+
+    private void AddRow()
+    {
+        int gridY = dashboard.Components.Any() ? dashboard.Components.Max(c => c.GridY + c.GridHeight) : 0;
+        int nextId = dashboard.Components.Any() ? dashboard.Components.Max(c => c.ComponentID) + 1 : 1;
+
+        dashboard.Components.Add(new DashboardComponent
+            {
+                ComponentID = nextId,
+                Title = "New Component",
+                GridX = 0,
+                GridY = gridY,
+                GridWidth = 6,
+                GridHeight = 3,
+                IsVisible = true,
+                DataViewingTypeID = (int)DataViewingTypeEnum.Chart
+            });
+
+        dashboard.Components.Add(new DashboardComponent
+            {
+                ComponentID = nextId + 1,
+                Title = "New Component",
+                GridX = 6,
+                GridY = gridY,
+                GridWidth = 6,
+                GridHeight = 3,
+                IsVisible = true,
+                DataViewingTypeID = (int)DataViewingTypeEnum.Chart
+            });
+
+        hasUnsavedChanges = true;
+        AddToHistory();
+    }
+
+    private void ClearCanvas()
+    {
+        if (dashboard.Components.Any())
+        {
+            dashboard.Components.Clear();
+            selectedComponentId = 0;
+            hasUnsavedChanges = true;
+            AddToHistory();
+            ToastService.ShowInfo("Canvas cleared");
+        }
+    }
+
+    // ========== History (Undo/Redo) ==========
+    private void AddToHistory()
+    {
+        var state = JsonSerializer.Serialize(dashboard);
+
+        if (historyIndex < history.Count - 1)
+            history.RemoveRange(historyIndex + 1, history.Count - historyIndex - 1);
+
+        history.Add(state);
+        historyIndex = history.Count - 1;
+
+        if (history.Count > 50)
+        {
+            history.RemoveAt(0);
+            historyIndex--;
+        }
     }
 
     private void Undo()
     {
-        if (CanUndo)
+        if (canUndo)
         {
-            var current = _undoStack.Pop();
-            _redoStack.Push(current);
-            var previous = _undoStack.Peek();
-            _components = JsonSerializer.Deserialize<List<CanvasComponent>>(previous) ?? new();
+            historyIndex--;
+            var state = history[historyIndex];
+            dashboard = JsonSerializer.Deserialize<DashboardModel>(state) ?? new DashboardModel();
             StateHasChanged();
-            ShowNotification("Undo successful", "info");
         }
     }
 
     private void Redo()
     {
-        if (CanRedo)
+        if (canRedo)
         {
-            var next = _redoStack.Pop();
-            _undoStack.Push(next);
-            _components = JsonSerializer.Deserialize<List<CanvasComponent>>(next) ?? new();
+            historyIndex++;
+            var state = history[historyIndex];
+            dashboard = JsonSerializer.Deserialize<DashboardModel>(state) ?? new DashboardModel();
             StateHasChanged();
-            ShowNotification("Redo successful", "info");
         }
     }
 
-    // ==================== ZOOM ====================
-    private void ZoomIn()
+    // ========== Save ==========
+    private void SaveDashboard()
     {
-        if (_zoom < 2)
-        {
-            _zoom += 0.1;
-            _zoomPercent = (int)(_zoom * 100);
-        }
+        hasUnsavedChanges = false;
+        ToastService.ShowSuccess("Dashboard saved successfully!");
     }
 
-    private void ZoomOut()
+    private void PreviewDashboard()
     {
-        if (_zoom > 0.25)
-        {
-            _zoom -= 0.1;
-            _zoomPercent = (int)(_zoom * 100);
-        }
+        NavigationManager.NavigateTo($"/dashboard/view/{DashboardId}");
     }
 
-    private void ResetZoom()
+    // ========== UI Helpers ==========
+    private void SetActiveTab(string tab) => activeTab = tab;
+    private void StartTitleEdit() => isEditingTitle = true;
+    private void FinishTitleEdit() => isEditingTitle = false;
+
+    private void HandleTitleKeyDown(KeyboardEventArgs e)
     {
-        _zoom = 1.0;
-        _zoomPercent = 100;
+        if (e.Key == "Enter" || e.Key == "Escape")
+            isEditingTitle = false;
     }
 
-    // ==================== CANVAS ====================
-    private int GetCanvasRows()
+    private string GetSelectedDatabaseName()
     {
-        if (!_components.Any()) return _canvasRows;
-        var maxRow = _components.Max(c => c.GridY + c.GridHeight);
-        return Math.Max(_canvasRows, maxRow + 1);
+        return availableDatabases.FirstOrDefault(d => d.DatabaseID == selectedDatabaseId)?.Name ?? "";
     }
 
-    private void AddRow()
+    private string GetMockKPIValue(DashboardComponent component)
     {
-        _canvasRows++;
-        MarkChanged();
-    }
-
-    private void ClearCanvas()
-    {
-        if (_components.Any())
-        {
-            SaveToHistory();
-            _components.Clear();
-            _selectedComponentId = 0;
-            _canvasRows = 4;
-            ShowNotification("Canvas cleared", "warning");
-        }
-    }
-
-    // ==================== COMPONENT LIBRARY ====================
-    private IEnumerable<ComponentCategory> GetFilteredCategories()
-    {
-        if (string.IsNullOrWhiteSpace(_componentSearch))
-            return _componentCategories;
-
-        var search = _componentSearch.ToLower();
-        return _componentCategories
-            .Select(c => new ComponentCategory
-                {
-                    Name = c.Name,
-                    Icon = c.Icon,
-                    Components = c.Components.Where(comp =>
-                        comp.Name.ToLower().Contains(search) ||
-                        comp.Description.ToLower().Contains(search)).ToList()
-                })
-            .Where(c => c.Components.Any());
-    }
-
-    private void ToggleCategory(string name)
-    {
-        if (_expandedCategories.Contains(name))
-            _expandedCategories.Remove(name);
-        else
-            _expandedCategories.Add(name);
-    }
-
-    private void ToggleSection(string name)
-    {
-        if (_expandedSections.Contains(name))
-            _expandedSections.Remove(name);
-        else
-            _expandedSections.Add(name);
-    }
-
-    // ==================== DRAG & DROP ====================
-    private async Task StartDragWithJS(ComponentTemplate template)
-    {
-        _isDragging = true;
-        _draggedTemplate = template;
-        _draggedComponent = null;
-        _draggedWidth = template.DefaultWidth;
-        _draggedHeight = template.DefaultHeight;
-
-        // Call JS for visual effects
-        await JSRuntime.InvokeVoidAsync("DashboardBuilder.startDrag", null, new
-        {
-            name = template.Name,
-            type = template.Type,
-            icon = template.Icon,
-            color = template.Color,
-            defaultWidth = template.DefaultWidth,
-            defaultHeight = template.DefaultHeight
-        });
-    }
-
-    private async Task EndDragWithJS()
-    {
-        _isDragging = false;
-        _draggedTemplate = null;
-        _draggedComponent = null;
-
-        await JSRuntime.InvokeVoidAsync("DashboardBuilder.endDrag");
-    }
-
-
-    private async Task StartDragExistingWithJS(CanvasComponent component)
-    {
-        _isDragging = true;
-        _draggedTemplate = null;
-        _draggedComponent = component;
-        _draggedWidth = component.GridWidth;
-        _draggedHeight = component.GridHeight;
-
-        // Call JS for visual effects
-        await JSRuntime.InvokeVoidAsync("DashboardBuilder.startDragExisting", null, component.Id, component.GridWidth, component.GridHeight);
-    }
-
-    private void EndDrag()
-    {
-        _isDragging = false;
-        _draggedTemplate = null;
-        _draggedComponent = null;
-    }
-
-    private void HandleDragOver(DragEventArgs e)
-    {
-        // Calculate drop position based on grid
-        // For demo, we'll use simple calculation
-        _dropX = Math.Min(11, Math.Max(0, (int)(e.OffsetX / 80)));
-        _dropY = Math.Min(_canvasRows - 1, Math.Max(0, (int)(e.OffsetY / 80)));
-
-        if (_snapToGrid)
-        {
-            _dropX = (_dropX / 3) * 3; // Snap to 3-column grid
-        }
-    }
-
-    private void HandleDrop(DragEventArgs e)
-    {
-        if (_draggedTemplate != null)
-        {
-            // Add new component
-            var newComponent = new CanvasComponent
-                {
-                    Id = _nextComponentId++,
-                    Type = _draggedTemplate.Type,
-                    Title = _draggedTemplate.Name,
-                    Icon = _draggedTemplate.Icon,
-                    Color = _draggedTemplate.Color,
-                    GridX = _dropX,
-                    GridY = _dropY,
-                    GridWidth = _draggedTemplate.DefaultWidth,
-                    GridHeight = _draggedTemplate.DefaultHeight,
-                    ChartType = _draggedTemplate.ChartType ?? "bar",
-                    EnableAnimation = true,
-                    ShowLegend = true,
-                    KpiValue = GetRandomKpiValue(),
-                    KpiIcon = _draggedTemplate.Icon,
-                    KpiTrend = (decimal)(Random.Shared.NextDouble() * 20 - 10)
-                };
-
-            _components.Add(newComponent);
-            _selectedComponentId = newComponent.Id;
-            SaveToHistory();
-            MarkChanged();
-
-            ShowNotification($"{_draggedTemplate.Name} added!", "success");
-        }
-        else if (_draggedComponent != null)
-        {
-            // Move existing component
-            _draggedComponent.GridX = _dropX;
-            _draggedComponent.GridY = _dropY;
-            SaveToHistory();
-            MarkChanged();
-        }
-
-        EndDrag();
-        UpdateCanvasRows();
-    }
-
-    private void AddComponent(ComponentTemplate template)
-    {
-        // Find next available position
-        int gridY = 0;
-        if (_components.Any())
-        {
-            gridY = _components.Max(c => c.GridY + c.GridHeight);
-        }
-
-        var newComponent = new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = template.Type,
-                Title = template.Name,
-                Icon = template.Icon,
-                Color = template.Color,
-                GridX = 0,
-                GridY = gridY,
-                GridWidth = template.DefaultWidth,
-                GridHeight = template.DefaultHeight,
-                ChartType = template.ChartType ?? "bar",
-                EnableAnimation = true,
-                ShowLegend = true,
-                KpiValue = GetRandomKpiValue(),
-                KpiIcon = template.Icon,
-                KpiTrend = (decimal)(Random.Shared.NextDouble() * 20 - 10)
-            };
-
-        _components.Add(newComponent);
-        _selectedComponentId = newComponent.Id;
-        SaveToHistory();
-        MarkChanged();
-        UpdateCanvasRows();
-
-        ShowNotification($"{template.Name} added!", "success");
-    }
-
-    private string GetRandomKpiValue()
-    {
-        var formats = new[] { "${0:N0}", "{0:N0}", "{0:P1}", "${0:N2}" };
-        var format = formats[Random.Shared.Next(formats.Length)];
-        var value = Random.Shared.Next(100, 100000);
-
-        if (format.Contains("P"))
-            return string.Format(format, Random.Shared.NextDouble());
-        return string.Format(format, value);
-    }
-
-    // ==================== COMPONENT ACTIONS ====================
-    private void SelectComponent(int id)
-    {
-        _selectedComponentId = id;
-    }
-
-    private void DeselectAll()
-    {
-        _selectedComponentId = 0;
-    }
-
-    private void DuplicateComponent(CanvasComponent comp)
-    {
-        var duplicate = new CanvasComponent
-            {
-                Id = _nextComponentId++,
-                Type = comp.Type,
-                Title = comp.Title + " (Copy)",
-                Description = comp.Description,
-                Icon = comp.Icon,
-                Color = comp.Color,
-                GridX = Math.Min(11, comp.GridX + 1),
-                GridY = comp.GridY + comp.GridHeight,
-                GridWidth = comp.GridWidth,
-                GridHeight = comp.GridHeight,
-                ChartType = comp.ChartType,
-                ShowLegend = comp.ShowLegend,
-                ShowDataLabels = comp.ShowDataLabels,
-                EnableAnimation = comp.EnableAnimation,
-                KpiValue = comp.KpiValue,
-                KpiIcon = comp.KpiIcon,
-                KpiTrend = comp.KpiTrend,
-                TextContent = comp.TextContent,
-                Query = comp.Query,
-                DataSourceId = comp.DataSourceId,
-                BorderRadius = comp.BorderRadius,
-                Shadow = comp.Shadow
-            };
-
-        _components.Add(duplicate);
-        _selectedComponentId = duplicate.Id;
-        SaveToHistory();
-        MarkChanged();
-        UpdateCanvasRows();
-
-        ShowNotification("Component duplicated", "success");
-    }
-
-    private void DeleteComponent(CanvasComponent comp)
-    {
-        _components.Remove(comp);
-        if (_selectedComponentId == comp.Id)
-            _selectedComponentId = 0;
-        SaveToHistory();
-        MarkChanged();
-
-        ShowNotification("Component deleted", "warning");
-    }
-
-    private void MoveUp(CanvasComponent comp)
-    {
-        if (comp.GridY > 0)
-        {
-            comp.GridY--;
-            SaveToHistory();
-            MarkChanged();
-        }
-    }
-
-    private void MoveDown(CanvasComponent comp)
-    {
-        comp.GridY++;
-        UpdateCanvasRows();
-        SaveToHistory();
-        MarkChanged();
-    }
-
-    private void StartResize(MouseEventArgs e, CanvasComponent comp, string direction)
-    {
-        // In a real implementation, this would use JS interop for smooth resizing
-        // For demo, we'll just show that resize handles exist
-    }
-
-    private void UpdateCanvasRows()
-    {
-        if (_components.Any())
-        {
-            var maxRow = _components.Max(c => c.GridY + c.GridHeight);
-            _canvasRows = Math.Max(_canvasRows, maxRow + 1);
-        }
-    }
-
-    // ==================== TEMPLATES ====================
-    private void ApplyTemplate(DashboardTemplate template)
-    {
-        if (template.Name == "Blank Canvas")
-        {
-            _components.Clear();
-            _canvasRows = 4;
-            ShowNotification("Starting with blank canvas", "info");
-        }
-        else
-        {
-            // Generate sample dashboard based on template
-            _components.Clear();
-            AddSampleComponents();
-            _dashboardTitle = template.Name;
-            ShowNotification($"Applied '{template.Name}' template", "success");
-        }
-
-        SaveToHistory();
-        MarkChanged();
-    }
-
-    // ==================== AI BUILDER ====================
-    private void ShowAIBuilder()
-    {
-        _showAIModal = true;
-    }
-
-    private void GenerateWithAI()
-    {
-        _showAIModal = false;
-
-        // Simulate AI generation
-        _components.Clear();
-        AddSampleComponents();
-        _dashboardTitle = "AI Generated Dashboard";
-
-        SaveToHistory();
-        MarkChanged();
-
-        ShowNotification("Dashboard generated with AI!", "success");
-        ToastService.ShowSuccess("AI Dashboard generated successfully!");
-    }
-
-    // ==================== HELPERS ====================
-    private void MarkChanged()
-    {
-        _hasUnsavedChanges = true;
-    }
-
-    private SeriesType GetSeriesType(string chartType)
-    {
-        return chartType switch
-        {
-            "line" => SeriesType.Line,
-            "area" => SeriesType.Area,
-            "bar" => SeriesType.Bar,
-            "pie" => SeriesType.Pie,
-            "donut" => SeriesType.Donut,
-            _ => SeriesType.Bar
-        };
-    }
-
-    private void ShowNotification(string message, string type)
-    {
-        _notificationMessage = message;
-        _notificationType = type;
-        _showNotification = true;
-
-        // Auto-hide after 3 seconds
-        Task.Delay(3000).ContinueWith(_ =>
-        {
-            _showNotification = false;
-            InvokeAsync(StateHasChanged);
-        });
-    }
-
-    private string GetNotificationIcon()
-    {
-        return _notificationType switch
-        {
-            "success" => "fa-check-circle",
-            "error" => "fa-exclamation-circle",
-            "warning" => "fa-exclamation-triangle",
-            "info" => "fa-info-circle",
-            _ => "fa-info-circle"
-        };
-    }
-
-    // ==================== DATA MODELS ====================
-    public class CanvasComponent
-    {
-        public int Id { get; set; }
-        public string Type { get; set; } = "";
-        public string Title { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string Color { get; set; } = "#3B82F6";
-        public int GridX { get; set; }
-        public int GridY { get; set; }
-        public int GridWidth { get; set; } = 4;
-        public int GridHeight { get; set; } = 2;
-        public bool IsHovered { get; set; }
-
-        // Chart properties
-        public string ChartType { get; set; } = "bar";
-        public bool ShowLegend { get; set; } = true;
-        public bool ShowDataLabels { get; set; } = false;
-        public bool EnableAnimation { get; set; } = true;
-
-        // KPI properties
-        public string KpiValue { get; set; } = "0";
-        public string KpiIcon { get; set; } = "fas fa-chart-bar";
-        public decimal KpiTrend { get; set; } = 0;
-
-        // Content properties
-        public string TextContent { get; set; } = "";
-        public string Query { get; set; } = "";
-        public int DataSourceId { get; set; }
-
-        // Appearance
-        public int BorderRadius { get; set; } = 12;
-        public string Shadow { get; set; } = "md";
-    }
-
-    public class ComponentCategory
-    {
-        public string Name { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public List<ComponentTemplate> Components { get; set; } = new();
-    }
-
-    public class ComponentTemplate
-    {
-        public string Name { get; set; } = "";
-        public string Type { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string Color { get; set; } = "#3B82F6";
-        public int DefaultWidth { get; set; } = 4;
-        public int DefaultHeight { get; set; } = 2;
-        public string? ChartType { get; set; }
-    }
-
-    public class DashboardTemplate
-    {
-        public string Name { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string PreviewGradient { get; set; } = "";
-        public int ComponentCount { get; set; }
-    }
-
-    public class ChartData
-    {
-        public string Label { get; set; } = "";
-        public decimal Value { get; set; }
-    }
-
-    public class TableRowData
-    {
-        public string Name { get; set; } = "";
-        public string Status { get; set; } = "";
-        public string StatusClass { get; set; } = "";
-        public string Value { get; set; } = "";
+        var values = new[] { "284,739", "18,472", "2.4 hrs", "94.8%", "3,847" };
+        return values[component.ComponentID % values.Length];
     }
 }

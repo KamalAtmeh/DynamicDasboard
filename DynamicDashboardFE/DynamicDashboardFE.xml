@@ -4,6 +4,11 @@
         <name>DynamicDashboardFE</name>
     </assembly>
     <members>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DBMetaDataV2.ClearCacheAsync">
+            <summary>
+            Clears all cache - for testing purposes
+            </summary>
+        </member>
         <member name="M:DynamicDashboardFE.Pages.Admin.TestDashboard.LoadDatasetComparison(System.Int32)">
             <summary>
             Loads dataset comparison data for visualization with improved error handling

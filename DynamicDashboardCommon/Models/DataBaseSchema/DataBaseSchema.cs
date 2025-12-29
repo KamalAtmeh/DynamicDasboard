@@ -1,26 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace DynamicDashboardCommon.Models
 {
     // The top-level JSON object stored in DatabaseSchemas.SchemaData
-    public class DatabaseSchema
+ public class DatabaseSchema
     {
+        // ============================================
+        // DATABASE COLUMNS
+        // ============================================
         public int ID { get; set; }
         public int DataBaseID { get; set; }
         public string Name { get; set; }
         public int Status { get; set; }
+        
+        /// <summary>
+        /// Raw JSON string - MUST be ignored to prevent recursive serialization
+        /// </summary>
+        [JsonIgnore]
+        public string SchemaData { get; set; }
+        
+        public DateTime CreatedAt { get; set; }
+        public DateTime ModifiedAt { get; set; }
+
+        // ============================================
+        // JSON CONTENT (stored inside SchemaData)
+        // ============================================
         public VersionInfo Version { get; set; }
         public Config Config { get; set; }
         public List<TableSchema> Tables { get; set; }
         public List<RelationshipSchema> Relationships { get; set; }
         public AnalysisResults AnalysisResults { get; set; }
         public List<VersionHistory> VersionHistory { get; set; }
-
         public List<TermMapping> TermMappings { get; set; } = new List<TermMapping>();
-        public string SchemaData { get; set; }        // JSON data (must be valid JSON)
-        public DateTime CreatedAt { get; set; }       // Creation timestamp
-        public DateTime ModifiedAt { get; set; }      // Last modified timestamp
     }
 
     public class VersionInfo

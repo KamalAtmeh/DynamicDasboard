@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using DynamicDashboardCommon.Enums;
 using DynamicDashboardCommon.Helper;
+using System.Text.Json;
+
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -43,15 +45,35 @@ namespace DynamicDasboardWebAPI.Controllers
 
         /// <summary>
         /// Update an existing schema entry.
+        /// Accepts both schema ID (primary key) and database ID (foreign key)
         /// </summary>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateSchema(int id, [FromBody] DatabaseSchema schema)
         {
-            if (id != schema.ID)
-                return BadRequest("Schema ID mismatch.");
-
             try
             {
+                // Check if id is the schema ID or database ID
+                // First, try to find by DatabaseID (most common from frontend)
+                var existingSchema = await objDBSchemaService.GetSchemaWithJsonByDataBaseIdAsync(id);
+
+                if (existingSchema != null)
+                {
+                    // id is the DatabaseID - use existing schema's actual ID
+                    schema.ID = existingSchema.ID;
+                    schema.DataBaseID = id;
+                }
+                else if (id == schema.ID)
+                {
+                    // id matches schema.ID - proceed normally
+                }
+                else
+                {
+                    return BadRequest("Schema not found for the provided ID.");
+                }
+
+                // Ensure ModifiedAt is set
+                schema.ModifiedAt = DateTime.UtcNow;
+
                 var result = await objDBSchemaService.UpdateSchemaAsync(schema);
                 return Ok(result);
             }
@@ -60,6 +82,84 @@ namespace DynamicDasboardWebAPI.Controllers
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
+
+
+        /// <summary>
+        /// Update schema by DatabaseID (for frontend convenience)
+        /// </summary>
+        //[HttpPut("ByDatabaseId/{databaseId}")]
+        //public async Task<IActionResult> UpdateSchemaByDatabaseId(int databaseId, [FromBody] DatabaseSchema schema)
+        //{
+        //    try
+        //    {
+        //        // Ensure the DataBaseID matches the route parameter
+        //        schema.DataBaseID = databaseId;
+
+        //        // Get existing schema to get the actual ID
+        //        var existingSchema = await objDBSchemaService.GetSchemaWithJsonByDataBaseIdAsync(databaseId);
+        //        if (existingSchema == null)
+        //            return NotFound($"No schema found for database ID {databaseId}");
+
+        //        // Copy the actual database row ID
+        //        schema.ID = existingSchema.ID;
+        //        schema.ModifiedAt = DateTime.UtcNow;
+
+        //        var result = await objDBSchemaService.UpdateSchemaAsync(schema);
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+        //    }
+        //}
+
+        /// <summary>
+        /// Update schema by DatabaseID - designed for frontend use
+        /// Bypasses automatic model validation for partial updates
+        /// </summary>
+        [HttpPut("UpdateByDatabaseId/{databaseId}")]
+        public async Task<IActionResult> UpdateSchemaByDatabaseId(int databaseId, [FromBody] JsonElement schemaJson)
+        {
+            try
+            {
+                // Get existing schema to find the actual row ID
+                var existingSchema = await objDBSchemaService.GetSchemaWithJsonByDataBaseIdAsync(databaseId);
+
+                if (existingSchema == null)
+                    return NotFound($"No schema found for database ID {databaseId}");
+
+                // Extract SchemaData from the incoming JSON
+                string newSchemaData = null;
+
+                if (schemaJson.TryGetProperty("SchemaData", out var schemaDataProp) ||
+                    schemaJson.TryGetProperty("schemaData", out schemaDataProp))
+                {
+                    newSchemaData = schemaDataProp.GetString();
+                }
+
+                if (string.IsNullOrEmpty(newSchemaData))
+                {
+                    return BadRequest("SchemaData is required");
+                }
+
+                // Update only the SchemaData field, preserve everything else
+                existingSchema.SchemaData = newSchemaData;
+                existingSchema.ModifiedAt = DateTime.UtcNow;
+
+                var result = await objDBSchemaService.UpdateSchemaAsync(existingSchema);
+
+                // Invalidate cache
+                await CacheHelper.InvalidateDatabaseCacheAsync(databaseId);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+
 
         /// <summary>
         /// Retrieve a schema entry by its ID.
@@ -293,7 +393,6 @@ namespace DynamicDasboardWebAPI.Controllers
         #endregion
 
 
-
         // Get parsed schema
         [HttpGet("parsed/{databaseID}/{useCache}")]
         public async Task<IActionResult> GetSchemaDeserialized(int databaseID, int useCache)
@@ -326,6 +425,70 @@ namespace DynamicDasboardWebAPI.Controllers
 
             return Ok(strOptimizedSchema);
         }
+
+        [HttpPost("cache/clear/{databaseId}")]
+        public async Task<IActionResult> ClearDatabaseCache(int databaseId)
+        {
+            await CacheHelper.InvalidateDatabaseCacheAsync(databaseId);
+            return Ok(new { Message = $"Cache cleared for database {databaseId}" });
+        }
+
+        /// <summary>
+        /// Clear all cache
+        /// </summary>
+        [HttpPost("cache/clearall")]
+        public async Task<IActionResult> ClearAllCache()
+        {
+            await CacheHelper.ClearAsync();
+            return Ok(new { Message = "All cache cleared" });
+        }
+
+        /// <summary>
+        /// Update schema by DatabaseID - bypasses strict model validation for partial updates
+        /// </summary>
+        //[HttpPut("ByDatabaseId/{databaseId}")]
+        //public async Task<IActionResult> UpdateSchemaByDatabaseId(int databaseId, [FromBody] JsonElement schemaJson)
+        //{
+        //    try
+        //    {
+        //        // Get existing schema to preserve required fields
+        //        var existingSchema = await objDBSchemaService.GetSchemaWithJsonByDataBaseIdAsync(databaseId);
+        //        if (existingSchema == null)
+        //            return NotFound($"No schema found for database ID {databaseId}");
+
+        //        // Deserialize the incoming JSON to get the SchemaData
+        //        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        //        string newSchemaData;
+
+        //        // Check if SchemaData is provided in the request
+        //        if (schemaJson.TryGetProperty("SchemaData", out var schemaDataElement) ||
+        //            schemaJson.TryGetProperty("schemaData", out schemaDataElement))
+        //        {
+        //            newSchemaData = schemaDataElement.GetString();
+        //        }
+        //        else
+        //        {
+        //            // The entire JSON is the schema data
+        //            newSchemaData = schemaJson.GetRawText();
+        //        }
+
+        //        // Update only the SchemaData field
+        //        existingSchema.SchemaData = newSchemaData;
+        //        existingSchema.ModifiedAt = DateTime.UtcNow;
+
+        //        var result = await objDBSchemaService.UpdateSchemaAsync(existingSchema);
+
+        //        // Invalidate cache for this database
+        //        await CacheHelper.InvalidateDatabaseCacheAsync(databaseId);
+
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+        //    }
+        //}
 
 
     }

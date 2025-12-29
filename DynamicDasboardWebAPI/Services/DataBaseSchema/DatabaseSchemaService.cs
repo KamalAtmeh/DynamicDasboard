@@ -734,7 +734,7 @@ namespace DynamicDasboardWebAPI.Services
         };
 
         /// <summary>
-        /// Deserializes a JSON schema string into a DatabaseSchema object.
+        /// Deserializes JSON schema string into DatabaseSchema object.
         /// </summary>
         public DatabaseSchema DeserializeSchema(string jsonSchema)
         {
@@ -743,17 +743,38 @@ namespace DynamicDasboardWebAPI.Services
 
             try
             {
-                return JsonSerializer.Deserialize<DatabaseSchema>(jsonSchema, _jsonOptions);
+                var schema = JsonSerializer.Deserialize<DatabaseSchema>(jsonSchema, _jsonOptions);
+
+                if (schema != null)
+                {
+                    // Clear SchemaData to prevent any re-serialization issues
+                    schema.SchemaData = null;
+
+                    // Initialize collections if null
+                    schema.Tables ??= new List<TableSchema>();
+                    schema.Relationships ??= new List<RelationshipSchema>();
+                    schema.TermMappings ??= new List<TermMapping>();
+                }
+
+                return schema ?? new DatabaseSchema();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Log the error
                 throw;
             }
         }
 
         /// <summary>
         /// Serializes a DatabaseSchema object to a JSON string.
+        /// </summary>
+        /// <summary>
+        /// Serializes ONLY the schema content (Tables, Relationships, etc.)
+        /// DOES NOT include SchemaData string or database metadata (ID, DataBaseID, etc.)
+        /// This prevents recursive nesting of JSON.
+        /// </summary>
+        /// <summary>
+        /// Serializes schema content to JSON for storage in SchemaData column.
+        /// Explicitly includes only content properties to prevent recursive nesting.
         /// </summary>
         public string SerializeSchema(DatabaseSchema schema)
         {
@@ -762,7 +783,24 @@ namespace DynamicDasboardWebAPI.Services
                 if (schema == null)
                     throw new ArgumentNullException(nameof(schema));
 
-                return JsonSerializer.Serialize(schema, _jsonOptions);
+                // Explicit object with ONLY the properties that should be in JSON
+                var content = new
+                {
+                    ID = schema.ID,
+                    DataBaseID = schema.DataBaseID,
+                    Name = schema.Name,
+                    Status = schema.Status,
+                    Version = schema.Version,
+                    Config = schema.Config,
+                    Tables = schema.Tables,
+                    Relationships = schema.Relationships,
+                    AnalysisResults = schema.AnalysisResults,
+                    VersionHistory = schema.VersionHistory,
+                    TermMappings = schema.TermMappings
+
+                };
+
+                return JsonSerializer.Serialize(content, _jsonOptions);
             }
             catch (Exception)
             {
@@ -1186,40 +1224,105 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+        /// <summary>
+        /// Gets complete schema object with DB metadata and JSON content merged.
+        /// Normalizes relationship types and ensures all required properties are initialized.
+        /// </summary>
         public async Task<DatabaseSchema> GetSchemaObject(int databaseID, bool useCache = false, bool isCalledByGenerate = false)
         {
             try
             {
-                var cacheKey = string.Empty;
+                var cacheKey = $"DatabaseSchema_{databaseID}";
+
                 if (useCache)
                 {
-                    cacheKey = $"DatabaseSchema_{databaseID}";
                     var cached = CacheHelper.Get<DatabaseSchema>(cacheKey);
-                    if (cached != null && useCache)
-                    {
+                    if (cached != null)
                         return cached;
+                }
+
+                var dbSchema = await GetSchemaWithJsonByDataBaseIdAsync(databaseID, isCalledByGenerate);
+                if (dbSchema == null)
+                    return null;
+
+                // Deserialize JSON content
+                DatabaseSchema objSchemaDetail = DeserializeSchema(dbSchema.SchemaData);
+                if (objSchemaDetail == null)
+                    return null;
+
+                // ============================================
+                // Copy DB row values (authoritative source)
+                // ============================================
+                objSchemaDetail.ID = dbSchema.ID;
+                objSchemaDetail.DataBaseID = dbSchema.DataBaseID;
+                objSchemaDetail.Name = dbSchema.Name;
+                objSchemaDetail.Status = dbSchema.Status;
+                objSchemaDetail.CreatedAt = dbSchema.CreatedAt;
+                objSchemaDetail.ModifiedAt = dbSchema.ModifiedAt;
+                objSchemaDetail.SchemaData = dbSchema.SchemaData; // Keep for reference
+
+                // ============================================
+                // Initialize collections if null
+                // ============================================
+                objSchemaDetail.Tables ??= new List<TableSchema>();
+                objSchemaDetail.Relationships ??= new List<RelationshipSchema>();
+                objSchemaDetail.TermMappings ??= new List<TermMapping>();
+
+                // ============================================
+                // Normalize relationships for UI consistency
+                // ============================================
+                if (objSchemaDetail.Relationships != null)
+                {
+                    foreach (var relationship in objSchemaDetail.Relationships)
+                    {
+                        // Normalize relationship type for dropdown binding
+                        relationship.Type = NormalizeRelationshipType(relationship.Type);
+
+                        // Ensure Metadata exists to prevent null reference errors
+                        if (relationship.Metadata == null)
+                        {
+                            relationship.Metadata = new RelationshipMetadata
+                            {
+                                Confidence = 1.0,
+                                DiscoveredAt = DateTime.UtcNow,
+                                LastValidated = DateTime.UtcNow
+                            };
+                        }
                     }
                 }
 
-                var schema = await GetSchemaWithJsonByDataBaseIdAsync(databaseID, isCalledByGenerate);
-                if (schema == null)
-                    return null;
-
-                DatabaseSchema objSchemaDetail = DeserializeSchema(schema.SchemaData);
-                objSchemaDetail.SchemaData = schema.SchemaData;
+                // Cache the result
                 if (useCache)
-                {
-                    await CacheHelper.AddOrUpdateAsync(cacheKey, schema);
-                }
+                    await CacheHelper.AddOrUpdateAsync(cacheKey, objSchemaDetail);
+
                 return objSchemaDetail;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
-
-
-            #endregion
         }
+
+
+
+        /// <summary>
+        /// Normalizes relationship type to ensure consistent casing for dropdown binding
+        /// </summary>
+        private string NormalizeRelationshipType(string type)
+        {
+            if (string.IsNullOrEmpty(type))
+                return "One-to-Many";
+
+            return type.ToLower().Replace(" ", "").Replace("_", "") switch
+            {
+                "onetoone" or "1:1" or "1-1" => "One-to-One",
+                "onetomany" or "1:n" or "1:*" or "1-n" or "1-*" => "One-to-Many",
+                "manytoone" or "n:1" or "*:1" or "n-1" or "*-1" => "Many-to-One",
+                "manytomany" or "n:n" or "*:*" or "n-n" or "*-*" => "Many-to-Many",
+                _ => "One-to-Many"
+            };
+        }
+
     }
 }
+#endregion

@@ -282,7 +282,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                     new { role = "user", content = userPrompt }
                 },
                 temperature = 0.2, //temp
-                max_tokens = 2000 //temp
+                max_tokens = 8000 //temp
             };
 
             var content = new StringContent(

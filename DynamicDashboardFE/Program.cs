@@ -29,7 +29,7 @@ namespace DynamicDashboardFE
             builder.Services.AddScoped(sp => new HttpClient
             {
                 BaseAddress = new Uri("http://localhost:5000/"),
-                Timeout = TimeSpan.FromSeconds(500)
+                Timeout = TimeSpan.FromMinutes(5)
             });
 
             // Build and run the WebAssembly host.

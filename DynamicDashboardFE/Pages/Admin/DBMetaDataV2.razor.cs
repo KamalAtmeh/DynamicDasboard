@@ -26,6 +26,12 @@ namespace DynamicDashboardFE.Pages.Admin
         private bool isApplying = false;
         private string loadingMessage = "Loading database metadata...";
 
+        // Loading overlay variables
+        private string analysisLoadingMessage = "Analyzing Schema...";
+        private int analysisProgress = 0;
+        private int analysisStep = 0;
+        private CancellationTokenSource analysisCancellationToken;
+
         // Data objects
         private List<Database> databases;
         private Database selectedDatabase;
@@ -77,6 +83,10 @@ namespace DynamicDashboardFE.Pages.Admin
         private TermMappingDependency editingDependency;
         private bool isDependencyModalOpen = false;
 
+        // Add to variables region
+        private HashSet<string> appliedTableSuggestions = new HashSet<string>();
+        private HashSet<string> appliedColumnSuggestions = new HashSet<string>();
+
         #endregion
 
         #region Properties
@@ -117,9 +127,12 @@ namespace DynamicDashboardFE.Pages.Admin
 
         protected override async Task OnInitializedAsync()
         {
+            await ClearCacheAsync();
             await LoadDatabases();
             await LoadSelectedDatabase();
         }
+
+
 
         private async Task LoadDatabases()
         {
@@ -129,7 +142,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error loading databases: {ex.Message}");
+                toastService.ShowError($"Error loading databases: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -153,7 +166,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error loading database: {ex.Message}");
+                toastService.ShowError($"Error loading database: {ex.Message + ", "  + ex.StackTrace + ", "  + ex.StackTrace}");
             }
             finally
             {
@@ -181,7 +194,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error loading schema: {ex.Message}");
+                toastService.ShowError($"Error loading schema: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -198,7 +211,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error refreshing schema: {ex.Message}");
+                toastService.ShowError($"Error refreshing schema: {ex.Message + ", "  + ex.StackTrace}");
             }
             finally
             {
@@ -253,7 +266,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error saving table changes: {ex.Message}");
+                toastService.ShowError($"Error saving table changes: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -273,7 +286,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error updating table status: {ex.Message}");
+                toastService.ShowError($"Error updating table status: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -342,7 +355,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error saving column changes: {ex.Message}");
+                toastService.ShowError($"Error saving column changes: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -362,7 +375,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error updating column status: {ex.Message}");
+                toastService.ShowError($"Error updating column status: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -522,49 +535,87 @@ namespace DynamicDashboardFE.Pages.Admin
                 return;
             }
 
+            if (string.IsNullOrEmpty(editingRelationship.Type))
+            {
+                relationshipErrorMessage = "Please select a relationship type.";
+                return;
+            }
+
             try
             {
                 isSavingRelationship = true;
+                relationshipErrorMessage = string.Empty;
 
-                // Clone the schema before modifying
+                // Ensure relationship has all required fields
+                if (editingRelationship.Metadata == null)
+                {
+                    editingRelationship.Metadata = new RelationshipMetadata
+                    {
+                        Confidence = 1.0,
+                        DiscoveredAt = DateTime.UtcNow,
+                        LastValidated = DateTime.UtcNow
+                    };
+                }
+
+                // Clone and update schema
                 var updatedSchema = CloneSchema(schemaObj);
+                UpdateRelationshipNames(updatedSchema, editingRelationship);
 
-                // Find or create relationship in the schema
                 int relationshipIndex = updatedSchema.Relationships.FindIndex(r => r.ID == editingRelationship.ID);
-
                 if (relationshipIndex >= 0)
                 {
-                    // Update existing relationship
                     updatedSchema.Relationships[relationshipIndex] = editingRelationship;
                 }
                 else
                 {
-                    // Add new relationship
                     updatedSchema.Relationships.Add(editingRelationship);
                 }
 
-                // Set table and column names based on IDs
-                UpdateRelationshipNames(updatedSchema, editingRelationship);
+                // Serialize ONLY the inner schema content
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                };
 
-                // Save the updated schema
-                await Http.PutAsync($"api/databaseschema/{DatabaseId}", JsonContent.Create(updatedSchema));
+                var schemaDataContent = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Version = updatedSchema.Version,
+                    Tables = updatedSchema.Tables,
+                    Relationships = updatedSchema.Relationships,
+                    TermMappings = updatedSchema.TermMappings,
+                    AnalysisResults = updatedSchema.AnalysisResults
+                }, jsonOptions);
 
-                // Reload the schema to reflect changes
-                await LoadDatabaseSchema();
+                // Send ONLY SchemaData - the backend will handle everything else
+                var payload = new { SchemaData = schemaDataContent };
 
-                toastService.ShowSuccess($"Relationship {(isNewRelationship ? "created" : "updated")} successfully.");
-                CloseRelationshipEditor();
+                var response = await Http.PutAsJsonAsync($"api/databaseschema/UpdateByDatabaseId/{DatabaseId}", payload);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadDatabaseSchema(false);
+                    toastService.ShowSuccess($"Relationship {(isNewRelationship ? "created" : "updated")} successfully.");
+                    CloseRelationshipEditor();
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    relationshipErrorMessage = $"Server error: {response.StatusCode}";
+                    toastService.ShowError($"Failed to save: {errorContent}");
+                }
             }
             catch (Exception ex)
             {
-                relationshipErrorMessage = $"Error saving relationship: {ex.Message}";
+                relationshipErrorMessage = $"Error: {ex.Message + ", "  + ex.StackTrace}";
+                toastService.ShowError($"Error: {ex.Message + ", "  + ex.StackTrace}");
             }
             finally
             {
                 isSavingRelationship = false;
             }
         }
-
         private void UpdateRelationshipNames(DatabaseSchema schema, RelationshipSchema relationship)
         {
             // Set table and column names based on IDs
@@ -644,23 +695,43 @@ namespace DynamicDashboardFE.Pages.Admin
 
             try
             {
-                // Clone the schema before modifying
                 var updatedSchema = CloneSchema(schemaObj);
-
-                // Remove the relationship
                 updatedSchema.Relationships.RemoveAll(r => r.ID == relationshipId);
 
-                // Save the updated schema
-                await Http.PutAsync($"api/databaseschema/{DatabaseId}", JsonContent.Create(updatedSchema));
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                };
 
-                // Reload the schema to reflect changes
-                await LoadDatabaseSchema();
+                var schemaDataContent = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Version = updatedSchema.Version,
+                    Tables = updatedSchema.Tables,
+                    Relationships = updatedSchema.Relationships,
+                    TermMappings = updatedSchema.TermMappings,
+                    AnalysisResults = updatedSchema.AnalysisResults
+                }, jsonOptions);
 
-                toastService.ShowSuccess("Relationship deleted successfully.");
+                // Send ONLY SchemaData
+                var payload = new { SchemaData = schemaDataContent };
+
+                var response = await Http.PutAsJsonAsync($"api/databaseschema/UpdateByDatabaseId/{DatabaseId}", payload);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadDatabaseSchema(false);
+                    toastService.ShowSuccess("Relationship deleted successfully.");
+                }
+                else
+                {
+                    toastService.ShowError("Failed to delete relationship.");
+                }
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error deleting relationship: {ex.Message}");
+                toastService.ShowError($"Error: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -680,40 +751,124 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error updating relationship status: {ex.Message}");
+                toastService.ShowError($"Error updating relationship status: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
-        // Schema analysis
         private async Task RunSchemaAnalysis()
         {
-            isAnalyzing = true;
+            // Reset applied states for new analysis
+            appliedTableSuggestions.Clear();
+            appliedColumnSuggestions.Clear();
+
+            if (DatabaseId <= 0)
+            {
+                toastService.ShowWarning("Please select a database first.");
+                return;
+            }
 
             try
             {
-                analysisResult = await Http.GetFromJsonAsync<SchemaAnalysisResult>($"api/SchemaAnalysis/AnalyzeDatabaseSchema/{DatabaseId}");
+                isAnalyzing = true;
+                StateHasChanged();
 
-                if (analysisResult?.Success == true)
+                // Call the CORRECT endpoint
+                var response = await Http.GetFromJsonAsync<SchemaAnalysisResult>(
+                    $"api/SchemaAnalysis/AnalyzeDatabaseSchema/{DatabaseId}");
+
+                Console.WriteLine($"Response Success: {response?.Success}");
+                Console.WriteLine($"Response Error: {response?.ErrorMessage}");
+                Console.WriteLine($"Tables Count: {response?.AnalysisData?.TableDescriptions?.Count}");
+                Console.WriteLine($"Columns Count: {response?.AnalysisData?.ColumnDescriptions?.Count}");
+
+                // Assign result directly (same as original)
+                analysisResult = response;
+
+                if (response?.Success == true)
                 {
-                    toastService.ShowSuccess("Schema analysis completed successfully.");
+                    toastService.ShowSuccess("Schema analysis completed successfully!");
 
-                    // Set active tab to analysis results
+                    // Switch to analysis tab to show results
                     activeTab = "analysis";
+                    analysisTab = "tables";
                 }
                 else
                 {
-                    toastService.ShowError($"Schema analysis failed: {analysisResult?.ErrorMessage}");
+                    toastService.ShowError($"Analysis failed: {response?.ErrorMessage ?? "Unknown error"}");
                 }
             }
             catch (Exception ex)
             {
                 toastService.ShowError($"Error analyzing schema: {ex.Message}");
+                Console.WriteLine($"Exception: {ex.Message}");
+                Console.WriteLine($"Stack: {ex.StackTrace}");
             }
             finally
             {
                 isAnalyzing = false;
+                StateHasChanged(); // Force UI refresh
             }
         }
+
+        private async Task SimulateAnalysisProgress(CancellationToken token)
+        {
+            try
+            {
+                var messages = new[]
+                {
+            "Scanning table structures...",
+            "Analyzing column data types...",
+            "Identifying naming patterns...",
+            "Evaluating relationships...",
+            "Processing metadata...",
+            "Generating intelligent suggestions...",
+            "Almost there..."
+        };
+
+                int messageIndex = 0;
+
+                while (!token.IsCancellationRequested && analysisProgress < 85)
+                {
+                    await Task.Delay(2000, token);
+
+                    if (token.IsCancellationRequested) break;
+
+                    // Increment progress (slow down as we get higher)
+                    if (analysisProgress < 30)
+                        analysisProgress += 8;
+                    else if (analysisProgress < 60)
+                        analysisProgress += 5;
+                    else if (analysisProgress < 85)
+                        analysisProgress += 3;
+
+                    // Update message periodically
+                    if (analysisStep == 2 && messageIndex < messages.Length)
+                    {
+                        analysisLoadingMessage = messages[messageIndex];
+                        messageIndex++;
+                    }
+
+                    StateHasChanged();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancelled
+            }
+        }
+
+        private void CancelAnalysis()
+        {
+            analysisCancellationToken?.Cancel();
+            isAnalyzing = false;
+            analysisProgress = 0;
+            analysisStep = 0;
+            StateHasChanged();
+            toastService.ShowInfo("Analysis cancelled.");
+        }
+
+
+
 
         private async Task ApplyAllSuggestions()
         {
@@ -738,7 +893,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying suggestions: {ex.Message}");
+                toastService.ShowError($"Error applying suggestions: {ex.Message + ", "  + ex.StackTrace}");
             }
             finally
             {
@@ -747,20 +902,13 @@ namespace DynamicDashboardFE.Pages.Admin
         }
 
         // Suggestions and conflicts
-        private async Task ApplyTableSuggestion(TableDescription suggestion = null)
+        private async Task ApplyTableSuggestion(TableDescription suggestion)
         {
-            if (suggestion == null)
-            {
-                // Use the current table suggestion
-                suggestion = tableAnalysis;
-            }
-
             if (suggestion == null)
                 return;
 
             try
             {
-                // Find the table in the schema
                 var table = schemaObj.Tables.FirstOrDefault(t =>
                     t.DBName.Equals(suggestion.TableName, StringComparison.OrdinalIgnoreCase));
 
@@ -778,11 +926,17 @@ namespace DynamicDashboardFE.Pages.Admin
                     selectedTable.Description = suggestion.SuggestedDescription;
                 }
 
-                toastService.ShowSuccess("Table suggestion applied. Don't forget to save your changes.");
+                // Mark as applied
+                appliedTableSuggestions.Add(suggestion.TableName);
+
+                // REMOVED: "Don't forget to save" message
+                toastService.ShowSuccess($"Applied suggestion for '{suggestion.TableName}'");
+
+                StateHasChanged();
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying table suggestion: {ex.Message}");
+                toastService.ShowError($"Error applying suggestion: {ex.Message}");
             }
         }
 
@@ -793,7 +947,6 @@ namespace DynamicDashboardFE.Pages.Admin
 
             try
             {
-                // Find the table and column in the schema
                 var table = schemaObj.Tables.FirstOrDefault(t =>
                     t.DBName.Equals(suggestion.TableName, StringComparison.OrdinalIgnoreCase));
 
@@ -806,16 +959,21 @@ namespace DynamicDashboardFE.Pages.Admin
                 if (column == null)
                     return;
 
-                // Update the column with suggested values
                 column.FriendlyName = suggestion.SuggestedName;
                 column.Description = suggestion.SuggestedDescription;
                 column.IsLookup = suggestion.IsLookupColumn;
 
-                toastService.ShowSuccess("Column suggestion applied. Don't forget to save your changes.");
+                // Mark as applied
+                var key = $"{suggestion.TableName}_{suggestion.ColumnName}";
+                appliedColumnSuggestions.Add(key);
+
+                toastService.ShowSuccess($"Applied suggestion for '{suggestion.ColumnName}'");
+
+                StateHasChanged();
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying column suggestion: {ex.Message}");
+                toastService.ShowError($"Error applying suggestion: {ex.Message}");
             }
         }
 
@@ -857,7 +1015,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying conflict resolution: {ex.Message}");
+                toastService.ShowError($"Error applying conflict resolution: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -899,7 +1057,7 @@ namespace DynamicDashboardFE.Pages.Admin
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying suggestion: {ex.Message}");
+                toastService.ShowError($"Error applying suggestion: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
 
@@ -912,36 +1070,48 @@ namespace DynamicDashboardFE.Pages.Admin
             {
                 // Find source table and column
                 var sourceTable = schemaObj.Tables.FirstOrDefault(t =>
-                    t.DBName.Equals(suggestion.SourceTable.TableName, StringComparison.OrdinalIgnoreCase));
+                    t.DBName.Equals(suggestion.SourceTable?.TableName, StringComparison.OrdinalIgnoreCase));
 
                 if (sourceTable?.Columns == null)
+                {
+                    toastService.ShowError("Source table not found.");
                     return;
+                }
 
                 var sourceColumn = sourceTable.Columns.FirstOrDefault(c =>
-                    c.DBName.Equals(suggestion.SourceTable.ColumnName, StringComparison.OrdinalIgnoreCase));
+                    c.DBName.Equals(suggestion.SourceTable?.ColumnName, StringComparison.OrdinalIgnoreCase));
 
                 if (sourceColumn == null)
+                {
+                    toastService.ShowError("Source column not found.");
                     return;
+                }
 
                 // Find target table and column
                 var targetTable = schemaObj.Tables.FirstOrDefault(t =>
-                    t.DBName.Equals(suggestion.TargetTable.TableName, StringComparison.OrdinalIgnoreCase));
+                    t.DBName.Equals(suggestion.TargetTable?.TableName, StringComparison.OrdinalIgnoreCase));
 
                 if (targetTable?.Columns == null)
+                {
+                    toastService.ShowError("Target table not found.");
                     return;
+                }
 
                 var targetColumn = targetTable.Columns.FirstOrDefault(c =>
-                    c.DBName.Equals(suggestion.TargetTable.ColumnName, StringComparison.OrdinalIgnoreCase));
+                    c.DBName.Equals(suggestion.TargetTable?.ColumnName, StringComparison.OrdinalIgnoreCase));
 
                 if (targetColumn == null)
+                {
+                    toastService.ShowError("Target column not found.");
                     return;
+                }
 
                 // Create a new relationship
                 var newRelationship = new RelationshipSchema
                 {
                     ID = Guid.NewGuid().ToString(),
-                    Name = $"Relationship from {sourceTable.DBName}.{sourceColumn.DBName} to {targetTable.DBName}.{targetColumn.DBName}",
-                    Type = suggestion.RelationshipType,
+                    Name = $"FK_{sourceTable.DBName}_{sourceColumn.DBName}_TO_{targetTable.DBName}_{targetColumn.DBName}",
+                    Type = NormalizeRelationshipType(suggestion.RelationshipType),
                     Source = new RelationshipDetails
                     {
                         TableID = sourceTable.ID,
@@ -957,59 +1127,151 @@ namespace DynamicDashboardFE.Pages.Admin
                         ColumnName = !string.IsNullOrEmpty(targetColumn.FriendlyName) ? targetColumn.FriendlyName : targetColumn.DBName
                     },
                     Enforced = false,
-                    IsActive = true
+                    IsActive = true,
+                    Metadata = new RelationshipMetadata
+                    {
+                        Confidence = suggestion.Confidence,
+                        DiscoveredAt = DateTime.UtcNow,
+                        LastValidated = DateTime.UtcNow
+                    }
                 };
 
-                // Add the new relationship to the schema
                 var updatedSchema = CloneSchema(schemaObj);
                 updatedSchema.Relationships.Add(newRelationship);
 
-                // Save the updated schema
-                await Http.PutAsync($"api/databaseschema/{DatabaseId}", JsonContent.Create(updatedSchema));
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                };
 
-                // Reload the schema to reflect changes
-                await LoadDatabaseSchema();
+                var schemaDataContent = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Version = updatedSchema.Version,
+                    Tables = updatedSchema.Tables,
+                    Relationships = updatedSchema.Relationships,
+                    TermMappings = updatedSchema.TermMappings,
+                    AnalysisResults = updatedSchema.AnalysisResults
+                }, jsonOptions);
 
-                toastService.ShowSuccess("Suggested relationship added successfully.");
+                // Send ONLY SchemaData
+                var payload = new { SchemaData = schemaDataContent };
 
-                // Switch to relationships tab
-                activeTab = "relationships";
+                var response = await Http.PutAsJsonAsync($"api/databaseschema/UpdateByDatabaseId/{DatabaseId}", payload);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadDatabaseSchema(false);
+                    toastService.ShowSuccess("Suggested relationship added successfully.");
+                    activeTab = "relationships";
+                }
+                else
+                {
+                    toastService.ShowError("Failed to add relationship.");
+                }
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error adding relationship: {ex.Message}");
+                toastService.ShowError($"Error: {ex.Message + ", "  + ex.StackTrace}");
             }
         }
+
+        // Helper method - add if not present
+        private string NormalizeRelationshipType(string type)
+        {
+            if (string.IsNullOrEmpty(type))
+                return "One-to-Many";
+
+            return type.ToLower().Replace(" ", "").Replace("_", "-") switch
+            {
+                "one-to-one" or "onetoone" or "1:1" => "One-to-One",
+                "one-to-many" or "onetomany" or "1:n" or "1:*" => "One-to-Many",
+                "many-to-one" or "manytoone" or "n:1" or "*:1" => "Many-to-One",
+                "many-to-many" or "manytomany" or "n:n" or "*:*" => "Many-to-Many",
+                _ => "One-to-Many"
+            };
+        }
+
+
+
+
 
         #region TermMapping
 
         private async Task SuggestTermMappings()
         {
+            if (DatabaseId <= 0)
+            {
+                toastService.ShowWarning("Please select a database first.");
+                return;
+            }
+
             try
             {
                 isSuggestingTerms = true;
+                StateHasChanged();
 
-                var suggestions = await Http.GetFromJsonAsync<List<TermMapping>>($"api/SchemaAnalysis/SuggestTerms/{DatabaseId}");
-
+                var suggestions = await Http.GetFromJsonAsync<List<TermMapping>>(
+                    $"api/SchemaAnalysis/SuggestTerms/{DatabaseId}");
 
                 if (suggestions?.Any() == true)
                 {
-                    // Show suggestions dialog
-                    await ShowTermSuggestionsDialog(suggestions);
+                    // Initialize if null
+                    if (schemaObj.TermMappings == null)
+                        schemaObj.TermMappings = new List<TermMapping>();
+
+                    // Filter out suggestions that already exist (by business term)
+                    var existingTerms = schemaObj.TermMappings
+                        .Select(t => t.BusinessTerm.ToLower())
+                        .ToHashSet();
+
+                    var newSuggestions = suggestions
+                        .Where(s => !existingTerms.Contains(s.BusinessTerm.ToLower()))
+                        .ToList();
+
+                    if (newSuggestions.Any())
+                    {
+                        // Mark all as LLM suggested
+                        foreach (var suggestion in newSuggestions)
+                        {
+                            suggestion.ID = Guid.NewGuid().ToString();
+                            suggestion.IsLLMSuggested = true;
+                            suggestion.CreatedAt = DateTime.UtcNow;
+                        }
+
+                        schemaObj.TermMappings.AddRange(newSuggestions);
+
+                        // Save the updated term mappings
+                        var saveResult = await SaveTermMappingsAsync();
+
+                        if (saveResult)
+                        {
+                            toastService.ShowSuccess($"Generated {newSuggestions.Count} new term suggestions!");
+                        }
+                        else
+                        {
+                            toastService.ShowError("Failed to save term suggestions.");
+                        }
+                    }
+                    else
+                    {
+                        toastService.ShowInfo("All suggested terms already exist in your mappings.");
+                    }
                 }
                 else
                 {
-                    toastService.ShowWarning("No term suggestions could be generated. Try adding more table and column descriptions.");
+                    toastService.ShowWarning("No term suggestions could be generated. Try adding more table and column descriptions first.");
                 }
             }
             catch (Exception ex)
             {
-
-                toastService.ShowError("Failed to generate term suggestions. Please try again.");
+                toastService.ShowError($"Failed to generate term suggestions: {ex.Message}");
             }
             finally
             {
                 isSuggestingTerms = false;
+                StateHasChanged();
             }
         }
 
@@ -1529,7 +1791,7 @@ namespace DynamicDashboardFE.Pages.Admin
                 formulaValidationResult = new QueryValidationResult
                 {
                     IsValid = false,
-                    ErrorMessage = $"Validation error: {ex.Message}"
+                    ErrorMessage = $"Validation error: {ex.Message + ", "  + ex.StackTrace}"
                 };
             }
             finally
@@ -1702,6 +1964,23 @@ namespace DynamicDashboardFE.Pages.Admin
             schemaObj = await Http.GetFromJsonAsync<DatabaseSchema>($"api/databaseschema/OptimizedSchemaString/{DatabaseId}");
 
             toastService.ShowSuccess("Optimized Schema Loaded Successfully.");
+        }
+
+        /// <summary>
+        /// Clears all cache - for testing purposes
+        /// </summary>
+        private async Task ClearCacheAsync()
+        {
+            try
+            {
+                await Http.PostAsync("api/databaseschema/cache/clearall", null);
+                Console.WriteLine("Cache cleared on page load");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to clear cache: {ex.Message + ", "  + ex.StackTrace}");
+                // Don't throw - cache clear failure shouldn't block page load
+            }
         }
 
 

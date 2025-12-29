@@ -87,6 +87,26 @@
             <param name="sqlScript">SQL script to analyze</param>
             <returns>Collection of referenced database objects</returns>
         </member>
+        <member name="M:DynamicDashboardCommon.Helper.CacheHelper.AddOrUpdateAsync``1(System.String,``0,System.Nullable{System.TimeSpan})">
+            <summary>
+            Add or update a cache entry - FIXED VERSION
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.CacheHelper.AddOrUpdate``1(System.String,``0,System.Nullable{System.TimeSpan})">
+            <summary>
+            Synchronous version for non-async contexts
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.CacheHelper.InvalidateDatabaseCacheAsync(System.Int32)">
+            <summary>
+            Invalidate cache for a specific database
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.CacheHelper.GetStatistics">
+            <summary>
+            Get cache statistics for debugging
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Helper.ColorSchemeHelper">
             <summary>
             Helper class for color scheme operations.
@@ -451,6 +471,26 @@
             </summary>
             <param name="key">The scheme key.</param>
             <returns>The color scheme or default if not found.</returns>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.BuilderComponentTemplate">
+            <summary>
+            Represents a component template available in the component library
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.BuilderDashboardTemplate">
+            <summary>
+            Represents a pre-built dashboard layout template
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.BuilderComponentSlot">
+            <summary>
+            Represents a slot within a dashboard template where a component can be placed
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.AIGeneratedComponent">
+            <summary>
+            Represents the result of AI component generation
+            </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.DashboardCategory">
             <summary>
@@ -1541,6 +1581,11 @@
         <member name="P:DynamicDashboardCommon.Models.ThresholdConfig.Label">
             <summary>
             Gets or sets the label for this threshold.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DatabaseSchema.SchemaData">
+            <summary>
+            Raw JSON string - MUST be ignored to prevent recursive serialization
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.SchemaAnalysisRequest">

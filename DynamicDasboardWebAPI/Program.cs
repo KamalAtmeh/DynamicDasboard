@@ -98,7 +98,7 @@ builder.Services.AddScoped<TestAutomationRepository>();
 builder.Services.AddScoped<TestAutomationService>();
 
 // Register HttpClient with a base address
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(5) });
 
 builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 {
@@ -108,7 +108,7 @@ builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 
         // Read timeout dynamically from configuration
         var timeoutSeconds = configuration.GetValue<int>("LlmService:Timeout");
-        if (timeoutSeconds <= 0) timeoutSeconds = 500; 
+        if (timeoutSeconds <= 0) timeoutSeconds = 1000; 
 
         var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
