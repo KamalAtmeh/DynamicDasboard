@@ -19,6 +19,46 @@
             Prepares dashboard object with all required fields before saving
             </summary>
         </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.ShowAddChartModal">
+            <summary>
+            Shows the Add Chart Modal
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.CloseAddChartModal">
+            <summary>
+            Closes the Add Chart Modal
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.AnalyzeChartQuery">
+            <summary>
+            Step 1: Analyze the natural language query using QueryController
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.GenerateSqlAndAddChart">
+            <summary>
+            Step 2: Generate SQL and add chart to dashboard
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.AddCustomChartToDashboard">
+            <summary>
+            Adds the custom chart to the dashboard
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.FindOptimalPosition(System.Int32,System.Int32)">
+            <summary>
+            Finds the optimal position for a new component based on available space
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.GenerateTitleFromQuestion(System.String)">
+            <summary>
+            Generates a title from the natural language question
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.GenerateChartFromQuery">
+            <summary>
+            Generates SQL and explanation from natural language query
+            </summary>
+        </member>
         <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.GetComponentTypeName(System.Int32)">
             <summary>
             Gets the component type name from the DataViewingTypeID

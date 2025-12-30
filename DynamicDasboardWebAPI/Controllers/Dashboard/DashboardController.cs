@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using DynamicDashboardCommon.Models;
 using DynamicDashboardCommon.Helpers;
 using System.IO;
+using DynamicDasboardWebAPI.Services.LLM;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -91,6 +92,62 @@ namespace DynamicDasboardWebAPI.Controllers
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
+
+        /// <summary>
+        /// Generates SQL with explanation for custom chart request
+        /// </summary>
+        [HttpPost("generate-sql-with-explanation")]
+        public async Task<IActionResult> GenerateSqlWithExplanation([FromBody] CustomChartRequest request)
+        {
+            try
+            {
+                if (request.DatabaseId <= 0)
+                {
+                    return BadRequest(new { message = "Valid database ID is required" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Question))
+                {
+                    return BadRequest(new { message = "Question is required" });
+                }
+
+                // Get database schema
+                var schemaService = HttpContext.RequestServices.GetRequiredService<DatabaseSchemaService>();
+                var llmService = HttpContext.RequestServices.GetRequiredService<ILLMService>();
+
+                var database = await schemaService.GetSchemaObject(request.DatabaseId);
+                if (database == null)
+                {
+                    return BadRequest(new { message = "Database schema not found" });
+                }
+
+                string schemaText = schemaService.BuildOptimizedSchemaString(database);
+
+                // Generate SQL with explanation
+                var result = await llmService.GenerateSqlWithExplanationAsync(
+                    request.Question,
+                    schemaText,
+                    null);
+
+                // Extract title from question (first few words, capitalized)
+                var title = ExtractTitleFromQuestion(request.Question);
+
+                return Ok(new
+                {
+                    Success = true,
+                    GeneratedSql = result.SqlQuery,
+                    Title = title,
+                    //Explanation = result.Explanation,
+                    QueryIntent = request.Question
+                });
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+
 
         /// <summary>
         /// Creates a new dashboard.
@@ -304,5 +361,31 @@ namespace DynamicDasboardWebAPI.Controllers
             public int DatabaseId { get; set; }
             public string TemplateId { get; set; }
         }
+
+        /// <summary>
+        /// Extracts a title from a natural language question
+        /// </summary>
+        private string ExtractTitleFromQuestion(string question)
+        {
+            // Simple title extraction - take first 5-7 words and capitalize
+            var words = question.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Take(7)
+                .Select(w => char.ToUpper(w[0]) + w.Substring(1).ToLower());
+
+            var title = string.Join(" ", words);
+
+            // Remove trailing punctuation
+            title = title.TrimEnd('.', '?', '!');
+
+            // Limit length
+            if (title.Length > 50)
+            {
+                title = title.Substring(0, 47) + "...";
+            }
+
+            return title;
+        }
+
+
     }
 }

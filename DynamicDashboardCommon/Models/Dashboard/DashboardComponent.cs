@@ -42,6 +42,12 @@ namespace DynamicDashboardCommon.Models
         public string DataViewingTypeName { get; set; }
 
         /// <summary>
+        /// Gets or sets the type of chart visualization.
+        /// Only applicable when DataViewingTypeID is Chart.
+        /// </summary>
+        public string ChartType { get; set; }
+
+        /// <summary>
         /// Gets or sets the component's position in the layout grid (X coordinate).
         /// </summary>
         public int GridX { get; set; }

@@ -123,6 +123,11 @@
             <param name="id">The dashboard ID.</param>
             <returns>The dashboard.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GenerateSqlWithExplanation(DynamicDashboardCommon.Models.CustomChartRequest)">
+            <summary>
+            Generates SQL with explanation for custom chart request
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.CreateDashboard(DynamicDashboardCommon.Models.DashboardModel)">
             <summary>
             Creates a new dashboard.
@@ -179,6 +184,11 @@
         <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GenerateDashboardWithTemplate(DynamicDasboardWebAPI.Controllers.DashboardController.GenerateWithTemplateRequest)">
             <summary>
             Generate AI dashboard with specific template
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.ExtractTitleFromQuestion(System.String)">
+            <summary>
+            Extracts a title from a natural language question
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.QueryController">

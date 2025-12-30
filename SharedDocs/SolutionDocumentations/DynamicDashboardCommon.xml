@@ -615,6 +615,12 @@
             Not stored in database.
             </summary>
         </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardComponent.ChartType">
+            <summary>
+            Gets or sets the type of chart visualization.
+            Only applicable when DataViewingTypeID is Chart.
+            </summary>
+        </member>
         <member name="P:DynamicDashboardCommon.Models.DashboardComponent.GridX">
             <summary>
             Gets or sets the component's position in the layout grid (X coordinate).

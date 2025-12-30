@@ -70,6 +70,9 @@
                     <button class="btn btn-success" @onclick="ShowTemplateModal">
                         <i class="fas fa-magic me-1"></i>Generate with AI
                     </button>
+                    <button class="btn btn-info" @onclick="ShowAddChartModal" disabled="@(dashboard.DatabaseID <= 0)">
+                        <i class="fas fa-plus-circle me-1"></i>Add Custom Chart
+                    </button>
                     <button class="btn btn-outline-info" @onclick="TogglePreviewMode" disabled="@(!dashboard.Components.Any())">
                         <i class="fas fa-eye me-1"></i>Preview with Data
                     </button>
@@ -633,6 +636,207 @@
         color: #718096;
         line-height: 1.4;
         }
+
+        /* Steps Indicator */
+        .steps-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .step.completed .step-number {
+            background: #10b981;
+            color: white;
+        }
+
+            .step.completed .step-number::before {
+                content: "✓";
+            }
+
+        .step-label {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .step.active .step-label {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .step-line {
+            width: 80px;
+            height: 2px;
+            background: #e0e0e0;
+            margin: 0 1rem;
+            transition: all 0.3s;
+        }
+
+            .step-line.active {
+                background: #667eea;
+            }
+
+        /* Chart Type Grid */
+        .chart-type-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .chart-type-option {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+            .chart-type-option:hover {
+                border-color: #667eea;
+                background: #f8f9ff;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            }
+
+            .chart-type-option.selected {
+                border-color: #667eea;
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            }
+
+            .chart-type-option i {
+                color: #667eea;
+            }
+
+            .chart-type-option span {
+                font-weight: 600;
+                color: #2d3748;
+            }
+
+        /* Size Selection Grid */
+        .size-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .size-option {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+            .size-option:hover {
+                border-color: #667eea;
+                background: #f8f9ff;
+                transform: translateY(-2px);
+            }
+
+            .size-option.selected {
+                border-color: #667eea;
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            }
+
+        .size-preview {
+            background: #667eea;
+            margin: 0 auto 1rem;
+            border-radius: 4px;
+        }
+
+        .small-preview {
+            width: 60px;
+            height: 40px;
+        }
+
+        .medium-preview {
+            width: 90px;
+            height: 60px;
+        }
+
+        .large-preview {
+            width: 120px;
+            height: 80px;
+        }
+
+        .size-option span {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.9rem;
+        }
+
+        /* SQL Preview */
+        .sql-preview {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+            .sql-preview pre {
+                margin: 0;
+                color: #e2e8f0;
+                font-family: 'Courier New', monospace;
+                font-size: 0.9rem;
+                white-space: pre-wrap;
+            }
+
+            .sql-preview code {
+                color: #a0aec0;
+            }
+
+        /* Examples Section */
+        .examples-section {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        /* Step Content Animation */
+        .step-content {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+
+
     </style>
 
 </div>
@@ -668,10 +872,10 @@
                     </select>
                     @if (selectedDatabaseIdForTemplate == 0)
                     {
-                        <div class="alert alert-warning d-flex align-items-center mt-3 mb-0" style="border-radius: 8px; border-left: 4px solid #ffc107;">
+@*                         <div class="alert alert-warning d-flex align-items-center mt-3 mb-0" style="border-radius: 8px; border-left: 4px solid #ffc107;">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <span>Please select a database to enable AI generation</span>
-                        </div>
+                        </div> *@
                     }
                 </div>
 
@@ -788,6 +992,274 @@
     </div>
 </div>
 <div class="modal-backdrop fade @(showTemplateModal ? "show" : "")" style="display: @(showTemplateModal ? "block" : "none")"></div>
+
+<div class="modal fade @(showAddChartModal ? "show" : "")" tabindex="-1" style="display: @(showAddChartModal ? "block" : "none")">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 2rem;">
+                <div class="d-flex align-items-center text-white">
+                    <i class="fas fa-magic me-3" style="font-size: 2rem;"></i>
+                    <div>
+                        <h3 class="mb-0 fw-bold">Add Custom Chart</h3>
+                        <p class="mb-0 opacity-75" style="font-size: 0.95rem;">Describe what you want to visualize in natural language</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseAddChartModal"></button>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+
+                <!-- Step Indicator -->
+                <div class="steps-indicator mb-4">
+                    <div class="step @(addChartStep >= 1 ? "active" : "") @(addChartStep > 1 ? "completed" : "")">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Describe</div>
+                    </div>
+                    <div class="step-line @(addChartStep > 1 ? "active" : "")"></div>
+                    <div class="step @(addChartStep >= 2 ? "active" : "") @(addChartStep > 2 ? "completed" : "")">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Configure</div>
+                    </div>
+                    <div class="step-line @(addChartStep > 2 ? "active" : "")"></div>
+                    <div class="step @(addChartStep >= 3 ? "active" : "")">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Preview</div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Natural Language Query -->
+                @if (addChartStep == 1)
+                {
+                    <div class="step-content">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex align-items-center mb-2" style="font-size: 1.1rem;">
+                                <i class="fas fa-comment-dots me-2 text-primary"></i>
+                                What would you like to visualize?
+                            </label>
+                            <textarea class="form-control"
+                                      rows="5"
+                                      @bind="customChartQuery"
+                                      placeholder="Example: Show me total violations by month for the last 6 months&#10;Example: Compare revenue across different regions&#10;Example: Display top 10 drivers with most violations"
+                                      style="border-radius: 8px; border: 2px solid #dee2e6; font-size: 1rem;"></textarea>
+                            <small class="form-text text-muted mt-2">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Tip: Be specific about timeframes, filters, and what data you want to see
+                            </small>
+                        </div>
+
+                        <!-- Examples -->
+                        <div class="examples-section">
+                            <p class="mb-2 fw-bold text-muted small">Quick Examples:</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick='() => customChartQuery = "Show violations grouped by severity level"'>
+                                    Violations by Severity
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick='() => customChartQuery = "Display monthly trend of traffic incidents"'>
+                                    Monthly Trend
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick='() => customChartQuery = "Top 5 violation types by count"'>
+                                    Top Violations
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Step 2: Chart Configuration -->
+                @if (addChartStep == 2)
+                {
+                    <div class="step-content">
+                        <div class="alert alert-info d-flex align-items-start mb-4" style="border-radius: 8px;">
+                            <i class="fas fa-check-circle me-2 mt-1" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <strong>Query Analyzed Successfully!</strong>
+                                <p class="mb-0 mt-1">@customChartExplanation</p>
+                            </div>
+                        </div>
+
+                        <!-- Chart Title Input -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex align-items-center mb-2">
+                                <i class="fas fa-heading me-2 text-primary"></i>
+                                Chart Title
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-lg"
+                                   @bind="customChartTitle"
+                                   placeholder="Enter a descriptive title for your chart"
+                                   style="border-radius: 8px; border: 2px solid #dee2e6;" />
+                            <small class="form-text text-muted mt-1">
+                                This will appear as the heading above your chart
+                            </small>
+                        </div>
+
+                        <!-- Chart Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex align-items-center mb-3">
+                                <i class="fas fa-chart-bar me-2 text-primary"></i>
+                                Select Chart Type
+                            </label>
+                            <div class="chart-type-grid">
+                                <div class="chart-type-option @(customChartType == "bar" ? "selected" : "")"
+                                     @onclick='() => customChartType = "bar"'>
+                                    <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                    <span>Bar Chart</span>
+                                </div>
+                                <div class="chart-type-option @(customChartType == "column" ? "selected" : "")"
+                                     @onclick='() => customChartType = "column"'>
+                                    <i class="fas fa-chart-column fa-2x mb-2"></i>
+                                    <span>Column Chart</span>
+                                </div>
+                                <div class="chart-type-option @(customChartType == "line" ? "selected" : "")"
+                                     @onclick='() => customChartType = "line"'>
+                                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                    <span>Line Chart</span>
+                                </div>
+                                <div class="chart-type-option @(customChartType == "pie" ? "selected" : "")"
+                                     @onclick='() => customChartType = "pie"'>
+                                    <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                                    <span>Pie Chart</span>
+                                </div>
+                                <div class="chart-type-option @(customChartType == "donut" ? "selected" : "")"
+                                     @onclick='() => customChartType = "donut"'>
+                                    <i class="fas fa-ring fa-2x mb-2"></i>
+                                    <span>Donut Chart</span>
+                                </div>
+                                <div class="chart-type-option @(customChartType == "area" ? "selected" : "")"
+                                     @onclick='() => customChartType = "area"'>
+                                    <i class="fas fa-chart-area fa-2x mb-2"></i>
+                                    <span>Area Chart</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Size Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex align-items-center mb-3">
+                                <i class="fas fa-expand me-2 text-primary"></i>
+                                Chart Size
+                            </label>
+                            <div class="size-selection-grid">
+                                <div class="size-option @(customChartSize == "small" ? "selected" : "")"
+                                     @onclick='() => customChartSize = "small"'>
+                                    <div class="size-preview small-preview"></div>
+                                    <span>Small (3x2)</span>
+                                </div>
+                                <div class="size-option @(customChartSize == "medium" ? "selected" : "")"
+                                     @onclick='() => customChartSize = "medium"'>
+                                    <div class="size-preview medium-preview"></div>
+                                    <span>Medium (6x3)</span>
+                                </div>
+                                <div class="size-option @(customChartSize == "large" ? "selected" : "")"
+                                     @onclick='() => customChartSize = "large"'>
+                                    <div class="size-preview large-preview"></div>
+                                    <span>Large (12x4)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generated SQL Preview -->
+                        @if (!string.IsNullOrEmpty(customChartSql))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-bold d-flex align-items-center mb-2">
+                                    <i class="fas fa-code me-2 text-primary"></i>
+                                    Generated SQL Query
+                                </label>
+                                <div class="sql-preview">
+                                    <pre><code>@customChartSql</code></pre>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Step 3: Preview -->
+                @if (addChartStep == 3)
+                {
+                    <div class="step-content">
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle text-success mb-3" style="font-size: 4rem;"></i>
+                            <h4 class="mb-3">Chart Added Successfully!</h4>
+                            <p class="text-muted mb-4">Your custom chart has been added to the dashboard</p>
+                            <div class="chart-summary p-4" style="background: #f8f9fa; border-radius: 12px; text-align: left;">
+                                <div class="d-flex align-items-start mb-3">
+                                    <i class="fas fa-chart-@(GetChartIcon(customChartType)) me-3 mt-1 text-primary" style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <strong>@customChartTitle</strong>
+                                        <p class="mb-0 text-muted small">@customChartType.ToUpper() Chart · @customChartSize.ToUpper() Size</p>
+                                    </div>
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Automatically placed in the best available position
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            </div>
+            <div class="modal-footer" style="padding: 1.5rem 2rem; border-top: 2px solid #f0f0f0;">
+                <button type="button" class="btn btn-secondary btn-lg" @onclick="CloseAddChartModal" style="border-radius: 8px; padding: 0.75rem 2rem;">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+
+                @if (addChartStep == 1)
+                {
+                    <button type="button" class="btn btn-primary btn-lg"
+                            @onclick="AnalyzeChartQuery"
+                            disabled="@(string.IsNullOrWhiteSpace(customChartQuery) || isAnalyzing)"
+                            style="border-radius: 8px; padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                        @if (isAnalyzing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <text>Analyzing...</text>
+                        }
+                        else
+                        {
+                            <i class="fas fa-arrow-right me-2"></i>
+                            <text>Next: Configure</text>
+                        }
+                    </button>
+                }
+                else if (addChartStep == 2)
+                {
+                    <button type="button" class="btn btn-outline-secondary btn-lg"
+                            @onclick='() => addChartStep = 1'
+                            style="border-radius: 8px; padding: 0.75rem 2rem;">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg"
+                            @onclick="GenerateSqlAndAddChart"
+                            disabled="@(string.IsNullOrWhiteSpace(customChartTitle) || isGeneratingSql)"
+                            style="border-radius: 8px; padding: 0.75rem 2rem;">
+                        @if (isGeneratingSql)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <text>Generating...</text>
+                        }
+                        else
+                        {
+                            <i class="fas fa-plus me-2"></i>
+                            <text>Add Chart</text>
+                        }
+                    </button>
+                }
+                else if (addChartStep == 3)
+                {
+                    <button type="button" class="btn btn-success btn-lg"
+                            @onclick="CloseAddChartModal"
+                            style="border-radius: 8px; padding: 0.75rem 2rem;">
+                        <i class="fas fa-check me-2"></i>Done
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade @(showAddChartModal ? "show" : "")" style="display: @(showAddChartModal ? "block" : "none")"></div>
+
+
 
 <style>
     .dashboard-builder {
@@ -1066,7 +1538,22 @@
     private Dictionary<int, List<Dictionary<string, object>>> componentData = new Dictionary<int, List<Dictionary<string, object>>>();
     private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
     private bool isLoadingAllData = false;
-    
+
+    private bool showAddChartModal = false;
+    private int addChartStep = 1;
+    private string customChartQuery = "";
+    private string customChartType = "bar";
+    private string customChartSize = "medium";
+    private string customChartSql = "";
+    private string customChartTitle = "";
+    private string customChartExplanation = "";
+    private bool isGeneratingChart = false;
+    private bool isAnalyzing = false;
+    private bool isGeneratingSql = false;
+
+    // Analysis response to pass to generation step
+    private AnalysisResponse analysisResponse = null;
+
     // Component categories
     private List<string> componentCategories = new List<string>
     {
@@ -1565,6 +2052,332 @@
         return dashboard.Components.Max(c => c.GridY + c.GridHeight) + 2;
     }
 
+    /// <summary>
+    /// Shows the Add Chart Modal
+    /// </summary>
+    private void ShowAddChartModal()
+    {
+        if (dashboard.DatabaseID <= 0)
+        {
+            ToastService.ShowWarning("Please select a database in Dashboard Settings first");
+            return;
+        }
+
+        // Reset modal state
+        addChartStep = 1;
+        customChartQuery = "";
+        customChartTitle = "";
+        customChartType = "bar";
+        customChartSize = "medium";
+        customChartSql = "";
+        customChartExplanation = "";
+        analysisResponse = null;
+
+        showAddChartModal = true;
+
+    }
+
+    /// <summary>
+    /// Closes the Add Chart Modal
+    /// </summary>
+    private void CloseAddChartModal()
+    {
+        showAddChartModal = false;
+    }
+
+    /// <summary>
+    /// Step 1: Analyze the natural language query using QueryController
+    /// </summary>
+    private async Task AnalyzeChartQuery()
+    {
+        if (string.IsNullOrWhiteSpace(customChartQuery))
+        {
+            ToastService.ShowWarning("Please enter a description");
+            return;
+        }
+
+        isAnalyzing = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new NlQueryRequest
+                {
+                    Question = customChartQuery,
+                    DatabaseId = dashboard.DatabaseID
+                };
+
+            var response = await Http.PostAsJsonAsync("api/query/analyze", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                analysisResponse = await response.Content.ReadFromJsonAsync<AnalysisResponse>();
+
+                if (analysisResponse != null && analysisResponse.Success)
+                {
+                    customChartExplanation = analysisResponse.Explanation;
+
+                    // Auto-generate a title from the question if not set
+                    if (string.IsNullOrWhiteSpace(customChartTitle))
+                    {
+                        customChartTitle = GenerateTitleFromQuestion(customChartQuery);
+                    }
+
+                    // Move to configuration step
+                    addChartStep = 2;
+                    ToastService.ShowSuccess("Query analyzed successfully!");
+                }
+                else
+                {
+                    ToastService.ShowError("Failed to analyze query");
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error analyzing query: {error}");
+                ToastService.ShowError("Failed to analyze query");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}");
+            ToastService.ShowError($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isAnalyzing = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Step 2: Generate SQL and add chart to dashboard
+    /// </summary>
+    private async Task GenerateSqlAndAddChart()
+    {
+        if (string.IsNullOrWhiteSpace(customChartTitle))
+        {
+            ToastService.ShowWarning("Please enter a chart title");
+            return;
+        }
+
+        if (analysisResponse == null)
+        {
+            ToastService.ShowError("No analysis response available");
+            return;
+        }
+
+        isGeneratingSql = true;
+        StateHasChanged();
+
+        try
+        {
+            // Prepare SQL generation request
+            var request = new NlQueryConfirmationRequest
+                {
+                    OriginalQuestion = customChartQuery,
+                    DatabaseId = dashboard.DatabaseID,
+                    ConfirmedUnderstanding = analysisResponse.Explanation,
+                    ResolvedAmbiguities = new Dictionary<string, string>(),
+                    AdjustedParameters = new Dictionary<string, string>()
+                };
+
+            var response = await Http.PostAsJsonAsync("api/query/generate", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var sqlResponse = await response.Content.ReadFromJsonAsync<SqlGenerationResponse>();
+
+                if (sqlResponse != null && sqlResponse.Success)
+                {
+                    customChartSql = sqlResponse.GeneratedSql;
+
+                    // Add the chart to dashboard
+                    AddCustomChartToDashboard();
+
+                    // Move to success step
+                    addChartStep = 3;
+                    ToastService.ShowSuccess("Chart added to dashboard!");
+                }
+                else
+                {
+                    ToastService.ShowError("Failed to generate SQL query");
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error generating SQL: {error}");
+                ToastService.ShowError("Failed to generate SQL");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}");
+            ToastService.ShowError($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isGeneratingSql = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Adds the custom chart to the dashboard
+    /// </summary>
+    private void AddCustomChartToDashboard()
+    {
+        try
+        {
+            // Determine size based on selection
+            var (width, height) = customChartSize switch
+            {
+                "small" => (3, 2),
+                "medium" => (6, 3),
+                "large" => (12, 4),
+                _ => (6, 3)
+            };
+
+            // Find optimal position
+            var (x, y) = FindOptimalPosition(width, height);
+
+            // Create visualization config with chart type
+            var visualizationConfig = new
+            {
+                chartType = customChartType,
+                showLegend = true,
+                showGrid = true,
+                showDataLabels = false
+            };
+
+            // Create new component
+            var newComponent = new DashboardComponent
+                {
+                    ComponentID = dashboard.Components.Any()
+                        ? dashboard.Components.Max(c => c.ComponentID) + 1
+                        : 1,
+                    Title = customChartTitle,
+                    Description = customChartExplanation,
+                    QueryText = customChartSql,
+                    QueryIntent = customChartQuery,
+                    DataViewingTypeID = (int)DataViewingTypeEnum.Chart,
+                    DataViewingTypeName = "Chart",
+                    ChartType = customChartType, // Store chart type in dedicated field
+                    GridX = x,
+                    GridY = y,
+                    GridWidth = width,
+                    GridHeight = height,
+                    VisualizationConfig = JsonSerializer.Serialize(visualizationConfig),
+                    FilterExpression = "",
+                    RefreshInterval = 0,
+                    IsAIGenerated = true,
+                    IsValidated = false,
+                    IsVisible = true,
+                    CreatedAt = DateTime.UtcNow,
+                    LastUpdated = DateTime.UtcNow
+                };
+
+            // Add to dashboard
+            dashboard.Components.Add(newComponent);
+
+            // Mark as unsaved
+            hasUnsavedChanges = true;
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding chart: {ex}");
+            ToastService.ShowError($"Error adding chart: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Finds the optimal position for a new component based on available space
+    /// </summary>
+    private (int x, int y) FindOptimalPosition(int width, int height)
+    {
+        const int gridColumns = 12;
+        const int maxSearchRows = 20; // Limit search to prevent infinite loops
+
+        // Create a grid to track occupied cells
+        var occupiedCells = new HashSet<(int x, int y)>();
+
+        if (dashboard.Components != null)
+        {
+            foreach (var component in dashboard.Components)
+            {
+                for (int x = component.GridX; x < component.GridX + component.GridWidth; x++)
+                {
+                    for (int y = component.GridY; y < component.GridY + component.GridHeight; y++)
+                    {
+                        occupiedCells.Add((x, y));
+                    }
+                }
+            }
+        }
+
+        // Try to find a spot row by row
+        for (int y = 0; y < maxSearchRows; y++)
+        {
+            for (int x = 0; x <= gridColumns - width; x++)
+            {
+                bool canFit = true;
+
+                // Check if all required cells are free
+                for (int cx = x; cx < x + width && canFit; cx++)
+                {
+                    for (int cy = y; cy < y + height && canFit; cy++)
+                    {
+                        if (occupiedCells.Contains((cx, cy)))
+                        {
+                            canFit = false;
+                        }
+                    }
+                }
+
+                if (canFit)
+                {
+                    return (x, y);
+                }
+            }
+        }
+
+        // If no space found, place at the bottom
+        int maxY = dashboard.Components?.Any() == true
+            ? dashboard.Components.Max(c => c.GridY + c.GridHeight)
+            : 0;
+
+        return (0, maxY);
+    }
+
+    /// <summary>
+    /// Generates a title from the natural language question
+    /// </summary>
+    private string GenerateTitleFromQuestion(string question)
+    {
+        // Simple title extraction - take first 5-7 words and capitalize
+        var words = question.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(7)
+            .Select(w => char.ToUpper(w[0]) + w.Substring(1).ToLower());
+
+        var title = string.Join(" ", words);
+
+        // Remove trailing punctuation
+        title = title.TrimEnd('.', '?', '!');
+
+        // Limit length
+        if (title.Length > 50)
+        {
+            title = title.Substring(0, 47) + "...";
+        }
+
+        return title;
+    }
+
+
 
 
     private async Task LoadAllComponentsData()
@@ -1690,6 +2503,88 @@
         public string ErrorMessage { get; set; }
     }
 
+    //Add Custom Chart Modal
+    // Show Add Chart Modal
+
+
+    /// <summary>
+    /// Generates SQL and explanation from natural language query
+    /// </summary>
+    private async Task GenerateChartFromQuery()
+    {
+        if (string.IsNullOrWhiteSpace(customChartQuery))
+        {
+            ToastService.ShowWarning("Please enter a description");
+            return;
+        }
+
+        isGeneratingChart = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new
+            {
+                Question = customChartQuery,
+                DatabaseId = dashboard.DatabaseID
+            };
+
+            var response = await Http.PostAsJsonAsync("api/Dashboard/generate-sql-with-explanation", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<SqlGenerationResult>();
+
+                if (result != null && result.Success)
+                {
+                    customChartSql = result.GeneratedSql;
+                    customChartTitle = result.Title ?? "Custom Chart";
+                    customChartExplanation = result.Explanation ?? "Chart generated successfully";
+
+                    // Move to configuration step
+                    addChartStep = 2;
+                    ToastService.ShowSuccess("SQL generated successfully!");
+                }
+                else
+                {
+                    ToastService.ShowError("Failed to generate SQL query");
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error: {error}");
+                ToastService.ShowError("Failed to generate SQL");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}");
+            ToastService.ShowError($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isGeneratingChart = false;
+            StateHasChanged();
+        }
+    }
+
+
+
+
+
+
+
+    // Helper class for SQL generation result
+    private class SqlGenerationResult
+    {
+        public bool Success { get; set; }
+        public string GeneratedSql { get; set; }
+        public string Title { get; set; }
+        public string Explanation { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
     // Helper classes
     public class DataSource
     {
@@ -1707,6 +2602,48 @@
         public string Category { get; set; }
         public string VisualizationConfig { get; set; }
     }
+
+
+    // Helper classes for API responses (if not already defined in your project)
+
+    private class AnalysisResponse
+    {
+        public string Question { get; set; }
+        public int DatabaseId { get; set; }
+        public string Explanation { get; set; }
+        public bool HasAmbiguities { get; set; }
+        public List<string> DetectedAmbiguities { get; set; }
+        public Dictionary<string, string> AdjustableParameters { get; set; }
+        public string PreviewSql { get; set; }
+        public double ConfidenceScore { get; set; }
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
+    private class SqlGenerationResponse
+    {
+        public string OriginalQuestion { get; set; }
+        public int DatabaseId { get; set; }
+        public string GeneratedSql { get; set; }
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
+    private class NlQueryRequest
+    {
+        public string Question { get; set; }
+        public int DatabaseId { get; set; }
+    }
+
+    private class NlQueryConfirmationRequest
+    {
+        public string OriginalQuestion { get; set; }
+        public int DatabaseId { get; set; }
+        public string ConfirmedUnderstanding { get; set; }
+        public Dictionary<string, string> ResolvedAmbiguities { get; set; }
+        public Dictionary<string, string> AdjustedParameters { get; set; }
+    }
+
 
     private string FormatNumericValue(object value, DashboardComponent component)
     {
@@ -1832,4 +2769,6 @@
             _ => "Unknown"
         };
     }
+
+
 }

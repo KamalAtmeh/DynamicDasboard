@@ -442,20 +442,20 @@ namespace DynamicDasboardWebAPI.Repositories
             DashboardComponent component, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
-                INSERT INTO DashboardComponents (
-                    DashboardID, Title, Description, DataViewingTypeID, GridX,
-                    GridY, GridWidth, GridHeight, QueryText, QueryIntent,
-                    VisualizationConfig, IsValidated, ValidatedBy, ValidatedAt,
-                    IsVisible, IsAIGenerated, RefreshInterval, FilterExpression,
-                    CreatedAt, LastUpdated
-                ) VALUES (
-                    @DashboardID, @Title, @Description, @DataViewingTypeID, @GridX,
-                    @GridY, @GridWidth, @GridHeight, @QueryText, @QueryIntent,
-                    @VisualizationConfig, @IsValidated, @ValidatedBy, @ValidatedAt,
-                    @IsVisible, @IsAIGenerated, @RefreshInterval, @FilterExpression,
-                    @CreatedAt, @LastUpdated
-                );
-                SELECT CAST(SCOPE_IDENTITY() as int)";
+    INSERT INTO DashboardComponents (
+        DashboardID, Title, Description, DataViewingTypeID, GridX,
+        GridY, GridWidth, GridHeight, QueryText, QueryIntent,
+        VisualizationConfig, ChartType, IsValidated, ValidatedBy, ValidatedAt,
+        IsVisible, IsAIGenerated, RefreshInterval, FilterExpression,
+        CreatedAt, LastUpdated
+    ) VALUES (
+        @DashboardID, @Title, @Description, @DataViewingTypeID, @GridX,
+        @GridY, @GridWidth, @GridHeight, @QueryText, @QueryIntent,
+        @VisualizationConfig, @ChartType, @IsValidated, @ValidatedBy, @ValidatedAt,
+        @IsVisible, @IsAIGenerated, @RefreshInterval, @FilterExpression,
+        @CreatedAt, @LastUpdated
+    );
+    SELECT CAST(SCOPE_IDENTITY() as int)";
 
             component.CreatedAt = DateTime.UtcNow;
             component.LastUpdated = DateTime.UtcNow;
@@ -518,25 +518,26 @@ namespace DynamicDasboardWebAPI.Repositories
             DashboardComponent component, IDbConnection connection = null, IDbTransaction transaction = null)
         {
             const string sql = @"
-                UPDATE DashboardComponents SET
-                    Title = @Title,
-                    Description = @Description,
-                    DataViewingTypeID = @DataViewingTypeID,
-                    GridX = @GridX,
-                    GridY = @GridY,
-                    GridWidth = @GridWidth,
-                    GridHeight = @GridHeight,
-                    QueryText = @QueryText,
-                    QueryIntent = @QueryIntent,
-                    VisualizationConfig = @VisualizationConfig,
-                    IsValidated = @IsValidated,
-                    ValidatedBy = @ValidatedBy,
-                    ValidatedAt = @ValidatedAt,
-                    IsVisible = @IsVisible,
-                    RefreshInterval = @RefreshInterval,
-                    FilterExpression = @FilterExpression,
-                    LastUpdated = @LastUpdated
-                WHERE ComponentID = @ComponentID";
+    UPDATE DashboardComponents SET
+        Title = @Title,
+        Description = @Description,
+        DataViewingTypeID = @DataViewingTypeID,
+        GridX = @GridX,
+        GridY = @GridY,
+        GridWidth = @GridWidth,
+        GridHeight = @GridHeight,
+        QueryText = @QueryText,
+        QueryIntent = @QueryIntent,
+        VisualizationConfig = @VisualizationConfig,
+        ChartType = @ChartType,
+        IsValidated = @IsValidated,
+        ValidatedBy = @ValidatedBy,
+        ValidatedAt = @ValidatedAt,
+        IsVisible = @IsVisible,
+        RefreshInterval = @RefreshInterval,
+        FilterExpression = @FilterExpression,
+        LastUpdated = @LastUpdated
+    WHERE ComponentID = @ComponentID";
 
             component.LastUpdated = DateTime.UtcNow;
 

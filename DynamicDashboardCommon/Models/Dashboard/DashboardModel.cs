@@ -122,4 +122,12 @@ namespace DynamicDashboardCommon.Models
         Validated = 3,
         Rejected = 4
     }
+
+    public class CustomChartRequest
+    {
+        public int DatabaseId { get; set; }
+        public string Question { get; set; }
+    }
+
+
 }
