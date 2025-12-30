@@ -13,73 +13,73 @@
 <div class="dashboard-builder">
     <!-- Header -->
     <div class="builder-header">
-    <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-3">
-            @if (!isPreviewMode)
-            {
-@*                 <button class="btn btn-outline-secondary" @onclick="() => NavigationManager.NavigateTo('/admin/dashboards')">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                @if (!isPreviewMode)
+                {
+                    @*                 <button class="btn btn-outline-secondary" @onclick="() => NavigationManager.NavigateTo('/admin/dashboards')">
                     <i class="fas fa-arrow-left me-1"></i>Back
                 </button> *@
-            }
-            
-            @if (!isEditingTitle && !isPreviewMode)
-            {
-                <h3 class="mb-0" @onclick="() => isEditingTitle = true" style="cursor: pointer;">
-                    @dashboard.Title
-                    <i class="fas fa-edit ms-2 text-muted" style="font-size: 0.8rem;"></i>
-                </h3>
-            }
-            else if (!isPreviewMode)
-            {
-                <input @ref="titleInputRef" 
-                       type="text" 
-                       class="form-control" 
-                       @bind="dashboard.Title" 
-                       @onblur="() => isEditingTitle = false"
-                       style="width: 300px;" />
-            }
-            else
-            {
-                <h3 class="mb-0">@dashboard.Title</h3>
-            }
-        </div>
-        
-        <div class="d-flex gap-2 align-items-center">
-            @if (isPreviewMode)
-            {
-                <!-- Preview Mode Controls -->
-                <button class="btn btn-outline-secondary" @onclick="TogglePreviewMode">
-                    <i class="fas fa-edit me-1"></i>Exit Preview
-                </button>
-                <button class="btn btn-outline-primary" @onclick="LoadAllComponentsData" disabled="@isLoadingAllData">
-                    @if (isLoadingAllData)
-                    {
-                        <span class="spinner-border spinner-border-sm me-1"></span>
-                        <text>Refreshing...</text>
-                    }
-                    else
-                    {
-                        <i class="fas fa-sync me-1"></i>
-                        <text>Refresh Data</text>
-                    }
-                </button>
-            }
-            else
-            {
-                <!-- Design Mode Controls -->
-                <button class="btn btn-success" @onclick="ShowTemplateModal">
-                    <i class="fas fa-magic me-1"></i>Generate with AI
-                </button>
-                <button class="btn btn-outline-info" @onclick="TogglePreviewMode" disabled="@(!dashboard.Components.Any())">
-                    <i class="fas fa-eye me-1"></i>Preview with Data
-                </button>
-                <button class="btn btn-primary" @onclick="SaveDashboard">
-                    <i class="fas fa-save me-1"></i>Save
-                </button>
-            }
+                }
+
+                @if (!isEditingTitle && !isPreviewMode)
+                {
+                    <h3 class="mb-0" @onclick="() => isEditingTitle = true" style="cursor: pointer;">
+                        @dashboard.Title
+                        <i class="fas fa-edit ms-2 text-muted" style="font-size: 0.8rem;"></i>
+                    </h3>
+                }
+                else if (!isPreviewMode)
+                {
+                    <input @ref="titleInputRef" 
+                    type="text" 
+                    class="form-control" 
+                    @bind="dashboard.Title" 
+                    @onblur="() => isEditingTitle = false"
+                    style="width: 300px;" />
+                }
+                else
+                {
+                    <h3 class="mb-0">@dashboard.Title</h3>
+                }
+            </div>
+
+            <div class="d-flex gap-2 align-items-center">
+                @if (isPreviewMode)
+                {
+                    <!-- Preview Mode Controls -->
+                    <button class="btn btn-outline-secondary" @onclick="TogglePreviewMode">
+                        <i class="fas fa-edit me-1"></i>Exit Preview
+                    </button>
+                    <button class="btn btn-outline-primary" @onclick="LoadAllComponentsData" disabled="@isLoadingAllData">
+                        @if (isLoadingAllData)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <text>Refreshing...</text>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sync me-1"></i>
+                            <text>Refresh Data</text>
+                        }
+                    </button>
+                }
+                else
+                {
+                    <!-- Design Mode Controls -->
+                    <button class="btn btn-success" @onclick="ShowTemplateModal">
+                        <i class="fas fa-magic me-1"></i>Generate with AI
+                    </button>
+                    <button class="btn btn-outline-info" @onclick="TogglePreviewMode" disabled="@(!dashboard.Components.Any())">
+                        <i class="fas fa-eye me-1"></i>Preview with Data
+                    </button>
+                    <button class="btn btn-primary" @onclick="SaveDashboard">
+                        <i class="fas fa-save me-1"></i>Save
+                    </button>
+                }
+            </div>
         </div>
     </div>
-</div>
 
     <!-- Main Content -->
     @* REPLACE the builder-content section with this enhanced version *@
@@ -95,9 +95,9 @@
                 <div class="sidebar-body">
                     <div class="mb-3">
                         <input type="text"
-                               class="form-control form-control-sm"
-                               placeholder="Search components..."
-                               @bind="componentSearchTerm" />
+                        class="form-control form-control-sm"
+                        placeholder="Search components..."
+                        @bind="componentSearchTerm" />
                     </div>
 
                     @foreach (var category in componentCategories)
@@ -162,9 +162,9 @@
                         @foreach (var component in dashboard.Components)
                         {
                             <div class="dashboard-component @(selectedComponentId == component.ComponentID && !isPreviewMode ? "selected" : "")"
-                                 style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
+                            style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
                                     grid-row: @(component.GridY + 1) / span @component.GridHeight;"
-                                 @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
+                            @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
 
                                 <div class="component-header">
                                     <span class="component-title">@component.Title</span>
@@ -200,8 +200,10 @@
                                             <div class="kpi-display">
                                                 @if (data.Any())
                                                 {
-                                                    var value = data[0].ContainsKey("value") ? data[0]["value"]?.ToString() : "N/A";
-                                                    <div class="kpi-value">@value</div>
+                                                    var rawValue = data[0].ContainsKey("value") ? data[0]["value"] : null;
+                                                    var formattedValue = FormatNumericValue(rawValue, component); // USE FORMATTING
+
+                                                    <div class="kpi-value">@formattedValue</div>
                                                     <div class="kpi-label">@component.Description</div>
                                                 }
                                                 else
@@ -491,145 +493,145 @@
     <style>
         /* Preview Mode Styles */
         .builder-content.preview-mode {
-            background: #f5f5f5;
+        background: #f5f5f5;
         }
 
         .builder-canvas-container.fullscreen {
-            width: 100%;
-            flex: 1;
+        width: 100%;
+        flex: 1;
         }
 
         /* KPI Display */
         .kpi-display {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 1rem;
         }
 
         .kpi-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #667eea;
-            line-height: 1;
-            margin-bottom: 0.5rem;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        line-height: 1;
+        margin-bottom: 0.5rem;
         }
 
         .kpi-label {
-            font-size: 0.9rem;
-            color: #718096;
-            text-align: center;
+        font-size: 0.9rem;
+        color: #718096;
+        text-align: center;
         }
 
         /* Chart Preview */
         .chart-preview {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 1rem;
         }
 
         /* Table in component */
         .component-body .table {
-            font-size: 0.85rem;
+        font-size: 0.85rem;
         }
 
-            .component-body .table th {
-                background: #f8f9fa;
-                position: sticky;
-                top: 0;
-                z-index: 1;
-            }
+        .component-body .table th {
+        background: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        }
 
         .chart-data-preview {
-            padding: 1rem;
-            height: 100%;
-            overflow: auto;
+        padding: 1rem;
+        height: 100%;
+        overflow: auto;
         }
 
         .chart-header {
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 0.5rem;
-            margin-bottom: 0.75rem;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
         }
 
         .chart-data-table {
-            font-size: 0.85rem;
+        font-size: 0.85rem;
         }
 
-            .chart-data-table .table th {
-                background: #f8f9fa;
-                font-weight: 600;
-                position: sticky;
-                top: 0;
-                z-index: 1;
-            }
+        .chart-data-table .table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        }
 
         /* Label Display */
         .label-display {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
         }
 
         .label-value {
-            font-size: 3rem;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .label-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            text-align: center;
-            opacity: 0.95;
+        font-size: 1.1rem;
+        font-weight: 500;
+        text-align: center;
+        opacity: 0.95;
         }
 
         /* Card Display */
         .card-display {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
         .card-content {
-            text-align: center;
-            width: 100%;
+        text-align: center;
+        width: 100%;
         }
 
         .card-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 0.5rem;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
         }
 
         .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #4a5568;
-            margin-bottom: 0.25rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.25rem;
         }
 
         .card-description {
-            font-size: 0.9rem;
-            color: #718096;
-            line-height: 1.4;
+        font-size: 0.9rem;
+        color: #718096;
+        line-height: 1.4;
         }
     </style>
 
@@ -679,7 +681,7 @@
                     {
                         <div class="col-lg-4">
                             <div class="template-card-enhanced @(selectedTemplateId == template.Id ? "selected" : "")"
-                                 @onclick="() => selectedTemplateId = template.Id">
+                            @onclick="() => selectedTemplateId = template.Id">
 
                                 <!-- Template Preview -->
                                 <div class="template-preview-enhanced">
@@ -767,9 +769,9 @@
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
                 <button type="button" class="btn btn-success btn-lg"
-                        @onclick="GenerateWithSelectedTemplate"
-                        disabled="@(selectedDatabaseIdForTemplate == 0 || string.IsNullOrEmpty(selectedTemplateId) || isGeneratingFromTemplate)"
-                        style="border-radius: 8px; padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                @onclick="GenerateWithSelectedTemplate"
+                disabled="@(selectedDatabaseIdForTemplate == 0 || string.IsNullOrEmpty(selectedTemplateId) || isGeneratingFromTemplate)"
+                style="border-radius: 8px; padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
                     @if (isGeneratingFromTemplate)
                     {
                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -789,245 +791,245 @@
 
 <style>
     .dashboard-builder {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        background: white;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: white;
     }
 
     .builder-header {
-        background: white;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #dee2e6;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
     }
 
     .builder-content {
-        display: flex;
-        flex: 1;
-        overflow: hidden;
+    display: flex;
+    flex: 1;
+    overflow: hidden;
     }
 
     .builder-sidebar {
-        width: 280px;
-        background: white;
-        border-right: 1px solid #dee2e6;
-        display: flex;
-        flex-direction: column;
+    width: 280px;
+    background: white;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
     }
 
     .builder-sidebar-right {
-        border-right: none;
-        border-left: 1px solid #dee2e6;
+    border-right: none;
+    border-left: 1px solid #dee2e6;
     }
 
     .sidebar-header {
-        padding: 1rem;
-        border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
     }
 
     .sidebar-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1rem;
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
     }
 
     .component-category {
-        margin-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
     }
 
     .category-title {
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: #6c757d;
-        margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
     }
 
     .component-item {
-        padding: 0.75rem;
-        background: #f8f9fa;
-        border-radius: 4px;
-        margin-bottom: 0.5rem;
-        cursor: move;
-        transition: all 0.2s;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    cursor: move;
+    transition: all 0.2s;
     }
 
     .component-item:hover {
-        background: #e9ecef;
-        transform: translateX(4px);
+    background: #e9ecef;
+    transform: translateX(4px);
     }
 
     .builder-canvas-container {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     }
 
     .canvas-toolbar {
-        padding: 0.75rem 1rem;
-        background: white;
-        border-bottom: 1px solid #dee2e6;
-        display: flex;
-        align-items: center;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
     }
 
     .builder-canvas {
-        flex: 1;
-        overflow: auto;
-        padding: 2rem;
-        transform-origin: top left;
+    flex: 1;
+    overflow: auto;
+    padding: 2rem;
+    transform-origin: top left;
     }
 
     .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap: 16px;
-        min-height: 600px;
-        position: relative;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+    min-height: 600px;
+    position: relative;
     }
 
     .dashboard-component {
-        background: white;
-        border: 2px solid #dee2e6;
-        border-radius: 8px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.2s;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
     }
 
     .dashboard-component:hover {
-        border-color: #0d6efd;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .dashboard-component.selected {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
     }
 
     .component-header {
-        padding: 0.75rem;
-        border-bottom: 1px solid #dee2e6;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #f8f9fa;
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
     }
 
     .component-title {
-        font-weight: 600;
-        font-size: 0.9rem;
+    font-weight: 600;
+    font-size: 0.9rem;
     }
 
     .component-actions {
-        display: flex;
-        gap: 0.25rem;
+    display: flex;
+    gap: 0.25rem;
     }
 
     .component-body {
-        padding: 1rem;
-        height: calc(100% - 50px);
-        overflow: auto;
+    padding: 1rem;
+    height: calc(100% - 50px);
+    overflow: auto;
     }
 
     .empty-canvas {
-        grid-column: 1 / -1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 400px;
-        text-align: center;
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
     }
 
     .template-card-enhanced {
-        background: white;
-        border: 3px solid #e0e0e0;
-        border-radius: 16px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
+    background: white;
+    border: 3px solid #e0e0e0;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     }
 
-        .template-card-enhanced:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
+    .template-card-enhanced:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    border-color: #667eea;
+    }
 
-        .template-card-enhanced.selected {
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 12px 40px rgba(102, 126, 234, 0.3);
-            transform: translateY(-4px);
-        }
+    .template-card-enhanced.selected {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 12px 40px rgba(102, 126, 234, 0.3);
+    transform: translateY(-4px);
+    }
 
     .template-preview-enhanced {
-        height: 220px;
-        background: #f8f9fa;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
+    height: 220px;
+    background: #f8f9fa;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
     }
 
     .preview-row {
-        display: flex;
-        gap: 8px;
+    display: flex;
+    gap: 8px;
     }
 
     .preview-box {
-        flex: 1;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex: 1;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .template-info {
-        padding: 1.5rem;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     }
 
     .template-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        color: #2d3748;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
     }
 
     .template-description {
-        color: #718096;
-        font-size: 0.95rem;
-        margin-bottom: 1rem;
-        line-height: 1.5;
-        flex: 1;
+    color: #718096;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    flex: 1;
     }
 
     .template-meta {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-bottom: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
     }
 
-        .template-meta .badge {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
+    .template-meta .badge {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    }
 
     .selected-badge {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.75rem;
-        border-radius: 8px;
-        text-align: center;
-        font-weight: 600;
-        font-size: 1rem;
-        animation: slideInUp 0.3s ease-out;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    animation: slideInUp 0.3s ease-out;
     }
 
 
@@ -1044,14 +1046,14 @@
     private List<ComponentTemplate> availableComponents = new List<ComponentTemplate>();
 
 
-    
+
     // Template functionality
     private bool showTemplateModal = false;
     private string selectedTemplateId = "";
     private int selectedDatabaseIdForTemplate = 0;
     private bool isGeneratingFromTemplate = false;
     private List<DashboardTemplate> availableTemplates = new List<DashboardTemplate>();
-    
+
     // UI state
     private int selectedComponentId;
     private bool isEditingTitle;
@@ -1060,6 +1062,7 @@
     private double zoomLevel = 1.0;
 
     private bool isPreviewMode = false;
+    private bool hasUnsavedChanges = false;
     private Dictionary<int, List<Dictionary<string, object>>> componentData = new Dictionary<int, List<Dictionary<string, object>>>();
     private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
     private bool isLoadingAllData = false;
@@ -1301,6 +1304,7 @@
                 {
                     dashboard = dashboards[0];
                     dashboard.DatabaseID = selectedDatabaseIdForTemplate;
+                    PrepareDashboardForSave();
 
                     Console.WriteLine($"Dashboard has {dashboard.Components?.Count ?? 0} components");
 
@@ -1377,39 +1381,141 @@
     {
         try
         {
+            // Populate required fields before saving
+            PrepareDashboardForSave();
+
             dashboard.LastUpdated = DateTime.UtcNow;
-            
+
             if (dashboard.DashboardID > 0)
             {
+                // Update existing dashboard
                 var response = await Http.PutAsJsonAsync($"api/dashboard/{dashboard.DashboardID}", dashboard);
+
                 if (response.IsSuccessStatusCode)
                 {
+                    hasUnsavedChanges = false;
                     ToastService.ShowSuccess("Dashboard saved successfully");
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Save error: {error}");
+                    ToastService.ShowError($"Error saving dashboard: {error}");
                 }
             }
             else
             {
-                dashboard.CreatedAt = DateTime.UtcNow;
-                dashboard.CreatedBy = 1; // TODO: Get from auth
-                
+                // Create new dashboard
                 var response = await Http.PostAsJsonAsync("api/dashboard", dashboard);
+
                 if (response.IsSuccessStatusCode)
                 {
+                    hasUnsavedChanges = false;
+
+                    // Get the created dashboard with ID
                     var createdDashboard = await response.Content.ReadFromJsonAsync<DashboardModel>();
                     if (createdDashboard != null)
                     {
                         dashboard = createdDashboard;
-                        NavigationManager.NavigateTo($"/admin/dashboard-builder/{dashboard.DashboardID}", false);
+
+                        // Update the URL to include the new dashboard ID
+                        NavigationManager.NavigateTo($"/dashboard/builder/{dashboard.DashboardID}", false);
+
                         ToastService.ShowSuccess("Dashboard created successfully");
                     }
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Create error: {error}");
+                    ToastService.ShowError($"Error creating dashboard: {error}");
                 }
             }
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Exception: {ex}");
             ToastService.ShowError($"Error saving dashboard: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Prepares dashboard object with all required fields before saving
+    /// </summary>
+    private void PrepareDashboardForSave()
+    {
+        // Set LayoutConfig (serialize component positions)
+        if (string.IsNullOrEmpty(dashboard.LayoutConfig))
+        {
+            var componentsList = dashboard.Components?.Select(c => new
+            {
+                id = c.ComponentID,
+                x = c.GridX,
+                y = c.GridY,
+                width = c.GridWidth,
+                height = c.GridHeight
+            }).ToList();
+
+            var layoutData = new
+            {
+                gridColumns = 12,
+                gridRowHeight = 100,
+                components = componentsList ?? Enumerable.Empty<object>()
+            };
+
+            dashboard.LayoutConfig = JsonSerializer.Serialize(layoutData);
+        }
+
+        // Set FiltersConfig (empty JSON object if no filters)
+        if (string.IsNullOrEmpty(dashboard.FiltersConfig))
+        {
+            dashboard.FiltersConfig = "{}";
+        }
+
+        // Set CreatedBy (use 1 for now, replace with actual user ID when auth is implemented)
+        if (dashboard.CreatedBy == 0)
+        {
+            dashboard.CreatedBy = 1; // TODO: Replace with actual logged-in user ID
+        }
+
+        // Ensure components have all required fields
+        if (dashboard.Components != null)
+        {
+            foreach (var component in dashboard.Components)
+            {
+                // Set FilterExpression (empty string if not filtering)
+                if (string.IsNullOrEmpty(component.FilterExpression))
+                {
+                    component.FilterExpression = "";
+                }
+
+                // Ensure VisualizationConfig is set
+                if (string.IsNullOrEmpty(component.VisualizationConfig))
+                {
+                    // Default visualization config based on type
+                    var chartType = component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart ? "bar" : null;
+                    component.VisualizationConfig = JsonSerializer.Serialize(new
+                    {
+                        chartType = chartType,
+                        showLegend = true,
+                        showGrid = true
+                    });
+                }
+
+                // Ensure timestamps are set
+                if (component.CreatedAt == DateTime.MinValue || component.CreatedAt == default)
+                {
+                    component.CreatedAt = DateTime.UtcNow;
+                }
+
+                if (component.LastUpdated == DateTime.MinValue || component.LastUpdated == default)
+                {
+                    component.LastUpdated = DateTime.UtcNow;
+                }
+            }
+        }
+    }
+
 
     private void PreviewDashboard()
     {
@@ -1598,5 +1704,114 @@
         public string Icon { get; set; }
         public string Category { get; set; }
         public string VisualizationConfig { get; set; }
+    }
+
+    private string FormatNumericValue(object value, DashboardComponent component)
+    {
+        if (value == null)
+            return "N/A";
+
+        // Try to parse as decimal
+        if (!decimal.TryParse(value.ToString(), out decimal numericValue))
+            return value.ToString();
+
+        // Check if it's a percentage (rate, percentage, ratio)
+        if (IsPercentageValue(component))
+        {
+            // If value is already 0-100, just add %
+            if (numericValue <= 100)
+                return $"{numericValue:N2}%";
+            // If value is decimal (0.00-1.00), multiply by 100
+            else if (numericValue < 1)
+                return $"{(numericValue * 100):N2}%";
+            else
+                return $"{numericValue:N2}%";
+        }
+
+        // Check if it's currency
+        if (IsCurrencyValue(component))
+        {
+            return numericValue.ToString("C2"); // $500.00
+        }
+
+        // Check if it's a time value
+        if (IsTimeValue(component))
+        {
+            return FormatTimeValue(numericValue, component);
+        }
+
+        // Check if it's a whole number (count/ID)
+        if (IsWholeNumber(component) || numericValue == Math.Floor(numericValue))
+        {
+            return numericValue.ToString("N0"); // 1,234
+        }
+
+        // Default: 2 decimal places
+        return numericValue.ToString("N2"); // 1,234.56
+    }
+
+    private bool IsPercentageValue(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description} {component.QueryIntent}".ToLower();
+        return text.Contains("rate") ||
+               text.Contains("percentage") ||
+               text.Contains("percent") ||
+               text.Contains("%") ||
+               text.Contains("ratio");
+    }
+
+    private bool IsCurrencyValue(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description} {component.QueryIntent}".ToLower();
+        return text.Contains("amount") ||
+               text.Contains("revenue") ||
+               text.Contains("cost") ||
+               text.Contains("price") ||
+               text.Contains("fine") ||
+               text.Contains("payment") ||
+               text.Contains("total revenue") ||
+               text.Contains("salary");
+    }
+
+    private bool IsTimeValue(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description}".ToLower();
+        return text.Contains("time") ||
+               text.Contains("duration") ||
+               text.Contains("day") ||
+               text.Contains("hour") ||
+               text.Contains("minute");
+    }
+
+    private bool IsWholeNumber(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description} {component.QueryIntent}".ToLower();
+        return text.Contains("count") ||
+               text.Contains("total") ||
+               text.Contains("number of") ||
+               text.Contains("active") ||
+               text.Contains("pending") ||
+               text.Contains("camera") ||
+               text.Contains("incident");
+    }
+
+    private string FormatTimeValue(decimal value, DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description}".ToLower();
+
+        if (text.Contains("day"))
+        {
+            return value == 1 ? "1 day" : $"{value:N0} days";
+        }
+        else if (text.Contains("hour"))
+        {
+            return value == 1 ? "1 hour" : $"{value:N0} hours";
+        }
+        else if (text.Contains("minute"))
+        {
+            return value == 1 ? "1 min" : $"{value:N0} mins";
+        }
+
+        return $"{value:N2}";
     }
 }

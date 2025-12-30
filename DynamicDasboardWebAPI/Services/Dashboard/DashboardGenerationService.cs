@@ -414,6 +414,9 @@ RULES:
                         GridWidth = templateSlot.GridWidth,
                         GridHeight = templateSlot.GridHeight,
 
+                        FilterExpression = "", // No filter by default
+                        RefreshInterval = 0, // No auto-refresh by default
+
                         IsAIGenerated = true,
                         IsValidated = false,
                         IsVisible = true,
