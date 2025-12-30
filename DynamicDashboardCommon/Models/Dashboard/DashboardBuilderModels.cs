@@ -65,9 +65,9 @@ namespace DynamicDashboardCommon.Models
         public int GridHeight { get; set; }
     }
 
-    public class GenerateWithTemplateRequest
-    {
-        public int DatabaseId { get; set; }
-        public string TemplateId { get; set; }
-    }
+    //public class GenerateWithTemplateRequest
+    //{
+    //    public int DatabaseId { get; set; }
+    //    public string TemplateId { get; set; }
+    //}
 }

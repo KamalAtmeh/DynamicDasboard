@@ -13,120 +13,371 @@
 <div class="dashboard-builder">
     <!-- Header -->
     <div class="builder-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-@*                 <button class="btn btn-outline-secondary me-2" @onclick="() => NavigationManager.NavigateTo("/admin/dashboards")">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            @if (!isPreviewMode)
+            {
+@*                 <button class="btn btn-outline-secondary" @onclick="() => NavigationManager.NavigateTo('/admin/dashboards')">
                     <i class="fas fa-arrow-left me-1"></i>Back
                 </button> *@
-                @if (!isEditingTitle)
-                {
-                    <h3 class="mb-0" @onclick="() => isEditingTitle = true" style="cursor: pointer;">
-                        @dashboard.Title
-                        <i class="fas fa-edit ms-2 text-muted" style="font-size: 0.8rem;"></i>
-                    </h3>
-                }
-                else
-                {
-                    <input @ref="titleInputRef" 
-                           type="text" 
-                           class="form-control" 
-                           @bind="dashboard.Title" 
-                           @onblur="() => isEditingTitle = false"
-                           style="width: 300px;" />
-                }
-            </div>
-            <div class="d-flex gap-2">
+            }
+            
+            @if (!isEditingTitle && !isPreviewMode)
+            {
+                <h3 class="mb-0" @onclick="() => isEditingTitle = true" style="cursor: pointer;">
+                    @dashboard.Title
+                    <i class="fas fa-edit ms-2 text-muted" style="font-size: 0.8rem;"></i>
+                </h3>
+            }
+            else if (!isPreviewMode)
+            {
+                <input @ref="titleInputRef" 
+                       type="text" 
+                       class="form-control" 
+                       @bind="dashboard.Title" 
+                       @onblur="() => isEditingTitle = false"
+                       style="width: 300px;" />
+            }
+            else
+            {
+                <h3 class="mb-0">@dashboard.Title</h3>
+            }
+        </div>
+        
+        <div class="d-flex gap-2 align-items-center">
+            @if (isPreviewMode)
+            {
+                <!-- Preview Mode Controls -->
+                <button class="btn btn-outline-secondary" @onclick="TogglePreviewMode">
+                    <i class="fas fa-edit me-1"></i>Exit Preview
+                </button>
+                <button class="btn btn-outline-primary" @onclick="LoadAllComponentsData" disabled="@isLoadingAllData">
+                    @if (isLoadingAllData)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                        <text>Refreshing...</text>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync me-1"></i>
+                        <text>Refresh Data</text>
+                    }
+                </button>
+            }
+            else
+            {
+                <!-- Design Mode Controls -->
                 <button class="btn btn-success" @onclick="ShowTemplateModal">
                     <i class="fas fa-magic me-1"></i>Generate with AI
                 </button>
-                <button class="btn btn-outline-primary" @onclick="PreviewDashboard">
-                    <i class="fas fa-eye me-1"></i>Preview
+                <button class="btn btn-outline-info" @onclick="TogglePreviewMode" disabled="@(!dashboard.Components.Any())">
+                    <i class="fas fa-eye me-1"></i>Preview with Data
                 </button>
                 <button class="btn btn-primary" @onclick="SaveDashboard">
                     <i class="fas fa-save me-1"></i>Save
                 </button>
-            </div>
+            }
         </div>
     </div>
+</div>
 
     <!-- Main Content -->
-    <div class="builder-content">
-        <!-- Left Sidebar: Component Library -->
-        <div class="builder-sidebar builder-sidebar-left">
-            <div class="sidebar-header">
-                <h5 class="mb-0"><i class="fas fa-th me-2"></i>Components</h5>
-            </div>
-            <div class="sidebar-body">
-                <!-- Search -->
-                <div class="mb-3">
-                    <input type="text" 
-                           class="form-control form-control-sm" 
-                           placeholder="Search components..."
-                           @bind="componentSearchTerm" />
-                </div>
+    @* REPLACE the builder-content section with this enhanced version *@
 
-                <!-- Component Categories -->
-                @foreach (var category in componentCategories)
-                {
-                    <div class="component-category mb-3">
-                        <h6 class="category-title">@category</h6>
-                        <div class="component-list">
-                            @foreach (var component in FilteredComponents.Where(c => c.Category == category))
-                            {
-                                <div class="component-item" draggable="true">
-                                    <i class="fas @component.Icon me-2"></i>
-                                    <span>@component.Title</span>
-                                </div>
-                            }
-                        </div>
+    <div class="builder-content @(isPreviewMode ? "preview-mode" : "")">
+        <!-- Left Sidebar: Component Library (Hidden in preview) -->
+        @if (!isPreviewMode)
+        {
+            <div class="builder-sidebar builder-sidebar-left">
+                <div class="sidebar-header">
+                    <h5 class="mb-0"><i class="fas fa-th me-2"></i>Components</h5>
+                </div>
+                <div class="sidebar-body">
+                    <div class="mb-3">
+                        <input type="text"
+                               class="form-control form-control-sm"
+                               placeholder="Search components..."
+                               @bind="componentSearchTerm" />
                     </div>
-                }
+
+                    @foreach (var category in componentCategories)
+                    {
+                        <div class="component-category mb-3">
+                            <h6 class="category-title">@category</h6>
+                            <div class="component-list">
+                                @foreach (var component in FilteredComponents.Where(c => c.Category == category))
+                                {
+                                    <div class="component-item" draggable="true">
+                                        <i class="fas @component.Icon me-2"></i>
+                                        <span>@component.Title</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
 
         <!-- Center: Canvas -->
-        <div class="builder-canvas-container">
-            <div class="canvas-toolbar">
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" @onclick="ZoomIn">
-                        <i class="fas fa-search-plus"></i>
-                    </button>
-                    <button class="btn btn-outline-secondary" @onclick="ZoomOut">
-                        <i class="fas fa-search-minus"></i>
-                    </button>
-                    <button class="btn btn-outline-secondary" @onclick="ResetZoom">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                </div>
-                <span class="ms-3 text-muted">Zoom: @((int)(zoomLevel * 100))%</span>
-            </div>
+        <div class="builder-canvas-container @(isPreviewMode ? "fullscreen" : "")">
+            @if (!isPreviewMode)
+            {
+                <div class="canvas-toolbar">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" @onclick="ZoomIn">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ZoomOut">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetZoom">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <span class="ms-3 text-muted">Zoom: @((int)(zoomLevel * 100))%</span>
 
-            <div class="builder-canvas" style="transform: scale(@zoomLevel);">
+                    @if (dashboard.Components != null && dashboard.Components.Any() && dashboard.DatabaseID > 0)
+                    {
+                        <button class="btn btn-sm btn-primary ms-auto" @onclick="LoadAllComponentsData" disabled="@isLoadingAllData">
+                            @if (isLoadingAllData)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                <text>Loading...</text>
+                            }
+                            else
+                            {
+                                <i class="fas fa-play me-1"></i>
+                                <text>Load Data</text>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="builder-canvas" style="transform: scale(@(isPreviewMode ? 1 : zoomLevel)); background: @(isPreviewMode ? "#f5f5f5" : "white");">
                 <div class="dashboard-grid" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
                     @if (dashboard.Components != null && dashboard.Components.Any())
                     {
                         @foreach (var component in dashboard.Components)
                         {
-                            <div class="dashboard-component @(selectedComponentId == component.ComponentID ? "selected" : "")"
+                            <div class="dashboard-component @(selectedComponentId == component.ComponentID && !isPreviewMode ? "selected" : "")"
                                  style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                                        grid-row: @(component.GridY + 1) / span @component.GridHeight;"
-                                 @onclick="() => SelectComponent(component.ComponentID)">
+                                    grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+                                 @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
+
                                 <div class="component-header">
                                     <span class="component-title">@component.Title</span>
-                                    <div class="component-actions">
-                                        <button class="btn btn-sm btn-link" @onclick="() => DuplicateComponent(component)">
-                                            <i class="fas fa-clone"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-link" @onclick="() => RemoveComponent(component.ComponentID)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
+                                    @if (!isPreviewMode)
+                                    {
+                                        <div class="component-actions">
+                                            <button class="btn btn-sm btn-link" @onclick="() => DuplicateComponent(component)">
+                                                <i class="fas fa-clone"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-link" @onclick="() => RemoveComponent(component.ComponentID)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    }
                                 </div>
+
                                 <div class="component-body">
-                                    <div class="text-center text-muted pt-4">
-                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                                        <p>@GetComponentTypeName(component.DataViewingTypeID)</p>
-                                    </div>
+                                    @if (IsComponentLoading(component.ComponentID))
+                                    {
+                                        <div class="text-center py-4">
+                                            <div class="spinner-border text-primary mb-2"></div>
+                                            <p class="text-muted small">Loading data...</p>
+                                        </div>
+                                    }
+                                    else if (componentData.ContainsKey(component.ComponentID))
+                                    {
+                                        @* Render actual data based on component type *@
+                                        var data = GetComponentData(component.ComponentID);
+
+                                        @if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
+                                        {
+                                            @* KPI Display *@
+                                            <div class="kpi-display">
+                                                @if (data.Any())
+                                                {
+                                                    var value = data[0].ContainsKey("value") ? data[0]["value"]?.ToString() : "N/A";
+                                                    <div class="kpi-value">@value</div>
+                                                    <div class="kpi-label">@component.Description</div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="kpi-value">No Data</div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
+                                        {
+                                            @* Chart Data Preview - Shows actual data values *@
+                                            <div class="chart-data-preview">
+                                                @if (data.Any())
+                                                {
+                                                    var chartType = GetChartType(component.VisualizationConfig);
+                                                    <div class="chart-header mb-2">
+                                                        <i class="fas fa-chart-@(GetChartIcon(chartType)) text-primary"></i>
+                                                        <span class="fw-bold ms-2">@chartType Chart</span>
+                                                        <small class="text-muted ms-2">(@data.Count data points)</small>
+                                                    </div>
+                                                    <div class="chart-data-table">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    @foreach (var key in data[0].Keys.Take(3))
+                                                                    {
+                                                                        <th>@key</th>
+                                                                    }
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var row in data.Take(8))
+                                                                {
+                                                                    <tr>
+                                                                        @foreach (var key in row.Keys.Take(3))
+                                                                        {
+                                                                            <td>@row[key]</td>
+                                                                        }
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    @if (data.Count > 8)
+                                                    {
+                                                        <div class="text-center text-muted small py-1">
+                                                            Showing 8 of @data.Count points
+                                                        </div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center py-4 text-muted">
+                                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                                        <p>No data available for chart</p>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Label)
+                                        {
+                                            @* Label Display *@
+                                            <div class="label-display">
+                                                @if (data.Any())
+                                                {
+                                                    @if (data[0].ContainsKey("value"))
+                                                    {
+                                                        <div class="label-value">@data[0]["value"]</div>
+                                                    }
+                                                    else if (data[0].Any())
+                                                    {
+                                                        <div class="label-value">@data[0].First().Value</div>
+                                                    }
+                                                    <div class="label-text">@component.Title</div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="label-value">No Data</div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Card)
+                                        {
+                                            @* Card Display *@
+                                            <div class="card-display">
+                                                @if (data.Any())
+                                                {
+                                                    var firstRow = data[0];
+                                                    <div class="card-content">
+                                                        @if (firstRow.ContainsKey("value"))
+                                                        {
+                                                            <div class="card-value">@firstRow["value"]</div>
+                                                        }
+                                                        else if (firstRow.Any())
+                                                        {
+                                                            <div class="card-value">@firstRow.First().Value</div>
+                                                        }
+
+                                                        @if (firstRow.ContainsKey("title"))
+                                                        {
+                                                            <div class="card-title">@firstRow["title"]</div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="card-title">@component.Title</div>
+                                                        }
+
+                                                        @if (firstRow.ContainsKey("description"))
+                                                        {
+                                                            <div class="card-description">@firstRow["description"]</div>
+                                                        }
+                                                        else if (!string.IsNullOrEmpty(component.Description))
+                                                        {
+                                                            <div class="card-description">@component.Description</div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center py-4 text-muted">No data available</div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
+                                        {
+                                            @* Table Display *@
+                                            <div class="table-responsive" style="max-height: 100%; overflow: auto;">
+                                                @if (data.Any())
+                                                {
+                                                    <table class="table table-sm table-striped mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                @foreach (var key in data[0].Keys.Take(6))
+                                                                {
+                                                                    <th>@key</th>
+                                                                }
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var row in data.Take(10))
+                                                            {
+                                                                <tr>
+                                                                    @foreach (var key in row.Keys.Take(6))
+                                                                    {
+                                                                        <td>@row[key]</td>
+                                                                    }
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                    @if (data.Count > 10)
+                                                    {
+                                                        <div class="text-center text-muted small py-2">
+                                                            Showing 10 of @data.Count rows
+                                                        </div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center py-4 text-muted">No data available</div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @* Placeholder when no data *@
+                                        <div class="text-center text-muted pt-4">
+                                            <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                            <p>@GetComponentTypeName(component.DataViewingTypeID)</p>
+                                            @if (!isPreviewMode)
+                                            {
+                                                <small>Click "Load Data" to preview</small>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         }
@@ -146,97 +397,267 @@
             </div>
         </div>
 
-        <!-- Right Sidebar: Properties Panel -->
-        <div class="builder-sidebar builder-sidebar-right">
-            @if (selectedComponentId > 0)
-            {
-                var selectedComponent = dashboard.Components?.FirstOrDefault(c => c.ComponentID == selectedComponentId);
-                @if (selectedComponent != null)
+        <!-- Right Sidebar: Properties Panel (Hidden in preview) -->
+        @if (!isPreviewMode)
+        {
+            <div class="builder-sidebar builder-sidebar-right">
+                @if (selectedComponentId > 0)
+                {
+                    var selectedComponent = dashboard.Components?.FirstOrDefault(c => c.ComponentID == selectedComponentId);
+                    @if (selectedComponent != null)
+                    {
+                        <div class="sidebar-header">
+                            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Component Settings</h5>
+                        </div>
+                        <div class="sidebar-body">
+                            <div class="mb-3">
+                                <label class="form-label">Title</label>
+                                <input type="text" class="form-control" @bind="selectedComponent.Title" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" rows="3" @bind="selectedComponent.Description"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Query</label>
+                                <textarea class="form-control font-monospace" rows="5" @bind="selectedComponent.QueryText"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Type</label>
+                                <select class="form-select" @bind="selectedComponent.DataViewingTypeID">
+                                    <option value="@((int)DataViewingTypeEnum.Table)">Table</option>
+                                    <option value="@((int)DataViewingTypeEnum.Chart)">Chart</option>
+                                    <option value="@((int)DataViewingTypeEnum.Number)">Number/KPI</option>
+                                    <option value="@((int)DataViewingTypeEnum.Card)">Card</option>
+                                    <option value="@((int)DataViewingTypeEnum.Label)">Label</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-primary w-100" @onclick="() => LoadComponentDataAsync(selectedComponent)">
+                                    <i class="fas fa-play me-1"></i>Test Query
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+                else
                 {
                     <div class="sidebar-header">
-                        <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Component Settings</h5>
+                        <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Dashboard Settings</h5>
                     </div>
                     <div class="sidebar-body">
                         <div class="mb-3">
                             <label class="form-label">Title</label>
-                            <input type="text" class="form-control" @bind="selectedComponent.Title" />
+                            <input type="text" class="form-control" @bind="dashboard.Title" />
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <textarea class="form-control" rows="3" @bind="selectedComponent.Description"></textarea>
+                            <textarea class="form-control" rows="3" @bind="dashboard.Description"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Query</label>
-                            <textarea class="form-control font-monospace" rows="5" @bind="selectedComponent.QueryText"></textarea>
+                            <label class="form-label">Database</label>
+                            <select class="form-select" @bind="dashboard.DatabaseID">
+                                <option value="0">-- Select Database --</option>
+                                @foreach (var ds in availableDataSources)
+                                {
+                                    <option value="@ds.Id">@ds.Name</option>
+                                }
+                            </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Type</label>
-                            <select class="form-select" @bind="selectedComponent.DataViewingTypeID">
-                                <option value="@((int)DataViewingTypeEnum.Table)">Table</option>
-                                <option value="@((int)DataViewingTypeEnum.Chart)">Chart</option>
-                                <option value="@((int)DataViewingTypeEnum.Number)">Number/KPI</option>
-                                <option value="@((int)DataViewingTypeEnum.Card)">Card</option>
-                                <option value="@((int)DataViewingTypeEnum.Label)">Label</option>
+                            <label class="form-label">Category</label>
+                            <select class="form-select" @bind="dashboard.CategoryID">
+                                <option value="0">-- Select Category --</option>
+                                @foreach (var category in availableCategories)
+                                {
+                                    <option value="@category.CategoryID">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sharing Status</label>
+                            <select class="form-select" @bind="dashboard.SharingStatus">
+                                <option value="@DashboardSharingStatus.Private">Private</option>
+                                <option value="@DashboardSharingStatus.Shared">Shared</option>
+                                <option value="@DashboardSharingStatus.Public">Public</option>
                             </select>
                         </div>
                     </div>
                 }
-            }
-            else
-            {
-                <div class="sidebar-header">
-                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Dashboard Settings</h5>
-                </div>
-                <div class="sidebar-body">
-                    <div class="mb-3">
-                        <label class="form-label">Title</label>
-                        <input type="text" class="form-control" @bind="dashboard.Title" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" rows="3" @bind="dashboard.Description"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" @bind="dashboard.CategoryID">
-                            <option value="0">-- Select Category --</option>
-                            @foreach (var category in availableCategories)
-                            {
-                                <option value="@category.CategoryID">@category.Name</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sharing Status</label>
-                        <select class="form-select" @bind="dashboard.SharingStatus">
-                            <option value="@DashboardSharingStatus.Private">Private</option>
-                            <option value="@DashboardSharingStatus.Shared">Shared</option>
-                            <option value="@DashboardSharingStatus.Public">Public</option>
-                        </select>
-                    </div>
-                </div>
-            }
-        </div>
+            </div>
+        }
     </div>
+
+    <style>
+        /* Preview Mode Styles */
+        .builder-content.preview-mode {
+            background: #f5f5f5;
+        }
+
+        .builder-canvas-container.fullscreen {
+            width: 100%;
+            flex: 1;
+        }
+
+        /* KPI Display */
+        .kpi-display {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1rem;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-label {
+            font-size: 0.9rem;
+            color: #718096;
+            text-align: center;
+        }
+
+        /* Chart Preview */
+        .chart-preview {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1rem;
+        }
+
+        /* Table in component */
+        .component-body .table {
+            font-size: 0.85rem;
+        }
+
+            .component-body .table th {
+                background: #f8f9fa;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+        .chart-data-preview {
+            padding: 1rem;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .chart-header {
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .chart-data-table {
+            font-size: 0.85rem;
+        }
+
+            .chart-data-table .table th {
+                background: #f8f9fa;
+                font-weight: 600;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+        /* Label Display */
+        .label-display {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .label-value {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .label-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0.95;
+        }
+
+        /* Card Display */
+        .card-display {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .card-content {
+            text-align: center;
+            width: 100%;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-description {
+            font-size: 0.9rem;
+            color: #718096;
+            line-height: 1.4;
+        }
+    </style>
+
 </div>
 
 <!-- Template Selection Modal -->
 <div class="modal fade @(showTemplateModal ? "show" : "")" tabindex="-1" style="display: @(showTemplateModal ? "block" : "none")">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-layer-group me-2"></i>
-                    <h5 class="modal-title mb-0">Choose a Template</h5>
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden; width: 850px !important">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 2rem;">
+                <div class="d-flex align-items-center text-white">
+                    <i class="fas fa-layer-group me-3" style="font-size: 2rem;"></i>
+                    <div>
+                        <h3 class="mb-0 fw-bold">Choose a Template</h3>
+                        <p class="mb-0 opacity-75" style="font-size: 0.95rem;">Select a layout template to start building your dashboard</p>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" @onclick="CloseTemplateModal"></button>
             </div>
-            <div class="modal-body">
-                <p class="text-muted mb-4">Select a layout template to start building your dashboard</p>
-                
-                <div class="mb-4">
-                    <label class="form-label fw-bold"><i class="fas fa-database me-2"></i>Select Database</label>
-                    <select class="form-select" @bind="selectedDatabaseIdForTemplate">
+            <div class="modal-body" style="padding: 2rem;">
+
+                <!-- Database Selection -->
+                <div class="mb-4 p-3" style="background: #f8f9fa; border-radius: 12px;">
+                    <label class="form-label fw-bold d-flex align-items-center mb-2" style="font-size: 1.1rem;">
+                        <i class="fas fa-database me-2 text-primary"></i>
+                        Select Database
+                    </label>
+                    <select class="form-select form-select-lg" @bind="selectedDatabaseIdForTemplate" style="border-radius: 8px; border: 2px solid #dee2e6;">
                         <option value="0">-- Select a Database --</option>
                         @foreach (var ds in availableDataSources)
                         {
@@ -245,71 +666,87 @@
                     </select>
                     @if (selectedDatabaseIdForTemplate == 0)
                     {
-                        <div class="alert alert-warning d-flex align-items-center mt-2 py-2 px-3">
+                        <div class="alert alert-warning d-flex align-items-center mt-3 mb-0" style="border-radius: 8px; border-left: 4px solid #ffc107;">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            <small>Please select a database to use AI generation</small>
+                            <span>Please select a database to enable AI generation</span>
                         </div>
                     }
                 </div>
 
-                <div class="row g-3">
+                <!-- Template Cards -->
+                <div class="row g-4">
                     @foreach (var template in availableTemplates)
                     {
-                        <div class="col-md-4">
-                            <div class="template-card @(selectedTemplateId == template.Id ? "selected" : "")" 
-                                 @onclick="() => selectedTemplateId = template.Id" 
-                                 style="cursor: pointer; border: @(selectedTemplateId == template.Id ? "2px solid #28a745" : "1px solid #dee2e6"); border-radius: 8px; padding: 15px; transition: all 0.3s;">
-                                <div class="template-preview mb-3" style="height: 120px; background: #f8f9fa; border-radius: 4px; padding: 10px;">
+                        <div class="col-lg-4">
+                            <div class="template-card-enhanced @(selectedTemplateId == template.Id ? "selected" : "")"
+                                 @onclick="() => selectedTemplateId = template.Id">
+
+                                <!-- Template Preview -->
+                                <div class="template-preview-enhanced">
                                     @if (template.Id == "executive-template")
                                     {
-                                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; height: 30%;">
-                                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 3px;"></div>
+                                        <!-- Executive Template Visual -->
+                                        <div class="preview-row" style="height: 25%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
                                         </div>
-                                        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); height: 40%; margin-top: 4px; border-radius: 3px;"></div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: 26%; margin-top: 4px;">
-                                            <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); border-radius: 3px;"></div>
+                                        <div class="preview-box mt-2" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); height: 35%;"></div>
+                                        <div class="preview-row mt-2" style="height: 32%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
                                         </div>
                                     }
                                     else if (template.Id == "operational-template")
                                     {
-                                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; height: 25%;">
-                                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 3px;"></div>
+                                        <!-- Operational Template Visual -->
+                                        <div class="preview-row" style="height: 20%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
                                         </div>
-                                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3px; height: 35%; margin-top: 3px;">
-                                            <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); border-radius: 3px;"></div>
+                                        <div class="preview-row mt-2" style="height: 35%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); flex: 2;"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); flex: 1;"></div>
                                         </div>
-                                        <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); height: 35%; margin-top: 3px; border-radius: 3px;"></div>
+                                        <div class="preview-box mt-2" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); height: 37%;"></div>
                                     }
                                     else if (template.Id == "performance-template")
                                     {
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px; height: 25%;">
-                                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 3px;"></div>
+                                        <!-- Performance Template Visual -->
+                                        <div class="preview-row" style="height: 22%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
                                         </div>
-                                        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 3px; height: 50%; margin-top: 3px;">
-                                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 3px;"></div>
+                                        <div class="preview-row mt-2" style="height: 45%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); flex: 3;"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); flex: 2;"></div>
                                         </div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px; height: 20%; margin-top: 3px;">
-                                            <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 3px;"></div>
-                                            <div style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); border-radius: 3px;"></div>
+                                        <div class="preview-row mt-2" style="height: 25%;">
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
+                                            <div class="preview-box" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
                                         </div>
                                     }
                                 </div>
-                                <h6 class="mb-2 fw-bold">@template.Name</h6>
-                                <p class="text-muted small mb-2">@template.Description</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted"><i class="fas fa-th me-1"></i>@template.Components.Count components</small>
+
+                                <!-- Template Info -->
+                                <div class="template-info">
+                                    <h5 class="template-title">@template.Name</h5>
+                                    <p class="template-description">@template.Description</p>
+                                    <div class="template-meta">
+                                        <span class="badge bg-light text-dark">
+                                            <i class="fas fa-th me-1"></i>@template.Components.Count components
+                                        </span>
+                                        <span class="badge bg-light text-dark">
+                                            <i class="fas fa-layer-group me-1"></i>@template.Category
+                                        </span>
+                                    </div>
                                     @if (selectedTemplateId == template.Id)
                                     {
-                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>Selected</span>
+                                        <div class="selected-badge">
+                                            <i class="fas fa-check-circle me-2"></i>Selected
+                                        </div>
                                     }
                                 </div>
                             </div>
@@ -319,16 +756,20 @@
 
                 @if (availableTemplates.Count == 0)
                 {
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>Loading templates...
+                    <div class="alert alert-info d-flex align-items-center" style="border-radius: 12px;">
+                        <i class="fas fa-info-circle me-2" style="font-size: 1.5rem;"></i>
+                        <span>Loading templates...</span>
                     </div>
                 }
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseTemplateModal">Cancel</button>
-                <button type="button" class="btn btn-success" 
+            <div class="modal-footer" style="padding: 1.5rem 2rem; border-top: 2px solid #f0f0f0;">
+                <button type="button" class="btn btn-secondary btn-lg" @onclick="CloseTemplateModal" style="border-radius: 8px; padding: 0.75rem 2rem;">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success btn-lg"
                         @onclick="GenerateWithSelectedTemplate"
-                        disabled="@(selectedDatabaseIdForTemplate == 0 || string.IsNullOrEmpty(selectedTemplateId) || isGeneratingFromTemplate)">
+                        disabled="@(selectedDatabaseIdForTemplate == 0 || string.IsNullOrEmpty(selectedTemplateId) || isGeneratingFromTemplate)"
+                        style="border-radius: 8px; padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
                     @if (isGeneratingFromTemplate)
                     {
                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -351,7 +792,7 @@
         height: 100vh;
         display: flex;
         flex-direction: column;
-        background: #f8f9fa;
+        background: white;
     }
 
     .builder-header {
@@ -500,18 +941,96 @@
         text-align: center;
     }
 
-    .template-card {
-        transition: all 0.3s ease;
+    .template-card-enhanced {
+        background: white;
+        border: 3px solid #e0e0e0;
+        border-radius: 16px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
-    .template-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .template-card-enhanced:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .template-card-enhanced.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 12px 40px rgba(102, 126, 234, 0.3);
+            transform: translateY(-4px);
+        }
+
+    .template-preview-enhanced {
+        height: 220px;
+        background: #f8f9fa;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
     }
 
-    .template-card.selected {
-        box-shadow: 0 4px 20px rgba(40,167,69,0.3);
+    .preview-row {
+        display: flex;
+        gap: 8px;
     }
+
+    .preview-box {
+        flex: 1;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .template-info {
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .template-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    .template-description {
+        color: #718096;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+        flex: 1;
+    }
+
+    .template-meta {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+    }
+
+        .template-meta .badge {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+    .selected-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 1rem;
+        animation: slideInUp 0.3s ease-out;
+    }
+
+
 </style>
 
 @code {
@@ -523,6 +1042,8 @@
     private List<DashboardCategory> availableCategories = new List<DashboardCategory>();
     private List<DataSource> availableDataSources = new List<DataSource>();
     private List<ComponentTemplate> availableComponents = new List<ComponentTemplate>();
+
+
     
     // Template functionality
     private bool showTemplateModal = false;
@@ -537,6 +1058,11 @@
     private ElementReference titleInputRef;
     private string componentSearchTerm = "";
     private double zoomLevel = 1.0;
+
+    private bool isPreviewMode = false;
+    private Dictionary<int, List<Dictionary<string, object>>> componentData = new Dictionary<int, List<Dictionary<string, object>>>();
+    private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
+    private bool isLoadingAllData = false;
     
     // Component categories
     private List<string> componentCategories = new List<string>
@@ -576,6 +1102,46 @@
                 CategoryID = 1
             };
         }
+    }
+
+    private string GetChartType(string visualizationConfig)
+    {
+        if (string.IsNullOrEmpty(visualizationConfig))
+            return "Bar";
+
+        try
+        {
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(visualizationConfig);
+            if (config != null && config.ContainsKey("chartType"))
+            {
+                var chartType = config["chartType"].GetString();
+                return chartType switch
+                {
+                    "bar" => "Bar",
+                    "line" => "Line",
+                    "pie" => "Pie",
+                    "donut" => "Donut",
+                    "area" => "Area",
+                    _ => "Bar"
+                };
+            }
+        }
+        catch { }
+
+        return "Bar";
+    }
+
+    private string GetChartIcon(string chartType)
+    {
+        return chartType.ToLower() switch
+        {
+            "bar" => "bar",
+            "line" => "line",
+            "pie" => "pie-chart",
+            "donut" => "chart-pie",
+            "area" => "area-chart",
+            _ => "bar"
+        };
     }
 
     private async Task LoadDashboard()
@@ -699,15 +1265,15 @@
             ToastService.ShowError("Please select a database");
             return;
         }
-        
+
         if (string.IsNullOrEmpty(selectedTemplateId))
         {
             ToastService.ShowError("Please select a template");
             return;
         }
-        
+
         isGeneratingFromTemplate = true;
-        
+
         try
         {
             var request = new
@@ -715,30 +1281,49 @@
                 DatabaseId = selectedDatabaseIdForTemplate,
                 TemplateId = selectedTemplateId
             };
-            
+
+            Console.WriteLine($"Sending request: DB={request.DatabaseId}, Template={request.TemplateId}");
+
             var response = await Http.PostAsJsonAsync("api/dashboard/generate-with-template", request);
-            
+
+            Console.WriteLine($"Response status: {response.StatusCode}");
+
             if (response.IsSuccessStatusCode)
             {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Response content: {responseContent}");
+
                 var dashboards = await response.Content.ReadFromJsonAsync<List<DashboardModel>>();
-                
+
+                Console.WriteLine($"Dashboards parsed: {dashboards?.Count ?? 0}");
+
                 if (dashboards != null && dashboards.Any())
                 {
                     dashboard = dashboards[0];
                     dashboard.DatabaseID = selectedDatabaseIdForTemplate;
+
+                    Console.WriteLine($"Dashboard has {dashboard.Components?.Count ?? 0} components");
+
                     ToastService.ShowSuccess($"Dashboard generated with {dashboard.Components.Count} components!");
                     CloseTemplateModal();
                     StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowError("No dashboards returned from API");
                 }
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"API Error: {error}");
                 ToastService.ShowError($"Generation failed: {error}");
+                CloseTemplateModal();
             }
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Exception: {ex}");
             ToastService.ShowError($"Error: {ex.Message}");
         }
         finally
@@ -872,6 +1457,129 @@
             (int)DataViewingTypeEnum.Label => "Label",
             _ => "Component"
         };
+    }
+
+    private async Task LoadAllComponentsData()
+    {
+        if (dashboard?.Components == null || !dashboard.Components.Any())
+        {
+            ToastService.ShowWarning("No components to load data for");
+            return;
+        }
+
+        if (dashboard.DatabaseID <= 0)
+        {
+            ToastService.ShowWarning("Please select a database in Dashboard Settings first");
+            return;
+        }
+
+        isLoadingAllData = true;
+        StateHasChanged();
+
+        try
+        {
+            var tasks = dashboard.Components
+                .Where(c => !string.IsNullOrEmpty(c.QueryText))
+                .Select(c => LoadComponentDataAsync(c));
+
+            await Task.WhenAll(tasks);
+
+            ToastService.ShowSuccess("Data loaded for all components");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingAllData = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadComponentDataAsync(DashboardComponent component)
+    {
+        if (string.IsNullOrEmpty(component.QueryText))
+        {
+            return;
+        }
+
+        isComponentLoading[component.ComponentID] = true;
+        StateHasChanged();
+
+        try
+        {
+            // var payload = new
+            // {
+            //     SqlQuery = component.QueryText,
+            //     Parameters = new List<object>()
+            // };
+
+            var request = new SqlExecutionRequest
+                {
+                    OriginalQuestion = "",
+                    DatabaseId = dashboard.DatabaseID,
+                    Sql = component.QueryText
+                };
+
+            var response = await Http.PostAsJsonAsync($"api/query/execute", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<QueryExecutionResult>();
+                if (result?.Success == true && result.Results != null)
+                {
+                    componentData[component.ComponentID] = result.Results;
+                }
+                else
+                {
+                    componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+                }
+            }
+            else
+            {
+                componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data for component {component.ComponentID}: {ex.Message}");
+            componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+        }
+        finally
+        {
+            isComponentLoading[component.ComponentID] = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TogglePreviewMode()
+    {
+        isPreviewMode = !isPreviewMode;
+
+        if (isPreviewMode && !componentData.Any())
+        {
+            await LoadAllComponentsData();
+        }
+    }
+
+    private List<Dictionary<string, object>> GetComponentData(int componentId)
+    {
+        return componentData.ContainsKey(componentId)
+            ? componentData[componentId]
+            : new List<Dictionary<string, object>>();
+    }
+
+    private bool IsComponentLoading(int componentId)
+    {
+        return isComponentLoading.ContainsKey(componentId) && isComponentLoading[componentId];
+    }
+
+    private class QueryExecutionResult
+    {
+        public bool Success { get; set; }
+        public List<Dictionary<string, object>> Results { get; set; }
+        public string ErrorMessage { get; set; }
     }
 
     // Helper classes

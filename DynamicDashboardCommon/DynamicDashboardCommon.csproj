@@ -16,7 +16,9 @@
 
 
   <ItemGroup>
-    <None Remove="Templates\dashboard-templates.json" />
+    <Content Include="Templates\dashboard-templates.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 
@@ -28,11 +30,6 @@
   <ItemGroup>
     <Folder Include="Models\DynamicDashboard\" />
     <Folder Include="Models\NewFolder\" />
-  </ItemGroup>
-
-
-  <ItemGroup>
-    <Page Include="Templates\dashboard-templates.json" />
   </ItemGroup>
 
 </Project>

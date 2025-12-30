@@ -176,7 +176,7 @@
             Get a specific template by ID
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GenerateDashboardWithTemplate(DynamicDashboardCommon.Models.GenerateWithTemplateRequest)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GenerateDashboardWithTemplate(DynamicDasboardWebAPI.Controllers.DashboardController.GenerateWithTemplateRequest)">
             <summary>
             Generate AI dashboard with specific template
             </summary>
@@ -1008,6 +1008,26 @@
         <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService">
             <summary>
             Service for generating dashboard suggestions using LLM with template support.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetMockLLMResponse(System.String)">
+            <summary>
+            Returns mock LLM response based on template ID for testing
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetOperationalTemplateMockData">
+            <summary>
+            Mock data for Operational Template (8 components)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetExecutiveTemplateMockData">
+            <summary>
+            Mock data for Executive Template (7 components)
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetPerformanceTemplateMockData">
+            <summary>
+            Mock data for Performance Template (6 components)
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.BuildSimplifiedPrompt(System.String,DynamicDashboardCommon.Models.DashboardTemplate)">

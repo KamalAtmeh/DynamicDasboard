@@ -298,5 +298,11 @@ namespace DynamicDasboardWebAPI.Controllers
                 return StatusCode(500, new { message = $"Error generating dashboard: {ex.Message}" });
             }
         }
+
+        public class GenerateWithTemplateRequest
+        {
+            public int DatabaseId { get; set; }
+            public string TemplateId { get; set; }
+        }
     }
 }
