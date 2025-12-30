@@ -97,6 +97,17 @@ builder.Services.AddScoped<DatasetComparisonService>();
 builder.Services.AddScoped<TestAutomationRepository>();
 builder.Services.AddScoped<TestAutomationService>();
 
+builder.Services.AddScoped<IDashboardGenerationService>(provider =>
+{
+    var llmService = provider.GetRequiredService<ILLMService>();
+    var schemaService = provider.GetRequiredService<DatabaseSchemaService>();
+    var logsService = provider.GetRequiredService<ILogsService>();
+
+    var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "dashboard-templates.json");
+
+    return new DashboardGenerationService(llmService, schemaService, logsService, templatesPath);
+});
+
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(5) });
 

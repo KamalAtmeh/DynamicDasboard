@@ -1,0 +1,37 @@
+﻿@page "/admin/dashboard-templates"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Select Dashboard Template</h3>
+
+<div class="template-grid">
+    @if (templates == null)
+    {
+        <p>Loading templates...</p>
+    }
+    else
+    {
+        @foreach (var template in templates)
+        {
+            <div class="template-card" @onclick="() => SelectTemplate(template.Id)">
+                <h4>@template.Name</h4>
+                <p>@template.Description</p>
+                <p class="text-muted">@template.Components.Count components</p>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<DashboardTemplate> templates;
+
+    protected override async Task OnInitializedAsync()
+    {
+        templates = await Http.GetFromJsonAsync<List<DashboardTemplate>>("api/dashboards/templates");
+    }
+
+    private void SelectTemplate(string templateId)
+    {
+        NavigationManager.NavigateTo($"/admin/generate-dashboard?templateId={templateId}");
+    }
+}

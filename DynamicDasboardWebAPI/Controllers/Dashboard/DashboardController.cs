@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models;
+using DynamicDashboardCommon.Helpers;
+using System.IO;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -17,6 +19,7 @@ namespace DynamicDasboardWebAPI.Controllers
     public class DashboardController : AppControllerBase
     {
         private readonly IDashboardService _dashboardService;
+        private readonly IDashboardGenerationService _dashboardGenerationService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DashboardController"/> class.
@@ -25,11 +28,15 @@ namespace DynamicDasboardWebAPI.Controllers
         /// <param name="logsService">The logs service.</param>
         public DashboardController(
             IDashboardService dashboardService,
+            IDashboardGenerationService dashboardGenerationService,
             ILogsService logsService)
             : base(logsService)
         {
             _dashboardService = dashboardService ?? throw new ArgumentNullException(nameof(dashboardService));
+            _dashboardGenerationService = dashboardGenerationService;
         }
+
+
 
         /// <summary>
         /// Gets all dashboards with optional filtering.
@@ -217,6 +224,78 @@ namespace DynamicDasboardWebAPI.Controllers
             catch (Exception ex)
             {
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Get all available dashboard templates
+        /// </summary>
+        [HttpGet("templates")]
+        public IActionResult GetTemplates()
+        {
+            try
+            {
+                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "dashboard-templates.json");
+                var templates = DashboardTemplateHelper.GetAllTemplates(templatesPath);
+                return Ok(templates);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error loading templates: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get a specific template by ID
+        /// </summary>
+        [HttpGet("templates/{templateId}")]
+        public IActionResult GetTemplate(string templateId)
+        {
+            try
+            {
+                var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "dashboard-templates.json");
+                var template = DashboardTemplateHelper.GetTemplateById(templateId, templatesPath);
+
+                if (template == null)
+                {
+                    return NotFound(new { message = $"Template '{templateId}' not found" });
+                }
+
+                return Ok(template);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error loading template: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Generate AI dashboard with specific template
+        /// </summary>
+        [HttpPost("generate-with-template")]
+        public async Task<IActionResult> GenerateDashboardWithTemplate([FromBody] GenerateWithTemplateRequest request)
+        {
+            try
+            {
+                if (request.DatabaseId <= 0)
+                {
+                    return BadRequest(new { message = "Valid database ID is required" });
+                }
+
+                if (string.IsNullOrEmpty(request.TemplateId))
+                {
+                    return BadRequest(new { message = "Template ID is required" });
+                }
+
+                var dashboards = await _dashboardGenerationService.GenerateDashboardSuggestionsAsync(
+                    request.DatabaseId,
+                    request.TemplateId);
+
+                return Ok(dashboards);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error generating dashboard: {ex.Message}" });
             }
         }
     }

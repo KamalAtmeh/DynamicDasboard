@@ -154,6 +154,53 @@
             <returns>A consistent color for the input.</returns>
         </member>
         <!-- Badly formed XML comment ignored for member "T:DynamicDashboardCommon.Helper.DictionaryObjectConverter" -->
+        <member name="T:DynamicDashboardCommon.Helpers.DashboardTemplateHelper">
+            <summary>
+            Helper class for loading and working with dashboard templates
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.LoadTemplates(System.String)">
+            <summary>
+            Loads templates from the JSON file
+            </summary>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>Collection of dashboard templates</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetAllTemplates(System.String)">
+            <summary>
+            Gets all available templates
+            </summary>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>List of templates</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetTemplateById(System.String,System.String)">
+            <summary>
+            Gets a template by ID
+            </summary>
+            <param name="templateId">Template identifier</param>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>The template if found, null otherwise</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetTemplatesByCategory(System.String,System.String)">
+            <summary>
+            Gets templates by category
+            </summary>
+            <param name="category">Template category</param>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>List of templates in the category</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetDataViewingTypeFromSlotType(System.String)">
+            <summary>
+            Converts a template component slot to a data viewing type ID
+            </summary>
+            <param name="type">Component type string</param>
+            <returns>DataViewingTypeEnum value</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.ResetCache">
+            <summary>
+            Resets the cached templates (useful for testing or reloading)
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.ComponentTemplate">
             <summary>
             Represents a template for creating dashboard components.
@@ -827,6 +874,116 @@
         <member name="T:DynamicDashboardCommon.Models.ParameterDataType">
             <summary>
             Enum representing parameter data types.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DashboardTemplate">
+            <summary>
+            Represents a static dashboard template configuration
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Id">
+            <summary>
+            Unique identifier for the template
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Name">
+            <summary>
+            Display name of the template
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Description">
+            <summary>
+            Description of what the template provides
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Category">
+            <summary>
+            Category of the template (Executive, Operations, Finance, etc.)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.ThumbnailUrl">
+            <summary>
+            URL to the template thumbnail image
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.TotalHeight">
+            <summary>
+            Total height of the canvas in grid rows
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Components">
+            <summary>
+            List of component slots in this template
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TemplateComponentSlot">
+            <summary>
+            Represents a component slot within a template
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Slot">
+            <summary>
+            Slot number for ordering
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Type">
+            <summary>
+            Type of component (kpi, chart, table, card, label)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.ChartType">
+            <summary>
+            Chart type if this is a chart component (line, bar, pie, area, etc.)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Title">
+            <summary>
+            Default title for this component
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Description">
+            <summary>
+            Default description for this component
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridX">
+            <summary>
+            X position in the grid (0-11 for 12-column grid)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridY">
+            <summary>
+            Y position in the grid (row number)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridWidth">
+            <summary>
+            Width in grid columns (1-12)
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridHeight">
+            <summary>
+            Height in grid rows
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.QueryIntent">
+            <summary>
+            Natural language description of what this component should show
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.SuggestedAggregation">
+            <summary>
+            Suggested aggregation function for this component (COUNT, SUM, AVG, PERCENTAGE)
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.DashboardTemplateCollection">
+            <summary>
+            Container for all dashboard templates
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplateCollection.Templates">
+            <summary>
+            List of available templates
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.DataViewingType">

@@ -16,6 +16,11 @@
 
 
   <ItemGroup>
+    <None Remove="Templates\dashboard-templates.json" />
+  </ItemGroup>
+
+
+  <ItemGroup>
     <PackageReference Include="ObjectsComparer" Version="1.4.1" />
   </ItemGroup>
 
@@ -23,6 +28,11 @@
   <ItemGroup>
     <Folder Include="Models\DynamicDashboard\" />
     <Folder Include="Models\NewFolder\" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Page Include="Templates\dashboard-templates.json" />
   </ItemGroup>
 
 </Project>

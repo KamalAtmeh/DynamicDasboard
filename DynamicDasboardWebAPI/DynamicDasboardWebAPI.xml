@@ -100,7 +100,7 @@
             API controller for dashboard operations.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.#ctor(DynamicDasboardWebAPI.Services.IDashboardService,DynamicDasboardWebAPI.Services.ILogsService)">
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.#ctor(DynamicDasboardWebAPI.Services.IDashboardService,DynamicDasboardWebAPI.Services.IDashboardGenerationService,DynamicDasboardWebAPI.Services.ILogsService)">
             <summary>
             Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.DashboardController"/> class.
             </summary>
@@ -165,6 +165,21 @@
             </summary>
             <param name="databaseId">The database ID to analyze.</param>
             <returns>A list of suggested dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GetTemplates">
+            <summary>
+            Get all available dashboard templates
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GetTemplate(System.String)">
+            <summary>
+            Get a specific template by ID
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.GenerateDashboardWithTemplate(DynamicDashboardCommon.Models.GenerateWithTemplateRequest)">
+            <summary>
+            Generate AI dashboard with specific template
+            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.QueryController">
             <summary>
@@ -992,67 +1007,17 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService">
             <summary>
-            Service for generating dashboard suggestions using LLM.
+            Service for generating dashboard suggestions using LLM with template support.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.#ctor(DynamicDasboardWebAPI.Services.LLM.ILLMService,DynamicDasboardWebAPI.Services.DatabaseSchemaService,DynamicDasboardWebAPI.Services.ILogsService)">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.BuildSimplifiedPrompt(System.String,DynamicDashboardCommon.Models.DashboardTemplate)">
             <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.DashboardGenerationService"/> class.
-            </summary>
-            <param name="llmService">The LLM service.</param>
-            <param name="schemaService">The schema service.</param>
-            <param name="logsService">The logs service.</param>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32)">
-            <summary>
-            Generates dashboard suggestions based on database schema.
-            </summary>
-            <param name="databaseId">The database ID to analyze.</param>
-            <returns>A list of suggested dashboards.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.BuildDashboardGenerationPrompt(System.String)">
-            <summary>
-            Builds the prompt for dashboard generation.
-            </summary>
-            <param name="schema">The database schema string.</param>
-            <returns>The prompt for the LLM.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.ParseDashboardSuggestions(System.String,System.Int32)">
-            <summary>
-            Parses the LLM response to extract dashboard suggestions.
-            </summary>
-            <param name="llmResponse">The LLM response.</param>
-            <param name="databaseId">The database ID.</param>
-            <returns>A list of suggested dashboards.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.MapToDashboards(DynamicDasboardWebAPI.Services.DashboardGenerationService.DashboardSuggestions,System.Int32)">
-            <summary>
-            Maps suggestions to Dashboard objects.
-            </summary>
-            <param name="suggestions">The dashboard suggestions from LLM.</param>
-            <param name="databaseId">The database ID.</param>
-            <returns>A list of Dashboard objects.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetDataViewingTypeId(System.String)">
-            <summary>
-            Gets the data viewing type ID from its name.
-            </summary>
-            <param name="typeName">The type name.</param>
-            <returns>The type ID.</returns>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService.DashboardSuggestions">
-            <summary>
-            Root class for dashboard suggestions from LLM.
+            Builds simplified prompt - LLM only generates SQL, not positions
             </summary>
         </member>
-        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService.DashboardSuggestion">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.ParseAndApplyTemplate(System.String,System.Int32,DynamicDashboardCommon.Models.DashboardTemplate)">
             <summary>
-            Individual dashboard suggestion from LLM.
-            </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService.ComponentSuggestion">
-            <summary>
-            Component suggestion from LLM.
+            Parse LLM response and apply template positions
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.QueryService">
@@ -1337,14 +1302,22 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.IDashboardGenerationService">
             <summary>
-            Interface for dashboard generation services.
+            Interface for dashboard generation services with template support.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32)">
             <summary>
-            Generates dashboard suggestions based on database schema.
+            Generates dashboard suggestions based on database schema using default template.
             </summary>
             <param name="databaseId">The database ID to analyze.</param>
+            <returns>A list of suggested dashboards.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32,System.String)">
+            <summary>
+            Generates dashboard suggestions based on database schema using a specific template.
+            </summary>
+            <param name="databaseId">The database ID to analyze.</param>
+            <param name="templateId">The template ID to use (e.g., "executive-standard", "operational-dashboard").</param>
             <returns>A list of suggested dashboards.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.IDashboardService">

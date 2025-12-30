@@ -1,0 +1,295 @@
+{
+  "templates": [
+    {
+      "id": "executive-standard",
+      "name": "Executive Dashboard",
+      "description": "Standard executive dashboard with KPIs, trend analysis, category comparisons, and detailed data table",
+      "category": "Executive",
+      "thumbnailUrl": "/images/templates/executive-standard.png",
+      "totalHeight": 15,
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "title": "Total Records",
+          "description": "Total count of records",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2,
+          "queryIntent": "Count total number of records",
+          "suggestedAggregation": "COUNT"
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "title": "Primary Metric",
+          "description": "Key performance indicator",
+          "gridX": 4,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2,
+          "queryIntent": "Calculate primary metric value",
+          "suggestedAggregation": "SUM"
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "title": "Status Indicator",
+          "description": "Current status percentage",
+          "gridX": 8,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2,
+          "queryIntent": "Show status as percentage",
+          "suggestedAggregation": "PERCENTAGE"
+        },
+        {
+          "slot": 4,
+          "type": "chart",
+          "chartType": "line",
+          "title": "Trend Over Time",
+          "description": "Historical trend analysis",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 12,
+          "gridHeight": 4,
+          "queryIntent": "Show trend over time period"
+        },
+        {
+          "slot": 5,
+          "type": "chart",
+          "chartType": "bar",
+          "title": "Category Breakdown",
+          "description": "Comparison across categories",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4,
+          "queryIntent": "Compare values across different categories"
+        },
+        {
+          "slot": 6,
+          "type": "chart",
+          "chartType": "pie",
+          "title": "Distribution Analysis",
+          "description": "Proportion of different segments",
+          "gridX": 6,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4,
+          "queryIntent": "Show distribution of segments as percentages"
+        },
+        {
+          "slot": 7,
+          "type": "table",
+          "title": "Detailed Records",
+          "description": "Paginated list of records",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 5,
+          "queryIntent": "Show detailed records with key columns"
+        }
+      ]
+    },
+    {
+      "id": "operational-dashboard",
+      "name": "Operational Dashboard",
+      "description": "Operational metrics with performance tracking and status monitoring",
+      "category": "Operations",
+      "thumbnailUrl": "/images/templates/operational-dashboard.png",
+      "totalHeight": 14,
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "title": "Active Items",
+          "description": "Current active count",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2,
+          "queryIntent": "Count active items",
+          "suggestedAggregation": "COUNT"
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "title": "Completion Rate",
+          "description": "Percentage completed",
+          "gridX": 3,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2,
+          "queryIntent": "Calculate completion percentage",
+          "suggestedAggregation": "PERCENTAGE"
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "title": "Average Processing Time",
+          "description": "Mean time to process",
+          "gridX": 6,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2,
+          "queryIntent": "Calculate average processing time",
+          "suggestedAggregation": "AVG"
+        },
+        {
+          "slot": 4,
+          "type": "kpi",
+          "title": "Pending Items",
+          "description": "Items awaiting action",
+          "gridX": 9,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2,
+          "queryIntent": "Count pending items",
+          "suggestedAggregation": "COUNT"
+        },
+        {
+          "slot": 5,
+          "type": "chart",
+          "chartType": "bar",
+          "title": "Performance by Category",
+          "description": "Performance metrics breakdown",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 8,
+          "gridHeight": 4,
+          "queryIntent": "Show performance metrics by category"
+        },
+        {
+          "slot": 6,
+          "type": "chart",
+          "chartType": "pie",
+          "title": "Status Distribution",
+          "description": "Current status breakdown",
+          "gridX": 8,
+          "gridY": 2,
+          "gridWidth": 4,
+          "gridHeight": 4,
+          "queryIntent": "Show distribution of status types"
+        },
+        {
+          "slot": 7,
+          "type": "chart",
+          "chartType": "line",
+          "title": "Daily Activity Trend",
+          "description": "Activity over time",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 12,
+          "gridHeight": 4,
+          "queryIntent": "Show daily activity trend over time"
+        },
+        {
+          "slot": 8,
+          "type": "table",
+          "title": "Recent Activities",
+          "description": "Latest activity records",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 4,
+          "queryIntent": "Show recent activity records"
+        }
+      ]
+    },
+    {
+      "id": "financial-dashboard",
+      "name": "Financial Dashboard",
+      "description": "Financial metrics with revenue tracking and cost analysis",
+      "category": "Finance",
+      "thumbnailUrl": "/images/templates/financial-dashboard.png",
+      "totalHeight": 15,
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "title": "Total Revenue",
+          "description": "Total revenue amount",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2,
+          "queryIntent": "Calculate total revenue",
+          "suggestedAggregation": "SUM"
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "title": "Total Cost",
+          "description": "Total cost amount",
+          "gridX": 4,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2,
+          "queryIntent": "Calculate total cost",
+          "suggestedAggregation": "SUM"
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "title": "Net Profit",
+          "description": "Net profit amount",
+          "gridX": 8,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2,
+          "queryIntent": "Calculate net profit (revenue minus cost)",
+          "suggestedAggregation": "SUM"
+        },
+        {
+          "slot": 4,
+          "type": "chart",
+          "chartType": "line",
+          "title": "Revenue Trend",
+          "description": "Revenue over time",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 12,
+          "gridHeight": 4,
+          "queryIntent": "Show revenue trend over time"
+        },
+        {
+          "slot": 5,
+          "type": "chart",
+          "chartType": "bar",
+          "title": "Revenue by Category",
+          "description": "Revenue breakdown",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4,
+          "queryIntent": "Show revenue by category"
+        },
+        {
+          "slot": 6,
+          "type": "chart",
+          "chartType": "pie",
+          "title": "Cost Distribution",
+          "description": "Cost allocation",
+          "gridX": 6,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4,
+          "queryIntent": "Show cost distribution by type"
+        },
+        {
+          "slot": 7,
+          "type": "table",
+          "title": "Financial Transactions",
+          "description": "Recent financial records",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 5,
+          "queryIntent": "Show recent financial transactions"
+        }
+      ]
+    }
+  ]
+}
