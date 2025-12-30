@@ -1478,6 +1478,13 @@
             dashboard.CreatedBy = 1; // TODO: Replace with actual logged-in user ID
         }
 
+        // Set CategoryName (for model validation even though it's JsonIgnore)
+        if (string.IsNullOrEmpty(dashboard.CategoryName))
+        {
+            var category = availableCategories?.FirstOrDefault(c => c.CategoryID == dashboard.CategoryID);
+            dashboard.CategoryName = category?.Name ?? "General";
+        }
+
         // Ensure components have all required fields
         if (dashboard.Components != null)
         {
@@ -1487,6 +1494,12 @@
                 if (string.IsNullOrEmpty(component.FilterExpression))
                 {
                     component.FilterExpression = "";
+                }
+
+                // Set DataViewingTypeName (for model validation even though it's JsonIgnore)
+                if (string.IsNullOrEmpty(component.DataViewingTypeName))
+                {
+                    component.DataViewingTypeName = GetComponentTypeName(component.DataViewingTypeID);
                 }
 
                 // Ensure VisualizationConfig is set
@@ -1552,18 +1565,7 @@
         return dashboard.Components.Max(c => c.GridY + c.GridHeight) + 2;
     }
 
-    private string GetComponentTypeName(int typeId)
-    {
-        return typeId switch
-        {
-            (int)DataViewingTypeEnum.Table => "Table",
-            (int)DataViewingTypeEnum.Chart => "Chart",
-            (int)DataViewingTypeEnum.Number => "KPI",
-            (int)DataViewingTypeEnum.Card => "Card",
-            (int)DataViewingTypeEnum.Label => "Label",
-            _ => "Component"
-        };
-    }
+
 
     private async Task LoadAllComponentsData()
     {
@@ -1813,5 +1815,21 @@
         }
 
         return $"{value:N2}";
+    }
+
+    /// <summary>
+    /// Gets the component type name from the DataViewingTypeID
+    /// </summary>
+    private string GetComponentTypeName(int dataViewingTypeID)
+    {
+        return dataViewingTypeID switch
+        {
+            (int)DataViewingTypeEnum.Table => "Table",
+            (int)DataViewingTypeEnum.Chart => "Chart",
+            (int)DataViewingTypeEnum.Number => "Number",
+            (int)DataViewingTypeEnum.Card => "Card",
+            (int)DataViewingTypeEnum.Label => "Label",
+            _ => "Unknown"
+        };
     }
 }

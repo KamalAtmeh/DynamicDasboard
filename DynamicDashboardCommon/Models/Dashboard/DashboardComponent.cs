@@ -38,7 +38,7 @@ namespace DynamicDashboardCommon.Models
         /// Gets or sets the component type name (for display purposes).
         /// Not stored in database.
         /// </summary>
-        [JsonIgnore]
+        
         public string DataViewingTypeName { get; set; }
 
         /// <summary>

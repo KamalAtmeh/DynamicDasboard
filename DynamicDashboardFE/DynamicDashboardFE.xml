@@ -19,6 +19,11 @@
             Prepares dashboard object with all required fields before saving
             </summary>
         </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.GetComponentTypeName(System.Int32)">
+            <summary>
+            Gets the component type name from the DataViewingTypeID
+            </summary>
+        </member>
         <member name="T:DynamicDashboardFE.Pages.User.Dashboard">
             <summary>
             Enhanced Natural Language Query component that allows users to ask questions in natural language
