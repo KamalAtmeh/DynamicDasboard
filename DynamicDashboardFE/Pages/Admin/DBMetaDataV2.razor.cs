@@ -879,7 +879,68 @@ namespace DynamicDashboardFE.Pages.Admin
 
             try
             {
-                var result = await Http.PostAsJsonAsync($"api/SchemaAnalysis/ApplySchemaAnalysisResults/{DatabaseId}", analysisResult.AnalysisData);
+                // Clone the analysis data to avoid modifying the original
+                var analysisDataToSend = new SchemaAnalysisData
+                {
+                    TableDescriptions = analysisResult.AnalysisData.TableDescriptions,
+                    ColumnDescriptions = analysisResult.AnalysisData.ColumnDescriptions,
+                    PotentialConflicts = analysisResult.AnalysisData.PotentialConflicts,
+                    UnclearElements = analysisResult.AnalysisData.UnclearElements,
+                    SuggestedRelationships = new List<SuggestedRelationship>()
+                };
+
+                // Convert suggested relationships by mapping table/column names to IDs
+                if (analysisResult.AnalysisData.SuggestedRelationships != null)
+                {
+                    foreach (var suggestion in analysisResult.AnalysisData.SuggestedRelationships)
+                    {
+                        // Find source table and column IDs
+                        var sourceTable = schemaObj.Tables.FirstOrDefault(t =>
+                            t.DBName.Equals(suggestion.SourceTable.TableName, StringComparison.OrdinalIgnoreCase));
+
+                        var sourceColumn = sourceTable?.Columns?.FirstOrDefault(c =>
+                            c.DBName.Equals(suggestion.SourceTable.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+                        // Find target table and column IDs
+                        var targetTable = schemaObj.Tables.FirstOrDefault(t =>
+                            t.DBName.Equals(suggestion.TargetTable.TableName, StringComparison.OrdinalIgnoreCase));
+
+                        var targetColumn = targetTable?.Columns?.FirstOrDefault(c =>
+                            c.DBName.Equals(suggestion.TargetTable.ColumnName, StringComparison.OrdinalIgnoreCase));
+
+                        // Only add if we found all required IDs
+                        if (sourceTable != null && sourceColumn != null &&
+                            targetTable != null && targetColumn != null)
+                        {
+                            var mappedRelationship = new SuggestedRelationship
+                            {
+                                RelationshipType = suggestion.RelationshipType,
+                                Confidence = suggestion.Confidence,
+                                Reasoning = suggestion.Reasoning,
+                                SourceTable = new RelationshipDetails
+                                {
+                                    TableID = sourceTable.ID,
+                                    TableName = sourceTable.DBName,
+                                    ColumnID = sourceColumn.ID,
+                                    ColumnName = sourceColumn.DBName
+                                },
+                                TargetTable = new RelationshipDetails
+                                {
+                                    TableID = targetTable.ID,
+                                    TableName = targetTable.DBName,
+                                    ColumnID = targetColumn.ID,
+                                    ColumnName = targetColumn.DBName
+                                }
+                            };
+
+                            analysisDataToSend.SuggestedRelationships.Add(mappedRelationship);
+                        }
+                    }
+                }
+
+                var result = await Http.PostAsJsonAsync(
+                    $"api/SchemaAnalysis/ApplySchemaAnalysisResults/{DatabaseId}",
+                    analysisDataToSend);
 
                 if (result.IsSuccessStatusCode)
                 {
@@ -888,12 +949,13 @@ namespace DynamicDashboardFE.Pages.Admin
                 }
                 else
                 {
-                    toastService.ShowError("Failed to apply suggestions.");
+                    var errorContent = await result.Content.ReadAsStringAsync();
+                    toastService.ShowError($"Failed to apply suggestions: {errorContent}");
                 }
             }
             catch (Exception ex)
             {
-                toastService.ShowError($"Error applying suggestions: {ex.Message + ", " + ex.StackTrace}");
+                toastService.ShowError($"Error applying suggestions: {ex.Message}");
             }
             finally
             {
