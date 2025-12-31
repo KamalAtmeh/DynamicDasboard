@@ -208,5 +208,37 @@ namespace DynamicDashboardCommon.Models
             /// </summary>
             public string ErrorMessage { get; set; }
         }
+
+    /// <summary>
+    /// Simplified response for dashboard chart explanation
+    /// Only contains the explanation text - no ambiguities or parameters
+    /// </summary>
+    public class ChartExplanationResponse
+    {
+        /// <summary>
+        /// The original question
+        /// </summary>
+        public string Question { get; set; }
+
+        /// <summary>
+        /// The database ID
+        /// </summary>
+        public int DatabaseId { get; set; }
+
+        /// <summary>
+        /// A user-friendly explanation of what the chart will show
+        /// </summary>
+        public string Explanation { get; set; }
+
+        /// <summary>
+        /// Flag indicating whether the request was successful
+        /// </summary>
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// Error message if the request failed
+        /// </summary>
+        public string ErrorMessage { get; set; }
     }
+}
 

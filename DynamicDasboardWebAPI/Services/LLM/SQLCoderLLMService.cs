@@ -188,6 +188,40 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+        public async Task<string> GenerateChartExplanationAsync(string question, string databaseSchema)
+        {
+            try
+            {
+                var systemPrompt = $@"You are a business intelligence expert analyzing dashboard chart requests.
+
+Database Schema:
+{databaseSchema}
+
+Your task is to provide a clear, concise explanation of what data will be visualized based on the user's request.
+
+Focus on:
+- What data will be shown
+- What filters or conditions will be applied
+- The business value or insights this visualization provides
+
+Keep the explanation to 2-3 sentences maximum.
+Use business-friendly language, not technical database jargon.
+Do NOT generate SQL - only explain what the chart will show.";
+
+                var userPrompt = $"Chart Request: {question}\n\nProvide a clear explanation of what this chart will visualize:";
+
+                // Call API
+                var response = await CallSQLCoderApiAsync(systemPrompt, userPrompt);
+
+                // Return the explanation directly (no JSON parsing needed)
+                return response.Trim();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error generating chart explanation: {ex.Message}", ex);
+            }
+        }
+
         #region Private Helper Methods
 
         private string BuildSQLGenerationSystemPrompt(string databaseSchema, Dictionary<string, string> dbDescriptions = null)

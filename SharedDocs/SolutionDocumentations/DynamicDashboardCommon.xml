@@ -2571,6 +2571,37 @@
             Error message if query execution failed
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.ChartExplanationResponse">
+            <summary>
+            Simplified response for dashboard chart explanation
+            Only contains the explanation text - no ambiguities or parameters
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartExplanationResponse.Question">
+            <summary>
+            The original question
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartExplanationResponse.DatabaseId">
+            <summary>
+            The database ID
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartExplanationResponse.Explanation">
+            <summary>
+            A user-friendly explanation of what the chart will show
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartExplanationResponse.Success">
+            <summary>
+            Flag indicating whether the request was successful
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ChartExplanationResponse.ErrorMessage">
+            <summary>
+            Error message if the request failed
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.Query">
             <summary>
             Represents a SQL query and its associated metadata.

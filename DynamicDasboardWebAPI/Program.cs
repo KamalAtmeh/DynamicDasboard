@@ -122,7 +122,7 @@ builder.Services.AddScoped<IDashboardGenerationService>(provider =>
 
 
 // Register HttpClient with a base address
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(5) });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(10) });
 
 builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 {

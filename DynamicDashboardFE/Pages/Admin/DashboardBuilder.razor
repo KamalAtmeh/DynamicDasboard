@@ -2086,7 +2086,7 @@
     }
 
     /// <summary>
-    /// Step 1: Analyze the natural language query using QueryController
+    /// Step 1: Analyze the natural language query using simplified chart analysis
     /// </summary>
     private async Task AnalyzeChartQuery()
     {
@@ -2107,17 +2107,26 @@
                     DatabaseId = dashboard.DatabaseID
                 };
 
-            var response = await Http.PostAsJsonAsync("api/query/analyze", request);
+            // Use simplified chart analysis endpoint
+            var response = await Http.PostAsJsonAsync("api/query/analyze-chart", request);
 
             if (response.IsSuccessStatusCode)
             {
-                analysisResponse = await response.Content.ReadFromJsonAsync<AnalysisResponse>();
+                var chartExplanation = await response.Content.ReadFromJsonAsync<ChartExplanationResponse>();
 
-                if (analysisResponse != null && analysisResponse.Success)
+                if (chartExplanation != null && chartExplanation.Success)
                 {
-                    customChartExplanation = analysisResponse.Explanation;
+                    // Store only the explanation
+                    customChartExplanation = chartExplanation.Explanation;
 
-                    // Auto-generate a title from the question if not set
+                    // Create a simple analysis response for the generate step
+                    analysisResponse = new AnalysisResponse
+                        {
+                            Explanation = chartExplanation.Explanation,
+                            Success = true
+                        };
+
+                    // Auto-generate a title from the question
                     if (string.IsNullOrWhiteSpace(customChartTitle))
                     {
                         customChartTitle = GenerateTitleFromQuestion(customChartQuery);
@@ -2129,7 +2138,7 @@
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to analyze query");
+                    ToastService.ShowError(chartExplanation?.ErrorMessage ?? "Failed to analyze query");
                 }
             }
             else
@@ -2608,16 +2617,8 @@
 
     private class AnalysisResponse
     {
-        public string Question { get; set; }
-        public int DatabaseId { get; set; }
         public string Explanation { get; set; }
-        public bool HasAmbiguities { get; set; }
-        public List<string> DetectedAmbiguities { get; set; }
-        public Dictionary<string, string> AdjustableParameters { get; set; }
-        public string PreviewSql { get; set; }
-        public double ConfidenceScore { get; set; }
         public bool Success { get; set; }
-        public string ErrorMessage { get; set; }
     }
 
     private class SqlGenerationResponse
@@ -2642,6 +2643,15 @@
         public string ConfirmedUnderstanding { get; set; }
         public Dictionary<string, string> ResolvedAmbiguities { get; set; }
         public Dictionary<string, string> AdjustedParameters { get; set; }
+    }
+
+    private class ChartExplanationResponse
+    {
+        public string Question { get; set; }
+        public int DatabaseId { get; set; }
+        public string Explanation { get; set; }
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
     }
 
 

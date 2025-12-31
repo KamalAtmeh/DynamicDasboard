@@ -536,9 +536,60 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+        /// <summary>
+        /// Generates a simple explanation for a dashboard chart query
+        /// Simplified version without ambiguities or parameters
+        /// </summary>
+        /// <param name="request">The natural language query request</param>
+        /// <returns>A simple explanation response</returns>
+        public async Task<ChartExplanationResponse> GenerateChartExplanationAsync(NlQueryRequest request)
+        {
+            try
+            {
+                var schemaText = string.Empty;
+
+                // Get database schema
+                var objSchema = await objSchemaService.GetSchemaObject(request.DatabaseId);
+                if (objSchema != null && !string.IsNullOrEmpty(objSchema.SchemaData))
+                {
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(objSchema);
+                }
+                else
+                {
+                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                    objSchema = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(
+                        request.DatabaseId, objDataBase);
+                    schemaText = objSchemaService.BuildOptimizedSchemaString(objSchema);
+                }
+
+                // Generate simple explanation using LLM
+                var explanation = await _llmService.GenerateChartExplanationAsync(
+                    request.Question, schemaText);
+
+                return new ChartExplanationResponse
+                {
+                    Question = request.Question,
+                    DatabaseId = request.DatabaseId,
+                    Explanation = explanation,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ChartExplanationResponse
+                {
+                    Question = request.Question,
+                    DatabaseId = request.DatabaseId,
+                    Explanation = "",
+                    Success = false,
+                    ErrorMessage = ex.Message
+                };
+            }
+        }
+
         #region Term Mapping
 
-        // Add to DynamicDasboardWebAPI/Services/Query/QueryService.cs
+            // Add to DynamicDasboardWebAPI/Services/Query/QueryService.cs
         private string EnhanceSchemaWithTermMappings(string schemaText, DatabaseSchema schema)
         {
             if (schema?.TermMappings == null || !schema.TermMappings.Any())
@@ -648,6 +699,8 @@ namespace DynamicDasboardWebAPI.Services
 
             return schemaText + "\n" + additionalInfo.ToString();
         }
+
+
 
         #endregion
 

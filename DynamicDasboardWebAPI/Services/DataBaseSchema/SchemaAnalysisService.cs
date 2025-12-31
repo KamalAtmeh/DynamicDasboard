@@ -197,7 +197,7 @@ namespace DynamicDasboardWebAPI.Services
             prompt.AppendLine("1. Provide business-oriented, non-technical friendly names and descriptions");
             prompt.AppendLine("2. For lookup columns (foreign keys), indicate isLookupColumn as true");
             //prompt.AppendLine("3. Identify naming conflicts where similar names between tables or columns in same table might cause confusion");
-            prompt.AppendLine("4. Suggest logical relationships based on column names and data types up to 20 relation");
+            prompt.AppendLine("4. Suggest logical relationships based on column names and data types up to 10 relations");
             prompt.AppendLine("5. Focus on clarity and usability for non-technical users");
             prompt.AppendLine("6. Keep your response in pure JSON format with no additional text");
 

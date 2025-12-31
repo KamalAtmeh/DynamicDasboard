@@ -77,5 +77,14 @@ namespace DynamicDasboardWebAPI.Services.LLM
         /// <returns>LLM response with term suggestions</returns>
         Task<string> GenerateTermSuggestionsAsync(string prompt);
 
+        /// <summary>
+        /// Generates a simple business explanation for a dashboard chart query
+        /// Used by dashboard builder - no ambiguities or parameters needed
+        /// </summary>
+        /// <param name="question">The natural language question</param>
+        /// <param name="databaseSchema">The database schema</param>
+        /// <returns>A simple explanation string</returns>
+        Task<string> GenerateChartExplanationAsync(string question, string databaseSchema);
+
     }
 }

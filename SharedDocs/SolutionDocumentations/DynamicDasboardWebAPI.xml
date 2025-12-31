@@ -241,6 +241,12 @@
             Validates a SQL formula expression
             </summary>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.QueryController.AnalyzeChartQuery(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Generates a simple explanation for a dashboard chart query
+            Simplified version without ambiguities - for dashboard builder only
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.DatabaseSchemaController.CreateSchema(DynamicDashboardCommon.Models.DatabaseSchema)">
             <summary>
             Create a new schema entry.
@@ -1124,6 +1130,14 @@
             <param name="validateRelations">Whether to validate relationship constraints</param>
             <returns>Validation result with error details if any</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.QueryService.GenerateChartExplanationAsync(DynamicDashboardCommon.Models.NlQueryRequest)">
+            <summary>
+            Generates a simple explanation for a dashboard chart query
+            Simplified version without ambiguities or parameters
+            </summary>
+            <param name="request">The natural language query request</param>
+            <returns>A simple explanation response</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.DashboardService">
             <summary>
             Service for managing dashboard operations.
@@ -1928,6 +1942,9 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSchemaAnalysisAsync(System.String)">
             <inheritdoc/>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateChartExplanationAsync(System.String,System.String)">
+            <inheritdoc/>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.ILLMService">
             <summary>
             Interface for Language Model services that support natural language processing capabilities.
@@ -1984,6 +2001,15 @@
             </summary>
             <param name="prompt">The prompt containing schema and instructions</param>
             <returns>LLM response with term suggestions</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateChartExplanationAsync(System.String,System.String)">
+            <summary>
+            Generates a simple business explanation for a dashboard chart query
+            Used by dashboard builder - no ambiguities or parameters needed
+            </summary>
+            <param name="question">The natural language question</param>
+            <param name="databaseSchema">The database schema</param>
+            <returns>A simple explanation string</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
             <summary>

@@ -241,5 +241,37 @@ namespace DynamicDasboardWebAPI.Controllers
                 return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
+
+        /// <summary>
+        /// Generates a simple explanation for a dashboard chart query
+        /// Simplified version without ambiguities - for dashboard builder only
+        /// </summary>
+        [HttpPost("analyze-chart")]
+        public async Task<IActionResult> AnalyzeChartQuery([FromBody] NlQueryRequest request)
+        {
+            if (request == null)
+                return BadRequest("Request cannot be null.");
+
+            if (string.IsNullOrWhiteSpace(request.Question))
+                return BadRequest("Question cannot be empty.");
+
+            try
+            {
+                var response = await _nlQueryService.GenerateChartExplanationAsync(request);
+
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                else
+                {
+                    return StatusCode(500, response);
+                }
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+            }
+        }
     }
 }
