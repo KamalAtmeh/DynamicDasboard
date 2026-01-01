@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "DynamicDashboardFE\\DynamicDashboardFE.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "New Profile (1)",
+    "Projects": []
+  },
+  {
+    "Name": "New Profile (2)",
+    "Projects": [
+      {
+        "Path": "DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "DynamicDashboardFE\\DynamicDashboardFE.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
