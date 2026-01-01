@@ -1,7 +1,5 @@
 # IDE/Editor
-.vs/
-*.sln
-*.slnLaunch.user
+
 
 # Build/Project files
 bin/
@@ -9,8 +7,9 @@ obj/
 
 
 # Folders to ignore
-/DeepSeekModel/
+
 /PythonApplication1/
 /ClassLibrary1/
 /test/            # If test/ is a local test folder
-/DynamicDasboardWebAPI/appsettings.json
+
+/.vs/DynamicDasboardWebAPI/FileContentIndex
