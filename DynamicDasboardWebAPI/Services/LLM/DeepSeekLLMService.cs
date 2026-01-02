@@ -317,7 +317,7 @@ Do NOT generate SQL - only explain what the chart will show.";
                     new { role = "user", content = userPrompt }
                 },
                 temperature = 0.2, //temp
-                max_tokens = 16000 //temp
+                max_tokens = 8000 //temp
             };
 
             var content = new StringContent(

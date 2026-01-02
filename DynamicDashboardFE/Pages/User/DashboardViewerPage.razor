@@ -1,6 +1,7 @@
 ﻿@page "/dashboard/viewer/{DashboardId:int}"
 @page "/dashboard/viewer"
 @using DynamicDashboardCommon.Models
+@using DynamicDashboardCommon.Enums
 @using System.Text.Json
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
@@ -10,844 +11,811 @@
 <PageTitle>@dashboardTitle - Dashboard Viewer</PageTitle>
 
 <div class="dashboard-viewer @themeClass">
-    <!-- Top Navigation Bar -->
-    <div class="viewer-header">
-        <div class="header-left">
-            <button class="btn-back" @onclick='() => NavigationManager.NavigateTo("/marketplace")'>
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <div class="header-title-section">
-                <h1 class="dashboard-title">@dashboardTitle</h1>
-                <span class="dashboard-subtitle">@dashboardDescription</span>
+    @if (isLoading)
+    {
+        <div class="loading-overlay">
+            <div class="loading-content">
+                <div class="spinner-large"></div>
+                <h3>Loading Dashboard...</h3>
+                <p>Fetching data from backend...</p>
             </div>
         </div>
-
-        <div class="header-center">
-            <div class="last-updated">
-                <i class="fas fa-sync-alt @(isRefreshing ? "fa-spin" : "")"></i>
-                <span>Last updated: @lastUpdated.ToString("MMM dd, yyyy HH:mm")</span>
+    }
+    else if (dashboard == null)
+    {
+        <div class="error-state">
+            <div class="error-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h2>Dashboard Not Found</h2>
+                <p>The dashboard you're looking for doesn't exist or you don't have permission to view it.</p>
+                <button class="btn-primary" @onclick='() => NavigationManager.NavigateTo("/marketplace")'>
+                    <i class="fas fa-arrow-left me-2"></i>Back to Marketplace
+                </button>
             </div>
         </div>
+    }
+    else
+    {
+        <!-- Header -->
+        <div class="viewer-header">
+            <div class="header-left">
+                <button class="btn-back" @onclick='() => NavigationManager.NavigateTo("/marketplace")'>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="header-title-section">
+                    <h1 class="dashboard-title">@dashboard.Title</h1>
+                    <span class="dashboard-subtitle">@dashboard.Description</span>
+                </div>
+            </div>
 
-        <div class="header-right">
-            <!-- Date Range Filter -->
-            <div class="filter-group">
-                <div class="date-range-picker">
+            <div class="header-center">
+                <div class="last-updated">
+                    <i class="fas fa-clock"></i>
+                    <span>Last updated: @dashboard.LastUpdated.ToString("MMM dd, yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Date Filter -->
+                <div class="date-filter">
                     <i class="fas fa-calendar-alt"></i>
                     <select @bind="selectedDateRange" class="date-select">
                         <option value="7d">Last 7 Days</option>
                         <option value="30d">Last 30 Days</option>
                         <option value="90d">Last 90 Days</option>
-                        <option value="1y">This Year</option>
-                        <option value="custom">Custom Range</option>
                     </select>
                 </div>
-            </div>
 
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="btn-action" @onclick="RefreshDashboard" title="Refresh">
+                <!-- Actions -->
+                <button class="btn-action" @onclick="RefreshDashboard" disabled="@isRefreshing">
                     <i class="fas fa-sync-alt @(isRefreshing ? "fa-spin" : "")"></i>
                 </button>
-                <button class="btn-action" @onclick="ToggleFullscreen" title="Fullscreen">
-                    <i class="fas @(isFullscreen ? "fa-compress" : "fa-expand")"></i>
-                </button>
-                <button class="btn-action" @onclick="ExportDashboard" title="Export">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="btn-action primary" @onclick="ShareDashboard">
-                    <i class="fas fa-share-alt me-1"></i>
-                    Share
-                </button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-        <div class="filter-chips">
-            <div class="filter-chip active">
-                <i class="fas fa-building"></i>
-                <span>All Emirates</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="filter-chip">
-                <i class="fas fa-concierge-bell"></i>
-                <span>All Services</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="filter-chip">
-                <i class="fas fa-user-check"></i>
-                <span>All Status</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-        </div>
-        <div class="filter-actions">
-            <button class="btn-filter-action">
-                <i class="fas fa-filter"></i>
-                More Filters
-            </button>
-            <button class="btn-filter-action">
-                <i class="fas fa-redo"></i>
-                Reset
-            </button>
-        </div>
-    </div>
+                <button class="btn-action" @onclick="ToggleFullscreen">
+                    <i class="fas fa-expand"></i>
+                </button>
 
-    <!-- Dashboard Grid -->
-    <div class="dashboard-grid">
-        <!-- Row 1: KPI Cards -->
-        <div class="grid-row kpi-row">
-            @foreach (var kpi in kpiCards)
+                <button class="btn-action" @onclick='() => NavigationManager.NavigateTo($"/dashboard/builder/{DashboardId}")'>
+                    <i class="fas fa-edit"></i>
+                </button>
+
+                <button class="btn-primary-action" @onclick="ShareDashboard">
+                    <i class="fas fa-share me-1"></i>Share
+                </button>
+
+                <!-- More Filters -->
+                <button class="btn-action" @onclick="ToggleFilters" title="Toggle Filters">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters Panel -->
+        @if (showFilters && dashboardFilters.Any())
+        {
+            <div class="filters-panel">
+                @foreach (var filter in dashboardFilters)
+                {
+                    <div class="filter-item">
+                        <label>@filter.DisplayName:</label>
+                        <select @bind="filter.CurrentValue">
+                            <option value="">All</option>
+                            @foreach (var option in GetFilterOptions(filter.Options))
+                            {
+                                <option value="@option">@option</option>
+                            }
+                        </select>
+                    </div>
+                }
+                <button class="btn-reset" @onclick="ResetFilters">
+                    <i class="fas fa-times-circle me-1"></i>Reset
+                </button>
+            </div>
+        }
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            @if (!dashboard.Components.Any())
             {
-                <div class="kpi-card @kpi.ColorClass animate-in" style="animation-delay: @(kpiCards.IndexOf(kpi) * 0.1)s">
-                    <div class="kpi-icon-wrapper">
-                        <div class="kpi-icon @kpi.ColorClass">
-                            <i class="@kpi.Icon"></i>
-                        </div>
-                    </div>
-                    <div class="kpi-content">
-                        <span class="kpi-label">@kpi.Label</span>
-                        <div class="kpi-value-row">
-                            <span class="kpi-value">@kpi.Value</span>
-                            <span class="kpi-trend @(kpi.TrendUp ? "trend-up" : "trend-down")">
-                                <i class="fas @(kpi.TrendUp ? "fa-arrow-up" : "fa-arrow-down")"></i>
-                                @kpi.TrendValue
-                            </span>
-                        </div>
-                        <span class="kpi-comparison">vs last period</span>
-                    </div>
-                    <div class="kpi-sparkline">
-                        <svg viewBox="0 0 100 40" class="sparkline-svg">
-                            <polyline fill="none" stroke="currentColor" stroke-width="2"
-                                      points="@kpi.SparklinePoints" />
-                        </svg>
+                <!-- Empty State -->
+                <div class="empty-dashboard">
+                    <div class="empty-content">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>No Components Yet</h3>
+                        <p>This dashboard doesn't have any components. Add some to see your data!</p>
+                        <button class="btn-primary" @onclick='() => NavigationManager.NavigateTo($"/dashboard/builder/{DashboardId}")'>
+                            <i class="fas fa-plus me-2"></i>Add Components
+                        </button>
                     </div>
                 </div>
             }
-        </div>
+            else
+            {
+                var kpiComponents = dashboard.Components.Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Number && c.IsVisible).ToList();
 
-        <!-- Row 2: Main Charts -->
-        <div class="grid-row charts-row">
-            <!-- Revenue Trend Chart -->
-            <div class="chart-card large animate-in" style="animation-delay: 0.4s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">Application Processing Trends</h3>
-                        <span class="card-subtitle">Monthly application volume and processing rates</span>
-                    </div>
-                    <div class="card-actions">
-                        <div class="chart-type-toggle">
-                            <button class="toggle-btn @(revenueChartType == "area" ? "active" : "")"
-                                    @onclick='() => revenueChartType = "area"'>
-                                <i class="fas fa-chart-area"></i>
-                            </button>
-                            <button class="toggle-btn @(revenueChartType == "bar" ? "active" : "")"
-                                    @onclick='() => revenueChartType = "bar"'>
-                                <i class="fas fa-chart-bar"></i>
-                            </button>
-                            <button class="toggle-btn @(revenueChartType == "line" ? "active" : "")"
-                                    @onclick='() => revenueChartType = "line"'>
-                                <i class="fas fa-chart-line"></i>
-                            </button>
-                        </div>
-                        <button class="btn-card-menu">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container" id="revenueChart">
-                        <!-- Chart Legend -->
-                        <div class="chart-legend">
-                            <div class="legend-item">
-                                <span class="legend-color" style="background: #3B82F6"></span>
-                                <span>Applications</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color" style="background: #10B981"></span>
-                                <span>Processed</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color" style="background: #F59E0B"></span>
-                                <span>Last Year</span>
-                            </div>
-                        </div>
-                        <!-- Mock Chart Visualization -->
-                        <div class="mock-chart area-chart">
-                            <div class="chart-grid">
-                                @for (int i = 0; i < 5; i++)
-                                {
-                                    <div class="grid-line"></div>
-                                }
-                            </div>
-                            <svg class="chart-svg" viewBox="0 0 800 300" preserveAspectRatio="none">
-                                <!-- Area fill -->
-                                <defs>
-                                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.3" />
-                                        <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0.05" />
-                                    </linearGradient>
-                                    <linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#10B981;stop-opacity:0.2" />
-                                        <stop offset="100%" style="stop-color:#10B981;stop-opacity:0.02" />
-                                    </linearGradient>
-                                </defs>
-                                <!-- Target Area -->
-                                <path class="area-path" fill="url(#areaGradient2)"
-                                      d="M0,180 L67,160 L133,150 L200,140 L267,130 L333,125 L400,120 L467,115 L533,110 L600,100 L667,95 L733,90 L800,85 L800,300 L0,300 Z" />
-                                <!-- Revenue Area -->
-                                <path class="area-path animated" fill="url(#areaGradient)"
-                                      d="M0,200 L67,180 L133,190 L200,150 L267,140 L333,160 L400,120 L467,100 L533,110 L600,80 L667,60 L733,70 L800,40 L800,300 L0,300 Z" />
-                                <!-- Revenue Line -->
-                                <polyline class="chart-line animated" fill="none" stroke="#3B82F6" stroke-width="3"
-                                          points="0,200 67,180 133,190 200,150 267,140 333,160 400,120 467,100 533,110 600,80 667,60 733,70 800,40" />
-                                <!-- Target Line -->
-                                <polyline class="chart-line" fill="none" stroke="#10B981" stroke-width="2" stroke-dasharray="5,5"
-                                          points="0,180 67,160 133,150 200,140 267,130 333,125 400,120 467,115 533,110 600,100 667,95 733,90 800,85" />
-                                <!-- Data Points -->
-                                @{
-                                    var points = new[] { 200, 180, 190, 150, 140, 160, 120, 100, 110, 80, 60, 70, 40 };
-                                    var months = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-                                }
-                                @for (int i = 0; i < points.Length; i++)
-                                {
-                                    <circle class="data-point" cx="@(i * 67)" cy="@points[i]" r="5" fill="#3B82F6" />
-                                }
-                            </svg>
-                            <div class="chart-x-axis">
-                                @foreach (var month in months)
-                                {
-                                    <span>@month</span>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sales by Category -->
-            <div class="chart-card medium animate-in" style="animation-delay: 0.5s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">Applications by Service Type</h3>
-                        <span class="card-subtitle">Service category distribution</span>
-                    </div>
-                    <button class="btn-card-menu">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="donut-chart-container">
-                        <div class="donut-chart">
-                            <svg viewBox="0 0 200 200" class="donut-svg">
-                                <circle class="donut-ring" cx="100" cy="100" r="80" />
-                                <circle class="donut-segment seg-1" cx="100" cy="100" r="80"
-                                        stroke-dasharray="@(502.4 * 0.35) @(502.4 * 0.65)"
-                                        stroke-dashoffset="125.6" />
-                                <circle class="donut-segment seg-2" cx="100" cy="100" r="80"
-                                        stroke-dasharray="@(502.4 * 0.25) @(502.4 * 0.75)"
-                                        stroke-dashoffset="@(125.6 - 502.4 * 0.35)" />
-                                <circle class="donut-segment seg-3" cx="100" cy="100" r="80"
-                                        stroke-dasharray="@(502.4 * 0.20) @(502.4 * 0.80)"
-                                        stroke-dashoffset="@(125.6 - 502.4 * 0.60)" />
-                                <circle class="donut-segment seg-4" cx="100" cy="100" r="80"
-                                        stroke-dasharray="@(502.4 * 0.12) @(502.4 * 0.88)"
-                                        stroke-dashoffset="@(125.6 - 502.4 * 0.80)" />
-                                <circle class="donut-segment seg-5" cx="100" cy="100" r="80"
-                                        stroke-dasharray="@(502.4 * 0.08) @(502.4 * 0.92)"
-                                        stroke-dashoffset="@(125.6 - 502.4 * 0.92)" />
-                            </svg>
-                            <div class="donut-center">
-                                <span class="donut-total">284.7K</span>
-                                <span class="donut-label">Total Applications</span>
-                            </div>
-                        </div>
-                        <div class="donut-legend">
-                            @foreach (var cat in categoryData)
-                            {
-                                <div class="legend-row">
-                                    <div class="legend-info">
-                                        <span class="legend-dot" style="background: @cat.Color"></span>
-                                        <span class="legend-name">@cat.Name</span>
-                                    </div>
-                                    <div class="legend-values">
-                                        <span class="legend-amount">@cat.Amount</span>
-                                        <span class="legend-percent">@cat.Percent</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 3: Bar Chart + Table -->
-        <div class="grid-row mixed-row">
-            <!-- Top Products Bar Chart -->
-            <div class="chart-card medium animate-in" style="animation-delay: 0.6s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">Top Services by Volume</h3>
-                        <span class="card-subtitle">Most requested services this period</span>
-                    </div>
-                    <button class="btn-card-menu">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="horizontal-bar-chart">
-                        @foreach (var product in topProducts)
+                <!-- KPI Cards Row -->
+                @if (kpiComponents.Any())
+                {
+                    <div class="kpi-row">
+                        @foreach (var kpi in kpiComponents)
                         {
-                            <div class="bar-row">
-                                <div class="bar-label">
-                                    <span class="product-rank">#@product.Rank</span>
-                                    <span class="product-name">@product.Name</span>
+                            <div class="kpi-card @GetKPIColorClass(kpi.ComponentID)">
+                                <div class="kpi-header">
+                                    <span class="kpi-label">@kpi.Title.ToUpper()</span>
+                                    <i class="kpi-icon fas fa-@GetComponentIcon(kpi.DataViewingTypeID)"></i>
                                 </div>
-                                <div class="bar-container">
-                                    <div class="bar-fill" style="width: @product.Percentage%; background: @product.Color">
-                                        <span class="bar-value">@product.Value</span>
-                                    </div>
+                                <div class="kpi-body">
+                                    @if (IsComponentLoading(kpi.ComponentID))
+                                    {
+                                        <div class="spinner-border spinner-border-sm"></div>
+                                    }
+                                    else if (componentErrors.ContainsKey(kpi.ComponentID))
+                                    {
+                                        <h2 class="kpi-value">--</h2>
+                                        <span class="kpi-error">Error</span>
+                                    }
+                                    else
+                                    {
+                                        <h2 class="kpi-value">@GetKPIValue(kpi.ComponentID)</h2>
+                                        <span class="kpi-change positive">
+                                            <i class="fas fa-arrow-up"></i>
+                                            --
+                                        </span>
+                                        <span class="kpi-period">vs last period</span>
+                                    }
                                 </div>
+                                <div class="kpi-sparkline" id="sparkline-@kpi.ComponentID"></div>
                             </div>
                         }
                     </div>
-                </div>
-            </div>
+                }
 
-            <!-- Recent Transactions Table -->
-            <div class="chart-card large animate-in" style="animation-delay: 0.7s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">Recent Applications</h3>
-                        <span class="card-subtitle">Latest citizen service requests</span>
-                    </div>
-                    <div class="card-actions">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Search..." />
-                        </div>
-                        <button class="btn-card-action">
-                            <i class="fas fa-download"></i>
-                            Export
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="data-table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        <div class="th-content">
-                                            Order ID
-                                            <i class="fas fa-sort"></i>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="th-content">
-                                            Customer
-                                            <i class="fas fa-sort"></i>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="th-content">
-                                            Product
-                                            <i class="fas fa-sort"></i>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="th-content">
-                                            Amount
-                                            <i class="fas fa-sort-down"></i>
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="th-content">
-                                            Status
-                                        </div>
-                                    </th>
-                                    <th>
-                                        <div class="th-content">
-                                            Date
-                                            <i class="fas fa-sort"></i>
-                                        </div>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var tx in recentTransactions)
-                                {
-                                    <tr>
-                                        <td>
-                                            <span class="order-id">@tx.OrderId</span>
-                                        </td>
-                                        <td>
-                                            <div class="customer-cell">
-                                                <div class="customer-avatar" style="background: @tx.AvatarColor">
-                                                    @tx.CustomerInitials
-                                                </div>
-                                                <div class="customer-info">
-                                                    <span class="customer-name">@tx.CustomerName</span>
-                                                    <span class="customer-email">@tx.CustomerEmail</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>@tx.Product</td>
-                                        <td>
-                                            <span class="amount">@tx.Amount</span>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge @tx.StatusClass">
-                                                <i class="@tx.StatusIcon"></i>
-                                                @tx.Status
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="date">@tx.Date</span>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="table-footer">
-                        <span class="showing-text">Showing 1-10 of 284,739 applications</span>
-                        <div class="pagination">
-                            <button class="page-btn" disabled><i class="fas fa-chevron-left"></i></button>
-                            <button class="page-btn active">1</button>
-                            <button class="page-btn">2</button>
-                            <button class="page-btn">3</button>
-                            <span class="page-ellipsis">...</span>
-                            <button class="page-btn">285</button>
-                            <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <!-- Charts Grid -->
+                var chartComponents = dashboard.Components.Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Chart && c.IsVisible).ToList();
 
-        <!-- Row 4: Regional Performance + Activity -->
-        <div class="grid-row bottom-row">
-            <!-- Regional Performance -->
-            <div class="chart-card medium animate-in" style="animation-delay: 0.8s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">Applications by Emirate</h3>
-                        <span class="card-subtitle">Geographic distribution of requests</span>
-                    </div>
-                    <button class="btn-card-menu">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="regional-chart">
-                        @foreach (var region in regionalData)
+                @if (chartComponents.Any())
+                {
+                    <div class="charts-grid">
+                        @foreach (var chart in chartComponents.Take(3))
                         {
-                            <div class="region-row">
-                                <div class="region-info">
-                                    <span class="region-flag">@region.Flag</span>
-                                    <span class="region-name">@region.Name</span>
-                                </div>
-                                <div class="region-bar-container">
-                                    <div class="region-bar">
-                                        <div class="region-bar-fill" style="width: @region.Percentage%">
-                                        </div>
+                            var chartClass = chart == chartComponents.First() ? "chart-large" : "chart-medium";
+                            <div class="chart-card @chartClass">
+                                <div class="chart-header">
+                                    <div class="chart-title-section">
+                                        <h3>@chart.Title</h3>
+                                        @if (!string.IsNullOrEmpty(chart.Description))
+                                        {
+                                            <p class="chart-subtitle">@chart.Description</p>
+                                        }
                                     </div>
-                                    <span class="region-value">@region.Value</span>
+                                    <div class="chart-actions">
+                                        @if (IsComponentLoading(chart.ComponentID))
+                                        {
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn-icon" @onclick="() => RefreshComponent(chart)">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        }
+                                        <button class="btn-icon">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <span class="region-change @(region.ChangePositive ? "positive" : "negative")">
-                                    <i class="fas @(region.ChangePositive ? "fa-arrow-up" : "fa-arrow-down")"></i>
-                                    @region.Change
-                                </span>
+                                <div id="chart-@chart.ComponentID" style="height: @(chart == chartComponents.First() ? "350px" : "300px");"></div>
                             </div>
                         }
                     </div>
-                </div>
-            </div>
+                }
 
-            <!-- Sales Activity Timeline -->
-            <div class="chart-card medium animate-in" style="animation-delay: 0.9s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">Staff Activity</h3>
-                        <span class="card-subtitle">Recent officer activities</span>
-                    </div>
-                    <button class="btn-card-menu">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="activity-timeline">
-                        @foreach (var activity in activityFeed)
-                        {
-                            <div class="activity-item">
-                                <div class="activity-icon @activity.IconClass">
-                                    <i class="@activity.Icon"></i>
+                <!-- Table Components -->
+                var tableComponents = dashboard.Components.Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Table && c.IsVisible).ToList();
+
+                @if (tableComponents.Any())
+                {
+                    @foreach (var table in tableComponents.Take(1))
+                    {
+                        <div class="table-card">
+                            <div class="table-header">
+                                <div class="table-title-section">
+                                    <h3>@table.Title</h3>
+                                    @if (!string.IsNullOrEmpty(table.Description))
+                                    {
+                                        <p class="table-subtitle">@table.Description</p>
+                                    }
                                 </div>
-                                <div class="activity-content">
-                                    <p class="activity-text">
-                                        <strong>@activity.User</strong> @activity.Action
-                                    </p>
-                                    <span class="activity-time">@activity.Time</span>
+                                <div class="table-actions">
+                                    <div class="search-box">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" placeholder="Search..." @bind="searchQuery" @bind:event="oninput" />
+                                    </div>
+                                    @if (IsComponentLoading(table.ComponentID))
+                                    {
+                                        <span class="spinner-border spinner-border-sm"></span>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-icon" @onclick="() => RefreshComponent(table)">
+                                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                                        </button>
+                                        <button class="btn-icon" @onclick="() => ExportTableData(table.ComponentID)">
+                                            <i class="fas fa-download me-1"></i>Export
+                                        </button>
+                                    }
                                 </div>
                             </div>
-                        }
-                    </div>
-                    <button class="btn-view-all">
-                        View All Activity
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Performance Gauge -->
-            <div class="chart-card small animate-in" style="animation-delay: 1.0s">
-                <div class="card-header">
-                    <div class="card-title-section">
-                        <h3 class="card-title">SLA Compliance</h3>
-                        <span class="card-subtitle">Q4 2024 Processing Goals</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="gauge-container">
-                        <svg viewBox="0 0 200 120" class="gauge-svg">
-                            <defs>
-                                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" style="stop-color:#EF4444" />
-                                    <stop offset="50%" style="stop-color:#F59E0B" />
-                                    <stop offset="100%" style="stop-color:#10B981" />
-                                </linearGradient>
-                            </defs>
-                            <path class="gauge-bg" d="M20,100 A80,80 0 0,1 180,100" fill="none"
-                                  stroke="#E5E7EB" stroke-width="20" stroke-linecap="round" />
-                            <path class="gauge-fill" d="M20,100 A80,80 0 0,1 180,100" fill="none"
-                                  stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round"
-                                  stroke-dasharray="251.2" stroke-dashoffset="@(251.2 * (1 - 0.94))" />
-                            <text x="100" y="95" text-anchor="middle" class="gauge-value">94%</text>
-                            <text x="100" y="115" text-anchor="middle" class="gauge-label">SLA met this quarter</text>
-                        </svg>
-                        <div class="gauge-stats">
-                            <div class="gauge-stat">
-                                <span class="stat-value">267K</span>
-                                <span class="stat-label">On-Time</span>
-                            </div>
-                            <div class="gauge-stat">
-                                <span class="stat-value">284K</span>
-                                <span class="stat-label">Total</span>
+                            <div class="table-container">
+                                @if (componentErrors.ContainsKey(table.ComponentID))
+                                {
+                                    <div class="component-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <p>@componentErrors[table.ComponentID]</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @RenderTable(table.ComponentID)
+                                }
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    }
+                }
+            }
         </div>
-    </div>
+    }
 </div>
 
 @code {
     [Parameter]
     public int DashboardId { get; set; }
 
-    // Dashboard metadata
-    private string dashboardTitle = "MOI Services Performance Dashboard";
-    private string dashboardDescription = "Real-time insights into public services and citizen requests";
-    private DateTime lastUpdated = DateTime.Now;
-    private string themeClass = "";
-    private string selectedDateRange = "30d";
-    private string revenueChartType = "area";
+    // State
+    private DashboardModel dashboard;
+    private string dashboardTitle = "Dashboard";
+    private string themeClass = "light";
+    private bool isLoading = true;
     private bool isRefreshing = false;
+    private bool showFilters = false;
     private bool isFullscreen = false;
+    private string selectedDateRange = "30d";
+    private string searchQuery = "";
 
-    // KPI Cards Data
-    private List<KpiCardData> kpiCards = new();
+    // Data Storage
+    private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
+    private Dictionary<int, List<Dictionary<string, object>>> componentData = new Dictionary<int, List<Dictionary<string, object>>>();
+    private Dictionary<int, string> componentErrors = new Dictionary<int, string>();
+    private List<ComponentParameter> dashboardFilters = new List<ComponentParameter>();
 
-    // Category Data for Donut Chart
-    private List<CategoryData> categoryData = new();
-
-    // Top Products Data (Services)
-    private List<ProductData> topProducts = new();
-
-    // Recent Transactions (Applications)
-    private List<TransactionData> recentTransactions = new();
-
-    // Regional Data (Emirate Data)
-    private List<RegionalData> regionalData = new();
-
-    // Activity Feed
-    private List<ActivityData> activityFeed = new();
+    // Color rotation for KPIs
+    private string[] kpiColors = new[] { "kpi-blue", "kpi-green", "kpi-purple", "kpi-orange", "kpi-teal" };
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadMockData();
+        await LoadDashboard();
     }
 
-    private Task LoadMockData()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // KPI Cards - MOI Service Metrics
-        kpiCards = new List<KpiCardData>
+        if (firstRender && dashboard != null && !isLoading)
         {
-            new KpiCardData
+            await RenderAllCharts();
+        }
+    }
+
+    private async Task LoadDashboard()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            if (DashboardId > 0)
             {
-                Label = "Total Applications",
-                Value = "284,739",
-                TrendValue = "+12.5%",
-                TrendUp = true,
-                Icon = "fas fa-file-alt",
-                ColorClass = "kpi-blue",
-                SparklinePoints = "0,35 15,30 30,32 45,25 60,20 75,22 90,15 100,10"
-            },
-            new KpiCardData
-            {
-                Label = "Processed Today",
-                Value = "18,472",
-                TrendValue = "+8.2%",
-                TrendUp = true,
-                Icon = "fas fa-check-double",
-                ColorClass = "kpi-green",
-                SparklinePoints = "0,30 15,28 30,35 45,25 60,30 75,20 90,18 100,12"
-            },
-            new KpiCardData
-            {
-                Label = "Avg Processing Time",
-                Value = "2.4 hrs",
-                TrendValue = "-15.3%",
-                TrendUp = true,
-                Icon = "fas fa-clock",
-                ColorClass = "kpi-purple",
-                SparklinePoints = "0,25 15,30 30,28 45,35 60,30 75,25 90,20 100,15"
-            },
-            new KpiCardData
-            {
-                Label = "Pending Approval",
-                Value = "3,847",
-                TrendValue = "-2.1%",
-                TrendUp = true,
-                Icon = "fas fa-hourglass-half",
-                ColorClass = "kpi-amber",
-                SparklinePoints = "0,20 15,18 30,22 45,25 60,28 75,30 90,32 100,35"
-            },
-            new KpiCardData
-            {
-                Label = "Satisfaction Rate",
-                Value = "94.8%",
-                TrendValue = "+3.2%",
-                TrendUp = true,
-                Icon = "fas fa-smile",
-                ColorClass = "kpi-teal",
-                SparklinePoints = "0,35 15,32 30,28 45,25 60,22 75,18 90,12 100,8"
+                // Load dashboard from backend API
+                dashboard = await Http.GetFromJsonAsync<DashboardModel>($"api/dashboard/{DashboardId}");
+
+                if (dashboard != null)
+                {
+                    dashboardTitle = dashboard.Title ?? "Dashboard";
+
+                    // Extract dashboard-level filters
+                    dashboardFilters = dashboard.Components
+                        .Where(c => c.Parameters != null)
+                        .SelectMany(c => c.Parameters)
+                        .Where(p => p.IsVisible)
+                        .GroupBy(p => p.Name)
+                        .Select(g => g.First())
+                        .ToList();
+
+                    // Initialize loading states
+                    foreach (var component in dashboard.Components)
+                    {
+                        isComponentLoading[component.ComponentID] = false;
+                        componentErrors.Remove(component.ComponentID);
+                    }
+
+                    // Load component data
+                    await LoadAllComponentsData();
+                }
             }
-        };
-
-        // Category Data for Donut Chart - Service Types
-        categoryData = new List<CategoryData>
+        }
+        catch (Exception ex)
         {
-            new CategoryData { Name = "Visa Services", Amount = "84,231", Percent = "35%", Color = "#3B82F6" },
-            new CategoryData { Name = "ID & Passport", Amount = "60,124", Percent = "25%", Color = "#10B981" },
-            new CategoryData { Name = "Traffic Services", Amount = "48,102", Percent = "20%", Color = "#F59E0B" },
-            new CategoryData { Name = "Civil Status", Amount = "28,847", Percent = "12%", Color = "#8B5CF6" },
-            new CategoryData { Name = "Other Services", Amount = "19,235", Percent = "8%", Color = "#EC4899" }
-        };
-
-        // Top Services by Volume
-        topProducts = new List<ProductData>
+            Console.WriteLine($"Error loading dashboard: {ex.Message}");
+            ToastService.ShowError($"Error loading dashboard: {ex.Message}");
+            dashboard = null;
+        }
+        finally
         {
-            new ProductData { Rank = 1, Name = "Employment Visa - New", Value = "28,431", Percentage = 100, Color = "#3B82F6" },
-            new ProductData { Rank = 2, Name = "Residency Renewal", Value = "24,182", Percentage = 85, Color = "#3B82F6" },
-            new ProductData { Rank = 3, Name = "Emirates ID Issuance", Value = "19,847", Percentage = 70, Color = "#10B981" },
-            new ProductData { Rank = 4, Name = "Visit Visa Extension", Value = "17,623", Percentage = 62, Color = "#10B981" },
-            new ProductData { Rank = 5, Name = "Passport Renewal", Value = "15,412", Percentage = 54, Color = "#F59E0B" },
-            new ProductData { Rank = 6, Name = "Traffic Fine Payment", Value = "14,287", Percentage = 50, Color = "#F59E0B" },
-            new ProductData { Rank = 7, Name = "Vehicle Registration", Value = "12,841", Percentage = 45, Color = "#8B5CF6" },
-            new ProductData { Rank = 8, Name = "Birth Certificate", Value = "11,234", Percentage = 39, Color = "#8B5CF6" }
-        };
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
 
-        // Recent Applications
-        recentTransactions = new List<TransactionData>
+    private async Task LoadAllComponentsData()
+    {
+        if (dashboard == null || !dashboard.Components.Any())
+            return;
+
+        try
         {
-            new TransactionData
+            // Load data for all components in parallel
+            var tasks = dashboard.Components
+                .Where(c => c.IsVisible && c.DataViewingTypeID != (int)DataViewingTypeEnum.Label)
+                .Select(c => LoadComponentDataAsync(c));
+
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading components data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadComponentDataAsync(DashboardComponent component)
+    {
+        if (string.IsNullOrEmpty(component.QueryText))
+        {
+            componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+            return;
+        }
+
+        try
+        {
+            isComponentLoading[component.ComponentID] = true;
+            componentErrors.Remove(component.ComponentID);
+            StateHasChanged();
+
+            // Create request payload
+            var request = new SqlExecutionRequest
             {
-                OrderId = "#APP-2024-88471",
-                CustomerName = "Ahmed Al Mansouri",
-                CustomerEmail = "ahmed.m@email.ae",
-                CustomerInitials = "AM",
-                AvatarColor = "#3B82F6",
-                Product = "Employment Visa - New",
-                Amount = "1,500 AED",
-                Status = "Approved",
-                StatusClass = "status-completed",
-                StatusIcon = "fas fa-check-circle",
-                Date = "Today, 2:34 PM"
-            },
-            new TransactionData
+                OriginalQuestion = "",
+                DatabaseId = dashboard.DatabaseID,
+                Sql = component.QueryText
+            };
+
+            // Execute query via backend API
+            var response = await Http.PostAsJsonAsync("api/query/execute", request);
+
+            if (response.IsSuccessStatusCode)
             {
-                OrderId = "#APP-2024-88470",
-                CustomerName = "Fatima Hassan",
-                CustomerEmail = "f.hassan@company.ae",
-                CustomerInitials = "FH",
-                AvatarColor = "#10B981",
-                Product = "Residency Renewal",
-                Amount = "650 AED",
-                Status = "Processing",
-                StatusClass = "status-processing",
-                StatusIcon = "fas fa-clock",
-                Date = "Today, 1:15 PM"
-            },
-            new TransactionData
-            {
-                OrderId = "#APP-2024-88469",
-                CustomerName = "Mohammed Al Rashid",
-                CustomerEmail = "m.rashid@gmail.com",
-                CustomerInitials = "MR",
-                AvatarColor = "#F59E0B",
-                Product = "Emirates ID - Renewal",
-                Amount = "370 AED",
-                Status = "Under Review",
-                StatusClass = "status-shipped",
-                StatusIcon = "fas fa-search",
-                Date = "Today, 11:42 AM"
-            },
-            new TransactionData
-            {
-                OrderId = "#APP-2024-88468",
-                CustomerName = "Sara Abdullah",
-                CustomerEmail = "sara.a@business.ae",
-                CustomerInitials = "SA",
-                AvatarColor = "#8B5CF6",
-                Product = "Visit Visa Extension",
-                Amount = "200 AED",
-                Status = "Approved",
-                StatusClass = "status-completed",
-                StatusIcon = "fas fa-check-circle",
-                Date = "Yesterday, 4:22 PM"
-            },
-            new TransactionData
-            {
-                OrderId = "#APP-2024-88467",
-                CustomerName = "Khalid Ibrahim",
-                CustomerEmail = "k.ibrahim@email.com",
-                CustomerInitials = "KI",
-                AvatarColor = "#EC4899",
-                Product = "Passport Renewal",
-                Amount = "500 AED",
-                Status = "Pending Documents",
-                StatusClass = "status-pending",
-                StatusIcon = "fas fa-hourglass-half",
-                Date = "Yesterday, 2:18 PM"
+                var result = await response.Content.ReadFromJsonAsync<QueryExecutionResponse>();
+
+                if (result != null && result.Success && result.Results != null)
+                {
+                    componentData[component.ComponentID] = result.Results;
+                    Console.WriteLine($"Component {component.ComponentID} loaded with {result.Results.Count} rows");
+                }
+                else
+                {
+                    componentErrors[component.ComponentID] = "No data available";
+                    componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+                }
             }
-        };
-
-        // Emirate Distribution Data
-        regionalData = new List<RegionalData>
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                componentErrors[component.ComponentID] = "Failed to load data";
+                componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+                Console.WriteLine($"Error loading component {component.ComponentID}: {error}");
+            }
+        }
+        catch (Exception ex)
         {
-            new RegionalData { Flag = "🏛️", Name = "Abu Dhabi", Value = "98,421", Percentage = 100, Change = "+18.2%", ChangePositive = true },
-            new RegionalData { Flag = "🏙️", Name = "Dubai", Value = "84,235", Percentage = 85, Change = "+12.5%", ChangePositive = true },
-            new RegionalData { Flag = "🌊", Name = "Sharjah", Value = "42,187", Percentage = 43, Change = "+24.8%", ChangePositive = true },
-            new RegionalData { Flag = "🏔️", Name = "Ajman", Value = "21,458", Percentage = 22, Change = "-3.2%", ChangePositive = false },
-            new RegionalData { Flag = "🌴", Name = "RAK & Others", Value = "18,438", Percentage = 19, Change = "+8.7%", ChangePositive = true }
-        };
-
-        // Activity Feed - MOI Staff Activities
-        activityFeed = new List<ActivityData>
+            Console.WriteLine($"Exception loading component {component.ComponentID}: {ex.Message}");
+            componentErrors[component.ComponentID] = ex.Message;
+            componentData[component.ComponentID] = new List<Dictionary<string, object>>();
+        }
+        finally
         {
-            new ActivityData { User = "Officer Al Maktoum", Action = "approved 45 visa applications in batch processing", Icon = "fas fa-check-double", IconClass = "activity-success", Time = "5 minutes ago" },
-            new ActivityData { User = "Supervisor Hassan", Action = "escalated 3 applications for senior review", Icon = "fas fa-arrow-up", IconClass = "activity-warning", Time = "18 minutes ago" },
-            new ActivityData { User = "Director Al Nahyan", Action = "updated the processing guidelines for Q1 2025", Icon = "fas fa-file-signature", IconClass = "activity-info", Time = "42 minutes ago" },
-            new ActivityData { User = "Officer Fatima", Action = "resolved citizen complaint #CMP-2024-1847", Icon = "fas fa-headset", IconClass = "activity-primary", Time = "1 hour ago" },
-            new ActivityData { User = "System", Action = "automated verification completed for 128 applications", Icon = "fas fa-robot", IconClass = "activity-info", Time = "2 hours ago" }
-        };
-
-        return Task.CompletedTask;
+            isComponentLoading[component.ComponentID] = false;
+            StateHasChanged();
+        }
     }
 
     private async Task RefreshDashboard()
     {
-        isRefreshing = true;
-        StateHasChanged();
+        if (isRefreshing) return;
 
-        await Task.Delay(1500); // Simulate refresh
-        lastUpdated = DateTime.Now;
+        try
+        {
+            isRefreshing = true;
+            StateHasChanged();
 
-        isRefreshing = false;
-        ToastService.ShowSuccess("Dashboard refreshed successfully!");
+            await LoadAllComponentsData();
+            await RenderAllCharts();
+
+            ToastService.ShowSuccess("Dashboard refreshed successfully");
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
     }
 
-    private async Task ToggleFullscreen()
+    private async Task RefreshComponent(DashboardComponent component)
+    {
+        await LoadComponentDataAsync(component);
+
+        // Re-render chart if it's a chart component
+        if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
+        {
+            await RenderChart(component);
+        }
+
+        ToastService.ShowSuccess($"{component.Title} refreshed");
+    }
+
+    private async Task ApplyFilters()
+    {
+        // Apply filter values across all components
+        foreach (var component in dashboard.Components)
+        {
+            if (component.Parameters != null)
+            {
+                foreach (var param in component.Parameters)
+                {
+                    var filter = dashboardFilters.FirstOrDefault(f => f.Name == param.Name);
+                    if (filter != null)
+                    {
+                        param.CurrentValue = filter.CurrentValue;
+                    }
+                }
+            }
+        }
+
+        await RefreshDashboard();
+    }
+
+    private async Task ResetFilters()
+    {
+        foreach (var filter in dashboardFilters)
+        {
+            filter.CurrentValue = filter.DefaultValue;
+        }
+        await ApplyFilters();
+    }
+
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+    }
+
+    private void ToggleFullscreen()
     {
         isFullscreen = !isFullscreen;
-        await JSRuntime.InvokeVoidAsync("dashboardViewer.toggleFullscreen", isFullscreen);
-    }
-
-    private void ExportDashboard()
-    {
-        ToastService.ShowInfo("Preparing dashboard export...");
     }
 
     private void ShareDashboard()
     {
-        ToastService.ShowInfo("Opening share options...");
+        ToastService.ShowInfo("Share functionality coming soon");
     }
 
-    // Data Classes
-    private class KpiCardData
+    private void ExportTableData(int componentId)
     {
-        public string Label { get; set; } = "";
-        public string Value { get; set; } = "";
-        public string TrendValue { get; set; } = "";
-        public bool TrendUp { get; set; }
-        public string Icon { get; set; } = "";
-        public string ColorClass { get; set; } = "";
-        public string SparklinePoints { get; set; } = "";
+        ToastService.ShowInfo("Export functionality coming soon");
     }
 
-    private class CategoryData
+    private bool IsComponentLoading(int componentId)
     {
-        public string Name { get; set; } = "";
-        public string Amount { get; set; } = "";
-        public string Percent { get; set; } = "";
-        public string Color { get; set; } = "";
+        return isComponentLoading.ContainsKey(componentId) && isComponentLoading[componentId];
     }
 
-    private class ProductData
+    private List<string> GetFilterOptions(string optionsJson)
     {
-        public int Rank { get; set; }
-        public string Name { get; set; } = "";
-        public string Value { get; set; } = "";
-        public int Percentage { get; set; }
-        public string Color { get; set; } = "";
+        if (string.IsNullOrEmpty(optionsJson))
+            return new List<string>();
+
+        try
+        {
+            // Options stored as JSON array: ["Option1", "Option2", "Option3"]
+            return JsonSerializer.Deserialize<List<string>>(optionsJson) ?? new List<string>();
+        }
+        catch
+        {
+            // If not JSON, split by comma
+            return optionsJson.Split(',').Select(o => o.Trim()).ToList();
+        }
     }
 
-    private class TransactionData
+    private string GetKPIValue(int componentId)
     {
-        public string OrderId { get; set; } = "";
-        public string CustomerName { get; set; } = "";
-        public string CustomerEmail { get; set; } = "";
-        public string CustomerInitials { get; set; } = "";
-        public string AvatarColor { get; set; } = "";
-        public string Product { get; set; } = "";
-        public string Amount { get; set; } = "";
-        public string Status { get; set; } = "";
-        public string StatusClass { get; set; } = "";
-        public string StatusIcon { get; set; } = "";
-        public string Date { get; set; } = "";
+        if (!componentData.ContainsKey(componentId) || !componentData[componentId].Any())
+            return "--";
+
+        var data = componentData[componentId];
+        var value = data[0].Values.FirstOrDefault();
+
+        return FormatValue(value);
     }
 
-    private class RegionalData
+    private string GetKPIColorClass(int componentId)
     {
-        public string Flag { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Value { get; set; } = "";
-        public int Percentage { get; set; }
-        public string Change { get; set; } = "";
-        public bool ChangePositive { get; set; }
+        var index = dashboard.Components
+            .Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
+            .ToList()
+            .FindIndex(c => c.ComponentID == componentId);
+
+        return kpiColors[index % kpiColors.Length];
     }
 
-    private class ActivityData
+    private string GetComponentIcon(int dataViewingTypeId)
     {
-        public string User { get; set; } = "";
-        public string Action { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string IconClass { get; set; } = "";
-        public string Time { get; set; } = "";
+        return dataViewingTypeId switch
+        {
+            (int)DataViewingTypeEnum.Chart => "chart-bar",
+            (int)DataViewingTypeEnum.Table => "table",
+            (int)DataViewingTypeEnum.Number => "hashtag",
+            (int)DataViewingTypeEnum.Card => "id-card",
+            (int)DataViewingTypeEnum.Label => "font",
+            _ => "cube"
+        };
+    }
+
+    private string FormatValue(object value)
+    {
+        if (value == null) return "N/A";
+
+        if (value is decimal || value is double || value is float)
+        {
+            var numValue = Convert.ToDouble(value);
+            if (numValue >= 1000000)
+                return (numValue / 1000000).ToString("0.0") + "M";
+            if (numValue >= 1000)
+                return (numValue / 1000).ToString("0.0") + "K";
+            return numValue.ToString("N0");
+        }
+
+        if (value is int || value is long)
+        {
+            var numValue = Convert.ToInt64(value);
+            if (numValue >= 1000000)
+                return (numValue / 1000000.0).ToString("0.0") + "M";
+            if (numValue >= 1000)
+                return (numValue / 1000.0).ToString("0.0") + "K";
+            return numValue.ToString("N0");
+        }
+
+        if (value is DateTime dateValue)
+        {
+            return dateValue.ToString("MMM dd, yyyy");
+        }
+
+        return value.ToString();
+    }
+
+    private RenderFragment RenderTable(int componentId)
+    {
+        var data = componentData.ContainsKey(componentId) ? componentData[componentId] : new List<Dictionary<string, object>>();
+
+        return builder =>
+        {
+            if (!data.Any())
+            {
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "no-data");
+                builder.AddContent(2, "No data available");
+                builder.CloseElement();
+                return;
+            }
+
+            builder.OpenElement(0, "table");
+            builder.AddAttribute(1, "class", "data-table");
+
+            // Header
+            builder.OpenElement(2, "thead");
+            builder.OpenElement(3, "tr");
+            var columns = data[0].Keys.ToList();
+            foreach (var col in columns)
+            {
+                builder.OpenElement(4, "th");
+                builder.AddContent(5, col.ToUpper());
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+            builder.CloseElement();
+
+            // Body
+            builder.OpenElement(6, "tbody");
+            var displayData = string.IsNullOrEmpty(searchQuery)
+                ? data.Take(10)
+                : data.Where(row => row.Values.Any(v => v?.ToString()?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false)).Take(10);
+
+            foreach (var row in displayData)
+            {
+                builder.OpenElement(7, "tr");
+                foreach (var col in columns)
+                {
+                    builder.OpenElement(8, "td");
+                    builder.AddContent(9, FormatValue(row[col]));
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+
+            builder.CloseElement();
+
+            // Footer
+            builder.OpenElement(10, "div");
+            builder.AddAttribute(11, "class", "table-footer");
+            builder.AddContent(12, $"Showing {Math.Min(10, displayData.Count())} of {data.Count} rows");
+            builder.CloseElement();
+        };
+    }
+
+    private async Task RenderAllCharts()
+    {
+        var chartComponents = dashboard.Components.Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Chart && c.IsVisible);
+
+        foreach (var chart in chartComponents)
+        {
+            await RenderChart(chart);
+        }
+    }
+
+    private async Task RenderChart(DashboardComponent component)
+    {
+        if (!componentData.ContainsKey(component.ComponentID) || !componentData[component.ComponentID].Any())
+            return;
+
+        var data = componentData[component.ComponentID];
+        var chartType = GetChartType(component.VisualizationConfig);
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("renderDynamicChart",
+                component.ComponentID,
+                chartType,
+                data,
+                component.Title);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error rendering chart {component.ComponentID}: {ex.Message}");
+        }
+    }
+
+    private string GetChartType(string visualizationConfig)
+    {
+        if (string.IsNullOrEmpty(visualizationConfig))
+            return "bar";
+
+        try
+        {
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(visualizationConfig);
+            if (config != null && config.ContainsKey("chartType"))
+            {
+                return config["chartType"].GetString() ?? "bar";
+            }
+        }
+        catch { }
+
+        return "bar";
+    }
+
+    // Helper classes
+    private class SqlExecutionRequest
+    {
+        public string OriginalQuestion { get; set; }
+        public int DatabaseId { get; set; }
+        public string Sql { get; set; }
+    }
+
+    private class QueryExecutionResponse
+    {
+        public bool Success { get; set; }
+        public List<Dictionary<string, object>> Results { get; set; }
+        public string ResultExplanation { get; set; }
     }
 }
+
+<script suppress-error="BL9992">
+    // Dynamic chart rendering based on real data
+    window.renderDynamicChart = function(componentId, chartType, data, title) {
+        const container = document.querySelector(`#chart-${componentId}`);
+        if (!container || !data || data.length === 0) return;
+
+        // Get column names from first row
+        const columns = Object.keys(data[0]);
+        const xColumn = columns[0];
+        const yColumn = columns[1];
+
+        // Extract data
+        const categories = data.map(row => row[xColumn]);
+        const values = data.map(row => row[yColumn]);
+
+        let options;
+
+        switch(chartType.toLowerCase()) {
+            case 'line':
+            case 'area':
+                options = {
+                    series: [{
+                        name: yColumn,
+                        data: values
+                    }],
+                    chart: {
+                        type: chartType,
+                        height: '100%',
+                        toolbar: { show: false }
+                    },
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth', width: 2 },
+                    xaxis: { categories: categories },
+                    colors: ['#4361EE'],
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.4,
+                            opacityTo: 0.1
+                        }
+                    }
+                };
+                break;
+
+            case 'pie':
+            case 'donut':
+                options = {
+                    series: values,
+                    chart: {
+                        type: chartType,
+                        height: '100%'
+                    },
+                    labels: categories,
+                    colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181'],
+                    legend: { position: 'bottom' }
+                };
+                break;
+
+            default: // bar
+                options = {
+                    series: [{
+                        name: yColumn,
+                        data: values
+                    }],
+                    chart: {
+                        type: 'bar',
+                        height: '100%',
+                        toolbar: { show: false }
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            borderRadius: 6
+                        }
+                    },
+                    dataLabels: { enabled: false },
+                    xaxis: { categories: categories },
+                    colors: ['#667EEA']
+                };
+        }
+
+        const chart = new ApexCharts(container, options);
+        chart.render();
+    };
+</script>
