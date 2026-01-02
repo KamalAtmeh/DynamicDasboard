@@ -31,12 +31,12 @@
                 }
                 else if (!isPreviewMode)
                 {
-                    <input @ref="titleInputRef" 
-                    type="text" 
-                    class="form-control" 
-                    @bind="dashboard.Title" 
-                    @onblur="() => isEditingTitle = false"
-                    style="width: 300px;" />
+                    <input @ref="titleInputRef"
+                           type="text"
+                           class="form-control"
+                           @bind="dashboard.Title"
+                           @onblur="() => isEditingTitle = false"
+                           style="width: 300px;" />
                 }
                 else
                 {
@@ -98,9 +98,9 @@
                 <div class="sidebar-body">
                     <div class="mb-3">
                         <input type="text"
-                        class="form-control form-control-sm"
-                        placeholder="Search components..."
-                        @bind="componentSearchTerm" />
+                               class="form-control form-control-sm"
+                               placeholder="Search components..."
+                               @bind="componentSearchTerm" />
                     </div>
 
                     @foreach (var category in componentCategories)
@@ -165,9 +165,9 @@
                         @foreach (var component in dashboard.Components)
                         {
                             <div class="dashboard-component @(selectedComponentId == component.ComponentID && !isPreviewMode ? "selected" : "")"
-                            style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                                    grid-row: @(component.GridY + 1) / span @component.GridHeight;"
-                            @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
+                                 style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
+                                                    grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+                                 @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
 
                                 <div class="component-header">
                                     <span class="component-title">@component.Title</span>
@@ -496,145 +496,145 @@
     <style>
         /* Preview Mode Styles */
         .builder-content.preview-mode {
-        background: #f5f5f5;
+            background: #f5f5f5;
         }
 
         .builder-canvas-container.fullscreen {
-        width: 100%;
-        flex: 1;
+            width: 100%;
+            flex: 1;
         }
 
         /* KPI Display */
         .kpi-display {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1rem;
         }
 
         .kpi-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #667eea;
-        line-height: 1;
-        margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+            line-height: 1;
+            margin-bottom: 0.5rem;
         }
 
         .kpi-label {
-        font-size: 0.9rem;
-        color: #718096;
-        text-align: center;
+            font-size: 0.9rem;
+            color: #718096;
+            text-align: center;
         }
 
         /* Chart Preview */
         .chart-preview {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1rem;
         }
 
         /* Table in component */
         .component-body .table {
-        font-size: 0.85rem;
+            font-size: 0.85rem;
         }
 
-        .component-body .table th {
-        background: #f8f9fa;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        }
+            .component-body .table th {
+                background: #f8f9fa;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
 
         .chart-data-preview {
-        padding: 1rem;
-        height: 100%;
-        overflow: auto;
+            padding: 1rem;
+            height: 100%;
+            overflow: auto;
         }
 
         .chart-header {
-        border-bottom: 2px solid #e9ecef;
-        padding-bottom: 0.5rem;
-        margin-bottom: 0.75rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
         .chart-data-table {
-        font-size: 0.85rem;
+            font-size: 0.85rem;
         }
 
-        .chart-data-table .table th {
-        background: #f8f9fa;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        }
+            .chart-data-table .table th {
+                background: #f8f9fa;
+                font-weight: 600;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
 
         /* Label Display */
         .label-display {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        padding: 1.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
 
         .label-value {
-        font-size: 3rem;
-        font-weight: 800;
-        line-height: 1;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .label-text {
-        font-size: 1.1rem;
-        font-weight: 500;
-        text-align: center;
-        opacity: 0.95;
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0.95;
         }
 
         /* Card Display */
         .card-display {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
-        padding: 1.5rem;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
         .card-content {
-        text-align: center;
-        width: 100%;
+            text-align: center;
+            width: 100%;
         }
 
         .card-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
         }
 
         .card-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #4a5568;
-        margin-bottom: 0.25rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.25rem;
         }
 
         .card-description {
-        font-size: 0.9rem;
-        color: #718096;
-        line-height: 1.4;
+            font-size: 0.9rem;
+            color: #718096;
+            line-height: 1.4;
         }
 
         /* Steps Indicator */
@@ -835,8 +835,6 @@
             animation: fadeInUp 0.4s ease-out;
         }
 
-
-
     </style>
 
 </div>
@@ -872,7 +870,7 @@
                     </select>
                     @if (selectedDatabaseIdForTemplate == 0)
                     {
-@*                         <div class="alert alert-warning d-flex align-items-center mt-3 mb-0" style="border-radius: 8px; border-left: 4px solid #ffc107;">
+                        @*                         <div class="alert alert-warning d-flex align-items-center mt-3 mb-0" style="border-radius: 8px; border-left: 4px solid #ffc107;">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <span>Please select a database to enable AI generation</span>
                         </div> *@
@@ -885,7 +883,7 @@
                     {
                         <div class="col-lg-4">
                             <div class="template-card-enhanced @(selectedTemplateId == template.Id ? "selected" : "")"
-                            @onclick="() => selectedTemplateId = template.Id">
+                                 @onclick="() => selectedTemplateId = template.Id">
 
                                 <!-- Template Preview -->
                                 <div class="template-preview-enhanced">
@@ -973,9 +971,9 @@
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
                 <button type="button" class="btn btn-success btn-lg"
-                @onclick="GenerateWithSelectedTemplate"
-                disabled="@(selectedDatabaseIdForTemplate == 0 || string.IsNullOrEmpty(selectedTemplateId) || isGeneratingFromTemplate)"
-                style="border-radius: 8px; padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                        @onclick="GenerateWithSelectedTemplate"
+                        disabled="@(selectedDatabaseIdForTemplate == 0 || string.IsNullOrEmpty(selectedTemplateId) || isGeneratingFromTemplate)"
+                        style="border-radius: 8px; padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
                     @if (isGeneratingFromTemplate)
                     {
                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -1263,253 +1261,252 @@
 
 <style>
     .dashboard-builder {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: white;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: white;
     }
 
     .builder-header {
-    background: white;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #dee2e6;
+        background: white;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
     }
 
     .builder-content {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
+        display: flex;
+        flex: 1;
+        overflow: hidden;
     }
 
     .builder-sidebar {
-    width: 280px;
-    background: white;
-    border-right: 1px solid #dee2e6;
-    display: flex;
-    flex-direction: column;
+        width: 280px;
+        background: white;
+        border-right: 1px solid #dee2e6;
+        display: flex;
+        flex-direction: column;
     }
 
     .builder-sidebar-right {
-    border-right: none;
-    border-left: 1px solid #dee2e6;
+        border-right: none;
+        border-left: 1px solid #dee2e6;
     }
 
     .sidebar-header {
-    padding: 1rem;
-    border-bottom: 1px solid #dee2e6;
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
     }
 
     .sidebar-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem;
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
     }
 
     .component-category {
-    margin-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
     }
 
     .category-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #6c757d;
-    margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
     }
 
     .component-item {
-    padding: 0.75rem;
-    background: #f8f9fa;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-    cursor: move;
-    transition: all 0.2s;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+        cursor: move;
+        transition: all 0.2s;
     }
 
-    .component-item:hover {
-    background: #e9ecef;
-    transform: translateX(4px);
-    }
+        .component-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
 
     .builder-canvas-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .canvas-toolbar {
-    padding: 0.75rem 1rem;
-    background: white;
-    border-bottom: 1px solid #dee2e6;
-    display: flex;
-    align-items: center;
+        padding: 0.75rem 1rem;
+        background: white;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
     }
 
     .builder-canvas {
-    flex: 1;
-    overflow: auto;
-    padding: 2rem;
-    transform-origin: top left;
+        flex: 1;
+        overflow: auto;
+        padding: 2rem;
+        transform-origin: top left;
     }
 
     .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 16px;
-    min-height: 600px;
-    position: relative;
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        min-height: 600px;
+        position: relative;
     }
 
     .dashboard-component {
-    background: white;
-    border: 2px solid #dee2e6;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.2s;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .dashboard-component:hover {
-    border-color: #0d6efd;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
+        .dashboard-component:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
 
-    .dashboard-component.selected {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
-    }
+        .dashboard-component.selected {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
+        }
 
     .component-header {
-    padding: 0.75rem;
-    border-bottom: 1px solid #dee2e6;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8f9fa;
     }
 
     .component-title {
-    font-weight: 600;
-    font-size: 0.9rem;
+        font-weight: 600;
+        font-size: 0.9rem;
     }
 
     .component-actions {
-    display: flex;
-    gap: 0.25rem;
+        display: flex;
+        gap: 0.25rem;
     }
 
     .component-body {
-    padding: 1rem;
-    height: calc(100% - 50px);
-    overflow: auto;
+        padding: 1rem;
+        height: calc(100% - 50px);
+        overflow: auto;
     }
 
     .empty-canvas {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 400px;
-    text-align: center;
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        text-align: center;
     }
 
     .template-card-enhanced {
-    background: white;
-    border: 3px solid #e0e0e0;
-    border-radius: 16px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+        background: white;
+        border: 3px solid #e0e0e0;
+        border-radius: 16px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
-    .template-card-enhanced:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-    border-color: #667eea;
-    }
+        .template-card-enhanced:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
 
-    .template-card-enhanced.selected {
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 12px 40px rgba(102, 126, 234, 0.3);
-    transform: translateY(-4px);
-    }
+        .template-card-enhanced.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 12px 40px rgba(102, 126, 234, 0.3);
+            transform: translateY(-4px);
+        }
 
     .template-preview-enhanced {
-    height: 220px;
-    background: #f8f9fa;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
+        height: 220px;
+        background: #f8f9fa;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
     }
 
     .preview-row {
-    display: flex;
-    gap: 8px;
+        display: flex;
+        gap: 8px;
     }
 
     .preview-box {
-    flex: 1;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        flex: 1;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .template-info {
-    padding: 1.5rem;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
     }
 
     .template-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: #2d3748;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
     }
 
     .template-description {
-    color: #718096;
-    font-size: 0.95rem;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-    flex: 1;
+        color: #718096;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+        flex: 1;
     }
 
     .template-meta {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
     }
 
-    .template-meta .badge {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    }
+        .template-meta .badge {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
 
     .selected-badge {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.75rem;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 1rem;
-    animation: slideInUp 0.3s ease-out;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 1rem;
+        animation: slideInUp 0.3s ease-out;
     }
-
 
 </style>
 
 @code {
-    [Parameter]
-    public int DashboardId { get; set; }
+        [Parameter]
+        public int DashboardId { get; set; }
 
     // Dashboard data
     private DashboardModel dashboard = new DashboardModel();
@@ -1562,16 +1559,16 @@
         "Metrics"
     };
 
-    private List<ComponentTemplate> FilteredComponents => 
-        string.IsNullOrWhiteSpace(componentSearchTerm) 
-            ? availableComponents 
+    private List<ComponentTemplate> FilteredComponents =>
+        string.IsNullOrWhiteSpace(componentSearchTerm)
+            ? availableComponents
             : availableComponents.Where(c => c.Title.Contains(componentSearchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCategories();
         await LoadDataSources();
-         
+
         await LoadTemplates();
         LoadComponentTemplates();
         if (DashboardId > 0)
@@ -1848,7 +1845,7 @@
             CreatedAt = DateTime.UtcNow,
             LastUpdated = DateTime.UtcNow
         };
-        
+
         dashboard.Components.Add(newComponent);
         StateHasChanged();
     }
@@ -2002,6 +1999,27 @@
                     });
                 }
 
+                if (component.ChartType == null || string.IsNullOrEmpty(component.ChartType))
+                {
+
+                    component.ChartType = "bar"; 
+                }
+
+                // ✅ NEW: Ensure ChartType is set correctly based on component type
+                // if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
+                // {
+                //     // For Chart components: Set ChartType if missing
+                //     if (string.IsNullOrEmpty(component.ChartType))
+                //     {
+                //         component.ChartType = "bar"; // Default to bar chart
+                //     }
+                // }
+                // else
+                // {
+                //     // For non-Chart components (Table, Number, Label, Card): Clear ChartType
+                //     component.ChartType = null;
+                // }
+
                 // Ensure timestamps are set
                 if (component.CreatedAt == DateTime.MinValue || component.CreatedAt == default)
                 {
@@ -2048,7 +2066,7 @@
     {
         if (dashboard.Components == null || !dashboard.Components.Any())
             return 10;
-            
+
         return dashboard.Components.Max(c => c.GridY + c.GridHeight) + 2;
     }
 
@@ -2102,10 +2120,10 @@
         try
         {
             var request = new NlQueryRequest
-                {
-                    Question = customChartQuery,
-                    DatabaseId = dashboard.DatabaseID
-                };
+            {
+                Question = customChartQuery,
+                DatabaseId = dashboard.DatabaseID
+            };
 
             // Use simplified chart analysis endpoint
             var response = await Http.PostAsJsonAsync("api/query/analyze-chart", request);
@@ -2121,10 +2139,10 @@
 
                     // Create a simple analysis response for the generate step
                     analysisResponse = new AnalysisResponse
-                        {
-                            Explanation = chartExplanation.Explanation,
-                            Success = true
-                        };
+                    {
+                        Explanation = chartExplanation.Explanation,
+                        Success = true
+                    };
 
                     // Auto-generate a title from the question
                     if (string.IsNullOrWhiteSpace(customChartTitle))
@@ -2184,13 +2202,13 @@
         {
             // Prepare SQL generation request
             var request = new NlQueryConfirmationRequest
-                {
-                    OriginalQuestion = customChartQuery,
-                    DatabaseId = dashboard.DatabaseID,
-                    ConfirmedUnderstanding = analysisResponse.Explanation,
-                    ResolvedAmbiguities = new Dictionary<string, string>(),
-                    AdjustedParameters = new Dictionary<string, string>()
-                };
+            {
+                OriginalQuestion = customChartQuery,
+                DatabaseId = dashboard.DatabaseID,
+                ConfirmedUnderstanding = analysisResponse.Explanation,
+                ResolvedAmbiguities = new Dictionary<string, string>(),
+                AdjustedParameters = new Dictionary<string, string>()
+            };
 
             var response = await Http.PostAsJsonAsync("api/query/generate", request);
 
@@ -2263,30 +2281,30 @@
 
             // Create new component
             var newComponent = new DashboardComponent
-                {
-                    ComponentID = dashboard.Components.Any()
+            {
+                ComponentID = dashboard.Components.Any()
                         ? dashboard.Components.Max(c => c.ComponentID) + 1
                         : 1,
-                    Title = customChartTitle,
-                    Description = customChartExplanation,
-                    QueryText = customChartSql,
-                    QueryIntent = customChartQuery,
-                    DataViewingTypeID = (int)DataViewingTypeEnum.Chart,
-                    DataViewingTypeName = "Chart",
-                    ChartType = customChartType, // Store chart type in dedicated field
-                    GridX = x,
-                    GridY = y,
-                    GridWidth = width,
-                    GridHeight = height,
-                    VisualizationConfig = JsonSerializer.Serialize(visualizationConfig),
-                    FilterExpression = "",
-                    RefreshInterval = 0,
-                    IsAIGenerated = true,
-                    IsValidated = false,
-                    IsVisible = true,
-                    CreatedAt = DateTime.UtcNow,
-                    LastUpdated = DateTime.UtcNow
-                };
+                Title = customChartTitle,
+                Description = customChartExplanation,
+                QueryText = customChartSql,
+                QueryIntent = customChartQuery,
+                DataViewingTypeID = (int)DataViewingTypeEnum.Chart,
+                DataViewingTypeName = "Chart",
+                ChartType = customChartType, // Store chart type in dedicated field
+                GridX = x,
+                GridY = y,
+                GridWidth = width,
+                GridHeight = height,
+                VisualizationConfig = JsonSerializer.Serialize(visualizationConfig),
+                FilterExpression = "",
+                RefreshInterval = 0,
+                IsAIGenerated = true,
+                IsValidated = false,
+                IsVisible = true,
+                CreatedAt = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow
+            };
 
             // Add to dashboard
             dashboard.Components.Add(newComponent);
@@ -2446,11 +2464,11 @@
             // };
 
             var request = new SqlExecutionRequest
-                {
-                    OriginalQuestion = "",
-                    DatabaseId = dashboard.DatabaseID,
-                    Sql = component.QueryText
-                };
+            {
+                OriginalQuestion = "",
+                DatabaseId = dashboard.DatabaseID,
+                Sql = component.QueryText
+            };
 
             var response = await Http.PostAsJsonAsync($"api/query/execute", request);
 
