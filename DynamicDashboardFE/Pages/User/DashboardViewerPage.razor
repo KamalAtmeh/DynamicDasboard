@@ -195,13 +195,36 @@
                                         }
                                         else
                                         {
-                                            <button class="btn-icon" @onclick="() => RefreshComponent(chart)">
+                                            <button class="btn-icon" @onclick="() => RefreshComponent(chart)" title="Refresh">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
                                         }
-                                        <button class="btn-icon">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
+
+                                        <!-- 3-Dot Menu -->
+                                        <div class="chart-menu-container">
+                                            <button class="btn-icon" @onclick="() => ToggleChartMenu(chart.ComponentID)" title="More options">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+
+                                            @if (activeChartMenu == chart.ComponentID)
+                                            {
+                                                <div class="chart-dropdown-menu">
+                                                    <button class="dropdown-item" @onclick="() => { /* Download chart */ activeChartMenu = null; }">
+                                                        <i class="fas fa-download me-2"></i>Download Image
+                                                    </button>
+                                                    <button class="dropdown-item" @onclick="() => { /* Download data */ activeChartMenu = null; }">
+                                                        <i class="fas fa-file-csv me-2"></i>Download Data
+                                                    </button>
+                                                    <button class="dropdown-item" @onclick="() => { /* Fullscreen */ activeChartMenu = null; }">
+                                                        <i class="fas fa-expand me-2"></i>View Fullscreen
+                                                    </button>
+                                                    <div class="dropdown-divider"></div>
+                                                    <button class="dropdown-item" @onclick='() => NavigationManager.NavigateTo($"/dashboard/builder/{DashboardId}")'>
+                                                        <i class="fas fa-edit me-2"></i>Edit Chart
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="chart-@chart.ComponentID" style="height: @(chart == chartComponents.First() ? "350px" : "300px");"></div>
@@ -281,6 +304,7 @@
     private bool isFullscreen = false;
     private string selectedDateRange = "30d";
     private string searchQuery = "";
+    private int? activeChartMenu = null;
 
     // Data Storage
     private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
@@ -296,13 +320,11 @@
         await LoadDashboard();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && dashboard != null && !isLoading)
-        {
-            await RenderAllCharts();
-        }
-    }
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    // Charts now render after data loads in LoadAllComponentsData
+    // No need to render here
+}
 
     private async Task LoadDashboard()
     {
@@ -367,6 +389,12 @@
                 .Select(c => LoadComponentDataAsync(c));
 
             await Task.WhenAll(tasks);
+
+            StateHasChanged();
+            await Task.Delay(200); // Allow DOM to update
+            await RenderAllCharts();
+
+
         }
         catch (Exception ex)
         {
@@ -504,9 +532,26 @@
         showFilters = !showFilters;
     }
 
-    private void ToggleFullscreen()
+    private async Task ToggleFullscreen()
     {
-        isFullscreen = !isFullscreen;
+        try
+        {
+            if (!isFullscreen)
+            {
+                await JSRuntime.InvokeVoidAsync("enterFullscreen");
+                isFullscreen = true;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("exitFullscreen");
+                isFullscreen = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fullscreen error: {ex.Message}");
+            ToastService.ShowError("Fullscreen not supported in this browser");
+        }
     }
 
     private void ShareDashboard()
@@ -733,6 +778,11 @@
         }
     }
 
+    private void ToggleChartMenu(int componentId)
+    {
+        activeChartMenu = activeChartMenu == componentId ? null : componentId;
+    }
+
     // Helper classes
     private class SqlExecutionRequest
     {
@@ -750,11 +800,18 @@
 
 }
 
+
+
 <script suppress-error="BL9992">
-    // Dynamic chart rendering based on real data
+    // Enhanced chart rendering with legends and better visuals
     window.renderDynamicChart = function(componentId, chartType, data, title) {
         const container = document.querySelector(`#chart-${componentId}`);
-        if (!container || !data || data.length === 0) return;
+        if (!container || !data || data.length === 0) {
+            console.log(`Chart ${componentId}: No container or data`);
+            return;
+        }
+
+        console.log(`Rendering chart ${componentId} with type ${chartType}`);
 
         // Get column names from first row
         const columns = Object.keys(data[0]);
@@ -776,135 +833,326 @@
                         data: values
                     }],
                     chart: {
+                        id: `chart-${componentId}`,
                         type: chartType,
                         height: '100%',
-                        toolbar: { show: false }
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: true,
+                                selection: false,
+                                zoom: true,
+                                zoomin: true,
+                                zoomout: true,
+                                pan: false,
+                                reset: true
+                            }
+                        },
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        }
                     },
                     dataLabels: { enabled: false },
-                    stroke: { curve: 'smooth', width: 2 },
-                    xaxis: { categories: categories },
+                    stroke: {
+                        curve: 'smooth',
+                        width: 3,  // ✅ Thicker line
+                        colors: ['#4361EE']
+                    },
+                    xaxis: {
+                        categories: categories,
+                        title: {
+                            text: xColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' }
+                        }
+                    },
+                    yaxis: {
+                        min: 0,  // ✅ Fix: Start at 0
+                        title: {
+                            text: yColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' },
+                            formatter: function(value) {
+                                return value.toFixed(0);
+                            }
+                        }
+                    },
                     colors: ['#4361EE'],
                     fill: {
-                        type: 'gradient',
+                        type: chartType === 'area' ? 'gradient' : 'solid',
                         gradient: {
                             shadeIntensity: 1,
-                            opacityFrom: 0.4,
-                            opacityTo: 0.1
+                            opacityFrom: 0.5,
+                            opacityTo: 0.1,
+                            stops: [0, 90, 100]
                         }
                     },
-                legend: {
-                    show: true,
-                    position: 'top',
-                    horizontalAlign: 'left',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    markers: { width: 12, height: 12, radius: 2 },
-                    itemMargin: { horizontal: 10 }
-                },
-                tooltip: {
-                    shared: true,
-                    intersect: false
-                }
-            };
-            break;
-
-        case 'pie':
-        case 'donut':
-            options = {
-                series: values,
-                chart: {
-                    type: chartType,
-                    height: '100%'
-                },
-                labels: categories,
-                colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181', '#14B8A6'],
-                // ✅ ADD LEGEND
-                legend: {
-                    show: true,
-                    position: 'bottom',
-                    horizontalAlign: 'center',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    markers: { width: 12, height: 12, radius: 12 },
-                    itemMargin: { horizontal: 10, vertical: 5 },
-                    formatter: function(seriesName, opts) {
-                        const value = opts.w.globals.series[opts.seriesIndex];
-                        const total = opts.w.globals.series.reduce((a, b) => a + b, 0);
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return `${seriesName}: ${value.toLocaleString()} (${percentage}%)`;
-                    }
-                },
-                dataLabels: {
-                    enabled: true,
-                    formatter: function(val) {
-                        return val.toFixed(1) + "%";
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function(value) {
-                            return value.toLocaleString();
+                    grid: {
+                        borderColor: '#e5e7eb',
+                        strokeDashArray: 4,
+                        padding: {
+                            bottom: 10  // ✅ Fix: Prevent line going below canvas
                         }
-                    }
-                }
-            };
-            break;
-
-        default: // bar
-            options = {
-                series: [{
-                    name: yColumn,
-                    data: values
-                }],
-                chart: {
-                    type: 'bar',
-                    height: '100%',
-                    toolbar: { show: true }
-                },
-                plotOptions: {
-                    bar: {
-                        horizontal: false,
-                        borderRadius: 6,
-                        dataLabels: { position: 'top' }
-                    }
-                },
-                dataLabels: {
-                    enabled: true,
-                    formatter: function(val) {
-                        return val.toLocaleString();
                     },
-                    offsetY: -20,
-                    style: { fontSize: '11px', colors: ["#304758"] }
-                },
-                xaxis: {
-                    categories: categories,
-                    title: { text: xColumn }
-                },
-                yaxis: {
-                    title: { text: yColumn }
-                },
-                colors: ['#667EEA'],
-                // ✅ ADD LEGEND
-                legend: {
-                    show: true,
-                    position: 'top',
-                    horizontalAlign: 'left',
-                    fontSize: '13px',
-                    fontWeight: 500
-                },
-                tooltip: {
-                    y: {
-                        formatter: function(value) {
-                            return value.toLocaleString();
+                    // ✅ ADD LEGEND
+                    legend: {
+                        show: true,
+                        position: 'top',
+                        horizontalAlign: 'left',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        fontFamily: 'inherit',
+                        markers: {
+                            width: 12,
+                            height: 12,
+                            radius: 2
+                        },
+                        itemMargin: {
+                            horizontal: 10
+                        }
+                    },
+                    tooltip: {
+                        shared: true,
+                        intersect: false,
+                        y: {
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
                         }
                     }
-                }
-            };
-    }
+                };
+                break;
 
-    const chart = new ApexCharts(container, options);
-    chart.render();
+            case 'pie':
+            case 'donut':
+                const total = values.reduce((a, b) => a + b, 0);
+                options = {
+                    series: values,
+                    chart: {
+                        id: `chart-${componentId}`,
+                        type: chartType,
+                        height: '100%',
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        }
+                    },
+                    labels: categories,
+                    colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181', '#14B8A6', '#8B5CF6', '#EC4899'],
+                    // ✅ ADD ENHANCED LEGEND
+                    legend: {
+                        show: true,
+                        position: 'bottom',
+                        horizontalAlign: 'center',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        fontFamily: 'inherit',
+                        markers: {
+                            width: 12,
+                            height: 12,
+                            radius: 12  // Circular markers for pie
+                        },
+                        itemMargin: {
+                            horizontal: 10,
+                            vertical: 5
+                        },
+                        formatter: function(seriesName, opts) {
+                            const value = opts.w.globals.series[opts.seriesIndex];
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${seriesName}: ${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function(val) {
+                            return val.toFixed(1) + "%";
+                        },
+                        style: {
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            colors: ['#fff']
+                        },
+                        dropShadow: {
+                            enabled: true,
+                            top: 1,
+                            left: 1,
+                            blur: 1,
+                            opacity: 0.45
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: chartType === 'donut' ? '65%' : '0%',
+                                labels: {
+                                    show: chartType === 'donut',
+                                    name: {
+                                        show: true,
+                                        fontSize: '14px',
+                                        fontWeight: 600
+                                    },
+                                    value: {
+                                        show: true,
+                                        fontSize: '24px',
+                                        fontWeight: 700,
+                                        formatter: function(val) {
+                                            return parseFloat(val).toLocaleString();
+                                        }
+                                    },
+                                    total: {
+                                        show: true,
+                                        label: 'Total',
+                                        fontSize: '14px',
+                                        fontWeight: 600,
+                                        formatter: function() {
+                                            return total.toLocaleString();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function(value) {
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                };
+                break;
+
+            default: // bar
+                options = {
+                    series: [{
+                        name: yColumn,
+                        data: values
+                    }],
+                    chart: {
+                        id: `chart-${componentId}`,
+                        type: 'bar',
+                        height: '100%',
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: true
+                            }
+                        },
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        }
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            borderRadius: 6,
+                            dataLabels: {
+                                position: 'top'
+                            },
+                            columnWidth: '60%'
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function(val) {
+                            return val.toLocaleString();
+                        },
+                        offsetY: -20,
+                        style: {
+                            fontSize: '11px',
+                            colors: ["#304758"],
+                            fontWeight: 600
+                        }
+                    },
+                    xaxis: {
+                        categories: categories,
+                        title: {
+                            text: xColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' },
+                            rotate: -45,
+                            trim: true
+                        }
+                    },
+                    yaxis: {
+                        min: 0,
+                        title: {
+                            text: yColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' },
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    },
+                    colors: ['#667EEA'],
+                    grid: {
+                        borderColor: '#e5e7eb',
+                        strokeDashArray: 4
+                    },
+                    // ✅ LEGEND (optional for single series, but good for consistency)
+                    legend: {
+                        show: false,  // Hide for single series bar
+                        position: 'top',
+                        horizontalAlign: 'left',
+                        fontSize: '13px',
+                        fontWeight: 500
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                };
+        }
+
+        // Clear existing chart if any
+        const existingChart = ApexCharts.getChartByID(`chart-${componentId}`);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+
+        // Render new chart
+        const chart = new ApexCharts(container, options);
+        chart.render();
+
+        console.log(`Chart ${componentId} rendered successfully`);
     };
 
+        window.enterFullscreen = function() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+    };
 
+    window.exitFullscreen = function() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    };
 </script>
