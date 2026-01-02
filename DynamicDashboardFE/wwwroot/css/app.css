@@ -2255,3 +2255,108 @@ body {
 .modal-edit-database .form-select {
     padding: 10px 12px;
 }
+
+/* ============================================
+   COLLAPSIBLE SIDEBAR
+   ============================================ */
+
+/* Default expanded state */
+.sidebar {
+    width: 280px;
+    transition: width 0.3s ease, transform 0.3s ease;
+}
+
+    /* Collapsed state */
+    .sidebar.collapsed {
+        width: 70px;
+    }
+
+        /* Hide text when collapsed */
+        .sidebar.collapsed .sidebar-title,
+        .sidebar.collapsed .menu-section,
+        .sidebar.collapsed .menu-item span {
+            opacity: 0;
+            display: none;
+        }
+
+        /* Center icons when collapsed */
+        .sidebar.collapsed .menu-item {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+            .sidebar.collapsed .menu-item i {
+                margin: 0;
+                font-size: 1.3rem;
+            }
+
+/* Adjust main content when sidebar collapses */
+.main-content {
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed + .main-content {
+    margin-left: 70px;
+}
+
+/* Tooltip for collapsed menu items */
+.sidebar.collapsed .menu-item {
+    position: relative;
+}
+
+    .sidebar.collapsed .menu-item::after {
+        content: attr(data-title);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #1a2e24;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        margin-left: 10px;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .sidebar.collapsed .menu-item:hover::after {
+        opacity: 1;
+    }
+
+/* Toggle button styling */
+.toggle-sidebar {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+    .toggle-sidebar:hover {
+        background: rgba(255,255,255,0.1);
+    }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        z-index: 2000;
+    }
+
+        .sidebar:not(.collapsed) {
+            transform: translateX(0);
+        }
+
+    .main-content {
+        margin-left: 0 !important;
+    }
+}

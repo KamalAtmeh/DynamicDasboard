@@ -21,6 +21,10 @@
                     <i class="fas fa-arrow-left me-1"></i>Back
                 </button> *@
                 }
+                <button class="btn btn-outline-primary" @onclick="AutoArrangeComponents">
+                    <i class="fas fa-magic me-2"></i>
+                    Auto Layout
+                </button>
 
                 @if (!isEditingTitle && !isPreviewMode)
                 {
@@ -2039,7 +2043,7 @@
     {
         if (dashboard.DashboardID > 0)
         {
-            NavigationManager.NavigateTo($"/dashboard/view/{dashboard.DashboardID}", true);
+            NavigationManager.NavigateTo($"/dashboard/viewer/{dashboard.DashboardID}", true);
         }
         else
         {
@@ -2670,6 +2674,54 @@
         public string Explanation { get; set; }
         public bool Success { get; set; }
         public string ErrorMessage { get; set; }
+    }
+
+    private void AutoArrangeComponents()
+    {
+        if (!dashboard.Components.Any())
+        {
+            ToastService.ShowWarning("No components to arrange");
+            return;
+        }
+
+        // Sort by current Y position, then X
+        var sortedComponents = dashboard.Components
+            .OrderBy(c => c.GridY)
+            .ThenBy(c => c.GridX)
+            .ToList();
+
+        int currentY = 0;
+        int currentX = 0;
+        const int gridColumns = 12;
+
+        foreach (var component in sortedComponents)
+        {
+            // Check if component fits in current row
+            if (currentX + component.GridWidth > gridColumns)
+            {
+                // Move to next row
+                currentY += GetMaxHeightInRow(sortedComponents, currentY);
+                currentX = 0;
+            }
+
+            // Place component
+            component.GridX = currentX;
+            component.GridY = currentY;
+
+            // Move cursor
+            currentX += component.GridWidth;
+        }
+
+        hasUnsavedChanges = true;
+        ToastService.ShowSuccess("Components auto-arranged");
+        StateHasChanged();
+    }
+
+    private int GetMaxHeightInRow(List<DashboardComponent> components, int rowY)
+    {
+        return components
+            .Where(c => c.GridY == rowY)
+            .Max(c => c.GridHeight);
     }
 
 

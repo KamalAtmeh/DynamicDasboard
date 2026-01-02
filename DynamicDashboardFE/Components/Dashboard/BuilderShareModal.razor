@@ -374,7 +374,7 @@
             if (Dashboard != null)
             {
                 // Generate share link
-                shareLink = $"{GetBaseUrl()}/dashboard/view/{Dashboard.DashboardID}";
+                shareLink = $"{GetBaseUrl()}/dashboard/viewer/{Dashboard.DashboardID}";
 
                 // Load existing shares
                 var response = await Http.GetAsync($"api/dashboard/{Dashboard.DashboardID}/shares");

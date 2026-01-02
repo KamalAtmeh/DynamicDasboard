@@ -417,7 +417,7 @@
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                componentErrors[component.ComponentID] = "Failed to load data";
+                componentErrors[component.ComponentID] = "No data available";
                 componentData[component.ComponentID] = new List<Dictionary<string, object>>();
                 Console.WriteLine($"Error loading component {component.ComponentID}: {error}");
             }
@@ -717,6 +717,22 @@
         return "bar";
     }
 
+    private void OptimizeDashboardLayout()
+    {
+        if (dashboard?.Components == null) return;
+
+        foreach (var component in dashboard.Components)
+        {
+            // Expand small components to fill space
+            if (component.GridWidth < 4)
+                component.GridWidth = 4;
+
+            // Ensure minimum height
+            if (component.GridHeight < 2)
+                component.GridHeight = 2;
+        }
+    }
+
     // Helper classes
     private class SqlExecutionRequest
     {
@@ -731,6 +747,7 @@
         public List<Dictionary<string, object>> Results { get; set; }
         public string ResultExplanation { get; set; }
     }
+
 }
 
 <script suppress-error="BL9992">
@@ -774,48 +791,120 @@
                             opacityFrom: 0.4,
                             opacityTo: 0.1
                         }
+                    },
+                legend: {
+                    show: true,
+                    position: 'top',
+                    horizontalAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    markers: { width: 12, height: 12, radius: 2 },
+                    itemMargin: { horizontal: 10 }
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false
+                }
+            };
+            break;
+
+        case 'pie':
+        case 'donut':
+            options = {
+                series: values,
+                chart: {
+                    type: chartType,
+                    height: '100%'
+                },
+                labels: categories,
+                colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181', '#14B8A6'],
+                // ✅ ADD LEGEND
+                legend: {
+                    show: true,
+                    position: 'bottom',
+                    horizontalAlign: 'center',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    markers: { width: 12, height: 12, radius: 12 },
+                    itemMargin: { horizontal: 10, vertical: 5 },
+                    formatter: function(seriesName, opts) {
+                        const value = opts.w.globals.series[opts.seriesIndex];
+                        const total = opts.w.globals.series.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${seriesName}: ${value.toLocaleString()} (${percentage}%)`;
                     }
-                };
-                break;
-
-            case 'pie':
-            case 'donut':
-                options = {
-                    series: values,
-                    chart: {
-                        type: chartType,
-                        height: '100%'
-                    },
-                    labels: categories,
-                    colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181'],
-                    legend: { position: 'bottom' }
-                };
-                break;
-
-            default: // bar
-                options = {
-                    series: [{
-                        name: yColumn,
-                        data: values
-                    }],
-                    chart: {
-                        type: 'bar',
-                        height: '100%',
-                        toolbar: { show: false }
-                    },
-                    plotOptions: {
-                        bar: {
-                            horizontal: false,
-                            borderRadius: 6
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function(val) {
+                        return val.toFixed(1) + "%";
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(value) {
+                            return value.toLocaleString();
                         }
-                    },
-                    dataLabels: { enabled: false },
-                    xaxis: { categories: categories },
-                    colors: ['#667EEA']
-                };
-        }
+                    }
+                }
+            };
+            break;
 
-        const chart = new ApexCharts(container, options);
-        chart.render();
+        default: // bar
+            options = {
+                series: [{
+                    name: yColumn,
+                    data: values
+                }],
+                chart: {
+                    type: 'bar',
+                    height: '100%',
+                    toolbar: { show: true }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        borderRadius: 6,
+                        dataLabels: { position: 'top' }
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function(val) {
+                        return val.toLocaleString();
+                    },
+                    offsetY: -20,
+                    style: { fontSize: '11px', colors: ["#304758"] }
+                },
+                xaxis: {
+                    categories: categories,
+                    title: { text: xColumn }
+                },
+                yaxis: {
+                    title: { text: yColumn }
+                },
+                colors: ['#667EEA'],
+                // ✅ ADD LEGEND
+                legend: {
+                    show: true,
+                    position: 'top',
+                    horizontalAlign: 'left',
+                    fontSize: '13px',
+                    fontWeight: 500
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                }
+            };
+    }
+
+    const chart = new ApexCharts(container, options);
+    chart.render();
     };
+
+
 </script>
