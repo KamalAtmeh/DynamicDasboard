@@ -42,17 +42,14 @@
                 <button class="btn-back" @onclick='() => NavigationManager.NavigateTo("/marketplace")'>
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <div class="header-title-section">
-                    <h1 class="dashboard-title">@dashboard.Title</h1>
-                    <span class="dashboard-subtitle">@dashboard.Description</span>
-                </div>
             </div>
 
             <div class="header-center">
-                <div class="last-updated">
-                    <i class="fas fa-clock"></i>
-                    <span>Last updated: @dashboard.LastUpdated.ToString("MMM dd, yyyy HH:mm")</span>
-                </div>
+                <h1 class="dashboard-title">@dashboard.Title</h1>
+                @if (!string.IsNullOrEmpty(dashboard.Description))
+                {
+                    <p class="dashboard-subtitle">@dashboard.Description</p>
+                }
             </div>
 
             <div class="header-right">
@@ -156,7 +153,7 @@
                                     }
                                     else
                                     {
-                                        <h2 class="kpi-value">@GetKPIValue(kpi.ComponentID)</h2>
+                                        <h2 class="kpi-value">@GetKPIValue(kpi.ComponentID, kpi)</h2>
                                         <span class="kpi-change positive">
                                             <i class="fas fa-arrow-up"></i>
                                             --
@@ -195,36 +192,39 @@
                                         }
                                         else
                                         {
-                                            <button class="btn-icon" @onclick="() => RefreshComponent(chart)" title="Refresh">
+                                            <button class="btn-icon" @onclick="() => RefreshComponent(chart)">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
+
+                                            <div style="position: relative;">
+                                                <button class="btn-icon" @onclick="() => ToggleChartMenu(chart.ComponentID)">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+
+                                                @if (activeChartMenu == chart.ComponentID)
+                                                {
+                                                    <div style="position: absolute; right: 0; top: 100%; margin-top: 8px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 160px; z-index: 1000;">
+                                                        <div style="padding: 8px 0;">
+                                                            <button @onclick='() => ChangeChartType(chart.ComponentID, "bar")' style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                                <i class="fas fa-chart-bar" style="width: 16px;"></i> Bar
+                                                            </button>
+                                                            <button @onclick='() => ChangeChartType(chart.ComponentID, "line")' style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                                <i class="fas fa-chart-line" style="width: 16px;"></i> Line
+                                                            </button>
+                                                            <button @onclick='() => ChangeChartType(chart.ComponentID, "area")' style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                                <i class="fas fa-chart-area" style="width: 16px;"></i> Area
+                                                            </button>
+                                                            <button @onclick='() => ChangeChartType(chart.ComponentID, "pie")' style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                                <i class="fas fa-chart-pie" style="width: 16px;"></i> Pie
+                                                            </button>
+                                                            <button @onclick='() => ChangeChartType(chart.ComponentID, "donut")' style="width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                                <i class="fas fa-ring" style="width: 16px;"></i> Donut
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
                                         }
-
-                                        <!-- 3-Dot Menu -->
-                                        <div class="chart-menu-container">
-                                            <button class="btn-icon" @onclick="() => ToggleChartMenu(chart.ComponentID)" title="More options">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-
-                                            @if (activeChartMenu == chart.ComponentID)
-                                            {
-                                                <div class="chart-dropdown-menu">
-                                                    <button class="dropdown-item" @onclick="() => { /* Download chart */ activeChartMenu = null; }">
-                                                        <i class="fas fa-download me-2"></i>Download Image
-                                                    </button>
-                                                    <button class="dropdown-item" @onclick="() => { /* Download data */ activeChartMenu = null; }">
-                                                        <i class="fas fa-file-csv me-2"></i>Download Data
-                                                    </button>
-                                                    <button class="dropdown-item" @onclick="() => { /* Fullscreen */ activeChartMenu = null; }">
-                                                        <i class="fas fa-expand me-2"></i>View Fullscreen
-                                                    </button>
-                                                    <div class="dropdown-divider"></div>
-                                                    <button class="dropdown-item" @onclick='() => NavigationManager.NavigateTo($"/dashboard/builder/{DashboardId}")'>
-                                                        <i class="fas fa-edit me-2"></i>Edit Chart
-                                                    </button>
-                                                </div>
-                                            }
-                                        </div>
                                     </div>
                                 </div>
                                 <div id="chart-@chart.ComponentID" style="height: @(chart == chartComponents.First() ? "350px" : "300px");"></div>
@@ -279,7 +279,7 @@
                                 }
                                 else
                                 {
-                                    @RenderTable(table.ComponentID)
+                                    @RenderTableWithPagination(table.ComponentID)
                                 }
                             </div>
                         </div>
@@ -294,6 +294,12 @@
     [Parameter]
     public int DashboardId { get; set; }
 
+    private Dictionary<int, int> tableCurrentPage = new Dictionary<int, int>();
+    private int tablePageSize = 10;
+
+    private Dictionary<int, string> chartTypes = new Dictionary<int, string>();
+    private int? activeChartMenu = null;
+
     // State
     private DashboardModel dashboard;
     private string dashboardTitle = "Dashboard";
@@ -304,7 +310,7 @@
     private bool isFullscreen = false;
     private string selectedDateRange = "30d";
     private string searchQuery = "";
-    private int? activeChartMenu = null;
+
 
     // Data Storage
     private Dictionary<int, bool> isComponentLoading = new Dictionary<int, bool>();
@@ -320,11 +326,11 @@
         await LoadDashboard();
     }
 
-protected override async Task OnAfterRenderAsync(bool firstRender)
-{
-    // Charts now render after data loads in LoadAllComponentsData
-    // No need to render here
-}
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Charts now render after data loads in LoadAllComponentsData
+        // No need to render here
+    }
 
     private async Task LoadDashboard()
     {
@@ -383,18 +389,16 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
 
         try
         {
-            // Load data for all components in parallel
             var tasks = dashboard.Components
                 .Where(c => c.IsVisible && c.DataViewingTypeID != (int)DataViewingTypeEnum.Label)
                 .Select(c => LoadComponentDataAsync(c));
 
             await Task.WhenAll(tasks);
 
+            // ⚡ THESE 3 LINES ARE CRITICAL
             StateHasChanged();
             await Task.Delay(200);
             await RenderAllCharts();
-
-
         }
         catch (Exception ex)
         {
@@ -497,6 +501,106 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         ToastService.ShowSuccess($"{component.Title} refreshed");
     }
 
+    private RenderFragment RenderTableWithPagination(int componentId)
+    {
+        var data = GetComponentData(componentId);
+
+        return builder =>
+        {
+            if (data == null || !data.Any())
+            {
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "text-center py-4 text-muted");
+                builder.AddContent(2, "No data available");
+                builder.CloseElement();
+                return;
+            }
+
+            if (!tableCurrentPage.ContainsKey(componentId))
+                tableCurrentPage[componentId] = 1;
+
+            var currentPage = tableCurrentPage[componentId];
+            var totalPages = (int)Math.Ceiling((double)data.Count / tablePageSize);
+            var pagedData = data.Skip((currentPage - 1) * tablePageSize).Take(tablePageSize).ToList();
+            var columns = data[0].Keys.ToList();
+
+            // Table
+            builder.OpenElement(3, "div");
+            builder.AddAttribute(4, "class", "table-responsive");
+
+            builder.OpenElement(5, "table");
+            builder.AddAttribute(6, "class", "table table-hover");
+
+            // Header
+            builder.OpenElement(7, "thead");
+            builder.OpenElement(8, "tr");
+            foreach (var col in columns)
+            {
+                builder.OpenElement(9, "th");
+                builder.AddContent(10, col);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+            builder.CloseElement();
+
+            // Body
+            builder.OpenElement(11, "tbody");
+            foreach (var row in pagedData)
+            {
+                builder.OpenElement(12, "tr");
+                foreach (var col in columns)
+                {
+                    builder.OpenElement(13, "td");
+                    builder.AddContent(14, FormatValue(row[col]));
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+            builder.CloseElement();
+            builder.CloseElement();
+
+            // Pagination
+            builder.OpenElement(15, "div");
+            builder.AddAttribute(16, "class", "d-flex justify-content-between align-items-center mt-2 p-2 border-top");
+
+            builder.OpenElement(17, "small");
+            builder.AddAttribute(18, "class", "text-muted");
+            builder.AddContent(19, $"Page {currentPage} of {totalPages} ({data.Count} total records)");
+            builder.CloseElement();
+
+            builder.OpenElement(20, "div");
+            builder.AddAttribute(21, "class", "btn-group btn-group-sm");
+
+            // Previous button
+            builder.OpenElement(22, "button");
+            builder.AddAttribute(23, "class", "btn btn-outline-secondary");
+            builder.AddAttribute(24, "disabled", currentPage == 1);
+            builder.AddAttribute(25, "onclick", EventCallback.Factory.Create(this, () =>
+            {
+                tableCurrentPage[componentId] = Math.Max(1, currentPage - 1);
+                StateHasChanged();
+            }));
+            builder.AddContent(26, "‹ Prev");
+            builder.CloseElement();
+
+            // Next button
+            builder.OpenElement(27, "button");
+            builder.AddAttribute(28, "class", "btn btn-outline-secondary");
+            builder.AddAttribute(29, "disabled", currentPage == totalPages);
+            builder.AddAttribute(30, "onclick", EventCallback.Factory.Create(this, () =>
+            {
+                tableCurrentPage[componentId] = Math.Min(totalPages, currentPage + 1);
+                StateHasChanged();
+            }));
+            builder.AddContent(31, "Next ›");
+            builder.CloseElement();
+
+            builder.CloseElement(); // btn-group
+            builder.CloseElement(); // pagination div
+        };
+    }
+
     private async Task ApplyFilters()
     {
         // Apply filter values across all components
@@ -586,15 +690,15 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         }
     }
 
-    private string GetKPIValue(int componentId)
+    private string GetKPIValue(int componentId,DashboardComponent component)
     {
         if (!componentData.ContainsKey(componentId) || !componentData[componentId].Any())
             return "--";
-
+            
         var data = componentData[componentId];
         var value = data[0].Values.FirstOrDefault();
 
-        return FormatValue(value);
+        return FormatNumericValue(value, component);
     }
 
     private string GetKPIColorClass(int componentId)
@@ -620,28 +724,167 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         };
     }
 
+    private bool IsNumeric(string str)
+    {
+        if (string.IsNullOrWhiteSpace(str)) return false;
+
+        return double.TryParse(str.Trim(), out _);
+    }
+
     private string FormatValue(object value)
     {
         if (value == null) return "";
+
+
 
         if (value is decimal decValue)
         {
             return decValue == Math.Floor(decValue) ? decValue.ToString("N0") : decValue.ToString("N2");
         }
+
         if (value is double dblValue)
         {
             return dblValue == Math.Floor(dblValue) ? dblValue.ToString("N0") : dblValue.ToString("N2");
         }
+
         if (value is float fltValue)
         {
             return fltValue == Math.Floor(fltValue) ? fltValue.ToString("N0") : fltValue.ToString("N2");
         }
-        if (value is int || value is long)
+
+        if (value is int || value is long || value is short || value is byte)
         {
             return Convert.ToInt64(value).ToString("N0");
         }
 
+        if (value != null && !string.IsNullOrEmpty(value.ToString()))
+        {
+            if (IsNumeric(value.ToString()))
+            {
+                double dblParsedValue = double.Parse(value.ToString());
+                if (Math.Floor(dblParsedValue) == dblParsedValue)
+                {
+                    return dblParsedValue.ToString("N0");
+                }
+                else
+                {
+                    return dblParsedValue.ToString("N2");
+                }
+            }
+
+        }
+
+
         return value.ToString();
+    }
+
+    private string FormatNumericValue(object value, DashboardComponent component)
+    {
+        if (value == null)
+            return "N/A";
+
+        // Try to parse as decimal
+        if (!decimal.TryParse(value.ToString(), out decimal numericValue))
+            return value.ToString();
+
+        // Check if it's a percentage (rate, percentage, ratio)
+        if (IsPercentageValue(component))
+        {
+            // If value is already 0-100, just add %
+            if (numericValue <= 100)
+                return $"{numericValue:N2}%";
+            // If value is decimal (0.00-1.00), multiply by 100
+            else if (numericValue < 1)
+                return $"{(numericValue * 100):N2}%";
+            else
+                return $"{numericValue:N2}%";
+        }
+
+        // Check if it's currency
+        if (IsCurrencyValue(component))
+        {
+            return numericValue.ToString("C2"); // $500.00
+        }
+
+        // Check if it's a time value
+        if (IsTimeValue(component))
+        {
+            return FormatTimeValue(numericValue, component);
+        }
+
+        // Check if it's a whole number (count/ID)
+        if (IsWholeNumber(component) || numericValue == Math.Floor(numericValue))
+        {
+            return numericValue.ToString("N0"); // 1,234
+        }
+
+        // Default: 2 decimal places
+        return numericValue.ToString("N2"); // 1,234.56
+    }
+
+    private bool IsPercentageValue(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description} {component.QueryIntent}".ToLower();
+        return text.Contains("rate") ||
+               text.Contains("percentage") ||
+               text.Contains("percent") ||
+               text.Contains("%") ||
+               text.Contains("ratio");
+    }
+
+    private bool IsCurrencyValue(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description} {component.QueryIntent}".ToLower();
+        return text.Contains("amount") ||
+               text.Contains("revenue") ||
+               text.Contains("cost") ||
+               text.Contains("price") ||
+               text.Contains("fine") ||
+               text.Contains("payment") ||
+               text.Contains("total revenue") ||
+               text.Contains("salary");
+    }
+
+    private bool IsTimeValue(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description}".ToLower();
+        return text.Contains("time") ||
+               text.Contains("duration") ||
+               text.Contains("day") ||
+               text.Contains("hour") ||
+               text.Contains("minute");
+    }
+
+    private bool IsWholeNumber(DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description} {component.QueryIntent}".ToLower();
+        return text.Contains("count") ||
+               text.Contains("total") ||
+               text.Contains("number of") ||
+               text.Contains("active") ||
+               text.Contains("pending") ||
+               text.Contains("camera") ||
+               text.Contains("incident");
+    }
+
+    private string FormatTimeValue(decimal value, DashboardComponent component)
+    {
+        var text = $"{component.Title} {component.Description}".ToLower();
+
+        if (text.Contains("day"))
+        {
+            return value == 1 ? "1 day" : $"{value:N0} days";
+        }
+        else if (text.Contains("hour"))
+        {
+            return value == 1 ? "1 hour" : $"{value:N0} hours";
+        }
+        else if (text.Contains("minute"))
+        {
+            return value == 1 ? "1 min" : $"{value:N0} mins";
+        }
+
+        return $"{value:N2}";
     }
 
     private RenderFragment RenderTable(int componentId)
@@ -704,6 +947,13 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         };
     }
 
+    private List<Dictionary<string, object>> GetComponentData(int componentId)
+    {
+        return componentData.ContainsKey(componentId)
+            ? componentData[componentId]
+            : new List<Dictionary<string, object>>();
+    }
+
     private async Task RenderAllCharts()
     {
         var chartComponents = dashboard.Components.Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Chart && c.IsVisible);
@@ -720,7 +970,11 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
             return;
 
         var data = componentData[component.ComponentID];
-        var chartType = GetChartType(component.VisualizationConfig);
+
+        // Use user-selected type or default from config
+        var chartType = chartTypes.ContainsKey(component.ComponentID)
+            ? chartTypes[component.ComponentID]
+            : GetChartType(component.VisualizationConfig);
 
         try
         {
@@ -773,6 +1027,13 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
     private void ToggleChartMenu(int componentId)
     {
         activeChartMenu = activeChartMenu == componentId ? null : componentId;
+    }
+
+    private async Task ChangeChartType(int componentId, string newType)
+    {
+        chartTypes[componentId] = newType;
+        activeChartMenu = null;
+        await RenderChart(dashboard.Components.First(c => c.ComponentID == componentId));
     }
 
     // Helper classes
@@ -927,6 +1188,7 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         options = {
             series: values,
             chart: {
+                id: `chart-${componentId}`,
                 type: chartType,
                 height: '100%'
             },
@@ -948,8 +1210,25 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
             },
             dataLabels: {
                 enabled: true,
-                formatter: function(val) { return val.toFixed(1) + "%"; },
+                formatter: function(val) {
+                    return val.toFixed(1) + "%";
+                },
                 style: { fontSize: '13px', fontWeight: 700, colors: ['#fff'] }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: chartType === 'donut' ? '65%' : '0%'
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return value.toLocaleString() + ' (' + percentage + '%)';
+                    }
+                }
             }
         };
         break;

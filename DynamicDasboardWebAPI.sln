@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDashboardCommon", "D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDashboardFE", "DynamicDashboardFE\DynamicDashboardFE.csproj", "{4609B630-A57F-4702-89E3-A6FC1F2711FE}"
 EndProject
-Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "DynamicDashboardSQL", "DynamicDashboardSQL\DynamicDashboardSQL.sqlproj", "{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,12 +27,6 @@ Global
 		{4609B630-A57F-4702-89E3-A6FC1F2711FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4609B630-A57F-4702-89E3-A6FC1F2711FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4609B630-A57F-4702-89E3-A6FC1F2711FE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0653CCFD-00E9-4CD0-AEFF-258ECB1CD266}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

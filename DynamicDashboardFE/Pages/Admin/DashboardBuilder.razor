@@ -410,86 +410,267 @@
         @if (!isPreviewMode)
         {
             <div class="builder-sidebar builder-sidebar-right">
-                @if (selectedComponentId > 0)
+                @if (selectedComponentId > 0 && selectedComponent != null)
                 {
-                    var selectedComponent = dashboard.Components?.FirstOrDefault(c => c.ComponentID == selectedComponentId);
-                    @if (selectedComponent != null)
-                    {
-                        <div class="sidebar-header">
-                            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Component Settings</h5>
+                    <div class="properties-panel">
+                        <div class="properties-header">
+                            <h5>
+                                <i class="fas fa-cog me-2"></i>
+                                Component Properties
+                            </h5>
+                            <button class="btn-close-panel" @onclick="ClosePropertiesPanel">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
-                        <div class="sidebar-body">
-                            <div class="mb-3">
-                                <label class="form-label">Title</label>
-                                <input type="text" class="form-control" @bind="selectedComponent.Title" />
+
+                        <div class="properties-body">
+                            <!-- Component Title -->
+                            <div class="property-section">
+                                <label class="property-label">
+                                    <i class="fas fa-heading me-2"></i>
+                                    Title
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="selectedComponent.Title"
+                                       placeholder="Enter component title" />
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Description</label>
-                                <textarea class="form-control" rows="3" @bind="selectedComponent.Description"></textarea>
+                            <div class="property-section">
+                                <label class="property-label">
+                                    <i class="fas fa-align-left me-2"></i>
+                                    Description
+                                </label>
+                                <textarea class="form-control"
+                                          @bind="selectedComponent.Description"
+                                          placeholder="Enter component description (optional)"
+                                          rows="3"
+                                          style="resize: vertical;"></textarea>
+                                <small class="form-text text-muted mt-1">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Optional description to help others understand this component
+                                </small>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Query</label>
-                                <textarea class="form-control font-monospace" rows="5" @bind="selectedComponent.QueryText"></textarea>
+
+                            <!-- Component Type (Chart/Table/KPI) -->
+                            @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
+                            {
+                                <!-- CHART TYPE SELECTION - SAME GRAPHICS -->
+                                <div class="property-section">
+                                    <label class="property-label">
+                                        <i class="fas fa-chart-bar me-2"></i>
+                                        Chart Type
+                                    </label>
+                                    <div class="chart-type-grid">
+                                        <div class="chart-type-option @(GetComponentChartType() == "bar" ? "selected" : "")"
+                                             @onclick='() => UpdateChartType("bar")'>
+                                            <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                            <span>Bar</span>
+                                        </div>
+                                        <div class="chart-type-option @(GetComponentChartType() == "line" ? "selected" : "")"
+                                             @onclick='() => UpdateChartType("line")'>
+                                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                            <span>Line</span>
+                                        </div>
+                                        <div class="chart-type-option @(GetComponentChartType() == "pie" ? "selected" : "")"
+                                             @onclick='() => UpdateChartType("pie")'>
+                                            <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                                            <span>Pie</span>
+                                        </div>
+                                        <div class="chart-type-option @(GetComponentChartType() == "donut" ? "selected" : "")"
+                                             @onclick='() => UpdateChartType("donut")'>
+                                            <i class="fas fa-ring fa-2x mb-2"></i>
+                                            <span>Donut</span>
+                                        </div>
+                                        <div class="chart-type-option @(GetComponentChartType() == "area" ? "selected" : "")"
+                                             @onclick='() => UpdateChartType("area")'>
+                                            <i class="fas fa-chart-area fa-2x mb-2"></i>
+                                            <span>Area</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
+                            {
+                                <!-- TABLE CONFIGURATION -->
+                                <div class="property-section">
+                                    <label class="property-label">
+                                        <i class="fas fa-table me-2"></i>
+                                        Table Options
+                                    </label>
+
+                                    <div class="table-options-grid">
+                                        <div class="table-option @(GetTableOption("striped") ? "selected" : "")"
+                                             @onclick='() => ToggleTableOption("striped")'>
+                                            <i class="fas fa-bars fa-2x mb-2"></i>
+                                            <span>Striped Rows</span>
+                                        </div>
+                                        <div class="table-option @(GetTableOption("bordered") ? "selected" : "")"
+                                             @onclick='() => ToggleTableOption("bordered")'>
+                                            <i class="fas fa-border-all fa-2x mb-2"></i>
+                                            <span>Bordered</span>
+                                        </div>
+                                        <div class="table-option @(GetTableOption("hover") ? "selected" : "")"
+                                             @onclick='() => ToggleTableOption("hover")'>
+                                            <i class="fas fa-hand-pointer fa-2x mb-2"></i>
+                                            <span>Hover Effect</span>
+                                        </div>
+                                        <div class="table-option @(GetTableOption("pagination") ? "selected" : "")"
+                                             @onclick='() => ToggleTableOption("pagination")'>
+                                            <i class="fas fa-ellipsis-h fa-2x mb-2"></i>
+                                            <span>Pagination</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label class="form-label">Rows Per Page</label>
+                                        <select class="form-control" @bind="selectedTablePageSize">
+                                            <option value="5">5 rows</option>
+                                            <option value="10">10 rows</option>
+                                            <option value="25">25 rows</option>
+                                            <option value="50">50 rows</option>
+                                            <option value="100">100 rows</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
+                            {
+                                <!-- KPI CONFIGURATION -->
+                                <div class="property-section">
+                                    <label class="property-label">
+                                        <i class="fas fa-tachometer-alt me-2"></i>
+                                        KPI Style
+                                    </label>
+
+                                    <div class="kpi-style-grid">
+                                        <div class="kpi-style-option @(GetKPIStyle() == "default" ? "selected" : "")"
+                                             @onclick='() => UpdateKPIStyle("default")'>
+                                            <div class="kpi-preview kpi-default">
+                                                <span class="kpi-value">150</span>
+                                                <span class="kpi-label">Sales</span>
+                                            </div>
+                                            <span>Default</span>
+                                        </div>
+                                        <div class="kpi-style-option @(GetKPIStyle() == "gradient" ? "selected" : "")"
+                                             @onclick='() => UpdateKPIStyle("gradient")'>
+                                            <div class="kpi-preview kpi-gradient">
+                                                <span class="kpi-value">150</span>
+                                                <span class="kpi-label">Sales</span>
+                                            </div>
+                                            <span>Gradient</span>
+                                        </div>
+                                        <div class="kpi-style-option @(GetKPIStyle() == "minimal" ? "selected" : "")"
+                                             @onclick='() => UpdateKPIStyle("minimal")'>
+                                            <div class="kpi-preview kpi-minimal">
+                                                <span class="kpi-value">150</span>
+                                                <span class="kpi-label">Sales</span>
+                                            </div>
+                                            <span>Minimal</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <label class="form-label">Color Theme</label>
+                                        <div class="color-picker-grid">
+                                            <div class="color-option color-blue @(GetKPIColor() == "blue" ? "selected" : "")"
+                                                 @onclick='() => UpdateKPIColor("blue")'>
+                                                <div class="color-circle" style="background: #667EEA;"></div>
+                                            </div>
+                                            <div class="color-option color-green @(GetKPIColor() == "green" ? "selected" : "")"
+                                                 @onclick='() => UpdateKPIColor("green")'>
+                                                <div class="color-circle" style="background: #48BB78;"></div>
+                                            </div>
+                                            <div class="color-option color-purple @(GetKPIColor() == "purple" ? "selected" : "")"
+                                                 @onclick='() => UpdateKPIColor("purple")'>
+                                                <div class="color-circle" style="background: #9F7AEA;"></div>
+                                            </div>
+                                            <div class="color-option color-orange @(GetKPIColor() == "orange" ? "selected" : "")"
+                                                 @onclick='() => UpdateKPIColor("orange")'>
+                                                <div class="color-circle" style="background: #F6AD55;"></div>
+                                            </div>
+                                            <div class="color-option color-teal @(GetKPIColor() == "teal" ? "selected" : "")"
+                                                 @onclick='() => UpdateKPIColor("teal")'>
+                                                <div class="color-circle" style="background: #14B8A6;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- COMPONENT SIZE - SAME GRAPHICS -->
+                            <div class="property-section">
+                                <label class="property-label">
+                                    <i class="fas fa-expand me-2"></i>
+                                    Component Size
+                                </label>
+                                <div class="size-selection-grid">
+                                    <div class="size-option @(IsComponentSize(3, 2) ? "selected" : "")"
+                                         @onclick='() => UpdateComponentSize(3, 2)'>
+                                        <div class="size-preview small-preview"></div>
+                                        <span>Small</span>
+                                        <small class="text-muted">3×2</small>
+                                    </div>
+                                    <div class="size-option @(IsComponentSize(6, 3) ? "selected" : "")"
+                                         @onclick='() => UpdateComponentSize(6, 3)'>
+                                        <div class="size-preview medium-preview"></div>
+                                        <span>Medium</span>
+                                        <small class="text-muted">6×3</small>
+                                    </div>
+                                    <div class="size-option @(IsComponentSize(12, 4) ? "selected" : "")"
+                                         @onclick='() => UpdateComponentSize(12, 4)'>
+                                        <div class="size-preview large-preview"></div>
+                                        <span>Large</span>
+                                        <small class="text-muted">12×4</small>
+                                    </div>
+                                    <div class="size-option @(IsComponentSize(12, 6) ? "selected" : "")"
+                                         @onclick='() => UpdateComponentSize(12, 6)'>
+                                        <div class="size-preview xlarge-preview"></div>
+                                        <span>Extra Large</span>
+                                        <small class="text-muted">12×6</small>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Size -->
+                                <div class="custom-size mt-3">
+                                    <label class="form-label">Custom Size</label>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="small text-muted">Width (1-12)</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   @bind="selectedComponent.GridWidth"
+                                                   min="1"
+                                                   max="12" />
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="small text-muted">Height</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   @bind="selectedComponent.GridHeight"
+                                                   min="1"
+                                                   max="10" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Type</label>
-                                <select class="form-select" @bind="selectedComponent.DataViewingTypeID">
-                                    <option value="@((int)DataViewingTypeEnum.Table)">Table</option>
-                                    <option value="@((int)DataViewingTypeEnum.Chart)">Chart</option>
-                                    <option value="@((int)DataViewingTypeEnum.Number)">Number/KPI</option>
-                                    <option value="@((int)DataViewingTypeEnum.Card)">Card</option>
-                                    <option value="@((int)DataViewingTypeEnum.Label)">Label</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <button class="btn btn-sm btn-primary w-100" @onclick="() => LoadComponentDataAsync(selectedComponent)">
-                                    <i class="fas fa-play me-1"></i>Test Query
+
+                            <!-- Actions -->
+                            <div class="property-actions">
+                                <button class="btn btn-primary w-100 mb-2" @onclick="ApplyComponentChanges">
+                                    <i class="fas fa-check me-2"></i>
+                                    Apply Changes
                                 </button>
+                                <button class="btn btn-outline-secondary w-100" @onclick="ClosePropertiesPanel">
+                                    <i class="fas fa-times me-2"></i>
+                                    Cancel
+                                </button>
+                                <small class="text-muted d-block mt-2 text-center">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Changes saved to dashboard, remember to save dashboard
+                                </small>
                             </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="sidebar-header">
-                        <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Dashboard Settings</h5>
-                    </div>
-                    <div class="sidebar-body">
-                        <div class="mb-3">
-                            <label class="form-label">Title</label>
-                            <input type="text" class="form-control" @bind="dashboard.Title" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" rows="3" @bind="dashboard.Description"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Database</label>
-                            <select class="form-select" @bind="dashboard.DatabaseID">
-                                <option value="0">-- Select Database --</option>
-                                @foreach (var ds in availableDataSources)
-                                {
-                                    <option value="@ds.Id">@ds.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Category</label>
-                            <select class="form-select" @bind="dashboard.CategoryID">
-                                <option value="0">-- Select Category --</option>
-                                @foreach (var category in availableCategories)
-                                {
-                                    <option value="@category.CategoryID">@category.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Sharing Status</label>
-                            <select class="form-select" @bind="dashboard.SharingStatus">
-                                <option value="@DashboardSharingStatus.Private">Private</option>
-                                <option value="@DashboardSharingStatus.Shared">Shared</option>
-                                <option value="@DashboardSharingStatus.Public">Public</option>
-                            </select>
                         </div>
                     </div>
                 }
@@ -839,6 +1020,312 @@
             animation: fadeInUp 0.4s ease-out;
         }
 
+        .properties-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 380px;
+            height: 100vh;
+            background: white;
+            border-left: 1px solid #e2e8f0;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .properties-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+            .properties-header h5 {
+                margin: 0;
+                font-weight: 600;
+            }
+
+        .btn-close-panel {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+            .btn-close-panel:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+        .properties-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .property-section {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+            .property-section:last-child {
+                border-bottom: none;
+            }
+
+        .property-label {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+
+        /* Chart Type Grid - SAME AS CUSTOM CHART MODAL */
+        .chart-type-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .chart-type-option {
+            padding: 16px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+            .chart-type-option:hover {
+                border-color: #667eea;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            }
+
+            .chart-type-option.selected {
+                border-color: #667eea;
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            }
+
+            .chart-type-option i {
+                color: #667eea;
+                display: block;
+            }
+
+            .chart-type-option span {
+                display: block;
+                font-size: 12px;
+                font-weight: 500;
+                color: #4a5568;
+                margin-top: 8px;
+            }
+
+        /* Table Options Grid */
+        .table-options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .table-option {
+            padding: 16px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .table-option:hover {
+                border-color: #48bb78;
+                transform: translateY(-2px);
+            }
+
+            .table-option.selected {
+                border-color: #48bb78;
+                background: rgba(72, 187, 120, 0.1);
+            }
+
+            .table-option i {
+                color: #48bb78;
+            }
+
+            .table-option span {
+                display: block;
+                font-size: 11px;
+                font-weight: 500;
+                margin-top: 8px;
+            }
+
+        /* KPI Style Grid */
+        .kpi-style-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .kpi-style-option {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .kpi-style-option:hover {
+                border-color: #9f7aea;
+                transform: translateY(-2px);
+            }
+
+            .kpi-style-option.selected {
+                border-color: #9f7aea;
+                background: rgba(159, 122, 234, 0.1);
+            }
+
+        .kpi-preview {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+            .kpi-preview.kpi-default {
+                background: #f7fafc;
+                border: 1px solid #e2e8f0;
+            }
+
+            .kpi-preview.kpi-gradient {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+
+            .kpi-preview.kpi-minimal {
+                background: white;
+                border-left: 4px solid #667eea;
+            }
+
+        .kpi-value {
+            display: block;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .kpi-label {
+            display: block;
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
+        /* Color Picker */
+        .color-picker-grid {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .color-option {
+            cursor: pointer;
+            padding: 4px;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+            .color-option:hover {
+                transform: scale(1.1);
+            }
+
+            .color-option.selected {
+                border-color: #2d3748;
+            }
+
+        .color-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Size Selection Grid - SAME AS CUSTOM CHART MODAL */
+        .size-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .size-option {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .size-option:hover {
+                border-color: #f6ad55;
+                transform: translateY(-2px);
+            }
+
+            .size-option.selected {
+                border-color: #f6ad55;
+                background: rgba(246, 173, 85, 0.1);
+            }
+
+        .size-preview {
+            margin: 0 auto 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        .small-preview {
+            width: 40px;
+            height: 30px;
+        }
+
+        .medium-preview {
+            width: 60px;
+            height: 40px;
+        }
+
+        .large-preview {
+            width: 80px;
+            height: 45px;
+        }
+
+        .xlarge-preview {
+            width: 80px;
+            height: 60px;
+        }
+
+        .size-option span {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .size-option small {
+            display: block;
+            font-size: 11px;
+        }
+
+        /* Property Actions */
+        .property-actions {
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 24px;
+        }
     </style>
 
 </div>
@@ -1932,6 +2419,258 @@
         }
     }
 
+    private DashboardComponent selectedComponent => dashboard.Components?.FirstOrDefault(c => c.ComponentID == selectedComponentId);
+    private string selectedTablePageSize = "10";
+
+    private void ClosePropertiesPanel()
+    {
+        selectedComponentId = 0;
+        StateHasChanged();
+    }
+
+    // Chart type methods
+    private string GetComponentChartType()
+    {
+        if (selectedComponent == null || string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+            return "bar";
+
+        try
+        {
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+            return config.ContainsKey("chartType") ? config["chartType"].GetString() : "bar";
+        }
+        catch
+        {
+            return "bar";
+        }
+    }
+
+    private void UpdateChartType(string chartType)
+    {
+        if (selectedComponent == null) return;
+
+        var config = new Dictionary<string, object>();
+
+        // Preserve existing config if any
+        if (!string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+        {
+            try
+            {
+                config = JsonSerializer.Deserialize<Dictionary<string, object>>(selectedComponent.VisualizationConfig);
+            }
+            catch { }
+        }
+
+        // Update chart type
+        config["chartType"] = chartType;
+        selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
+        selectedComponent.ChartType = chartType;
+
+        // Mark as having changes
+        hasUnsavedChanges = true;
+
+        StateHasChanged();
+    }
+
+    private void OnPropertyChanged()
+    {
+        hasUnsavedChanges = true;
+        StateHasChanged();
+
+        // Optional: Show subtle indicator
+        ToastService.ShowInfo("Property updated");
+    }
+
+    // Table options methods
+    private bool GetTableOption(string option)
+    {
+        if (selectedComponent == null || string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+            return false;
+
+        try
+        {
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+            return config.ContainsKey(option) && config[option].GetBoolean();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void ToggleTableOption(string option)
+    {
+        if (selectedComponent == null) return;
+
+        var config = new Dictionary<string, object>();
+
+        // Load existing config
+        if (!string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+        {
+            try
+            {
+                var jsonConfig = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+                foreach (var kvp in jsonConfig)
+                {
+                    config[kvp.Key] = kvp.Value.ValueKind == JsonValueKind.True || kvp.Value.ValueKind == JsonValueKind.False
+                        ? kvp.Value.GetBoolean()
+                        : kvp.Value.ToString();
+                }
+            }
+            catch { }
+        }
+
+        // Toggle the option
+        if (config.ContainsKey(option) && config[option] is bool)
+            config[option] = !(bool)config[option];
+        else
+            config[option] = true;
+
+        selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
+
+        // Mark as having changes
+        hasUnsavedChanges = true;
+
+        StateHasChanged();
+    }
+
+    // KPI methods
+    private string GetKPIStyle()
+    {
+        if (selectedComponent == null || string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+            return "default";
+
+        try
+        {
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+            return config.ContainsKey("style") ? config["style"].GetString() : "default";
+        }
+        catch
+        {
+            return "default";
+        }
+    }
+
+    private void UpdateKPIStyle(string style)
+    {
+        if (selectedComponent == null) return;
+
+        var config = new Dictionary<string, object>();
+
+        // Load existing config
+        if (!string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+        {
+            try
+            {
+                var jsonConfig = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+                foreach (var kvp in jsonConfig)
+                {
+                    config[kvp.Key] = kvp.Value.ToString();
+                }
+            }
+            catch { }
+        }
+
+        config["style"] = style;
+        selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
+
+        // Mark as having changes
+        hasUnsavedChanges = true;
+
+        StateHasChanged();
+    }
+
+  
+
+    private void UpdateKPIColor(string color)
+    {
+        if (selectedComponent == null) return;
+
+        var config = new Dictionary<string, object>();
+
+        // Load existing config
+        if (!string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+        {
+            try
+            {
+                var jsonConfig = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+                foreach (var kvp in jsonConfig)
+                {
+                    config[kvp.Key] = kvp.Value.ToString();
+                }
+            }
+            catch { }
+        }
+
+        config["color"] = color;
+        selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
+
+        // Mark as having changes
+        hasUnsavedChanges = true;
+
+        StateHasChanged();
+    }
+
+    // Size methods
+    private bool IsComponentSize(int width, int height)
+    {
+        return selectedComponent?.GridWidth == width && selectedComponent?.GridHeight == height;
+    }
+
+    private void UpdateComponentSize(int width, int height)
+    {
+        if (selectedComponent == null) return;
+
+        selectedComponent.GridWidth = width;
+        selectedComponent.GridHeight = height;
+
+        // Mark as having changes
+        hasUnsavedChanges = true;
+
+        StateHasChanged();
+    }
+
+    private async Task ApplyComponentChanges()
+    {
+        if (selectedComponent == null)
+        {
+            ToastService.ShowWarning("No component selected");
+            return;
+        }
+
+        try
+        {
+            // Mark as having unsaved changes
+            hasUnsavedChanges = true;
+
+            // Update component metadata
+            selectedComponent.LastUpdated = DateTime.UtcNow;
+
+            // If you want to save immediately to backend, uncomment:
+            // await SaveDashboard();
+
+            // Force re-render of the component on canvas
+            StateHasChanged();
+
+            // If preview mode is active, reload component data
+            if (isPreviewMode && componentData.ContainsKey(selectedComponent.ComponentID))
+            {
+                await LoadComponentDataAsync(selectedComponent);
+            }
+
+            ToastService.ShowSuccess($"{selectedComponent.Title} properties updated successfully!");
+
+            // Optional: Close panel after applying
+            // ClosePropertiesPanel();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error updating component: {ex.Message}");
+            Console.WriteLine($"Error in ApplyComponentChanges: {ex.Message}");
+        }
+    }
+
+
     /// <summary>
     /// Prepares dashboard object with all required fields before saving
     /// </summary>
@@ -2184,6 +2923,22 @@
         {
             isAnalyzing = false;
             StateHasChanged();
+        }
+    }
+
+    private string GetKPIColor()
+    {
+        if (selectedComponent == null || string.IsNullOrEmpty(selectedComponent.VisualizationConfig))
+            return "blue";
+
+        try
+        {
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(selectedComponent.VisualizationConfig);
+            return config.ContainsKey("color") ? config["color"].GetString() : "blue";
+        }
+        catch
+        {
+            return "blue";
         }
     }
 
