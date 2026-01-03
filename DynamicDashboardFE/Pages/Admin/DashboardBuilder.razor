@@ -21,10 +21,10 @@
                     <i class="fas fa-arrow-left me-1"></i>Back
                 </button> *@
                 }
-                <button class="btn btn-outline-primary" @onclick="AutoArrangeComponents">
+@*                 <button class="btn btn-outline-primary" @onclick="AutoArrangeComponents">
                     <i class="fas fa-magic me-2"></i>
                     Auto Layout
-                </button>
+                </button> *@
 
                 @if (!isEditingTitle && !isPreviewMode)
                 {
@@ -163,7 +163,7 @@
             }
 
             <div class="builder-canvas" style="transform: scale(@(isPreviewMode ? 1 : zoomLevel)); background: @(isPreviewMode ? "#f5f5f5" : "white");">
-                <div class="dashboard-grid" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
+                <div class="dashboard-grid" @key="canvasKey" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
                     @if (dashboard.Components != null && dashboard.Components.Any())
                     {
                         @foreach (var component in dashboard.Components)
@@ -1003,6 +1003,10 @@
                     <i class="fas fa-magic me-3" style="font-size: 2rem;"></i>
                     <div>
                         <h3 class="mb-0 fw-bold">Add Custom Chart</h3>
+                        <button class="btn btn-outline-warning" @onclick="AutoArrangeComponents"
+                                disabled="@(!dashboard.Components.Any())">
+                            <i class="fas fa-magic me-1"></i>Auto Layout
+                        </button>
                         <p class="mb-0 opacity-75" style="font-size: 0.95rem;">Describe what you want to visualize in natural language</p>
                     </div>
                 </div>
@@ -1514,6 +1518,7 @@
 
     // Dashboard data
     private DashboardModel dashboard = new DashboardModel();
+    private int canvasKey = 0;
     private List<DashboardCategory> availableCategories = new List<DashboardCategory>();
     private List<DataSource> availableDataSources = new List<DataSource>();
     private List<ComponentTemplate> availableComponents = new List<ComponentTemplate>();
@@ -2684,7 +2689,6 @@
             return;
         }
 
-        // Sort by current Y position, then X
         var sortedComponents = dashboard.Components
             .OrderBy(c => c.GridY)
             .ThenBy(c => c.GridX)
@@ -2696,22 +2700,18 @@
 
         foreach (var component in sortedComponents)
         {
-            // Check if component fits in current row
             if (currentX + component.GridWidth > gridColumns)
             {
-                // Move to next row
                 currentY += GetMaxHeightInRow(sortedComponents, currentY);
                 currentX = 0;
             }
 
-            // Place component
             component.GridX = currentX;
             component.GridY = currentY;
-
-            // Move cursor
             currentX += component.GridWidth;
         }
 
+        canvasKey++;
         hasUnsavedChanges = true;
         ToastService.ShowSuccess("Components auto-arranged");
         StateHasChanged();
@@ -2719,10 +2719,11 @@
 
     private int GetMaxHeightInRow(List<DashboardComponent> components, int rowY)
     {
-        return components
-            .Where(c => c.GridY == rowY)
-            .Max(c => c.GridHeight);
+        var componentsInRow = components.Where(c => c.GridY == rowY).ToList();
+        return componentsInRow.Any() ? componentsInRow.Max(c => c.GridHeight) : 4;
     }
+
+
 
 
     private string FormatNumericValue(object value, DashboardComponent component)

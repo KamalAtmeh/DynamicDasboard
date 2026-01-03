@@ -391,7 +391,7 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
             await Task.WhenAll(tasks);
 
             StateHasChanged();
-            await Task.Delay(200); // Allow DOM to update
+            await Task.Delay(200);
             await RenderAllCharts();
 
 
@@ -622,31 +622,23 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
 
     private string FormatValue(object value)
     {
-        if (value == null) return "N/A";
+        if (value == null) return "";
 
-        if (value is decimal || value is double || value is float)
+        if (value is decimal decValue)
         {
-            var numValue = Convert.ToDouble(value);
-            if (numValue >= 1000000)
-                return (numValue / 1000000).ToString("0.0") + "M";
-            if (numValue >= 1000)
-                return (numValue / 1000).ToString("0.0") + "K";
-            return numValue.ToString("N0");
+            return decValue == Math.Floor(decValue) ? decValue.ToString("N0") : decValue.ToString("N2");
         }
-
+        if (value is double dblValue)
+        {
+            return dblValue == Math.Floor(dblValue) ? dblValue.ToString("N0") : dblValue.ToString("N2");
+        }
+        if (value is float fltValue)
+        {
+            return fltValue == Math.Floor(fltValue) ? fltValue.ToString("N0") : fltValue.ToString("N2");
+        }
         if (value is int || value is long)
         {
-            var numValue = Convert.ToInt64(value);
-            if (numValue >= 1000000)
-                return (numValue / 1000000.0).ToString("0.0") + "M";
-            if (numValue >= 1000)
-                return (numValue / 1000.0).ToString("0.0") + "K";
-            return numValue.ToString("N0");
-        }
-
-        if (value is DateTime dateValue)
-        {
-            return dateValue.ToString("MMM dd, yyyy");
+            return Convert.ToInt64(value).ToString("N0");
         }
 
         return value.ToString();
@@ -929,107 +921,38 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
                 };
                 break;
 
-            case 'pie':
-            case 'donut':
-                const total = values.reduce((a, b) => a + b, 0);
-                options = {
-                    series: values,
-                    chart: {
-                        id: `chart-${componentId}`,
-                        type: chartType,
-                        height: '100%',
-                        animations: {
-                            enabled: true,
-                            easing: 'easeinout',
-                            speed: 800
-                        }
-                    },
-                    labels: categories,
-                    colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181', '#14B8A6', '#8B5CF6', '#EC4899'],
-                    // ✅ ADD ENHANCED LEGEND
-                    legend: {
-                        show: true,
-                        position: 'bottom',
-                        horizontalAlign: 'center',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        fontFamily: 'inherit',
-                        markers: {
-                            width: 12,
-                            height: 12,
-                            radius: 12  // Circular markers for pie
-                        },
-                        itemMargin: {
-                            horizontal: 10,
-                            vertical: 5
-                        },
-                        formatter: function(seriesName, opts) {
-                            const value = opts.w.globals.series[opts.seriesIndex];
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${seriesName}: ${value.toLocaleString()} (${percentage}%)`;
-                        }
-                    },
-                    dataLabels: {
-                        enabled: true,
-                        formatter: function(val) {
-                            return val.toFixed(1) + "%";
-                        },
-                        style: {
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            colors: ['#fff']
-                        },
-                        dropShadow: {
-                            enabled: true,
-                            top: 1,
-                            left: 1,
-                            blur: 1,
-                            opacity: 0.45
-                        }
-                    },
-                    plotOptions: {
-                        pie: {
-                            donut: {
-                                size: chartType === 'donut' ? '65%' : '0%',
-                                labels: {
-                                    show: chartType === 'donut',
-                                    name: {
-                                        show: true,
-                                        fontSize: '14px',
-                                        fontWeight: 600
-                                    },
-                                    value: {
-                                        show: true,
-                                        fontSize: '24px',
-                                        fontWeight: 700,
-                                        formatter: function(val) {
-                                            return parseFloat(val).toLocaleString();
-                                        }
-                                    },
-                                    total: {
-                                        show: true,
-                                        label: 'Total',
-                                        fontSize: '14px',
-                                        fontWeight: 600,
-                                        formatter: function() {
-                                            return total.toLocaleString();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    tooltip: {
-                        y: {
-                            formatter: function(value) {
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${value.toLocaleString()} (${percentage}%)`;
-                            }
-                        }
-                    }
-                };
-                break;
-
+    case 'pie':
+    case 'donut':
+        const total = values.reduce((a, b) => a + b, 0);
+        options = {
+            series: values,
+            chart: {
+                type: chartType,
+                height: '100%'
+            },
+            labels: categories,
+            colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181', '#14B8A6', '#8B5CF6'],
+            legend: {
+                show: true,
+                position: 'bottom',
+                horizontalAlign: 'center',
+                fontSize: '14px',
+                fontWeight: 600,
+                markers: { width: 14, height: 14, radius: 12 },
+                itemMargin: { horizontal: 12, vertical: 8 },
+                formatter: function(seriesName, opts) {
+                    const value = opts.w.globals.series[opts.seriesIndex];
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return seriesName + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) { return val.toFixed(1) + "%"; },
+                style: { fontSize: '13px', fontWeight: 700, colors: ['#fff'] }
+            }
+        };
+        break;
             default: // bar
                 options = {
                     series: [{

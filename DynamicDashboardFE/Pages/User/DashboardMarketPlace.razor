@@ -122,7 +122,9 @@
                 @foreach (var dashboard in featuredDashboards)
                 {
                     <div class="col-md-4 mb-3">
-                        <DashboardCard Dashboard="dashboard" OnDashboardSelected="ViewDashboard" />
+                        <DashboardCard Dashboard="dashboard"
+                                       OnDashboardSelected="ViewDashboard"
+                                       OnDashboardEdit="EditDashboard" />
                     </div>
                 }
             </div>
@@ -137,7 +139,9 @@
             @foreach (var dashboard in filteredDashboards)
             {
                 <div class="col-md-4 mb-3">
-                    <DashboardCard Dashboard="dashboard" OnDashboardSelected="ViewDashboard" />
+                    <DashboardCard Dashboard="dashboard"
+                                   OnDashboardSelected="ViewDashboard"
+                                   OnDashboardEdit="EditDashboard" />
                 </div>
             }
         </div>
@@ -325,6 +329,11 @@
     private void ViewDashboard(DashboardModel dashboard)
     {
         NavigationManager.NavigateTo($"/dashboard/viewer/{dashboard.DashboardID}");
+    }
+
+    private void EditDashboard(DashboardModel dashboard)
+    {
+        NavigationManager.NavigateTo($"/dashboard/builder/{dashboard.DashboardID}");
     }
 
     private void ShowGenerationModal()
