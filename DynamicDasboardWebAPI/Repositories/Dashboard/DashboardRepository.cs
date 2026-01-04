@@ -231,64 +231,105 @@ namespace DynamicDasboardWebAPI.Repositories
                 dashboard.LastUpdated = DateTime.UtcNow;
 
                 const string sql = @"
-                    UPDATE Dashboards SET
-                        Title = @Title,
-                        Description = @Description,
-                        LayoutConfig = @LayoutConfig,
-                        LastUpdated = @LastUpdated,
-                        IsFeatured = @IsFeatured,
-                        CategoryID = @CategoryID,
-                        SharingStatus = @SharingStatus,
-                        RefreshInterval = @RefreshInterval,
-                        FiltersConfig = @FiltersConfig,
-                        ValidationStatus = @ValidationStatus
-                    WHERE DashboardID = @DashboardID";
+            UPDATE Dashboards SET
+                Title = @Title,
+                Description = @Description,
+                LayoutConfig = @LayoutConfig,
+                DatabaseID = @DatabaseID,
+                LastUpdated = @LastUpdated,
+                IsFeatured = @IsFeatured,
+                CategoryID = @CategoryID,
+                SharingStatus = @SharingStatus,
+                RefreshInterval = @RefreshInterval,
+                FiltersConfig = @FiltersConfig,
+                ValidationStatus = @ValidationStatus
+            WHERE DashboardID = @DashboardID";
 
                 return await WithConnectionAsync(async conn =>
                 {
-                    using var transaction = conn.BeginTransaction();
+                    IDbTransaction transaction = null;
                     try
                     {
+                        transaction = conn.BeginTransaction();
+
+                        Console.WriteLine($"🔹 Step 1: Updating dashboard {dashboard.DashboardID}");
+
                         // Update dashboard
                         await conn.ExecuteSafeAsync(sql, dashboard, transaction);
 
-                        // Get existing components
-                        var existingComponents = await GetDashboardComponentsAsync(dashboard.DashboardID, conn, transaction);
+                        Console.WriteLine("🔹 Step 2: Getting existing components");
+
+                        // 🔥 CRITICAL: Pass connection AND transaction to avoid new connection
+                        var existingComponents = await GetDashboardComponentsAsync(
+                            dashboard.DashboardID, conn, transaction);
                         var existingComponentIds = existingComponents.Select(c => c.ComponentID).ToHashSet();
+
+                        Console.WriteLine($"🔹 Step 3: Found {existingComponentIds.Count} components");
+
+                        // Ensure components is not null
+                        if (dashboard.Components == null)
+                        {
+                            dashboard.Components = new List<DashboardComponent>();
+                        }
 
                         // Update or insert components
                         foreach (var component in dashboard.Components)
                         {
+                            // 🔥 Ensure no null fields
                             component.DashboardID = dashboard.DashboardID;
+                            component.Title ??= "Untitled";
+                            component.Description ??= "";
+                            component.QueryText ??= "";
+                            component.VisualizationConfig ??= "{}";
+                            component.FilterExpression ??= "";
+                            component.Parameters ??= new List<ComponentParameter>();
+
                             if (component.ComponentID > 0 && existingComponentIds.Contains(component.ComponentID))
                             {
+                                Console.WriteLine($"   🔸 Updating: {component.Title}");
                                 await UpdateDashboardComponentAsync(component, conn, transaction);
                                 existingComponentIds.Remove(component.ComponentID);
                             }
                             else
                             {
+                                Console.WriteLine($"   🔸 Creating: {component.Title}");
                                 await CreateDashboardComponentAsync(component, conn, transaction);
                             }
                         }
 
                         // Delete removed components
-                        foreach (var componentId in existingComponentIds)
+                        if (existingComponentIds.Any())
                         {
-                            await DeleteDashboardComponentAsync(componentId, conn, transaction);
+                            Console.WriteLine($"🔹 Step 4: Deleting {existingComponentIds.Count} components");
+                            foreach (var componentId in existingComponentIds)
+                            {
+                                await DeleteDashboardComponentAsync(componentId, conn, transaction);
+                            }
                         }
 
+                        Console.WriteLine("🔹 Step 5: Committing transaction");
                         transaction.Commit();
+
+                        Console.WriteLine("✅ Update completed successfully!");
                         return true;
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        transaction.Rollback();
+                        Console.WriteLine($"❌ Error: {ex.Message}");
+                        Console.WriteLine($"❌ Stack: {ex.StackTrace}");
+
+                        transaction?.Rollback();
                         throw;
+                    }
+                    finally
+                    {
+                        transaction?.Dispose();
                     }
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"❌ UpdateDashboardAsync failed: {ex.Message}");
                 throw;
             }
         }

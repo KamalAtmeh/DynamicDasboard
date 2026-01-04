@@ -2485,7 +2485,7 @@
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.ExecuteScalarSafeAsync``1(System.Data.IDbConnection,System.String,System.Object,System.Data.IDbTransaction,System.Nullable{System.Int32},System.Nullable{System.Data.CommandType})">
             <summary>
-            Executes a scalar query safely and returns the result
+            Executes a scalar query safely
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Utilities.DatabaseHelper.WithConnectionAsync``1(System.Data.IDbConnection,System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}})">

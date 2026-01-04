@@ -180,23 +180,50 @@ namespace DynamicDasboardWebAPI.Controllers
         {
             try
             {
+                Console.WriteLine($"📥 Received update request for dashboard {id}");
+                Console.WriteLine($"📊 Dashboard Title: {dashboard.Title}");
+                Console.WriteLine($"📊 Components Count: {dashboard.Components?.Count ?? 0}");
+                Console.WriteLine($"📊 DatabaseID: {dashboard.DatabaseID}");
+                Console.WriteLine($"📊 CategoryID: {dashboard.CategoryID}");
                 if (id != dashboard.DashboardID)
                 {
+                    Console.WriteLine($"❌ ID mismatch: URL={id}, Body={dashboard.DashboardID}");
                     return BadRequest("Dashboard ID mismatch.");
+                }
+                if (dashboard.DatabaseID <= 0)
+                {
+                    Console.WriteLine($"❌ Invalid DatabaseID: {dashboard.DatabaseID}");
+                    return BadRequest("DatabaseID is required");
                 }
 
                 var success = await _dashboardService.UpdateDashboardAsync(dashboard);
                 if (!success)
                 {
+
+                    Console.WriteLine($"❌ Update returned null for dashboard {id}");
                     return NotFound($"Dashboard with ID {id} not found.");
                 }
-
+                Console.WriteLine($"✅ Dashboard {id} updated successfully");
                 var updatedDashboard = await _dashboardService.GetDashboardByIdAsync(id);
                 return Ok(updatedDashboard);
             }
             catch (Exception ex)
             {
-                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
+                Console.WriteLine($"❌ EXCEPTION in UpdateDashboard:");
+                Console.WriteLine($"   Message: {ex.Message}");
+                Console.WriteLine($"   StackTrace: {ex.StackTrace}");
+
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"   Inner Exception: {ex.InnerException.Message}");
+                }
+
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred. Please try again later.",
+                    error = ex.Message,  // ⚠️ Remove this in production
+                    timestamp = DateTime.UtcNow
+                });
             }
         }
 

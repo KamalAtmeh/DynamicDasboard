@@ -22,25 +22,42 @@ namespace DynamicDasboardWebAPI.Utilities
         /// <summary>
         /// Executes a query safely and maps the result to a list of entities
         /// </summary>
-        public static async Task<IEnumerable<T>> QuerySafeAsync<T>(this IDbConnection connectionTemplate, string sql, object param = null,
-            IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
+        public static async Task<IEnumerable<T>> QuerySafeAsync<T>(
+            this IDbConnection connectionTemplate,
+            string sql,
+            object param = null,
+            IDbTransaction transaction = null,
+            int? commandTimeout = null,
+            CommandType? commandType = null)
         {
-            if (connectionTemplate == null) throw new ArgumentNullException(nameof(connectionTemplate));
-            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+            if (connectionTemplate == null)
+                throw new ArgumentNullException(nameof(connectionTemplate));
+            if (string.IsNullOrWhiteSpace(sql))
+                throw new ArgumentException("SQL query cannot be empty", nameof(sql));
 
-            // Create a new connection with the same connection string
-            //temp to be dynamic through dbconnectionfactory
-            using (var connection = new SqlConnection(connectionTemplate.ConnectionString))
+            // 🔥 FIX: If transaction is provided, use the existing connection!
+            if (transaction != null)
             {
-                try
+                // Transaction provided - use the connection it belongs to
+                return await connectionTemplate.QueryAsync<T>(
+                    sql, param, transaction, commandTimeout, commandType);
+            }
+            else
+            {
+                // No transaction - create new connection (existing behavior)
+                using (var connection = new SqlConnection(connectionTemplate.ConnectionString))
                 {
-                    await connection.OpenAsync();
-                    var result = (await connection.QueryAsync<T>(sql, param, transaction, commandTimeout, commandType)).ToList();
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    throw;
+                    try
+                    {
+                        await connection.OpenAsync();
+                        var result = await connection.QueryAsync<T>(
+                            sql, param, null, commandTimeout, commandType);
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
                 }
             }
         }
@@ -48,19 +65,42 @@ namespace DynamicDasboardWebAPI.Utilities
         /// <summary>
         /// Executes a command safely and returns the number of affected rows
         /// </summary>
-        public static async Task<int> ExecuteSafeAsync(this IDbConnection connection, string sql, object param = null,
-            IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
+        public static async Task<int> ExecuteSafeAsync(
+            this IDbConnection connectionTemplate,
+            string sql,
+            object param = null,
+            IDbTransaction transaction = null,
+            int? commandTimeout = null,
+            CommandType? commandType = null)
         {
-            if (connection == null) throw new ArgumentNullException(nameof(connection));
-            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL command cannot be empty", nameof(sql));
+            if (connectionTemplate == null)
+                throw new ArgumentNullException(nameof(connectionTemplate));
+            if (string.IsNullOrWhiteSpace(sql))
+                throw new ArgumentException("SQL query cannot be empty", nameof(sql));
 
-            try
+            // 🔥 FIX: If transaction is provided, use the existing connection!
+            if (transaction != null)
             {
-                return await connection.ExecuteAsync(sql, param, transaction, commandTimeout, commandType);
+                // Transaction provided - use the connection it belongs to
+                return await connectionTemplate.ExecuteAsync(
+                    sql, param, transaction, commandTimeout, commandType);
             }
-            catch (Exception ex)
+            else
             {
-                throw;
+                // No transaction - create new connection
+                using (var connection = new SqlConnection(connectionTemplate.ConnectionString))
+                {
+                    try
+                    {
+                        await connection.OpenAsync();
+                        return await connection.ExecuteAsync(
+                            sql, param, null, commandTimeout, commandType);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
+                }
             }
         }
 
@@ -103,21 +143,44 @@ namespace DynamicDasboardWebAPI.Utilities
         }
 
         /// <summary>
-        /// Executes a scalar query safely and returns the result
+        /// Executes a scalar query safely
         /// </summary>
-        public static async Task<T> ExecuteScalarSafeAsync<T>(this IDbConnection connection, string sql, object param = null,
-            IDbTransaction transaction = null, int? commandTimeout = null, CommandType? commandType = null)
+        public static async Task<T> ExecuteScalarSafeAsync<T>(
+            this IDbConnection connectionTemplate,
+            string sql,
+            object param = null,
+            IDbTransaction transaction = null,
+            int? commandTimeout = null,
+            CommandType? commandType = null)
         {
-            if (connection == null) throw new ArgumentNullException(nameof(connection));
-            if (string.IsNullOrWhiteSpace(sql)) throw new ArgumentException("SQL query cannot be empty", nameof(sql));
+            if (connectionTemplate == null)
+                throw new ArgumentNullException(nameof(connectionTemplate));
+            if (string.IsNullOrWhiteSpace(sql))
+                throw new ArgumentException("SQL query cannot be empty", nameof(sql));
 
-            try
+            // 🔥 FIX: If transaction is provided, use the existing connection!
+            if (transaction != null)
             {
-                return await connection.ExecuteScalarAsync<T>(sql, param, transaction, commandTimeout, commandType);
+                // Transaction provided - use the connection it belongs to
+                return await connectionTemplate.ExecuteScalarAsync<T>(
+                    sql, param, transaction, commandTimeout, commandType);
             }
-            catch (Exception ex)
+            else
             {
-                throw;
+                // No transaction - create new connection
+                using (var connection = new SqlConnection(connectionTemplate.ConnectionString))
+                {
+                    try
+                    {
+                        await connection.OpenAsync();
+                        return await connection.ExecuteScalarAsync<T>(
+                            sql, param, null, commandTimeout, commandType);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
+                }
             }
         }
 
