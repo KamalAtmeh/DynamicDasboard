@@ -470,6 +470,21 @@ namespace DynamicDasboardWebAPI.Services.LLM
             }
         }
 
+        public async Task<string> GenerateDashboardSuggestionsAsync(string systemPrompt, string userPrompt)
+        {
+            try
+            {
+                // Call Claude API with system and user prompts
+                var response = await CallClaudeApiAsync(systemPrompt, userPrompt);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error generating dashboard suggestions with Claude: {ex.Message}", ex);
+            }
+        }
+
         public async Task<string> GenerateChartExplanationAsync(string question, string databaseSchema)
         {
             try

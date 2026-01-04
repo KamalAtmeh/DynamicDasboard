@@ -7,8 +7,36 @@
       "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\dashboard\\dashboardassistant\\assistantservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\llm\\databricksllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\llm\\databricksllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\llm\\sqlcoderllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\llm\\sqlcoderllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\llm\\claudellmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\llm\\claudellmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\services\\llm\\deepseekllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\services\\llm\\deepseekllmservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\controllers\\dashboardassistant\\dashboardassistantcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\controllers\\dashboardassistant\\dashboardassistantcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\floatingaiassistant.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\floatingaiassistant.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardcommon\\models\\dashboard\\assistantmodels.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{96F0DF29-6509-4971-99C8-33CDE9366646}|DynamicDashboardCommon\\DynamicDashboardCommon.csproj|solutionrelative:dynamicdashboardcommon\\models\\dashboard\\assistantmodels.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\pages\\admin\\dashboardbuilder.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -17,14 +45,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\controllers\\dashboard\\dashboardcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\controllers\\dashboard\\dashboardcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdashboardfe\\components\\floatingaiassistant.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{4609B630-A57F-4702-89E3-A6FC1F2711FE}|DynamicDashboardFE\\DynamicDashboardFE.csproj|solutionrelative:dynamicdashboardfe\\components\\floatingaiassistant.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|c:\\dynamicdashboardproject\\dynamicdashboardwebapi\\dynamicdasboardwebapi\\dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F0292D12-6A1E-4E21-B6BD-78D393BAB076}|DynamicDasboardWebAPI\\DynamicDasboardWebAPI.csproj|solutionrelative:dynamicdasboardwebapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -60,27 +80,27 @@
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\Dashboard\\DashboardAssistant\\AssistantService.cs",
               "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\Dashboard\\DashboardAssistant\\AssistantService.cs",
               "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\Dashboard\\DashboardAssistant\\AssistantService.cs",
-              "ViewState": "AgIAAB4AAAAAAAAAAAAYwEgAAAAXAAAAAAAAAA==",
+              "ViewState": "AgIAAOYAAAAAAAAAAAAiwBwBAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-04T14:06:33.241Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "DashboardAssistantController.cs",
               "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\DashboardAssistant\\DashboardAssistantController.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Controllers\\DashboardAssistant\\DashboardAssistantController.cs",
               "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\DashboardAssistant\\DashboardAssistantController.cs",
               "RelativeToolTip": "DynamicDasboardWebAPI\\Controllers\\DashboardAssistant\\DashboardAssistantController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAADEAAABPAAAAAAAAAA==",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAACwAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-04T14:03:36.956Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 10,
               "Title": "DashboardController.cs",
               "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Controllers\\Dashboard\\DashboardController.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Controllers\\Dashboard\\DashboardController.cs",
@@ -93,39 +113,104 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 4,
+              "Title": "DeepSeekLLMService.cs",
+              "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DeepSeekLLMService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\DeepSeekLLMService.cs",
+              "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DeepSeekLLMService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LLM\\DeepSeekLLMService.cs",
+              "ViewState": "AgIAAGoAAAAAAAAAAAAgwOoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-04T13:27:10.601Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ClaudeLLMService.cs",
+              "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\ClaudeLLMService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\ClaudeLLMService.cs",
+              "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\ClaudeLLMService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LLM\\ClaudeLLMService.cs",
+              "ViewState": "AgIAAFMBAAAAAAAAAAAIwNgBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-03T09:11:43.669Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SQLCoderLLMService.cs",
+              "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\SQLCoderLLMService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\SQLCoderLLMService.cs",
+              "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\SQLCoderLLMService.cs",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LLM\\SQLCoderLLMService.cs",
+              "ViewState": "AgIAAFoAAAAAAAAAAAAkwOAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-03T09:11:43.861Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "DataBricksLLMService.cs",
+              "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
+              "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs",
+              "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs*",
+              "RelativeToolTip": "DynamicDasboardWebAPI\\Services\\LLM\\DataBricksLLMService.cs*",
+              "ViewState": "AgIAAJoAAAAAAAAAAAAkwBQBAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-03T09:11:43.988Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "AssistantModels.cs",
+              "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\Dashboard\\AssistantModels.cs",
+              "RelativeDocumentMoniker": "DynamicDashboardCommon\\Models\\Dashboard\\AssistantModels.cs",
+              "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardCommon\\Models\\Dashboard\\AssistantModels.cs",
+              "RelativeToolTip": "DynamicDashboardCommon\\Models\\Dashboard\\AssistantModels.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwBoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-04T14:27:14.995Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
               "RelativeDocumentMoniker": "DynamicDasboardWebAPI\\Program.cs",
               "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDasboardWebAPI\\Program.cs",
               "RelativeToolTip": "DynamicDasboardWebAPI\\Program.cs",
-              "ViewState": "AgIAAFcAAAAAAAAAAAAAAGkAAAADAAAAAAAAAA==",
+              "ViewState": "AgIAAFcAAAAAAAAAAAAAAIEAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-04T13:58:33.342Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 9,
               "Title": "DashboardBuilder.razor",
               "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DashboardBuilder.razor",
               "RelativeDocumentMoniker": "DynamicDashboardFE\\Pages\\Admin\\DashboardBuilder.razor",
               "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Pages\\Admin\\DashboardBuilder.razor",
               "RelativeToolTip": "DynamicDashboardFE\\Pages\\Admin\\DashboardBuilder.razor",
-              "ViewState": "AgIAAIYMAAAAAAAAAAAMwOQNAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAIYMAAAAAAAAAAAMwMoNAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-01-03T09:11:07.047Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "FloatingAIAssistant.razor",
               "DocumentMoniker": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\FloatingAIAssistant.razor",
               "RelativeDocumentMoniker": "DynamicDashboardFE\\Components\\FloatingAIAssistant.razor",
               "ToolTip": "C:\\DynamicDashboardProject\\DynamicDashboardWebAPI\\DynamicDasboardWebAPI\\DynamicDashboardFE\\Components\\FloatingAIAssistant.razor",
               "RelativeToolTip": "DynamicDashboardFE\\Components\\FloatingAIAssistant.razor",
-              "ViewState": "AgIAADgBAAAAAAAAAAAcwKQBAABaAAAAAAAAAA==",
+              "ViewState": "AgIAAF8CAAAAAAAAAAAowI4CAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-01-04T09:27:04.903Z",
               "EditorCaption": ""

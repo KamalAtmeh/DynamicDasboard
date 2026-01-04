@@ -603,14 +603,14 @@
             DataViewingTypeID = (int)suggestion.ComponentType,
             ChartType = suggestion.ChartType,
             QueryText = suggestion.SqlTemplate,
-            GridWidth = suggestion.GridWidth,    // ✅ USE FROM SUGGESTION
-            GridHeight = suggestion.GridHeight,  // ✅ USE FROM SUGGESTION
+            GridWidth = suggestion.GridWidth,
+            GridHeight = suggestion.GridHeight,
             GridX = 0,
             GridY = 0,
             IsVisible = true,
-            CreatedDate = DateTime.Now
+            CreatedAt = DateTime.UtcNow,      // ✅ FIXED
+            LastUpdated = DateTime.UtcNow     // ✅ ADDED
         };
-
         return component;
     }
 
@@ -651,5 +651,7 @@
         public int DataViewingTypeID { get; set; }
         public string ChartType { get; set; }
         public string SqlTemplate { get; set; }
+        public int GridWidth { get; set; }    // ✅ ADD THIS
+        public int GridHeight { get; set; }   // ✅ ADD THIS
     }
 }

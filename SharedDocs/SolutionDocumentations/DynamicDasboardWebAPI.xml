@@ -1040,17 +1040,7 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.AssistantService">
             <summary>
-            Service for AI assistant operations
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.AssistantService.#ctor(DynamicDasboardWebAPI.Services.ILogsService)">
-            <summary>
-            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.AssistantService"/> class.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Services.AssistantService.GenerateSuggestionsAsync(DynamicDashboardCommon.Models.AssistantChatRequest)">
-            <summary>
-            Generates smart suggestions for dashboard improvements
+            Service for AI assistant operations with LLM integration
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.IAssistantService">
@@ -2054,6 +2044,14 @@
             <param name="question">The natural language question</param>
             <param name="databaseSchema">The database schema</param>
             <returns>A simple explanation string</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateDashboardSuggestionsAsync(System.String,System.String)">
+            <summary>
+            Generates dashboard component suggestions based on database schema and existing components
+            </summary>
+            <param name="systemPrompt">The system prompt with instructions and JSON format</param>
+            <param name="userPrompt">The user prompt with dashboard context and schema</param>
+            <returns>JSON array of component suggestions</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.LLM.LLMServiceFactory">
             <summary>

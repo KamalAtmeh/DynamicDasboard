@@ -1,4 +1,4 @@
-using DynamicDashboardCommon.Enums;
+﻿using DynamicDashboardCommon.Enums;
 using DynamicDashboardCommon.Models;
 using DynamicDasboardWebAPI.Services.LLM;
 using System;
@@ -19,9 +19,6 @@ namespace DynamicDasboardWebAPI.Services
         private readonly ILLMService _llmService;
         private readonly DatabaseSchemaService _schemaService;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AssistantService"/> class.
-        /// </summary>
         public AssistantService(
             ILogsService logsService,
             ILLMService llmService,
@@ -32,9 +29,6 @@ namespace DynamicDasboardWebAPI.Services
             _schemaService = schemaService ?? throw new ArgumentNullException(nameof(schemaService));
         }
 
-        /// <summary>
-        /// Generates smart suggestions for dashboard improvements using LLM
-        /// </summary>
         public async Task<AssistantSuggestionResponse> GenerateSuggestionsAsync(AssistantChatRequest request)
         {
             try
@@ -49,8 +43,17 @@ namespace DynamicDasboardWebAPI.Services
                     };
                 }
 
-                // Get database schema
-                var schema = await _schemaService.GetDatabaseSchemaAsync(request.DatabaseId);
+                if (request.DatabaseId <= 0)
+                {
+                    return new AssistantSuggestionResponse
+                    {
+                        Success = false,
+                        Message = "Invalid database ID",
+                        Suggestions = new List<ComponentSuggestion>()
+                    };
+                }
+
+                var schema = await _schemaService.GetSchemaObject(request.DatabaseId, useCache: true);
                 if (schema == null)
                 {
                     return new AssistantSuggestionResponse
@@ -61,12 +64,11 @@ namespace DynamicDasboardWebAPI.Services
                     };
                 }
 
-                // Build the prompt
                 var systemPrompt = BuildSystemPrompt();
                 var userPrompt = BuildUserPrompt(request, schema);
 
-                // Call LLM
-                var llmResponse = await _llmService.GenerateTextAsync(
+                // ✅ FIXED: Use the CORRECT method for dashboard suggestions
+                var llmResponse = await _llmService.GenerateDashboardSuggestionsAsync(
                     systemPrompt,
                     userPrompt
                 );
@@ -81,7 +83,6 @@ namespace DynamicDasboardWebAPI.Services
                     };
                 }
 
-                // Parse LLM response
                 var suggestions = ParseLLMResponse(llmResponse);
 
                 return new AssistantSuggestionResponse
@@ -104,9 +105,6 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
-        /// <summary>
-        /// Builds the system prompt for LLM
-        /// </summary>
         private string BuildSystemPrompt()
         {
             return @"You are an expert business intelligence analyst, data analyst, and dashboard designer. Your role is to analyze database schemas and suggest valuable dashboard components that provide business insights.
@@ -153,10 +151,7 @@ Example output:
 ]";
         }
 
-        /// <summary>
-        /// Builds the user prompt with dashboard context
-        /// </summary>
-        private string BuildUserPrompt(AssistantChatRequest request, DatabaseSchemaModel schema)
+        private string BuildUserPrompt(AssistantChatRequest request, DatabaseSchema schema)
         {
             var prompt = new StringBuilder();
 
@@ -165,14 +160,17 @@ Example output:
 
             // Database info
             prompt.AppendLine("DATABASE SCHEMA:");
-            prompt.AppendLine($"Database: {schema.DatabaseName} ({schema.DatabaseType})");
+            prompt.AppendLine($"Database: {schema.Name}");
             prompt.AppendLine("Tables:");
 
-            foreach (var table in schema.Tables.Take(10)) // Limit to avoid huge prompts
+            foreach (var table in schema.Tables.Take(10))
             {
-                prompt.AppendLine($"- {table.TableName}");
-                var columns = table.Columns.Take(15).Select(c => $"{c.ColumnName} ({c.DataType})");
-                prompt.AppendLine($"  Columns: {string.Join(", ", columns)}");
+                prompt.AppendLine($"- {table.DBName ?? table.FriendlyName}");
+                if (table.Columns != null && table.Columns.Any())
+                {
+                    var columns = table.Columns.Take(15).Select(c => $"{c.DBName ?? c.FriendlyName} ({c.DataType})");
+                    prompt.AppendLine($"  Columns: {string.Join(", ", columns)}");
+                }
             }
 
             prompt.AppendLine();
@@ -183,7 +181,7 @@ Example output:
             prompt.AppendLine($"- Total Components: {components.Count}");
             prompt.AppendLine();
 
-            // Existing components with details
+            // Existing components with details INCLUDING SQL
             if (components.Any())
             {
                 prompt.AppendLine("EXISTING COMPONENTS:");
@@ -198,6 +196,12 @@ Example output:
                     if (!string.IsNullOrEmpty(comp.Description))
                     {
                         prompt.AppendLine($"   Description: {comp.Description}");
+                    }
+
+                    // SQL query for each component
+                    if (!string.IsNullOrEmpty(comp.QueryText))
+                    {
+                        prompt.AppendLine($"   SQL Query: {comp.QueryText}");
                     }
                 }
                 prompt.AppendLine();
@@ -216,14 +220,10 @@ Example output:
             return prompt.ToString();
         }
 
-        /// <summary>
-        /// Parses LLM response to extract suggestions
-        /// </summary>
         private List<ComponentSuggestion> ParseLLMResponse(string llmResponse)
         {
             try
             {
-                // Clean the response - remove markdown code blocks if present
                 var cleanedResponse = llmResponse.Trim();
 
                 if (cleanedResponse.StartsWith("```json"))
@@ -242,7 +242,6 @@ Example output:
 
                 cleanedResponse = cleanedResponse.Trim();
 
-                // Try to find JSON array in response
                 var startIndex = cleanedResponse.IndexOf('[');
                 var endIndex = cleanedResponse.LastIndexOf(']');
 
@@ -251,7 +250,6 @@ Example output:
                     cleanedResponse = cleanedResponse.Substring(startIndex, endIndex - startIndex + 1);
                 }
 
-                // Parse JSON
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -259,7 +257,6 @@ Example output:
 
                 var suggestions = JsonSerializer.Deserialize<List<ComponentSuggestion>>(cleanedResponse, options);
 
-                // Validate and limit to 5
                 return suggestions?
                     .Where(s => !string.IsNullOrEmpty(s.Title) && !string.IsNullOrEmpty(s.SqlTemplate))
                     .Take(5)
@@ -273,9 +270,6 @@ Example output:
             }
         }
 
-        /// <summary>
-        /// Gets component type name from ID
-        /// </summary>
         private string GetComponentTypeName(int typeId)
         {
             return typeId switch

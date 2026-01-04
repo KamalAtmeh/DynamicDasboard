@@ -261,6 +261,21 @@ Do NOT generate SQL - only explain what the chart will show.";
             }
         }
 
+        public async Task<string> GenerateDashboardSuggestionsAsync(string systemPrompt, string userPrompt)
+        {
+            try
+            {
+                // Call Claude API with system and user prompts
+                var response = await CallDatabricksApiAsync(systemPrompt, userPrompt);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error generating dashboard suggestions with Claude: {ex.Message}", ex);
+            }
+        }
+
         #region Private Helper Methods
 
         private string BuildSQLScriptwithExplanationSystemPrompt(string databaseSchema, Dictionary<string, string> adminDescriptions)

@@ -86,5 +86,14 @@ namespace DynamicDasboardWebAPI.Services.LLM
         /// <returns>A simple explanation string</returns>
         Task<string> GenerateChartExplanationAsync(string question, string databaseSchema);
 
+
+        /// <summary>
+        /// Generates dashboard component suggestions based on database schema and existing components
+        /// </summary>
+        /// <param name="systemPrompt">The system prompt with instructions and JSON format</param>
+        /// <param name="userPrompt">The user prompt with dashboard context and schema</param>
+        /// <returns>JSON array of component suggestions</returns>
+        Task<string> GenerateDashboardSuggestionsAsync(string systemPrompt, string userPrompt);
+
     }
 }

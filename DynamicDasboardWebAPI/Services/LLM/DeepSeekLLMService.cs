@@ -231,6 +231,22 @@ Do NOT generate SQL - only explain what the chart will show.";
             }
         }
 
+
+        public async Task<string> GenerateDashboardSuggestionsAsync(string systemPrompt, string userPrompt)
+        {
+            try
+            {
+                // Call Claude API with system and user prompts
+                var response = await CallDeepSeekApiAsync(systemPrompt, userPrompt);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error generating dashboard suggestions with Claude: {ex.Message}", ex);
+            }
+        }
+
         #endregion
 
 
@@ -317,7 +333,7 @@ Do NOT generate SQL - only explain what the chart will show.";
                     new { role = "user", content = userPrompt }
                 },
                 temperature = 0.2, //temp
-                max_tokens = 8000 //temp
+                max_tokens = 16000 //temp
             };
 
             var content = new StringContent(
