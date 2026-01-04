@@ -303,6 +303,8 @@
 @code {
     [Parameter]
     public int DashboardId { get; set; }
+
+
     
     [Parameter]
     public DashboardModel Dashboard { get; set; }
@@ -321,6 +323,7 @@
     private string generatedSql = "";
     private string errorMessage = "";
     private string editedSql = "";
+    private int nextTempComponentId = -1;
     
     // Enums
     private enum WorkflowType
@@ -519,41 +522,38 @@
     {
         suggestionStep = SuggestionStep.AddingComponent;
         StateHasChanged();
-        
-        await Task.Delay(500); // Small delay for UX
-        
+
+        await Task.Delay(500);
+
         try
         {
-            // Create component
             var component = new DashboardComponent
             {
-                ComponentID = 0, // Will be set by database
+                ComponentID = nextTempComponentId--,  // ✅ FIX: -1, -2, -3, etc.
                 DashboardID = Dashboard.DashboardID,
                 Title = selectedSuggestion.Title,
                 Description = selectedSuggestion.Description,
                 DataViewingTypeID = (int)selectedSuggestion.ComponentType,
                 ChartType = selectedSuggestion.ChartType,
                 QueryText = generatedSql,
-                VisualizationConfig = selectedSuggestion.ChartType != null 
+                VisualizationConfig = selectedSuggestion.ChartType != null
                     ? System.Text.Json.JsonSerializer.Serialize(new { chartType = selectedSuggestion.ChartType })
                     : "{}",
                 GridX = 0,
                 GridY = GetNextAvailableY(),
-                GridWidth = 6,
-                GridHeight = 3,
+                GridWidth = selectedSuggestion.GridWidth,    // ✅ Use from suggestion
+                GridHeight = selectedSuggestion.GridHeight,  // ✅ Use from suggestion
                 IsVisible = true,
                 IsAIGenerated = true,
                 CreatedAt = DateTime.UtcNow,
                 LastUpdated = DateTime.UtcNow
             };
-            
-            // Add to dashboard
+
             Dashboard.Components ??= new List<DashboardComponent>();
             Dashboard.Components.Add(component);
-            
-            // Notify parent
+
             await OnComponentAdded.InvokeAsync();
-            
+
             suggestionStep = SuggestionStep.Success;
         }
         catch (Exception ex)

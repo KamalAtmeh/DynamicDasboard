@@ -203,6 +203,7 @@
 
                                         @if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
                                         {
+                                            <ComponentNumber Component="component" Data="GetComponentData(component.ComponentID)" />
                                             @* KPI Display *@
                                             <div class="kpi-display">
                                                 @if (data.Any())
@@ -410,7 +411,7 @@
         @if (!isPreviewMode)
         {
             <div class="builder-sidebar builder-sidebar-right">
-                @if (selectedComponentId > 0 && selectedComponent != null)
+                @if (selectedComponentId != 0 && selectedComponent != null)
                 {
                     <div class="properties-panel">
                         <div class="properties-header">
@@ -552,8 +553,52 @@
                                     </div>
                                 </div>
                             }
-
                             @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
+                            {
+                                <div class="property-section">
+                                    <h6><i class="fas fa-table me-2"></i>Table Options</h6>
+
+                                    <!-- Page Size -->
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Rows Per Page</label>
+                                        <select class="form-select form-select-sm" @bind="tablePageSize">
+                                            <option value="10">10 rows</option>
+                                            <option value="25">25 rows</option>
+                                            <option value="50">50 rows</option>
+                                            <option value="100">100 rows</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Features -->
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" @bind="tableEnablePagination" id="tablePagination">
+                                        <label class="form-check-label" for="tablePagination">
+                                            <i class="fas fa-file-alt me-1"></i> Enable Pagination
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" @bind="tableEnableSearch" id="tableSearch">
+                                        <label class="form-check-label" for="tableSearch">
+                                            <i class="fas fa-search me-1"></i> Enable Search
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" @bind="tableEnableSort" id="tableSort">
+                                        <label class="form-check-label" for="tableSort">
+                                            <i class="fas fa-sort me-1"></i> Enable Sorting
+                                        </label>
+                                    </div>
+
+                                    <!-- Apply Button -->
+                                    <button class="btn btn-sm btn-primary mt-2 w-100" @onclick="ApplyTableOptions">
+                                        <i class="fas fa-check me-1"></i> Apply Table Options
+                                    </button>
+                                </div>
+                            }
+
+                            @* @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
                             {
                                 <!-- TABLE CONFIGURATION -->
                                 <div class="property-section">
@@ -597,71 +642,67 @@
                                     </div>
                                 </div>
                             }
+ *@
 
                             @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
                             {
-                                <!-- KPI CONFIGURATION -->
                                 <div class="property-section">
-                                    <label class="property-label">
-                                        <i class="fas fa-tachometer-alt me-2"></i>
-                                        KPI Style
-                                    </label>
+                                    <h6><i class="fas fa-tachometer-alt me-2"></i>KPI Options</h6>
 
-                                    <div class="kpi-style-grid">
-                                        <div class="kpi-style-option @(GetKPIStyle() == "default" ? "selected" : "")"
-                                             @onclick='() => UpdateKPIStyle("default")'>
-                                            <div class="kpi-preview kpi-default">
-                                                <span class="kpi-value">150</span>
-                                                <span class="kpi-label">Sales</span>
-                                            </div>
-                                            <span>Default</span>
+                                    <!-- Format Type -->
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Number Format</label>
+                                        <select class="form-select form-select-sm" @bind="kpiNumberFormat">
+                                            <option value="number">Number (1,234.56)</option>
+                                            <option value="currency">Currency ($1,234.56)</option>
+                                            <option value="percentage">Percentage (12.34%)</option>
+                                            <option value="compact">Compact (1.2K, 1.5M)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Decimals -->
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Decimal Places</label>
+                                        <input type="number" class="form-control form-control-sm"
+                                               @bind="kpiDecimalPlaces" min="0" max="4" />
+                                    </div>
+
+                                    <!-- Prefix & Suffix -->
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label">Prefix</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                   @bind="kpiPrefix" placeholder="$" maxlength="5" />
                                         </div>
-                                        <div class="kpi-style-option @(GetKPIStyle() == "gradient" ? "selected" : "")"
-                                             @onclick='() => UpdateKPIStyle("gradient")'>
-                                            <div class="kpi-preview kpi-gradient">
-                                                <span class="kpi-value">150</span>
-                                                <span class="kpi-label">Sales</span>
-                                            </div>
-                                            <span>Gradient</span>
-                                        </div>
-                                        <div class="kpi-style-option @(GetKPIStyle() == "minimal" ? "selected" : "")"
-                                             @onclick='() => UpdateKPIStyle("minimal")'>
-                                            <div class="kpi-preview kpi-minimal">
-                                                <span class="kpi-value">150</span>
-                                                <span class="kpi-label">Sales</span>
-                                            </div>
-                                            <span>Minimal</span>
+                                        <div class="col-6">
+                                            <label class="form-label">Suffix</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                   @bind="kpiSuffix" placeholder="%" maxlength="5" />
                                         </div>
                                     </div>
 
-                                    <div class="mt-3">
-                                        <label class="form-label">Color Theme</label>
-                                        <div class="color-picker-grid">
-                                            <div class="color-option color-blue @(GetKPIColor() == "blue" ? "selected" : "")"
-                                                 @onclick='() => UpdateKPIColor("blue")'>
-                                                <div class="color-circle" style="background: #667EEA;"></div>
-                                            </div>
-                                            <div class="color-option color-green @(GetKPIColor() == "green" ? "selected" : "")"
-                                                 @onclick='() => UpdateKPIColor("green")'>
-                                                <div class="color-circle" style="background: #48BB78;"></div>
-                                            </div>
-                                            <div class="color-option color-purple @(GetKPIColor() == "purple" ? "selected" : "")"
-                                                 @onclick='() => UpdateKPIColor("purple")'>
-                                                <div class="color-circle" style="background: #9F7AEA;"></div>
-                                            </div>
-                                            <div class="color-option color-orange @(GetKPIColor() == "orange" ? "selected" : "")"
-                                                 @onclick='() => UpdateKPIColor("orange")'>
-                                                <div class="color-circle" style="background: #F6AD55;"></div>
-                                            </div>
-                                            <div class="color-option color-teal @(GetKPIColor() == "teal" ? "selected" : "")"
-                                                 @onclick='() => UpdateKPIColor("teal")'>
-                                                <div class="color-circle" style="background: #14B8A6;"></div>
-                                            </div>
-                                        </div>
+                                    <!-- Icon -->
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Icon (Font Awesome)</label>
+                                        <input type="text" class="form-control form-control-sm"
+                                               @bind="kpiIcon" placeholder="dollar-sign" />
+                                        <small class="text-muted">Without 'fa-' prefix</small>
                                     </div>
+
+                                    <!-- Trend -->
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" @bind="kpiShowTrend" id="kpiTrend">
+                                        <label class="form-check-label" for="kpiTrend">
+                                            <i class="fas fa-chart-line me-1"></i> Show Trend Indicator
+                                        </label>
+                                    </div>
+
+                                    <!-- Apply Button -->
+                                    <button class="btn btn-sm btn-primary w-100" @onclick="ApplyKPIOptions">
+                                        <i class="fas fa-check me-1"></i> Apply KPI Options
+                                    </button>
                                 </div>
                             }
-
                             <!-- COMPONENT SIZE - SAME GRAPHICS -->
                             <div class="property-section">
                                 <label class="property-label">
@@ -2244,6 +2285,20 @@
 
     private bool isEditingSql = false;
     private string editingSqlText = "";
+
+    // Table Options
+    private int tablePageSize = 10;
+    private bool tableEnablePagination = true;
+    private bool tableEnableSearch = true;
+    private bool tableEnableSort = true;
+
+    // KPI Options
+    private string kpiNumberFormat = "number";
+    private int kpiDecimalPlaces = 2;
+    private string kpiPrefix = "";
+    private string kpiSuffix = "";
+    private string kpiIcon = "tachometer-alt";
+    private bool kpiShowTrend = false;
 
 
 
@@ -3992,5 +4047,38 @@
         };
     }
 
+    // Apply methods
+    private void ApplyTableOptions()
+    {
+        if (selectedComponent == null) return;
 
+        var config = new
+        {
+            pageSize = tablePageSize,
+            enablePagination = tableEnablePagination,
+            enableSearch = tableEnableSearch,
+            enableSort = tableEnableSort
+        };
+
+        selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
+        ToastService.ShowSuccess("Table options applied!");
+    }
+
+    private void ApplyKPIOptions()
+    {
+        if (selectedComponent == null) return;
+
+        var config = new
+        {
+            numberFormat = kpiNumberFormat,
+            decimalPlaces = kpiDecimalPlaces,
+            prefix = kpiPrefix,
+            suffix = kpiSuffix,
+            icon = kpiIcon,
+            showTrend = kpiShowTrend
+        };
+
+        selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
+        ToastService.ShowSuccess("KPI options applied!");
+    }
 }
