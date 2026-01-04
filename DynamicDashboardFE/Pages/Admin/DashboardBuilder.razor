@@ -739,6 +739,8 @@
                 }
             </div>
         }
+
+
     </div>
 
     <style>
@@ -1552,7 +1554,11 @@
                 border-radius: 4px;
             }
     </style>
-
+    <!-- AI Assistant - Add at the end, before closing div -->
+<FloatingAIAssistant 
+    DashboardId="@dashboard.DashboardID"
+    Dashboard="@dashboard"
+    OnComponentAdded="@OnAIComponentAdded" />
 </div>
 
 <!-- Template Selection Modal -->
@@ -2314,6 +2320,18 @@
                 CategoryID = 1
             };
         }
+    }
+
+    private async Task OnAIComponentAdded()
+    {
+        // Mark as unsaved
+        hasUnsavedChanges = true;
+
+        // Refresh UI
+        StateHasChanged();
+
+        // Show success toast
+        ToastService.ShowSuccess("Component added successfully!");
     }
 
     private string GetChartType(string visualizationConfig)

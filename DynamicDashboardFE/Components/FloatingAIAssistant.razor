@@ -1,0 +1,650 @@
+@using DynamicDashboardCommon.Models
+@using DynamicDashboardCommon.Enums
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<!-- Floating AI Assistant Container -->
+<div class="ai-assistant-container @(isOpen ? "open" : "")">
+    
+    <!-- Floating Button -->
+    @if (!isOpen)
+    {
+        <button class="ai-floating-btn" @onclick="ToggleAssistant" title="AI Assistant">
+            <i class="fas fa-robot"></i>
+            <span class="ai-pulse-ring"></span>
+        </button>
+    }
+    
+    <!-- Assistant Panel -->
+    @if (isOpen)
+    {
+        <div class="ai-panel">
+            
+            <!-- Header -->
+            <div class="ai-header">
+                <div class="ai-header-info">
+                    <i class="fas fa-robot me-2"></i>
+                    <div>
+                        <h6 class="mb-0">AI Dashboard Assistant</h6>
+                        <small class="text-muted">Let me help you build better dashboards</small>
+                    </div>
+                </div>
+                <button class="btn-icon-close" @onclick="ToggleAssistant">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="ai-body">
+                
+                @if (currentWorkflow == WorkflowType.None)
+                {
+                    <!-- Main Menu -->
+                    <div class="ai-main-menu">
+                        <h6 class="mb-3">I can help you with:</h6>
+                        
+                        <button class="ai-action-btn" @onclick="StartSuggestionsWorkflow">
+                            <div class="ai-action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <div class="ai-action-content">
+                                <strong>Get Suggestions</strong>
+                                <small>AI-powered dashboard improvements</small>
+                            </div>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <button class="ai-action-btn" disabled>
+                            <div class="ai-action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="ai-action-content">
+                                <strong>Modify Component</strong>
+                                <small>Coming soon...</small>
+                            </div>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <button class="ai-action-btn" disabled>
+                            <div class="ai-action-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                <i class="fas fa-trash-alt"></i>
+                            </div>
+                            <div class="ai-action-content">
+                                <strong>Remove Component</strong>
+                                <small>Coming soon...</small>
+                            </div>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <button class="ai-action-btn" disabled>
+                            <div class="ai-action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="ai-action-content">
+                                <strong>Auto Layout</strong>
+                                <small>Coming soon...</small>
+                            </div>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                }
+                else if (currentWorkflow == WorkflowType.GetSuggestions)
+                {
+                    <!-- Get Suggestions Workflow -->
+                    @if (suggestionStep == SuggestionStep.Loading)
+                    {
+                        <div class="ai-loading-state">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p>🔍 Analyzing your dashboard...</p>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.ShowingSuggestions)
+                    {
+                        <div class="ai-suggestions-view">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    Suggested Improvements
+                                </h6>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="BackToMainMenu">
+                                    <i class="fas fa-arrow-left me-1"></i> Back
+                                </button>
+                            </div>
+                            
+                            @if (suggestions.Any())
+                            {
+                                <div class="ai-suggestions-list">
+                                    @foreach (var suggestion in suggestions)
+                                    {
+                                        <div class="ai-suggestion-card">
+                                            <div class="suggestion-icon">
+                                                <i class="fas @suggestion.Icon"></i>
+                                            </div>
+                                            <div class="suggestion-content">
+                                                <strong>@suggestion.Title</strong>
+                                                <small>@suggestion.Description</small>
+                                            </div>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => SelectSuggestion(suggestion)">
+                                                Add This →
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="ai-empty-state">
+                                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                    <h6>Dashboard Looks Great!</h6>
+                                    <p class="text-muted">
+                                        I don't have any suggestions right now. Your dashboard seems well balanced!
+                                    </p>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.GeneratingSQL)
+                    {
+                        <div class="ai-loading-state">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p>⚡ Generating SQL query...</p>
+                            <small class="text-muted">This might take a few seconds</small>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.SqlGenerationFailed)
+                    {
+                        <div class="ai-error-state">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <h6>Failed to Generate SQL</h6>
+                            <p class="text-muted">@errorMessage</p>
+                            <div class="mt-3">
+                                <button class="btn btn-sm btn-primary me-2" @onclick="() => SelectSuggestion(selectedSuggestion)">
+                                    <i class="fas fa-redo me-1"></i> Try Again
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="BackToSuggestions">
+                                    <i class="fas fa-arrow-left me-1"></i> Back
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.ConfirmingSQL)
+                    {
+                        <div class="ai-sql-confirmation">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-code text-primary me-2"></i>
+                                    Review SQL Query
+                                </h6>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    For: <strong>@selectedSuggestion?.Title</strong>
+                                </small>
+                            </div>
+                            
+                            <div class="sql-preview-box">
+                                <div class="sql-header">
+                                    <span>Generated SQL</span>
+                                    <button class="btn-copy-sql" @onclick="CopySQLToClipboard">
+                                        <i class="fas fa-copy me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <pre class="sql-code">@generatedSql</pre>
+                            </div>
+                            
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-success flex-fill" @onclick="ConfirmAndAddComponent">
+                                    <i class="fas fa-check me-1"></i> Looks Good
+                                </button>
+                                <button class="btn btn-warning" @onclick="EditSQL">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="CancelSqlConfirmation">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.EditingSQL)
+                    {
+                        <div class="ai-sql-editor">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-edit text-warning me-2"></i>
+                                    Edit SQL Query
+                                </h6>
+                            </div>
+                            
+                            <textarea class="form-control sql-editor-textarea" 
+                                      @bind="generatedSql" 
+                                      rows="10"
+                                      spellcheck="false"></textarea>
+                            
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Make sure your SQL is valid before confirming
+                            </small>
+                            
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-success flex-fill" @onclick="SaveEditedSQL">
+                                    <i class="fas fa-check me-1"></i> Save Changes
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="CancelSQLEdit">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.AddingComponent)
+                    {
+                        <div class="ai-loading-state">
+                            <div class="spinner-border text-success mb-3" role="status"></div>
+                            <p>✨ Adding component to dashboard...</p>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.Success)
+                    {
+                        <div class="ai-success-state">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h6>Component Added Successfully!</h6>
+                            <p class="text-muted">
+                                "<strong>@selectedSuggestion?.Title</strong>" has been added to your dashboard.
+                            </p>
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-primary flex-fill" @onclick="BackToSuggestions">
+                                    <i class="fas fa-plus me-1"></i> Add Another
+                                </button>
+                                <button class="btn btn-outline-secondary flex-fill" @onclick="BackToMainMenu">
+                                    <i class="fas fa-home me-1"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.AddFailed)
+                    {
+                        <div class="ai-error-state">
+                            <i class="fas fa-times-circle fa-3x text-danger mb-3"></i>
+                            <h6>Failed to Add Component</h6>
+                            <p class="text-muted">@errorMessage</p>
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-primary me-2" @onclick="ConfirmAndAddComponent">
+                                    <i class="fas fa-redo me-1"></i> Try Again
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="BackToSuggestions">
+                                    <i class="fas fa-arrow-left me-1"></i> Back
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (suggestionStep == SuggestionStep.NoSuggestions)
+                    {
+                        <div class="ai-empty-state">
+                            <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                            <h6>Dashboard Looks Perfect!</h6>
+                            <p class="text-muted">
+                                I couldn't find any suggestions for improvement. Your dashboard is well-designed!
+                            </p>
+                            <button class="btn btn-outline-primary mt-3" @onclick="BackToMainMenu">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Menu
+                            </button>
+                        </div>
+                    }
+                }
+                
+            </div>
+            
+        </div>
+    }
+    
+</div>
+
+@code {
+    [Parameter]
+    public int DashboardId { get; set; }
+    
+    [Parameter]
+    public DashboardModel Dashboard { get; set; }
+    
+    [Parameter]
+    public EventCallback OnComponentAdded { get; set; }
+    
+    // State
+    private bool isOpen = false;
+    private WorkflowType currentWorkflow = WorkflowType.None;
+    private SuggestionStep suggestionStep = SuggestionStep.None;
+    
+    // Suggestions workflow
+    private List<SuggestionItem> suggestions = new();
+    private SuggestionItem selectedSuggestion = null;
+    private string generatedSql = "";
+    private string errorMessage = "";
+    private string editedSql = "";
+    
+    // Enums
+    private enum WorkflowType
+    {
+        None,
+        GetSuggestions,
+        ModifyComponent,
+        RemoveComponent,
+        AutoLayout
+    }
+    
+    private enum SuggestionStep
+    {
+        None,
+        Loading,
+        ShowingSuggestions,
+        NoSuggestions,
+        GeneratingSQL,
+        SqlGenerationFailed,
+        ConfirmingSQL,
+        EditingSQL,
+        AddingComponent,
+        Success,
+        AddFailed
+    }
+    
+    // Toggle assistant
+    private void ToggleAssistant()
+    {
+        isOpen = !isOpen;
+        if (!isOpen)
+        {
+            ResetWorkflow();
+        }
+    }
+    
+    // Navigation
+    private void BackToMainMenu()
+    {
+        ResetWorkflow();
+    }
+    
+    private void BackToSuggestions()
+    {
+        suggestionStep = SuggestionStep.ShowingSuggestions;
+        selectedSuggestion = null;
+        generatedSql = "";
+        errorMessage = "";
+    }
+    
+    private void ResetWorkflow()
+    {
+        currentWorkflow = WorkflowType.None;
+        suggestionStep = SuggestionStep.None;
+        selectedSuggestion = null;
+        generatedSql = "";
+        errorMessage = "";
+        suggestions.Clear();
+    }
+    
+    // === GET SUGGESTIONS WORKFLOW ===
+    
+    private async Task StartSuggestionsWorkflow()
+    {
+        // Validate dashboard has database
+        if (Dashboard.DatabaseID <= 0)
+        {
+            errorMessage = "Please select a database for your dashboard first";
+            suggestionStep = SuggestionStep.AddFailed;
+            currentWorkflow = WorkflowType.GetSuggestions;
+            return;
+        }
+        
+        currentWorkflow = WorkflowType.GetSuggestions;
+        suggestionStep = SuggestionStep.Loading;
+        StateHasChanged();
+        
+        await Task.Delay(500); // Small delay for UX
+        
+        // Generate suggestions
+        suggestions = GetSuggestions();
+        
+        if (suggestions.Any())
+        {
+            suggestionStep = SuggestionStep.ShowingSuggestions;
+        }
+        else
+        {
+            suggestionStep = SuggestionStep.NoSuggestions;
+        }
+    }
+    
+    private List<SuggestionItem> GetSuggestions()
+    {
+        var result = new List<SuggestionItem>();
+        
+        // Check what's missing and suggest accordingly
+        var hasKPI = Dashboard.Components?.Any(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Number) ?? false;
+        var hasPieChart = Dashboard.Components?.Any(c => c.ChartType == "pie") ?? false;
+        var hasBarChart = Dashboard.Components?.Any(c => c.ChartType == "bar") ?? false;
+        var hasLineChart = Dashboard.Components?.Any(c => c.ChartType == "line") ?? false;
+        var hasTable = Dashboard.Components?.Any(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Table) ?? false;
+        
+        // Suggest KPI if missing
+        if (!hasKPI)
+        {
+            result.Add(new SuggestionItem
+            {
+                Title = "Total Revenue KPI",
+                Description = "Track your total revenue at a glance",
+                Icon = "fa-dollar-sign",
+                ComponentType = DataViewingTypeEnum.Number,
+                ChartType = null,
+                SqlTemplate = "SELECT SUM(Amount) as Total FROM Sales WHERE Year = YEAR(GETDATE())"
+            });
+        }
+        
+        // Suggest pie chart if missing
+        if (!hasPieChart)
+        {
+            result.Add(new SuggestionItem
+            {
+                Title = "Sales Distribution Chart",
+                Description = "See your sales breakdown by category",
+                Icon = "fa-chart-pie",
+                ComponentType = DataViewingTypeEnum.Chart,
+                ChartType = "pie",
+                SqlTemplate = "SELECT Category, SUM(Amount) as Total FROM Sales GROUP BY Category"
+            });
+        }
+        
+        // Suggest bar chart if missing
+        if (!hasBarChart)
+        {
+            result.Add(new SuggestionItem
+            {
+                Title = "Monthly Sales Chart",
+                Description = "Compare sales across months",
+                Icon = "fa-chart-bar",
+                ComponentType = DataViewingTypeEnum.Chart,
+                ChartType = "bar",
+                SqlTemplate = "SELECT DATENAME(month, SaleDate) as Month, SUM(Amount) as Total FROM Sales GROUP BY DATENAME(month, SaleDate)"
+            });
+        }
+        
+        // Suggest line chart if missing
+        if (!hasLineChart)
+        {
+            result.Add(new SuggestionItem
+            {
+                Title = "Revenue Trend Chart",
+                Description = "Track revenue trends over time",
+                Icon = "fa-chart-line",
+                ComponentType = DataViewingTypeEnum.Chart,
+                ChartType = "line",
+                SqlTemplate = "SELECT SaleDate, SUM(Amount) as Total FROM Sales GROUP BY SaleDate ORDER BY SaleDate"
+            });
+        }
+        
+        // Suggest table if missing
+        if (!hasTable)
+        {
+            result.Add(new SuggestionItem
+            {
+                Title = "Recent Transactions Table",
+                Description = "View your latest sales records",
+                Icon = "fa-table",
+                ComponentType = DataViewingTypeEnum.Table,
+                ChartType = null,
+                SqlTemplate = "SELECT TOP 10 * FROM Sales ORDER BY SaleDate DESC"
+            });
+        }
+        
+        return result.Take(5).ToList();
+    }
+    
+    private async Task SelectSuggestion(SuggestionItem suggestion)
+    {
+        selectedSuggestion = suggestion;
+        suggestionStep = SuggestionStep.GeneratingSQL;
+        StateHasChanged();
+        
+        await Task.Delay(800); // Simulate SQL generation
+        
+        try
+        {
+            // Use template SQL for now (can be enhanced with AI later)
+            generatedSql = suggestion.SqlTemplate;
+            
+            if (string.IsNullOrWhiteSpace(generatedSql))
+            {
+                throw new Exception("SQL template is empty");
+            }
+            
+            suggestionStep = SuggestionStep.ConfirmingSQL;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            suggestionStep = SuggestionStep.SqlGenerationFailed;
+        }
+    }
+    
+    private void EditSQL()
+    {
+        editedSql = generatedSql;
+        suggestionStep = SuggestionStep.EditingSQL;
+    }
+    
+    private void SaveEditedSQL()
+    {
+        if (string.IsNullOrWhiteSpace(editedSql))
+        {
+            errorMessage = "SQL cannot be empty";
+            return;
+        }
+        
+        if (!ValidateSQL(editedSql))
+        {
+            errorMessage = "Invalid SQL - must start with SELECT";
+            return;
+        }
+        
+        generatedSql = editedSql.Trim();
+        suggestionStep = SuggestionStep.ConfirmingSQL;
+    }
+    
+    private void CancelSQLEdit()
+    {
+        editedSql = "";
+        suggestionStep = SuggestionStep.ConfirmingSQL;
+    }
+    
+    private void CancelSqlConfirmation()
+    {
+        BackToSuggestions();
+    }
+    
+    private async Task ConfirmAndAddComponent()
+    {
+        suggestionStep = SuggestionStep.AddingComponent;
+        StateHasChanged();
+        
+        await Task.Delay(500); // Small delay for UX
+        
+        try
+        {
+            // Create component
+            var component = new DashboardComponent
+            {
+                ComponentID = 0, // Will be set by database
+                DashboardID = Dashboard.DashboardID,
+                Title = selectedSuggestion.Title,
+                Description = selectedSuggestion.Description,
+                DataViewingTypeID = (int)selectedSuggestion.ComponentType,
+                ChartType = selectedSuggestion.ChartType,
+                QueryText = generatedSql,
+                VisualizationConfig = selectedSuggestion.ChartType != null 
+                    ? System.Text.Json.JsonSerializer.Serialize(new { chartType = selectedSuggestion.ChartType })
+                    : "{}",
+                GridX = 0,
+                GridY = GetNextAvailableY(),
+                GridWidth = 6,
+                GridHeight = 3,
+                IsVisible = true,
+                IsAIGenerated = true,
+                CreatedAt = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow
+            };
+            
+            // Add to dashboard
+            Dashboard.Components ??= new List<DashboardComponent>();
+            Dashboard.Components.Add(component);
+            
+            // Notify parent
+            await OnComponentAdded.InvokeAsync();
+            
+            suggestionStep = SuggestionStep.Success;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error adding component: {ex.Message}";
+            suggestionStep = SuggestionStep.AddFailed;
+        }
+    }
+    
+    private async Task CopySQLToClipboard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", generatedSql);
+        }
+        catch
+        {
+            // Silently fail if clipboard not available
+        }
+    }
+    
+    // Helper methods
+    private bool ValidateSQL(string sql)
+    {
+        if (string.IsNullOrWhiteSpace(sql))
+            return false;
+        
+        var trimmed = sql.TrimStart().ToUpper();
+        return trimmed.StartsWith("SELECT") || trimmed.StartsWith("WITH");
+    }
+    
+    private int GetNextAvailableY()
+    {
+        if (Dashboard.Components == null || !Dashboard.Components.Any())
+            return 0;
+        
+        return Dashboard.Components.Max(c => c.GridY + c.GridHeight);
+    }
+    
+    // Model
+    private class SuggestionItem
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Icon { get; set; }
+        public DataViewingTypeEnum ComponentType { get; set; }
+        public string ChartType { get; set; }
+        public string SqlTemplate { get; set; }
+    }
+}
