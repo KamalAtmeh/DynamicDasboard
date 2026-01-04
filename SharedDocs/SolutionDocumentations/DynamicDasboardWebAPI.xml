@@ -95,6 +95,23 @@
             <param name="detailId">The test detail ID.</param>
             <returns>Comprehensive dataset comparison result.</returns>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.DashboardAssistantController">
+            <summary>
+            API controller for dashboard AI assistant operations
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardAssistantController.#ctor(DynamicDasboardWebAPI.Services.IAssistantService,DynamicDasboardWebAPI.Services.ILogsService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Controllers.DashboardAssistantController"/> class.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardAssistantController.GetSuggestions(DynamicDashboardCommon.Models.AssistantChatRequest)">
+            <summary>
+            Generates smart suggestions for dashboard improvements
+            </summary>
+            <param name="request">Request containing dashboard and components info</param>
+            <returns>List of suggested components</returns>
+        </member>
         <member name="T:DynamicDasboardWebAPI.Controllers.DashboardController">
             <summary>
             API controller for dashboard operations.
@@ -1020,6 +1037,33 @@
             <summary>
             Gets details of a specific query by ID (default DB).
             </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.AssistantService">
+            <summary>
+            Service for AI assistant operations
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.AssistantService.#ctor(DynamicDasboardWebAPI.Services.ILogsService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DynamicDasboardWebAPI.Services.AssistantService"/> class.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.AssistantService.GenerateSuggestionsAsync(DynamicDashboardCommon.Models.AssistantChatRequest)">
+            <summary>
+            Generates smart suggestions for dashboard improvements
+            </summary>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.IAssistantService">
+            <summary>
+            Interface for AI assistant services
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IAssistantService.GenerateSuggestionsAsync(DynamicDashboardCommon.Models.AssistantChatRequest)">
+            <summary>
+            Generates smart suggestions for dashboard improvements
+            </summary>
+            <param name="request">Request containing dashboard info</param>
+            <returns>List of component suggestions</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService">
             <summary>

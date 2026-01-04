@@ -120,6 +120,15 @@ builder.Services.AddScoped<IDashboardGenerationService>(provider =>
     return new DashboardGenerationService(llmService, schemaService, logsService, templatesPath, configuration); // ADD configuration
 });
 
+builder.Services.AddScoped<IAssistantService>(provider =>
+{
+    var logsService = provider.GetRequiredService<ILogsService>();
+    var llmService = provider.GetRequiredService<ILLMService>();
+    var schemaService = provider.GetRequiredService<DatabaseSchemaService>();
+
+    return new AssistantService(logsService, llmService, schemaService);
+});
+
 
 // Register HttpClient with a base address
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(15) });

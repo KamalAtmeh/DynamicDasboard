@@ -393,16 +393,14 @@
             currentWorkflow = WorkflowType.GetSuggestions;
             return;
         }
-        
+
         currentWorkflow = WorkflowType.GetSuggestions;
         suggestionStep = SuggestionStep.Loading;
         StateHasChanged();
-        
-        await Task.Delay(500); // Small delay for UX
-        
-        // Generate suggestions
-        suggestions = GetSuggestions();
-        
+
+        // ✅ CHANGE THIS - Call backend instead of local method
+        suggestions = await GetSuggestionsFromBackend();
+
         if (suggestions.Any())
         {
             suggestionStep = SuggestionStep.ShowingSuggestions;
@@ -413,88 +411,46 @@
         }
     }
     
-    private List<SuggestionItem> GetSuggestions()
+    private async Task<List<SuggestionItem>> GetSuggestionsFromBackend()
     {
-        var result = new List<SuggestionItem>();
-        
-        // Check what's missing and suggest accordingly
-        var hasKPI = Dashboard.Components?.Any(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Number) ?? false;
-        var hasPieChart = Dashboard.Components?.Any(c => c.ChartType == "pie") ?? false;
-        var hasBarChart = Dashboard.Components?.Any(c => c.ChartType == "bar") ?? false;
-        var hasLineChart = Dashboard.Components?.Any(c => c.ChartType == "line") ?? false;
-        var hasTable = Dashboard.Components?.Any(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Table) ?? false;
-        
-        // Suggest KPI if missing
-        if (!hasKPI)
+        try
         {
-            result.Add(new SuggestionItem
+            var request = new AssistantChatRequest
             {
-                Title = "Total Revenue KPI",
-                Description = "Track your total revenue at a glance",
-                Icon = "fa-dollar-sign",
-                ComponentType = DataViewingTypeEnum.Number,
-                ChartType = null,
-                SqlTemplate = "SELECT SUM(Amount) as Total FROM Sales WHERE Year = YEAR(GETDATE())"
-            });
+                DashboardId = Dashboard.DashboardID,
+                DatabaseId = Dashboard.DatabaseID,  // ✅ ADD THIS
+                CurrentComponents = Dashboard.Components ?? new List<DashboardComponent>()
+            };
+
+            var response = await Http.PostAsJsonAsync("api/assistant/suggestions", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AssistantSuggestionResponse>();
+
+                if (result != null && result.Success)
+                {
+                    return result.Suggestions.Select(s => new SuggestionItem
+                    {
+                        Title = s.Title,
+                        Description = s.Description,
+                        Icon = s.Icon,
+                        ComponentType = (DataViewingTypeEnum)s.DataViewingTypeID,
+                        ChartType = s.ChartType,
+                        SqlTemplate = s.SqlTemplate,
+                        GridWidth = s.GridWidth,    // ✅ ADD THIS
+                        GridHeight = s.GridHeight   // ✅ ADD THIS
+                    }).ToList();
+                }
+            }
+
+            return new List<SuggestionItem>();
         }
-        
-        // Suggest pie chart if missing
-        if (!hasPieChart)
+        catch (Exception ex)
         {
-            result.Add(new SuggestionItem
-            {
-                Title = "Sales Distribution Chart",
-                Description = "See your sales breakdown by category",
-                Icon = "fa-chart-pie",
-                ComponentType = DataViewingTypeEnum.Chart,
-                ChartType = "pie",
-                SqlTemplate = "SELECT Category, SUM(Amount) as Total FROM Sales GROUP BY Category"
-            });
+            Console.WriteLine($"Error getting suggestions: {ex.Message}");
+            return new List<SuggestionItem>();
         }
-        
-        // Suggest bar chart if missing
-        if (!hasBarChart)
-        {
-            result.Add(new SuggestionItem
-            {
-                Title = "Monthly Sales Chart",
-                Description = "Compare sales across months",
-                Icon = "fa-chart-bar",
-                ComponentType = DataViewingTypeEnum.Chart,
-                ChartType = "bar",
-                SqlTemplate = "SELECT DATENAME(month, SaleDate) as Month, SUM(Amount) as Total FROM Sales GROUP BY DATENAME(month, SaleDate)"
-            });
-        }
-        
-        // Suggest line chart if missing
-        if (!hasLineChart)
-        {
-            result.Add(new SuggestionItem
-            {
-                Title = "Revenue Trend Chart",
-                Description = "Track revenue trends over time",
-                Icon = "fa-chart-line",
-                ComponentType = DataViewingTypeEnum.Chart,
-                ChartType = "line",
-                SqlTemplate = "SELECT SaleDate, SUM(Amount) as Total FROM Sales GROUP BY SaleDate ORDER BY SaleDate"
-            });
-        }
-        
-        // Suggest table if missing
-        if (!hasTable)
-        {
-            result.Add(new SuggestionItem
-            {
-                Title = "Recent Transactions Table",
-                Description = "View your latest sales records",
-                Icon = "fa-table",
-                ComponentType = DataViewingTypeEnum.Table,
-                ChartType = null,
-                SqlTemplate = "SELECT TOP 10 * FROM Sales ORDER BY SaleDate DESC"
-            });
-        }
-        
-        return result.Take(5).ToList();
     }
     
     private async Task SelectSuggestion(SuggestionItem suggestion)
@@ -636,6 +592,28 @@
         
         return Dashboard.Components.Max(c => c.GridY + c.GridHeight);
     }
+
+    private DashboardComponent CreateComponentFromSuggestion(SuggestionItem suggestion)
+    {
+        var component = new DashboardComponent
+        {
+            ComponentID = 0,
+            Title = suggestion.Title,
+            Description = suggestion.Description,
+            DataViewingTypeID = (int)suggestion.ComponentType,
+            ChartType = suggestion.ChartType,
+            QueryText = suggestion.SqlTemplate,
+            GridWidth = suggestion.GridWidth,    // ✅ USE FROM SUGGESTION
+            GridHeight = suggestion.GridHeight,  // ✅ USE FROM SUGGESTION
+            GridX = 0,
+            GridY = 0,
+            IsVisible = true,
+            CreatedDate = DateTime.Now
+        };
+
+        return component;
+    }
+
     
     // Model
     private class SuggestionItem
@@ -644,6 +622,33 @@
         public string Description { get; set; }
         public string Icon { get; set; }
         public DataViewingTypeEnum ComponentType { get; set; }
+        public string ChartType { get; set; }
+        public string SqlTemplate { get; set; }
+        public int GridWidth { get; set; }    // ✅ ADD THIS
+        public int GridHeight { get; set; }   // ✅ ADD THIS
+    }
+
+
+    private class AssistantChatRequest
+    {
+        public int DashboardId { get; set; }
+        public int DatabaseId { get; set; }   // ✅ ADD THIS
+        public List<DashboardComponent> CurrentComponents { get; set; }
+    }
+
+    private class AssistantSuggestionResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public List<ComponentSuggestion> Suggestions { get; set; }
+    }
+
+    private class ComponentSuggestion
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Icon { get; set; }
+        public int DataViewingTypeID { get; set; }
         public string ChartType { get; set; }
         public string SqlTemplate { get; set; }
     }

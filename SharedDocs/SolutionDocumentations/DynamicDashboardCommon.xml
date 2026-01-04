@@ -201,6 +201,21 @@
             Resets the cached templates (useful for testing or reloading)
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.AssistantChatRequest">
+            <summary>
+            Request model for AI assistant chat
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.AssistantSuggestionResponse">
+            <summary>
+            Response model for AI assistant suggestions
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ComponentSuggestion">
+            <summary>
+            Individual component suggestion
+            </summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.ComponentTemplate">
             <summary>
             Represents a template for creating dashboard components.
