@@ -957,7 +957,7 @@
 <div class="modal-backdrop fade @(showTemplateModal ? "show" : "")" style="display: @(showTemplateModal ? "block" : "none")"></div>
 
 <div class="modal fade @(showAddChartModal ? "show" : "")" tabindex="-1" style="display: @(showAddChartModal ? "block" : "none")">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl" style="max-width: 1000px;">
         <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
             <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 2rem;">
                 <div class="d-flex align-items-center text-white">
@@ -2635,6 +2635,7 @@
 
         int currentX = 0;
         int currentY = 0;
+        int currentRowMaxHeight = 0; // ✅ Track tallest component in row
         const int maxColumns = 12;
 
         // Sort by current position, then auto-arrange
@@ -2648,24 +2649,45 @@
             // Check if component fits in current row
             if (currentX + component.GridWidth > maxColumns)
             {
-                // Move to next row
+                // Move to next row - use actual max height from current row
                 currentX = 0;
-                currentY += 3; // Move down (default row height)
+                currentY += currentRowMaxHeight; // ✅ Use actual height instead of fixed 3!
+                currentRowMaxHeight = 0; // Reset for new row
             }
 
             // Set new position
             component.GridX = currentX;
             component.GridY = currentY;
 
+            // Track tallest component in this row
+            currentRowMaxHeight = Math.Max(currentRowMaxHeight, component.GridHeight);
+
             // Move to next position
             currentX += component.GridWidth;
+        }
+
+        // ✅ Preserve ALL component data (from previous fix)
+        var allPreservedData = new Dictionary<int, List<Dictionary<string, object>>>();
+        foreach (var kvp in componentData)
+        {
+            if (kvp.Value != null && kvp.Value.Any())
+            {
+                allPreservedData[kvp.Key] = kvp.Value;
+            }
         }
 
         // Force canvas re-render
         canvasKey++;
         StateHasChanged();
 
+        // ✅ Restore data after re-render
+        foreach (var kvp in allPreservedData)
+        {
+            componentData[kvp.Key] = kvp.Value;
+        }
+
         ToastService.ShowSuccess("Components auto-arranged successfully!");
+        Console.WriteLine($"✅ Auto-arranged {sortedComponents.Count} components with smart heights");
     }
 
     // ✅ Close Dashboard Builder
@@ -2888,7 +2910,7 @@
                     customChartSql = sqlResponse.GeneratedSql;
 
                     // Add the chart to dashboard
-                    AddCustomChartToDashboard();
+                    await AddCustomChartToDashboard();
 
                     // Move to success step
                     addChartStep = 3;
@@ -2921,7 +2943,7 @@
     /// <summary>
     /// Adds the custom chart to the dashboard
     /// </summary>
-    private void AddCustomChartToDashboard()
+    private async Task AddCustomChartToDashboard()
     {
         try
         {
@@ -2980,6 +3002,32 @@
             hasUnsavedChanges = true;
 
             StateHasChanged();
+
+            // ✅ NEW: Auto-load data for the new component
+            if (!string.IsNullOrEmpty(newComponent.QueryText))
+            {
+                Console.WriteLine($"Auto-loading data for new component: {newComponent.Title}");
+
+                // Initialize loading state
+                if (!isComponentLoading.ContainsKey(newComponent.ComponentID))
+                {
+                    isComponentLoading[newComponent.ComponentID] = false;
+                }
+
+                // Load data
+                await LoadComponentDataAsync(newComponent);
+
+                // Wait for DOM
+                await Task.Delay(200);
+
+                // Render chart if it's a chart component
+                if (newComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
+                {
+                    await RenderChart(newComponent);
+                }
+
+                Console.WriteLine($"✅ Data loaded for {newComponent.Title}");
+            }
         }
         catch (Exception ex)
         {
@@ -3026,7 +3074,7 @@
     private (int x, int y) FindOptimalPosition(int width, int height)
     {
         const int gridColumns = 12;
-        const int maxSearchRows = 20; // Limit search to prevent infinite loops
+        const int maxSearchRows = 30; // ✅ Increased from 20 for better search
 
         // Create a grid to track occupied cells
         var occupiedCells = new HashSet<(int x, int y)>();
@@ -3041,6 +3089,36 @@
                     {
                         occupiedCells.Add((x, y));
                     }
+                }
+            }
+        }
+
+        // ✅ NEW: Try to find spot in same row as last component first (compact layout)
+        if (dashboard.Components?.Any() == true)
+        {
+            var lastComponent = dashboard.Components.OrderBy(c => c.GridY).ThenBy(c => c.GridX).Last();
+            int nextX = lastComponent.GridX + lastComponent.GridWidth;
+            int sameRowY = lastComponent.GridY;
+
+            // Check if it fits in same row
+            if (nextX + width <= gridColumns)
+            {
+                bool canFit = true;
+                for (int cx = nextX; cx < nextX + width && canFit; cx++)
+                {
+                    for (int cy = sameRowY; cy < sameRowY + height && canFit; cy++)
+                    {
+                        if (occupiedCells.Contains((cx, cy)))
+                        {
+                            canFit = false;
+                        }
+                    }
+                }
+
+                if (canFit)
+                {
+                    Console.WriteLine($"✅ Placed component in same row at ({nextX}, {sameRowY})");
+                    return (nextX, sameRowY);
                 }
             }
         }
@@ -3066,6 +3144,7 @@
 
                 if (canFit)
                 {
+                    Console.WriteLine($"✅ Placed component at optimal position ({x}, {y})");
                     return (x, y);
                 }
             }
@@ -3076,6 +3155,7 @@
             ? dashboard.Components.Max(c => c.GridY + c.GridHeight)
             : 0;
 
+        Console.WriteLine($"✅ Placed component at bottom: (0, {maxY})");
         return (0, maxY);
     }
 
