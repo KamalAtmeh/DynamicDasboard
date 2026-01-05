@@ -364,7 +364,7 @@ Do NOT generate SQL - only explain what the chart will show.";
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString();
-
+             
             return messageContent;
         }
 

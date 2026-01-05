@@ -12,79 +12,164 @@
 
 <div class="dashboard-builder">
     <!-- Header -->
+    <!-- ============================================ -->
+    <!-- COMPLETE TOOLBAR HEADER SECTION -->
+    <!-- FILE: DashboardBuilder.razor -->
+    <!-- REPLACE ENTIRE HEADER SECTION WITH THIS -->
+    <!-- ============================================ -->
+
     <div class="builder-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
+        <!-- LEFT SECTION: Dashboard Title & Status -->
+        <div class="builder-header-left">
+            <div class="dashboard-title-section">
+                <i class="fas fa-chart-line me-2"></i>
+                <h5 class="mb-0">@(dashboard?.Title ?? "Untitled Dashboard")</h5>
+                @if (dashboard != null)
+                {
+                    @if (dashboard.DashboardID > 0)
+                    {
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-check-circle me-1"></i>Saved
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark ms-2">
+                            <i class="fas fa-exclamation-circle me-1"></i>Unsaved
+                        </span>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- CENTER SECTION: Main Actions -->
+        <div class="builder-header-center">
+            @if (dashboard != null)
+            {
+                <!-- PRIMARY ACTIONS GROUP -->
+                <div class="btn-group me-2" role="group">
+                    <!-- Save Button -->
+                    <button class="btn btn-success"
+                            @onclick="SaveDashboard"
+                            disabled="@(!CanSave())"
+                            title="Save dashboard">
+                        <i class="fas fa-save me-1"></i>
+                        <span class="btn-text">Save</span>
+                    </button>
+
+                    <!-- Load Data Button (only show if we have components and database) -->
+                    @if (dashboard.Components != null && dashboard.Components.Any() && dashboard.DatabaseID > 0)
+                    {
+                        <button class="btn btn-primary"
+                                @onclick="LoadAllComponentsData"
+                                disabled="@isLoadingAllData"
+                                title="Load data for all components">
+                            @if (isLoadingAllData)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                <span class="btn-text">Loading...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-play me-1"></i>
+                                <span class="btn-text">Load Data</span>
+                            }
+                        </button>
+                    }
+                </div>
+
+                <!-- SECONDARY ACTIONS GROUP -->
+                <div class="btn-group me-2" role="group">
+                    <!-- AI Generate Button -->
+                    <button class="btn btn-outline-success"
+                            @onclick="ShowTemplateModal"
+                            title="Generate dashboard with AI">
+                        <i class="fas fa-magic me-1"></i>
+                        <span class="btn-text">AI Generate</span>
+                    </button>
+
+                    <!-- Add Custom Chart Button -->
+                    <button class="btn btn-outline-info"
+                            @onclick="ShowAddChartModal"
+                            disabled="@(dashboard.DatabaseID <= 0)"
+                            title="Add custom chart component">
+                        <i class="fas fa-plus-circle me-1"></i>
+                        <span class="btn-text">Add Chart</span>
+                    </button>
+                </div>
+
+                <!-- VIEW CONTROLS GROUP -->
+                <div class="btn-group me-2" role="group">
+                    <!-- Preview/Design Toggle -->
+                    <button class="btn @(isPreviewMode ? "btn-secondary" : "btn-outline-secondary")"
+                            @onclick="TogglePreviewMode"
+                            disabled="@(!dashboard.Components.Any())"
+                            title="@(isPreviewMode ? "Switch to Design Mode" : "Preview Dashboard")">
+                        <i class="fas fa-@(isPreviewMode ? "edit" : "eye") me-1"></i>
+                        <span class="btn-text">@(isPreviewMode ? "Design" : "Preview")</span>
+                    </button>
+                </div>
+
+                <!-- ZOOM CONTROLS (Only in Design Mode) -->
                 @if (!isPreviewMode)
                 {
-                    @*                 <button class="btn btn-outline-secondary" @onclick="() => NavigationManager.NavigateTo('/admin/dashboards')">
-                    <i class="fas fa-arrow-left me-1"></i>Back
-                </button> *@
+                    <div class="btn-group me-2" role="group">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="ZoomOut"
+                                disabled="@(zoomLevel <= 0.5)"
+                                title="Zoom Out">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary disabled zoom-display"
+                                title="Current Zoom Level">
+                            <span>@((int)(zoomLevel * 100))%</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="ZoomIn"
+                                disabled="@(zoomLevel >= 1.5)"
+                                title="Zoom In">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="ResetZoom"
+                                title="Reset Zoom to 100%">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                        </button>
+                    </div>
                 }
-                 <button class="btn btn-outline-primary" @onclick="AutoArrangeComponents">
-                    <i class="fas fa-magic me-2"></i>
-                    Auto Layout
-                </button> 
+            }
+        </div>
 
-                @if (!isEditingTitle && !isPreviewMode)
-                {
-                    <h3 class="mb-0" @onclick="() => isEditingTitle = true" style="cursor: pointer;">
-                        @dashboard.Title
-                        <i class="fas fa-edit ms-2 text-muted" style="font-size: 0.8rem;"></i>
-                    </h3>
-                }
-                else if (!isPreviewMode)
-                {
-                    <input @ref="titleInputRef"
-                           type="text"
-                           class="form-control"
-                           @bind="dashboard.Title"
-                           @onblur="() => isEditingTitle = false"
-                           style="width: 300px;" />
-                }
-                else
-                {
-                    <h3 class="mb-0">@dashboard.Title</h3>
-                }
-            </div>
+        <!-- RIGHT SECTION: Utility Actions -->
+        <div class="builder-header-right">
+            @if (dashboard != null)
+            {
+                <div class="btn-group" role="group">
+                    <!-- Dashboard Settings Button -->
+                    <button class="btn btn-outline-secondary"
+                            @onclick="ShowDashboardSettings"
+                            title="Dashboard Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
 
-            <div class="d-flex gap-2 align-items-center">
-                @if (isPreviewMode)
-                {
-                    <!-- Preview Mode Controls -->
-                    <button class="btn btn-outline-secondary" @onclick="TogglePreviewMode">
-                        <i class="fas fa-edit me-1"></i>Exit Preview
+                    <!-- Auto Arrange Components (only show if we have components) -->
+                    @if (dashboard.Components != null && dashboard.Components.Any())
+                    {
+                        <button class="btn btn-outline-secondary"
+                                @onclick="AutoArrangeComponents"
+                                title="Auto Arrange Components">
+                            <i class="fas fa-th"></i>
+                        </button>
+                    }
+
+                    <!-- Close Button -->
+                    <button class="btn btn-outline-danger"
+                            @onclick="CloseDashboard"
+                            title="Close Dashboard Builder">
+                        <i class="fas fa-times"></i>
                     </button>
-                    <button class="btn btn-outline-primary" @onclick="LoadAllComponentsData" disabled="@isLoadingAllData">
-                        @if (isLoadingAllData)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1"></span>
-                            <text>Refreshing...</text>
-                        }
-                        else
-                        {
-                            <i class="fas fa-sync me-1"></i>
-                            <text>Refresh Data</text>
-                        }
-                    </button>
-                }
-                else
-                {
-                    <!-- Design Mode Controls -->
-                    <button class="btn btn-success" @onclick="ShowTemplateModal">
-                        <i class="fas fa-magic me-1"></i>Generate with AI
-                    </button>
-                    <button class="btn btn-info" @onclick="ShowAddChartModal" disabled="@(dashboard.DatabaseID <= 0)">
-                        <i class="fas fa-plus-circle me-1"></i>Add Custom Chart
-                    </button>
-                    <button class="btn btn-outline-info" @onclick="TogglePreviewMode" disabled="@(!dashboard.Components.Any())">
-                        <i class="fas fa-eye me-1"></i>Preview with Data
-                    </button>
-                    <button class="btn btn-primary" @onclick="SaveDashboard">
-                        <i class="fas fa-save me-1"></i>Save
-                    </button>
-                }
-            </div>
+                </div>
+            }
         </div>
     </div>
 
@@ -166,231 +251,93 @@
                 <div class="dashboard-grid" @key="canvasKey" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
                     @if (dashboard.Components != null && dashboard.Components.Any())
                     {
-                        @foreach (var component in dashboard.Components)
-                        {
-                            <div class="dashboard-component @(selectedComponentId == component.ComponentID && !isPreviewMode ? "selected" : "")"
-                                 style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                                                    grid-row: @(component.GridY + 1) / span @component.GridHeight;"
-                                 @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
+                      @foreach (var component in dashboard.Components)
+{
+    <div class="dashboard-component @(selectedComponentId == component.ComponentID && !isPreviewMode ? "selected" : "")"
+         style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
+                grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+         @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
 
-                                <div class="component-header">
-                                    <span class="component-title">@component.Title</span>
-                                    @if (!isPreviewMode)
-                                    {
-                                        <div class="component-actions">
-                                            <button class="btn btn-sm btn-link" @onclick="() => DuplicateComponent(component)">
-                                                <i class="fas fa-clone"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-link" @onclick="() => RemoveComponent(component.ComponentID)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    }
-                                </div>
+        <!-- Component Header -->
+        <div class="component-header">
+            <span class="component-title">@component.Title</span>
+            @if (!isPreviewMode)
+            {
+                <div class="component-actions">
+                    <button class="btn btn-sm btn-link" @onclick="() => DuplicateComponent(component)" title="Duplicate">
+                        <i class="fas fa-clone"></i>
+                    </button>
+                    <button class="btn btn-sm btn-link" @onclick="() => RemoveComponent(component.ComponentID)" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            }
+        </div>
 
-                                <div class="component-body">
-                                    @if (IsComponentLoading(component.ComponentID))
-                                    {
-                                        <div class="text-center py-4">
-                                            <div class="spinner-border text-primary mb-2"></div>
-                                            <p class="text-muted small">Loading data...</p>
-                                        </div>
-                                    }
-                                    else if (componentData.ContainsKey(component.ComponentID))
-                                    {
-                                        @* Render actual data based on component type *@
-                                        var data = GetComponentData(component.ComponentID);
-
-                                        @if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
-                                        {
-                                            <ComponentNumber Component="component" Data="GetComponentData(component.ComponentID)" />
-                                            @* KPI Display *@
-                                            <div class="kpi-display">
-                                                @if (data.Any())
-                                                {
-                                                    var rawValue = data[0].ContainsKey("value") ? data[0]["value"] : null;
-                                                    var formattedValue = FormatNumericValue(rawValue, component); // USE FORMATTING
-
-                                                    <div class="kpi-value">@formattedValue</div>
-                                                    <div class="kpi-label">@component.Description</div>
-                                                }
-                                                else
-                                                {
-                                                    <div class="kpi-value">No Data</div>
-                                                }
-                                            </div>
-                                        }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
-                                        {
-                                            @* Chart Data Preview - Shows actual data values *@
-                                            <div class="chart-data-preview">
-                                                @if (data.Any())
-                                                {
-                                                    var chartType = GetChartType(component.VisualizationConfig);
-                                                    <div class="chart-header mb-2">
-                                                        <i class="fas fa-chart-@(GetChartIcon(chartType)) text-primary"></i>
-                                                        <span class="fw-bold ms-2">@chartType Chart</span>
-                                                        <small class="text-muted ms-2">(@data.Count data points)</small>
-                                                    </div>
-                                                    <div class="chart-data-table">
-                                                        <table class="table table-sm table-striped mb-0">
-                                                            <thead>
-                                                                <tr>
-                                                                    @foreach (var key in data[0].Keys.Take(3))
-                                                                    {
-                                                                        <th>@key</th>
-                                                                    }
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                @foreach (var row in data.Take(8))
-                                                                {
-                                                                    <tr>
-                                                                        @foreach (var key in row.Keys.Take(3))
-                                                                        {
-                                                                            <td>@row[key]</td>
-                                                                        }
-                                                                    </tr>
-                                                                }
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    @if (data.Count > 8)
-                                                    {
-                                                        <div class="text-center text-muted small py-1">
-                                                            Showing 8 of @data.Count points
-                                                        </div>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <div class="text-center py-4 text-muted">
-                                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                                                        <p>No data available for chart</p>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Label)
-                                        {
-                                            @* Label Display *@
-                                            <div class="label-display">
-                                                @if (data.Any())
-                                                {
-                                                    @if (data[0].ContainsKey("value"))
-                                                    {
-                                                        <div class="label-value">@data[0]["value"]</div>
-                                                    }
-                                                    else if (data[0].Any())
-                                                    {
-                                                        <div class="label-value">@data[0].First().Value</div>
-                                                    }
-                                                    <div class="label-text">@component.Title</div>
-                                                }
-                                                else
-                                                {
-                                                    <div class="label-value">No Data</div>
-                                                }
-                                            </div>
-                                        }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Card)
-                                        {
-                                            @* Card Display *@
-                                            <div class="card-display">
-                                                @if (data.Any())
-                                                {
-                                                    var firstRow = data[0];
-                                                    <div class="card-content">
-                                                        @if (firstRow.ContainsKey("value"))
-                                                        {
-                                                            <div class="card-value">@firstRow["value"]</div>
-                                                        }
-                                                        else if (firstRow.Any())
-                                                        {
-                                                            <div class="card-value">@firstRow.First().Value</div>
-                                                        }
-
-                                                        @if (firstRow.ContainsKey("title"))
-                                                        {
-                                                            <div class="card-title">@firstRow["title"]</div>
-                                                        }
-                                                        else
-                                                        {
-                                                            <div class="card-title">@component.Title</div>
-                                                        }
-
-                                                        @if (firstRow.ContainsKey("description"))
-                                                        {
-                                                            <div class="card-description">@firstRow["description"]</div>
-                                                        }
-                                                        else if (!string.IsNullOrEmpty(component.Description))
-                                                        {
-                                                            <div class="card-description">@component.Description</div>
-                                                        }
-                                                    </div>
-                                                }
-                                                else
-                                                {
-                                                    <div class="text-center py-4 text-muted">No data available</div>
-                                                }
-                                            </div>
-                                        }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
-                                        {
-                                            @* Table Display *@
-                                            <div class="table-responsive" style="max-height: 100%; overflow: auto;">
-                                                @if (data.Any())
-                                                {
-                                                    <table class="table table-sm table-striped mb-0">
-                                                        <thead>
-                                                            <tr>
-                                                                @foreach (var key in data[0].Keys.Take(6))
-                                                                {
-                                                                    <th>@key</th>
-                                                                }
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach (var row in data.Take(10))
-                                                            {
-                                                                <tr>
-                                                                    @foreach (var key in row.Keys.Take(6))
-                                                                    {
-                                                                        <td>@row[key]</td>
-                                                                    }
-                                                                </tr>
-                                                            }
-                                                        </tbody>
-                                                    </table>
-                                                    @if (data.Count > 10)
-                                                    {
-                                                        <div class="text-center text-muted small py-2">
-                                                            Showing 10 of @data.Count rows
-                                                        </div>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <div class="text-center py-4 text-muted">No data available</div>
-                                                }
-                                            </div>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        @* Placeholder when no data *@
-                                        <div class="text-center text-muted pt-4">
-                                            <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                                            <p>@GetComponentTypeName(component.DataViewingTypeID)</p>
-                                            @if (!isPreviewMode)
-                                            {
-                                                <small>Click "Load Data" to preview</small>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
+        <!-- Component Body -->
+        <div class="component-body">
+            @if (IsComponentLoading(component.ComponentID))
+            {
+                <!-- Loading State -->
+                <div class="component-loading">
+                    <div class="spinner-border text-primary mb-2"></div>
+                    <p class="text-muted small mb-0">Loading data...</p>
+                </div>
+            }
+            else if (componentData.ContainsKey(component.ComponentID))
+            {
+                <!-- ✅ DATA LOADED - USE SAME COMPONENTS AS VIEWER -->
+                @switch (component.DataViewingTypeID)
+                {
+                    case (int)DataViewingTypeEnum.Table:
+                        <ComponentTable Component="component" Data="GetComponentData(component.ComponentID)" />
+                        break;
+                        
+                    case (int)DataViewingTypeEnum.Label:
+                        <ComponentLabel Component="component" />
+                        break;
+                        
+                    case (int)DataViewingTypeEnum.Number:
+                        <ComponentNumber Component="component" Data="GetComponentData(component.ComponentID)" />
+                        break;
+                        
+                    case (int)DataViewingTypeEnum.Chart:
+                        <ComponentChart Component="component" Data="GetComponentData(component.ComponentID)" />
+                        break;
+                        
+                    case (int)DataViewingTypeEnum.Card:
+                        <ComponentCard Component="component" Data="GetComponentData(component.ComponentID)" />
+                        break;
+                        
+                    default:
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p class="mb-0">Unknown component type</p>
+                        </div>
+                        break;
+                }
+            }
+            else
+            {
+                <!-- ✅ NO DATA - SHOW PLACEHOLDER -->
+                <div class="component-placeholder">
+                    <i class="fas @GetComponentIcon(component.DataViewingTypeID) fa-3x mb-3 text-muted"></i>
+                    <p class="text-muted mb-1 font-weight-bold">@GetComponentTypeName(component.DataViewingTypeID)</p>
+                    <small class="text-muted">@component.Description</small>
+                    @if (!isPreviewMode)
+                    {
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Click "Load Data" to preview
+                            </small>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
                     }
                     else
                     {
@@ -515,6 +462,36 @@
                                     </button>
                                 }
                             </div>
+                            <div class="property-section">
+                                <label><i class="fas fa-shapes me-1"></i> Component Type</label>
+                                <select class="form-select" @bind="selectedComponentType" @bind:after="OnComponentTypeChanged">
+                                    <option value="2">Table</option>
+                                    <option value="3">KPI / Number</option>
+                                    <option value="4">Chart</option>
+                                </select>
+                            </div>
+                            @if (selectedComponentType == 4)
+                            {
+                                <div class="property-section">
+                                    <label><i class="fas fa-chart-bar me-1"></i> Chart Type</label>
+                                    <div class="chart-type-selector-grid">
+                                        @foreach (var chartType in new[] {
+                                                        ("bar", "fa-chart-bar", "Bar"),
+                                                        ("line", "fa-chart-line", "Line"),
+                                                        ("pie", "fa-chart-pie", "Pie"),
+                                                        ("donut", "fa-circle-notch", "Donut"),
+                                                        ("area", "fa-chart-area", "Area")
+                                                        })
+                                        {
+                                            <div class="chart-type-card @(selectedComponent.ChartType == chartType.Item1 ? "active" : "")"
+                                                 @onclick="() => UpdateChartType(chartType.Item1)">
+                                                <i class="fas @chartType.Item2 fa-2x mb-2"></i>
+                                                <span>@chartType.Item3</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                             <!-- Component Type (Chart/Table/KPI) -->
                             @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
                             {
@@ -709,7 +686,7 @@
                                     <i class="fas fa-expand me-2"></i>
                                     Component Size
                                 </label>
-                                <div class="size-selection-grid">
+@*                                 <div class="size-selection-grid">
                                     <div class="size-option @(IsComponentSize(3, 2) ? "selected" : "")"
                                          @onclick='() => UpdateComponentSize(3, 2)'>
                                         <div class="size-preview small-preview"></div>
@@ -757,6 +734,16 @@
                                                    max="10" />
                                         </div>
                                     </div>
+                                </div> *@
+                                <div class="size-selector">
+                                    @foreach (var size in new[] { (3, 2), (6, 2), (6, 3), (12, 3), (12, 4) })
+                                    {
+                                        <div class="size-option @(selectedComponent.GridWidth == size.Item1 && selectedComponent.GridHeight == size.Item2 ? "active" : "")"
+                                             @onclick="() => UpdateComponentSize(size.Item1, size.Item2)">
+                                            <div class="size-preview" style="width: @(size.Item1 * 8)px; height: @(size.Item2 * 20)px;"></div>
+                                            <span>@size.Item1 × @size.Item2</span>
+                                        </div>
+                                    }
                                 </div>
                             </div>
 
@@ -851,6 +838,231 @@
             border-bottom: 2px solid #e9ecef;
             padding-bottom: 0.5rem;
             margin-bottom: 0.75rem;
+        }
+
+        .builder-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-height: 60px;
+        }
+
+        .builder-header-left,
+        .builder-header-center,
+        .builder-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .builder-header-center {
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* Dashboard Title Section */
+        .dashboard-title-section {
+            display: flex;
+            align-items: center;
+            color: white;
+            gap: 8px;
+        }
+
+            .dashboard-title-section i {
+                font-size: 20px;
+            }
+
+            .dashboard-title-section h5 {
+                color: white;
+                font-weight: 600;
+                margin: 0;
+                font-size: 16px;
+            }
+
+            .dashboard-title-section .badge {
+                font-size: 10px;
+                padding: 4px 8px;
+                font-weight: 600;
+            }
+
+        /* Button Groups */
+        .builder-header .btn-group {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        /* All Buttons Base Styles */
+        .builder-header .btn {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .builder-header .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .builder-header .btn i {
+            font-size: 14px;
+        }
+
+        /* Primary Action Buttons */
+        .builder-header .btn-success {
+            background: #10b981;
+            color: white;
+            font-weight: 600;
+        }
+
+            .builder-header .btn-success:hover:not(:disabled) {
+                background: #059669;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+            }
+
+        .builder-header .btn-primary {
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+
+            .builder-header .btn-primary:hover:not(:disabled) {
+                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+            }
+
+        /* Secondary Action Buttons */
+        .builder-header .btn-outline-success,
+        .builder-header .btn-outline-info {
+            background: white;
+            border: 2px solid white;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+            .builder-header .btn-outline-success:hover:not(:disabled),
+            .builder-header .btn-outline-info:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.95);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+            }
+
+        /* View Control Buttons */
+        .builder-header .btn-outline-secondary {
+            background: white;
+            border: 2px solid white;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+            .builder-header .btn-outline-secondary:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.95);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+            }
+
+        /* Active State (Preview Mode) */
+        .builder-header .btn-secondary {
+            background: rgba(255, 255, 255, 0.95);
+            color: #667eea;
+            font-weight: 600;
+            border: 2px solid white;
+        }
+
+            .builder-header .btn-secondary:hover {
+                background: white;
+            }
+
+        /* Danger Button */
+        .builder-header .btn-outline-danger {
+            background: white;
+            border: 2px solid white;
+            color: #ef4444;
+            font-weight: 500;
+        }
+
+            .builder-header .btn-outline-danger:hover:not(:disabled) {
+                background: #ef4444;
+                color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+            }
+
+        /* Disabled State */
+        .builder-header .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Zoom Display */
+        .zoom-display {
+            cursor: default !important;
+            font-weight: 600;
+            min-width: 60px;
+            pointer-events: none;
+        }
+
+        /* Loading Spinner */
+        .builder-header .spinner-border-sm {
+            width: 14px;
+            height: 14px;
+            border-width: 2px;
+        }
+
+        .builder-header .btn {
+            padding: 8px 12px;
+        }
+
+        .dashboard-title-section h5 {
+            font-size: 14px;
+        }
+
+        }
+
+
+
+        .builder-header-left,
+        .builder-header-right {
+            width: 100%;
+        }
+
+        .builder-header-center {
+            width: 100%;
+            justify-content: flex-start;
+            margin-top: 8px;
+        }
+
+        }
+
+        /* Button Group Border Fix */
+        .builder-header .btn-group .btn {
+            border-right: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+            .builder-header .btn-group .btn:last-child {
+                border-right: none;
+            }
+
+        .builder-header .btn-group .btn-outline-danger {
+            border-right: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Focus States */
+        .builder-header .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
         }
 
         .chart-data-table {
@@ -1594,6 +1806,215 @@
                 background: rgba(255, 255, 255, 0.2);
                 border-radius: 4px;
             }
+
+        .property-section select.form-select {
+            font-size: 14px;
+            padding: 8px 12px;
+        }
+
+        .property-section label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #2d3748;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* Chart Type Grid */
+        .chart-type-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .chart-type-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+            .chart-type-card:hover {
+                border-color: #667eea;
+                background: #f7fafc;
+                transform: translateY(-2px);
+            }
+
+            .chart-type-card.active {
+                border-color: #667eea;
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            }
+
+            .chart-type-card i {
+                color: #667eea;
+            }
+
+            .chart-type-card span {
+                font-size: 11px;
+                font-weight: 600;
+                color: #2d3748;
+                margin-top: 4px;
+            }
+
+        /* SQL Display */
+        .sql-display-compact {
+            background: #1e293b;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+            .sql-display-compact pre {
+                color: #e2e8f0;
+                font-size: 12px;
+                font-family: 'Consolas', 'Monaco', monospace;
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+
+        /* Size Selector (keep existing styles) */
+        .size-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .size-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .size-option:hover {
+                border-color: #667eea;
+                transform: translateY(-2px);
+            }
+
+            .size-option.active {
+                border-color: #667eea;
+                background: rgba(102, 126, 234, 0.1);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            }
+
+        .size-preview {
+            background: #667eea;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .size-option span {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .component-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+        }
+
+            .component-loading .spinner-border {
+                width: 40px;
+                height: 40px;
+            }
+
+        /* Placeholder State */
+        .component-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+            .component-placeholder i {
+                color: #cbd5e0;
+            }
+
+            .component-placeholder p {
+                font-size: 14px;
+                margin: 0;
+            }
+
+            .component-placeholder small {
+                font-size: 12px;
+                color: #94a3b8;
+            }
+
+        /* Component Body - Ensure proper overflow */
+        .component-body {
+            height: calc(100% - 45px); /* Subtract header height */
+            overflow: auto;
+            position: relative;
+        }
+
+        /* Selected Component Highlight (Design Mode) */
+        .dashboard-component.selected {
+            outline: 3px solid #667eea;
+            outline-offset: -3px;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Component Header */
+        .component-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            background: white;
+            min-height: 45px;
+        }
+
+        .component-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #2d3748;
+        }
+
+        .component-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+            .component-actions .btn-link {
+                padding: 4px 8px;
+                color: #64748b;
+                transition: all 0.2s;
+            }
+
+                .component-actions .btn-link:hover {
+                    color: #667eea;
+                    background: rgba(102, 126, 234, 0.1);
+                    border-radius: 4px;
+                }
+
+        /* Preview Mode - Hide Actions */
+        .builder-content.preview-mode .component-actions {
+            display: none;
+        }
+
+        .builder-content.preview-mode .component-header {
+            cursor: default;
+        }
     </style>
     <!-- AI Assistant - Add at the end, before closing div -->
 <FloatingAIAssistant 
@@ -2286,6 +2707,9 @@
     private bool isEditingSql = false;
     private string editingSqlText = "";
 
+    private int selectedComponentType = 4;
+    private bool componentTypeChanged = false;
+
     // Table Options
     private int tablePageSize = 10;
     private bool tableEnablePagination = true;
@@ -2333,6 +2757,9 @@
     private bool isGeneratingChart = false;
     private bool isAnalyzing = false;
     private bool isGeneratingSql = false;
+
+    private bool showSettingsModal = false;
+
 
     // Analysis response to pass to generation step
     private AnalysisResponse analysisResponse = null;
@@ -2927,7 +3354,38 @@
         StateHasChanged();
     }
 
-  
+    private async Task RenderAllCharts()
+    {
+        await Task.Delay(100);
+
+        foreach (var component in dashboard.Components)
+        {
+            if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart &&
+                componentData.ContainsKey(component.ComponentID))
+            {
+                await RenderChart(component.ComponentID);
+            }
+        }
+    }
+
+    private async Task RenderChart(int componentId)
+    {
+        var component = dashboard.Components.FirstOrDefault(c => c.ComponentID == componentId);
+        if (component == null) return;
+
+        var data = GetComponentData(componentId);
+        if (!data.Any()) return;
+
+        var chartConfig = new
+        {
+            componentId = componentId,
+            chartType = component.ChartType ?? "bar",
+            data = data,
+            title = component.Title
+        };
+
+        await JSRuntime.InvokeVoidAsync("renderBuilderChart", chartConfig);
+    }
 
     private void UpdateKPIColor(string color)
     {
@@ -3055,6 +3513,45 @@
             ToastService.ShowError($"Error updating component: {ex.Message}");
             Console.WriteLine($"Error in ApplyComponentChanges: {ex.Message}");
         }
+    }
+
+    private void OnComponentTypeChanged()
+    {
+        if (selectedComponent == null) return;
+
+        // Mark that type has changed
+        componentTypeChanged = true;
+
+        // Update component type
+        selectedComponent.DataViewingTypeID = selectedComponentType;
+
+        // Reset chart type if switching away from chart
+        if (selectedComponentType != 4)
+        {
+            selectedComponent.ChartType = null;
+        }
+        // Set default chart type if switching to chart
+        else if (string.IsNullOrEmpty(selectedComponent.ChartType))
+        {
+            selectedComponent.ChartType = "bar";
+        }
+
+        StateHasChanged();
+    }
+
+    private string TruncateSQL(string sql, int maxLength)
+    {
+        if (string.IsNullOrEmpty(sql)) return "";
+        if (sql.Length <= maxLength) return sql;
+
+        return sql.Substring(0, maxLength) + "...";
+    }
+
+    // Show full SQL (you can implement modal or expand)
+    private void ShowFullSQL(string sql)
+    {
+        // Implement modal or inline expansion
+        Console.WriteLine($"Full SQL: {sql}");
     }
 
 
@@ -3191,6 +3688,121 @@
         }
     }
 
+    private bool CanSave()
+    {
+        if (dashboard == null) return false;
+        if (string.IsNullOrWhiteSpace(dashboard.Title)) return false;
+        if (dashboard.DatabaseID <= 0) return false;
+
+        return true;
+    }
+
+    // ✅ Toggle between preview and design mode
+    private void TogglePreviewMode()
+    {
+        isPreviewMode = !isPreviewMode;
+
+        // Close properties panel when entering preview mode
+        if (isPreviewMode)
+        {
+            selectedComponentId = 0;
+        }
+
+        StateHasChanged();
+    }
+
+    // ✅ Zoom In (max 150%)
+    private void ZoomIn()
+    {
+        if (zoomLevel < 1.5)
+        {
+            zoomLevel += 0.1;
+            StateHasChanged();
+        }
+    }
+
+    // ✅ Zoom Out (min 50%)
+    private void ZoomOut()
+    {
+        if (zoomLevel > 0.5)
+        {
+            zoomLevel -= 0.1;
+            StateHasChanged();
+        }
+    }
+
+    // ✅ Reset Zoom to 100%
+    private void ResetZoom()
+    {
+        zoomLevel = 1.0;
+        StateHasChanged();
+    }
+
+    // ✅ Show Dashboard Settings Modal
+    private void ShowDashboardSettings()
+    {
+        showSettingsModal = true;
+        StateHasChanged();
+    }
+
+    // ✅ Auto Arrange Components in Grid
+    private void AutoArrangeComponents()
+    {
+        if (dashboard?.Components == null || !dashboard.Components.Any())
+            return;
+
+        int currentX = 0;
+        int currentY = 0;
+        const int maxColumns = 12;
+
+        // Sort by current position, then auto-arrange
+        var sortedComponents = dashboard.Components
+            .OrderBy(c => c.GridY)
+            .ThenBy(c => c.GridX)
+            .ToList();
+
+        foreach (var component in sortedComponents)
+        {
+            // Check if component fits in current row
+            if (currentX + component.GridWidth > maxColumns)
+            {
+                // Move to next row
+                currentX = 0;
+                currentY += 3; // Move down (default row height)
+            }
+
+            // Set new position
+            component.GridX = currentX;
+            component.GridY = currentY;
+
+            // Move to next position
+            currentX += component.GridWidth;
+        }
+
+        // Force canvas re-render
+        canvasKey++;
+        StateHasChanged();
+
+        ToastService.ShowSuccess("Components auto-arranged successfully!");
+    }
+
+    // ✅ Close Dashboard Builder
+    private async Task CloseDashboard()
+    {
+        // Check for unsaved changes
+        if (dashboard.DashboardID == 0 && dashboard.Components != null && dashboard.Components.Any())
+        {
+            // Dashboard has never been saved but has components
+            bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
+                "You have unsaved changes. Are you sure you want to close?");
+
+            if (!confirmed) return;
+        }
+
+        // Navigate back to dashboard list or home
+        NavigationManager.NavigateTo("/dashboards");
+    }
+
 
     private void PreviewDashboard()
     {
@@ -3204,20 +3816,20 @@
         }
     }
 
-    private void ZoomIn()
-    {
-        zoomLevel = Math.Min(zoomLevel + 0.1, 2.0);
-    }
+    // private void ZoomIn()
+    // {
+    //     zoomLevel = Math.Min(zoomLevel + 0.1, 2.0);
+    // }
 
-    private void ZoomOut()
-    {
-        zoomLevel = Math.Max(zoomLevel - 0.1, 0.5);
-    }
+    // private void ZoomOut()
+    // {
+    //     zoomLevel = Math.Max(zoomLevel - 0.1, 0.5);
+    // }
 
-    private void ResetZoom()
-    {
-        zoomLevel = 1.0;
-    }
+    // private void ResetZoom()
+    // {
+    //     zoomLevel = 1.0;
+    // }
 
     private int GetGridHeight()
     {
@@ -3706,15 +4318,15 @@
         }
     }
 
-    private async Task TogglePreviewMode()
-    {
-        isPreviewMode = !isPreviewMode;
+    // private async Task TogglePreviewMode()
+    // {
+    //     isPreviewMode = !isPreviewMode;
 
-        if (isPreviewMode && !componentData.Any())
-        {
-            await LoadAllComponentsData();
-        }
-    }
+    //     if (isPreviewMode && !componentData.Any())
+    //     {
+    //         await LoadAllComponentsData();
+    //     }
+    // }
 
     private List<Dictionary<string, object>> GetComponentData(int componentId)
     {
@@ -3802,10 +4414,18 @@
     }
 
 
-
-
-
-
+    private string GetComponentIcon(int dataViewingTypeID)
+    {
+        return dataViewingTypeID switch
+        {
+            (int)DataViewingTypeEnum.Table => "fa-table",
+            (int)DataViewingTypeEnum.Chart => "fa-chart-bar",
+            (int)DataViewingTypeEnum.Number => "fa-tachometer-alt",
+            (int)DataViewingTypeEnum.Label => "fa-font",
+            (int)DataViewingTypeEnum.Card => "fa-id-card",
+            _ => "fa-cube"
+        };
+    }
 
     // Helper class for SQL generation result
     private class SqlGenerationResult
@@ -3877,41 +4497,41 @@
         public string ErrorMessage { get; set; }
     }
 
-    private void AutoArrangeComponents()
-    {
-        if (!dashboard.Components.Any())
-        {
-            ToastService.ShowWarning("No components to arrange");
-            return;
-        }
+    // private void AutoArrangeComponents()
+    // {
+    //     if (!dashboard.Components.Any())
+    //     {
+    //         ToastService.ShowWarning("No components to arrange");
+    //         return;
+    //     }
 
-        var sortedComponents = dashboard.Components
-            .OrderBy(c => c.GridY)
-            .ThenBy(c => c.GridX)
-            .ToList();
+    //     var sortedComponents = dashboard.Components
+    //         .OrderBy(c => c.GridY)
+    //         .ThenBy(c => c.GridX)
+    //         .ToList();
 
-        int currentY = 0;
-        int currentX = 0;
-        const int gridColumns = 12;
+    //     int currentY = 0;
+    //     int currentX = 0;
+    //     const int gridColumns = 12;
 
-        foreach (var component in sortedComponents)
-        {
-            if (currentX + component.GridWidth > gridColumns)
-            {
-                currentY += GetMaxHeightInRow(sortedComponents, currentY);
-                currentX = 0;
-            }
+    //     foreach (var component in sortedComponents)
+    //     {
+    //         if (currentX + component.GridWidth > gridColumns)
+    //         {
+    //             currentY += GetMaxHeightInRow(sortedComponents, currentY);
+    //             currentX = 0;
+    //         }
 
-            component.GridX = currentX;
-            component.GridY = currentY;
-            currentX += component.GridWidth;
-        }
+    //         component.GridX = currentX;
+    //         component.GridY = currentY;
+    //         currentX += component.GridWidth;
+    //     }
 
-        canvasKey++;
-        hasUnsavedChanges = true;
-        ToastService.ShowSuccess("Components auto-arranged");
-        StateHasChanged();
-    }
+    //     canvasKey++;
+    //     hasUnsavedChanges = true;
+    //     ToastService.ShowSuccess("Components auto-arranged");
+    //     StateHasChanged();
+    // }
 
     private int GetMaxHeightInRow(List<DashboardComponent> components, int rowY)
     {

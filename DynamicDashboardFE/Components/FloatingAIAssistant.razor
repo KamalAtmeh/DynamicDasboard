@@ -536,6 +536,7 @@
                 DataViewingTypeID = (int)selectedSuggestion.ComponentType,
                 ChartType = selectedSuggestion.ChartType,
                 QueryText = generatedSql,
+                QueryIntent = selectedSuggestion.Description,
                 VisualizationConfig = selectedSuggestion.ChartType != null
                     ? System.Text.Json.JsonSerializer.Serialize(new { chartType = selectedSuggestion.ChartType })
                     : "{}",
