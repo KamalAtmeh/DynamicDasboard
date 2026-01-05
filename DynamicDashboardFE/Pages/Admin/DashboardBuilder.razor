@@ -178,6 +178,59 @@
 
     <div class="builder-content @(isPreviewMode ? "preview-mode" : "")">
         <!-- Left Sidebar: Component Library (Hidden in preview) -->
+         @if (isPreviewMode)
+    {
+        <!-- ✅ FULLSCREEN PREVIEW (like viewer) -->
+        <div class="preview-container">
+            <div class="preview-header">
+                <h4>@dashboard.Title</h4>
+                <button class="btn btn-sm btn-secondary" @onclick="TogglePreviewMode">
+                    <i class="fas fa-edit me-1"></i> Exit Preview
+                </button>
+            </div>
+            
+            <div class="dashboard-grid-preview" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
+                @foreach (var component in dashboard.Components.Where(c => c.IsVisible))
+                {
+                    <div class="dashboard-component"
+                         style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
+                                grid-row: @(component.GridY + 1) / span @component.GridHeight;">
+                        
+                        <div class="component-header">
+                            <span class="component-title">@component.Title</span>
+                        </div>
+                        
+                        <div class="component-body">
+                            @if (componentData.ContainsKey(component.ComponentID))
+                            {
+                                @switch (component.DataViewingTypeID)
+                                {
+                                    case (int)DataViewingTypeEnum.Table:
+                                        <ComponentTable Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Number:
+                                        <ComponentNumber Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Chart:
+                                        <ComponentChart Component="component" Data="GetComponentData(component.ComponentID)" />
+                                        break;
+                                    case (int)DataViewingTypeEnum.Label:
+                                        <ComponentLabel Component="component" />
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                <div class="component-placeholder">
+                                    <small class="text-muted">No data loaded</small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
         @if (!isPreviewMode)
         {
             <div class="builder-sidebar builder-sidebar-left" style="display:none">
@@ -470,7 +523,7 @@
                                     <option value="4">Chart</option>
                                 </select>
                             </div>
-                            @if (selectedComponentType == 4)
+                           @*  @if (selectedComponentType == 4)
                             {
                                 <div class="property-section">
                                     <label><i class="fas fa-chart-bar me-1"></i> Chart Type</label>
@@ -490,7 +543,7 @@
                                             </div>
                                         }
                                     </div>
-                                </div>
+                                </div> *@
                             }
                             <!-- Component Type (Chart/Table/KPI) -->
                             @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
@@ -815,6 +868,47 @@
             height: 100%;
             padding: 1rem;
         }
+
+        .fullscreen-preview {
+            position: fixed;
+            top: 60px; /* Below toolbar */
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f5f5f5;
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+            .preview-header h4 {
+                margin: 0;
+                color: #2d3748;
+            }
+
+        .dashboard-grid-preview {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+            padding: 0 20px;
+        }
+
 
         /* Table in component */
         .component-body .table {
@@ -3048,8 +3142,14 @@
     private void SelectComponent(int componentId)
     {
         selectedComponentId = componentId;
-        var comp = dashboard.Components.First(c => c.ComponentID == componentId);
-        Console.WriteLine($"Component: {comp.Title}, GridX={comp.GridX}, GridWidth={comp.GridWidth}, GridY={comp.GridY}");
+
+        if (selectedComponent != null)
+        {
+            // ✅ Set the dropdown value from component
+            selectedComponentType = selectedComponent.DataViewingTypeID;
+            componentTypeChanged = false;
+        }
+
         StateHasChanged();
     }
 
@@ -3354,19 +3454,19 @@
         StateHasChanged();
     }
 
-    private async Task RenderAllCharts()
-    {
-        await Task.Delay(100);
+    // private async Task RenderAllCharts()
+    // {
+    //     await Task.Delay(100);
 
-        foreach (var component in dashboard.Components)
-        {
-            if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart &&
-                componentData.ContainsKey(component.ComponentID))
-            {
-                await RenderChart(component.ComponentID);
-            }
-        }
-    }
+    //     foreach (var component in dashboard.Components)
+    //     {
+    //         if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart &&
+    //             componentData.ContainsKey(component.ComponentID))
+    //         {
+    //             await RenderChart(component.ComponentID);
+    //         }
+    //     }
+    // }
 
     private async Task RenderChart(int componentId)
     {
@@ -4244,10 +4344,16 @@
         try
         {
             var tasks = dashboard.Components
-                .Where(c => !string.IsNullOrEmpty(c.QueryText))
+                .Where(c => !string.IsNullOrEmpty(c.QueryText) &&
+                           c.DataViewingTypeID != (int)DataViewingTypeEnum.Label)
                 .Select(c => LoadComponentDataAsync(c));
 
             await Task.WhenAll(tasks);
+
+            // ⚡ CRITICAL: These 3 lines make charts appear!
+            StateHasChanged();
+            await Task.Delay(200);
+            await RenderAllCharts();
 
             ToastService.ShowSuccess("Data loaded for all components");
         }
@@ -4259,6 +4365,39 @@
         {
             isLoadingAllData = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task RenderAllCharts()
+    {
+        var chartComponents = dashboard.Components
+            .Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Chart && c.IsVisible);
+
+        foreach (var chart in chartComponents)
+        {
+            await RenderChart(chart);
+        }
+    }
+
+    private async Task RenderChart(DashboardComponent component)
+    {
+        if (!componentData.ContainsKey(component.ComponentID) || !componentData[component.ComponentID].Any())
+            return;
+
+        var data = componentData[component.ComponentID];
+        var chartType = component.ChartType ?? "bar";
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("renderDynamicChart",
+                component.ComponentID,
+                chartType,
+                data,
+                component.Title);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error rendering chart {component.ComponentID}: {ex.Message}");
         }
     }
 
