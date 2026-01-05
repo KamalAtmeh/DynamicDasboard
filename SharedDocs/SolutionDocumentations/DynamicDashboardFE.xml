@@ -59,6 +59,12 @@
             Generates SQL and explanation from natural language query
             </summary>
         </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.FormatNumber(System.Object)">
+            <summary>
+            Formats a number value for display in KPI components
+            Handles decimals, percentages, currency, and whole numbers intelligently
+            </summary>
+        </member>
         <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.GetComponentTypeName(System.Int32)">
             <summary>
             Gets the component type name from the DataViewingTypeID

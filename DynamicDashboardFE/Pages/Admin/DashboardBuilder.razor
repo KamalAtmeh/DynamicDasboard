@@ -202,7 +202,7 @@
                     {
                         <div class="dashboard-component"
                              style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                                        grid-row: @(component.GridY + 1) / span @component.GridHeight;">
+                                                grid-row: @(component.GridY + 1) / span @component.GridHeight;">
 
                             <div class="component-header">
                                 <span class="component-title">@component.Title</span>
@@ -274,8 +274,9 @@
                                         if (data != null && data.Any())
                                         {
                                             var firstRow = data.First();
-                                            var value = firstRow.Values.FirstOrDefault()?.ToString() ?? "0";
-                                            value = FormatNumericValue(value, component);
+                                            var rawValue = firstRow.Values.FirstOrDefault();
+                                            var value = FormatNumber(rawValue);
+
                                             <div class="kpi-display">
                                                 <div class="kpi-value">@value</div>
                                                 <div class="kpi-label">@component.Title</div>
@@ -336,7 +337,7 @@
                             {
                                 <div class="dashboard-component @(selectedComponentId == component.ComponentID ? "selected" : "")"
                                      style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                                                    grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+                                                                grid-row: @(component.GridY + 1) / span @component.GridHeight;"
                                      @onclick="() => SelectComponent(component.ComponentID)">
 
                                     <div class="component-header">
@@ -417,7 +418,8 @@
                                                 if (data != null && data.Any())
                                                 {
                                                     var firstRow = data.First();
-                                                    var value = firstRow.Values.FirstOrDefault()?.ToString() ?? "0";
+                                                    var rawValue = firstRow.Values.FirstOrDefault();
+                                                    var value = FormatNumber(rawValue);
 
                                                     <div class="kpi-display">
                                                         <div class="kpi-value">@value</div>
@@ -1591,6 +1593,42 @@
         // Refresh UI
         StateHasChanged();
 
+        // ✅ Auto-load data for newly added AI components
+        // Find components that don't have data loaded yet
+        var newComponents = dashboard.Components
+            .Where(c => !string.IsNullOrEmpty(c.QueryText) &&
+                       !componentData.ContainsKey(c.ComponentID))
+            .ToList();
+
+        if (newComponents.Any())
+        {
+            Console.WriteLine($"Loading data for {newComponents.Count} new AI component(s)...");
+
+            // Load data for new components
+            foreach (var component in newComponents)
+            {
+                // Initialize loading state
+                if (!isComponentLoading.ContainsKey(component.ComponentID))
+                {
+                    isComponentLoading[component.ComponentID] = false;
+                }
+
+                await LoadComponentDataAsync(component);
+            }
+
+            // Wait for DOM and render charts
+            await Task.Delay(200);
+
+            // Render charts for new components
+            var newCharts = newComponents.Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Chart);
+            foreach (var chart in newCharts)
+            {
+                await RenderChart(chart);
+            }
+
+            Console.WriteLine($"✅ Loaded data for {newComponents.Count} AI component(s)");
+        }
+
         // Show success toast
         ToastService.ShowSuccess("Component added successfully!");
     }
@@ -2275,46 +2313,47 @@
             // Update component metadata
             selectedComponent.LastUpdated = DateTime.UtcNow;
 
-            // ✅ CRITICAL: Store whether component had data BEFORE re-render
-            bool hadData = componentData.ContainsKey(selectedComponent.ComponentID) &&
-                           componentData[selectedComponent.ComponentID].Any();
-            bool isChartComponent = selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Chart;
-
-            // 💾 If it's a chart with data, preserve the data reference
-            List<Dictionary<string, object>> preservedData = null;
-            if (hadData && isChartComponent)
+            // ✅ CRITICAL: Preserve ALL component data before re-render (not just selected)
+            var allPreservedData = new Dictionary<int, List<Dictionary<string, object>>>();
+            foreach (var kvp in componentData)
             {
-                preservedData = componentData[selectedComponent.ComponentID];
+                if (kvp.Value != null && kvp.Value.Any())
+                {
+                    // Create a copy of the data
+                    allPreservedData[kvp.Key] = kvp.Value;
+                }
             }
 
             // Force canvas re-render to update layout
             canvasKey++;
             StateHasChanged();
 
-            // ⏱️ CRITICAL: Wait for DOM to update before re-rendering charts
+            // ⏱️ CRITICAL: Wait for DOM to update
             await Task.Delay(100);
 
-            // ✅ Restore data and re-render if needed
-            if (hadData)
+            // ✅ Restore ALL component data
+            foreach (var kvp in allPreservedData)
             {
-                if (isChartComponent && preservedData != null)
-                {
-                    // Restore preserved data
-                    componentData[selectedComponent.ComponentID] = preservedData;
+                componentData[kvp.Key] = kvp.Value;
+            }
 
-                    // Force chart re-render after delay
-                    await Task.Delay(200);
-                    await RenderChart(selectedComponent);
-                }
-                else if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Table ||
-                         selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
-                {
-                    // Tables and KPIs don't need special rendering, just state update
-                    StateHasChanged();
-                }
+            // ✅ Re-render all charts after data restoration
+            StateHasChanged();
+            await Task.Delay(200);
+
+            // Find all chart components and re-render them
+            var chartComponents = dashboard.Components
+                .Where(c => c.DataViewingTypeID == (int)DataViewingTypeEnum.Chart &&
+                           allPreservedData.ContainsKey(c.ComponentID))
+                .ToList();
+
+            foreach (var chart in chartComponents)
+            {
+                await RenderChart(chart);
             }
 
             ToastService.ShowSuccess($"{selectedComponent.Title} properties updated!");
+            Console.WriteLine($"✅ Preserved and restored data for {allPreservedData.Count} component(s)");
         }
         catch (Exception ex)
         {
@@ -2328,6 +2367,14 @@
         if (selectedComponent == null) return;
 
         Console.WriteLine($"Type changed from {selectedComponent.DataViewingTypeID} to {selectedComponentType}");
+
+        // ✅ Preserve existing data if component has it
+        bool hadData = componentData.ContainsKey(selectedComponent.ComponentID);
+        List<Dictionary<string, object>> preservedData = null;
+        if (hadData)
+        {
+            preservedData = componentData[selectedComponent.ComponentID];
+        }
 
         // ✅ Update the component's actual type
         selectedComponent.DataViewingTypeID = selectedComponentType;
@@ -2345,9 +2392,17 @@
 
         componentTypeChanged = true;
 
+        // ✅ Restore data after type change
+        if (hadData && preservedData != null)
+        {
+            componentData[selectedComponent.ComponentID] = preservedData;
+        }
+
         // ✅ Force canvas re-render
         canvasKey++;
         StateHasChanged();
+
+        Console.WriteLine($"✅ Type changed to {selectedComponentType}, data preserved: {hadData}");
     }
 
     private string TruncateSQL(string sql, int maxLength)
@@ -3574,6 +3629,50 @@
         }
 
         return $"{value:N2}";
+    }
+
+    /// <summary>
+    /// Formats a number value for display in KPI components
+    /// Handles decimals, percentages, currency, and whole numbers intelligently
+    /// </summary>
+    private string FormatNumber(object value)
+    {
+        if (value == null) return "0";
+
+        // Try to parse as decimal
+        if (decimal.TryParse(value.ToString(), out decimal decimalValue))
+        {
+            // Check if it's a whole number (no decimal places needed)
+            if (decimalValue == Math.Floor(decimalValue))
+            {
+                // Format with thousand separators: 60,000
+                return decimalValue.ToString("N0");
+            }
+
+            // Check if value is very small (like 0.05 for 5%)
+            if (Math.Abs(decimalValue) < 1 && decimalValue != 0)
+            {
+                // Could be a percentage - show with 2 decimals
+                return decimalValue.ToString("0.##");
+            }
+
+            // For numbers with decimals, show max 2 decimal places
+            // But trim trailing zeros: 60.50 becomes 60.5, 60.00 becomes 60
+            return decimalValue.ToString("0.##");
+        }
+
+        // If can't parse as decimal, try double
+        if (double.TryParse(value.ToString(), out double doubleValue))
+        {
+            if (doubleValue == Math.Floor(doubleValue))
+            {
+                return doubleValue.ToString("N0");
+            }
+            return doubleValue.ToString("0.##");
+        }
+
+        // Return as-is if not a number
+        return value.ToString();
     }
 
     /// <summary>
