@@ -177,161 +177,186 @@
     @* REPLACE the builder-content section with this enhanced version *@
 
     <div class="builder-content @(isPreviewMode ? "preview-mode" : "")">
-        <!-- Left Sidebar: Component Library (Hidden in preview) -->
-        @if (isPreviewMode)
-        {
-            <!-- ✅ FULLSCREEN PREVIEW (like viewer) -->
-            <div class="preview-container">
-                <div class="preview-header">
-                    <h4>@dashboard.Title</h4>
-                    <button class="btn btn-sm btn-secondary" @onclick="TogglePreviewMode">
-                        <i class="fas fa-edit me-1"></i> Exit Preview
-                    </button>
-                </div>
-
-                <div class="dashboard-grid-preview" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
-                    @foreach (var component in dashboard.Components.Where(c => c.IsVisible))
+    @if (isPreviewMode)
+    {
+        <!-- ============================================ -->
+        <!-- PREVIEW MODE - FULLSCREEN -->
+        <!-- ============================================ -->
+        <div class="preview-fullscreen">
+            <div class="preview-header">
+                <div>
+                    <h4 class="mb-1">@dashboard.Title</h4>
+                    @if (!string.IsNullOrEmpty(dashboard.Description))
                     {
-                        <div class="dashboard-component"
-                             style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                                        grid-row: @(component.GridY + 1) / span @component.GridHeight;">
-
-                            <div class="component-header">
-                                <span class="component-title">@component.Title</span>
-                            </div>
-
-                            <div class="component-body">
-                                @if (componentData.ContainsKey(component.ComponentID))
-                                {
-                                    @switch (component.DataViewingTypeID)
-                                    {
-                                        case (int)DataViewingTypeEnum.Table:
-                                            <ComponentTable Component="component" Data="GetComponentData(component.ComponentID)" />
-                                            break;
-                                        case (int)DataViewingTypeEnum.Number:
-                                            <ComponentNumber Component="component" Data="GetComponentData(component.ComponentID)" />
-                                            break;
-                                        case (int)DataViewingTypeEnum.Chart:
-                                            <ComponentChart Component="component" Data="GetComponentData(component.ComponentID)" />
-                                            break;
-                                        case (int)DataViewingTypeEnum.Label:
-                                            <ComponentLabel Component="component" />
-                                            break;
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="component-placeholder">
-                                        <small class="text-muted">No data loaded</small>
-                                    </div>
-                                }
-                            </div>
-                        </div>
+                        <p class="text-muted mb-0 small">@dashboard.Description</p>
                     }
                 </div>
+                <button class="btn btn-secondary" @onclick="TogglePreviewMode">
+                    <i class="fas fa-edit me-2"></i>
+                    Exit Preview
+                </button>
             </div>
-        }
-        @if (!isPreviewMode)
-        {
-            <div class="builder-sidebar builder-sidebar-left" style="display:none">
-                <div class="sidebar-header">
-                    <h5 class="mb-0"><i class="fas fa-th me-2"></i>Components</h5>
-                </div>
-                <div class="sidebar-body">
-                    <div class="mb-3">
-                        <input type="text"
-                               class="form-control form-control-sm"
-                               placeholder="Search components..."
-                               @bind="componentSearchTerm" />
-                    </div>
 
-                    @foreach (var category in componentCategories)
-                    {
-                        <div class="component-category mb-3">
-                            <h6 class="category-title">@category</h6>
-                            <div class="component-list">
-                                @foreach (var component in FilteredComponents.Where(c => c.Category == category))
-                                {
-                                    <div class="component-item" draggable="true">
-                                        <i class="fas @component.Icon me-2"></i>
-                                        <span>@component.Title</span>
-                                    </div>
-                                }
-                            </div>
+            <div class="preview-grid" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
+                @foreach (var component in dashboard.Components.Where(c => c.IsVisible))
+                {
+                    <div class="dashboard-component"
+                         style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
+                                grid-row: @(component.GridY + 1) / span @component.GridHeight;">
+
+                        <div class="component-header">
+                            <span class="component-title">@component.Title</span>
                         </div>
-                    }
-                </div>
-            </div>
-        }
 
-        <!-- Center: Canvas -->
-        <div class="builder-canvas-container @(isPreviewMode ? "fullscreen" : "")">
-            @if (!isPreviewMode)
-            {
-                <div class="canvas-toolbar">
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-secondary" @onclick="ZoomIn">
-                            <i class="fas fa-search-plus"></i>
-                        </button>
-                        <button class="btn btn-outline-secondary" @onclick="ZoomOut">
-                            <i class="fas fa-search-minus"></i>
-                        </button>
-                        <button class="btn btn-outline-secondary" @onclick="ResetZoom">
-                            <i class="fas fa-expand"></i>
-                        </button>
-                    </div>
-                    <span class="ms-3 text-muted">Zoom: @((int)(zoomLevel * 100))%</span>
-
-                    @if (dashboard.Components != null && dashboard.Components.Any() && dashboard.DatabaseID > 0)
-                    {
-                        <button class="btn btn-sm btn-primary ms-auto" @onclick="LoadAllComponentsData" disabled="@isLoadingAllData">
-                            @if (isLoadingAllData)
+                        <!-- ✅ COMPONENT BODY - PREVIEW MODE -->
+                        <div class="component-body">
+                            @if (IsComponentLoading(component.ComponentID))
                             {
-                                <span class="spinner-border spinner-border-sm me-1"></span>
-                                <text>Loading...</text>
+                                <div class="component-loading">
+                                    <div class="spinner-border text-primary mb-2"></div>
+                                    <p class="text-muted small mb-0">Loading data...</p>
+                                </div>
+                            }
+                            else if (componentData.ContainsKey(component.ComponentID))
+                            {
+                                @if (component.DataViewingTypeID == 2)
+                                {
+                                    <!-- TABLE -->
+                                   
+                                        var data = GetComponentData(component.ComponentID);
+                                        if (data != null && data.Any())
+                                        {
+                                            var columns = data.First().Keys.ToList();
+                                            var displayData = data.Take(10).ToList();
+                                            
+                                            <div class="table-responsive" style="max-height: 100%; overflow: auto;">
+                                                <table class="table table-sm table-hover mb-0">
+                                                    <thead class="sticky-top bg-light">
+                                                        <tr>
+                                                            @foreach (var col in columns)
+                                                            {
+                                                                <th style="font-size: 11px; padding: 8px;">@col</th>
+                                                            }
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var row in displayData)
+                                                        {
+                                                            <tr>
+                                                                @foreach (var col in columns)
+                                                                {
+                                                                    <td style="font-size: 11px; padding: 8px;">@row[col]</td>
+                                                                }
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            @if (data.Count > 10)
+                                            {
+                                                <div class="text-center mt-2">
+                                                    <small class="text-muted">Showing 10 of @data.Count rows</small>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center py-4">
+                                                <i class="fas fa-table fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0 small">No data available</p>
+                                            </div>
+                                        }
+                                 
+                                }
+                                else if (component.DataViewingTypeID == 3)
+                                {
+                                    <!-- KPI / NUMBER -->
+                                  
+                                        var data = GetComponentData(component.ComponentID);
+                                        if (data != null && data.Any())
+                                        {
+                                            var firstRow = data.First();
+                                            var value = firstRow.Values.FirstOrDefault()?.ToString() ?? "0";
+                                            
+                                            <div class="kpi-display">
+                                                <div class="kpi-value">@value</div>
+                                                <div class="kpi-label">@component.Title</div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="kpi-display">
+                                                <div class="kpi-value">--</div>
+                                                <div class="kpi-label">No Data</div>
+                                            </div>
+                                        }
+                                 
+                                }
+                                else if (component.DataViewingTypeID == 4)
+                                {
+                                    <!-- ✅ CHART - DIRECT DIV (CRITICAL!) -->
+                                    <div id="chart-@component.ComponentID" style="height: 100%; min-height: 250px;"></div>
+                                }
+                                else if (component.DataViewingTypeID == 1)
+                                {
+                                    <!-- LABEL -->
+                                    <div class="label-display" style="padding: 20px; text-align: center;">
+                                        <h5 style="margin-bottom: 8px; color: #2d3748;">@component.Title</h5>
+                                        @if (!string.IsNullOrEmpty(component.Description))
+                                        {
+                                            <p class="text-muted mb-0" style="font-size: 14px;">@component.Description</p>
+                                        }
+                                    </div>
+                                }
                             }
                             else
                             {
-                                <i class="fas fa-play me-1"></i>
-                                <text>Load Data</text>
+                                <div class="component-placeholder">
+                                    <i class="fas @GetComponentIcon(component.DataViewingTypeID) fa-3x mb-3 text-muted"></i>
+                                    <p class="text-muted mb-1 font-weight-bold">@GetComponentTypeName(component.DataViewingTypeID)</p>
+                                    <small class="text-muted">No data loaded</small>
+                                </div>
                             }
-                        </button>
-                    }
-                </div>
-            }
-
-            <div class="builder-canvas" style="transform: scale(@(isPreviewMode ? 1 : zoomLevel)); background: @(isPreviewMode ? "#f5f5f5" : "white");">
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- ============================================ -->
+        <!-- DESIGN MODE -->
+        <!-- ============================================ -->
+        <div class="builder-design">
+            <!-- Canvas -->
+            <div class="builder-canvas" style="transform: scale(@zoomLevel);">
                 <div class="dashboard-grid" @key="canvasKey" style="grid-template-rows: repeat(@GetGridHeight(), 100px);">
                     @if (dashboard.Components != null && dashboard.Components.Any())
                     {
                         @foreach (var component in dashboard.Components)
                         {
-                            <div class="dashboard-component @(selectedComponentId == component.ComponentID && !isPreviewMode ? "selected" : "")"
+                            <div class="dashboard-component @(selectedComponentId == component.ComponentID ? "selected" : "")"
                                  style="grid-column: @(component.GridX + 1) / span @component.GridWidth;
-                        grid-row: @(component.GridY + 1) / span @component.GridHeight;"
-                                 @onclick="() => { if (!isPreviewMode) SelectComponent(component.ComponentID); }">
+                                        grid-row: @(component.GridY + 1) / span @component.GridHeight;"
+                                 @onclick="() => SelectComponent(component.ComponentID)">
 
-                                <!-- Component Header -->
                                 <div class="component-header">
                                     <span class="component-title">@component.Title</span>
-                                    @if (!isPreviewMode)
-                                    {
-                                        <div class="component-actions">
-                                            <button class="btn btn-sm btn-link" @onclick="() => DuplicateComponent(component)" title="Duplicate">
-                                                <i class="fas fa-clone"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-link" @onclick="() => RemoveComponent(component.ComponentID)" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    }
+                                    <div class="component-actions">
+                                        <button class="btn btn-sm btn-link" @onclick="() => DuplicateComponent(component)" @onclick:stopPropagation="true" title="Duplicate">
+                                            <i class="fas fa-clone"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-link" @onclick="() => RemoveComponent(component.ComponentID)" @onclick:stopPropagation="true" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <!-- Component Body -->
+                                <!-- ✅ COMPONENT BODY - DESIGN MODE (EXACT SAME AS PREVIEW) -->
                                 <div class="component-body">
                                     @if (IsComponentLoading(component.ComponentID))
                                     {
-                                        <!-- Loading State -->
                                         <div class="component-loading">
                                             <div class="spinner-border text-primary mb-2"></div>
                                             <p class="text-muted small mb-0">Loading data...</p>
@@ -339,106 +364,112 @@
                                     }
                                     else if (componentData.ContainsKey(component.ComponentID))
                                     {
-                                        <!-- ✅ DATA LOADED - RENDER BASED ON TYPE -->
-                                        @if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
+                                        @if (component.DataViewingTypeID == 2)
                                         {
                                             <!-- TABLE -->
-                                            var data = GetComponentData(component.ComponentID);
-                                            if (data.Any())
-                                            {
-                                                var columns = data.First().Keys.ToList();
-                                                var displayData = data.Take(10).ToList();
-
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-hover">
-                                                        <thead>
-                                                            <tr>
-                                                                @foreach (var col in columns)
-                                                                {
-                                                                    <th>@col</th>
-                                                                }
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach (var row in displayData)
-                                                            {
+                                            
+                                                var data = GetComponentData(component.ComponentID);
+                                                if (data != null && data.Any())
+                                                {
+                                                    var columns = data.First().Keys.ToList();
+                                                    var displayData = data.Take(10).ToList();
+                                                    
+                                                    <div class="table-responsive" style="max-height: 100%; overflow: auto;">
+                                                        <table class="table table-sm table-hover mb-0">
+                                                            <thead class="sticky-top bg-light">
                                                                 <tr>
                                                                     @foreach (var col in columns)
                                                                     {
-                                                                        <td>@row[col]</td>
+                                                                        <th style="font-size: 11px; padding: 8px;">@col</th>
                                                                     }
                                                                 </tr>
-                                                            }
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var row in displayData)
+                                                                {
+                                                                    <tr>
+                                                                        @foreach (var col in columns)
+                                                                        {
+                                                                            <td style="font-size: 11px; padding: 8px;">@row[col]</td>
+                                                                        }
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                     @if (data.Count > 10)
                                                     {
                                                         <div class="text-center mt-2">
                                                             <small class="text-muted">Showing 10 of @data.Count rows</small>
                                                         </div>
                                                     }
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="text-center py-3">
-                                                    <i class="fas fa-table fa-2x text-muted mb-2"></i>
-                                                    <p class="text-muted mb-0">No data available</p>
-                                                </div>
-                                            }
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center py-4">
+                                                        <i class="fas fa-table fa-2x text-muted mb-2"></i>
+                                                        <p class="text-muted mb-0 small">No data available</p>
+                                                    </div>
+                                                }
+                                           
                                         }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
+                                        else if (component.DataViewingTypeID == 3)
                                         {
                                             <!-- KPI / NUMBER -->
-                                            var data = GetComponentData(component.ComponentID);
-                                            if (data.Any())
-                                            {
-                                                var firstRow = data.First();
-                                                var value = firstRow.Values.FirstOrDefault()?.ToString() ?? "0";
-
-                                                <div class="kpi-display">
-                                                    <div class="kpi-value">@value</div>
-                                                    <div class="kpi-label">@component.Title</div>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="kpi-display">
-                                                    <div class="kpi-value">--</div>
-                                                    <div class="kpi-label">No Data</div>
-                                                </div>
-                                            }
+                                            
+                                                var data = GetComponentData(component.ComponentID);
+                                                if (data != null && data.Any())
+                                                {
+                                                    var firstRow = data.First();
+                                                    var value = firstRow.Values.FirstOrDefault()?.ToString() ?? "0";
+                                                    
+                                                    <div class="kpi-display">
+                                                        <div class="kpi-value">@value</div>
+                                                        <div class="kpi-label">@component.Title</div>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="kpi-display">
+                                                        <div class="kpi-value">--</div>
+                                                        <div class="kpi-label">No Data</div>
+                                                    </div>
+                                                }
+                                            
                                         }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
+                                        else if (component.DataViewingTypeID == 4)
                                         {
-                                            <!-- ✅ CHART - DIRECT DIV (LIKE VIEWER) -->
+                                            <!-- ✅ CHART - DIRECT DIV (CRITICAL!) -->
                                             <div id="chart-@component.ComponentID" style="height: 100%; min-height: 250px;"></div>
                                         }
-                                        else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Label)
+                                        else if (component.DataViewingTypeID == 1)
                                         {
                                             <!-- LABEL -->
-                                            <div class="label-display">
-                                                <h4>@component.Title</h4>
-                                                <p class="text-muted">@component.Description</p>
+                                            <div class="label-display" style="padding: 20px; text-align: center;">
+                                                <h5 style="margin-bottom: 8px; color: #2d3748;">@component.Title</h5>
+                                                @if (!string.IsNullOrEmpty(component.Description))
+                                                {
+                                                    <p class="text-muted mb-0" style="font-size: 14px;">@component.Description</p>
+                                                }
                                             </div>
                                         }
                                     }
                                     else
                                     {
-                                        <!-- ✅ NO DATA - SHOW PLACEHOLDER -->
+                                        <!-- NO DATA PLACEHOLDER -->
                                         <div class="component-placeholder">
                                             <i class="fas @GetComponentIcon(component.DataViewingTypeID) fa-3x mb-3 text-muted"></i>
                                             <p class="text-muted mb-1 font-weight-bold">@GetComponentTypeName(component.DataViewingTypeID)</p>
-                                            <small class="text-muted">@component.Description</small>
-                                            @if (!isPreviewMode)
+                                            @if (!string.IsNullOrEmpty(component.Description))
                                             {
-                                                <div class="mt-3">
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-info-circle me-1"></i>
-                                                        Click "Load Data" to preview
-                                                    </small>
-                                                </div>
+                                                <small class="text-muted">@component.Description</small>
                                             }
+                                            <div class="mt-3">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Click "Load Data" to preview
+                                                </small>
+                                            </div>
                                         </div>
                                     }
                                 </div>
@@ -447,22 +478,27 @@
                     }
                     else
                     {
+                        <!-- EMPTY CANVAS -->
                         <div class="empty-canvas">
                             <i class="fas fa-magic fa-3x mb-3 text-muted"></i>
                             <h5>Start Building Your Dashboard</h5>
-                            <p class="text-muted">Click "Generate with AI" to create a dashboard automatically</p>
-                            <button class="btn btn-success btn-lg" @onclick="ShowTemplateModal">
-                                <i class="fas fa-magic me-2"></i>Generate with AI
-                            </button>
+                            <p class="text-muted">Click "AI Generate" to create components automatically or "Add Chart" to create custom components</p>
+                            <div class="d-flex gap-2 justify-content-center mt-3">
+                                <button class="btn btn-success" @onclick="ShowTemplateModal">
+                                    <i class="fas fa-magic me-2"></i>AI Generate
+                                </button>
+                                <button class="btn btn-primary" @onclick="ShowAddChartModal" disabled="@(dashboard.DatabaseID <= 0)">
+                                    <i class="fas fa-plus-circle me-2"></i>Add Chart
+                                </button>
+                            </div>
                         </div>
                     }
                 </div>
             </div>
-        </div>
 
-        <!-- Right Sidebar: Properties Panel (Hidden in preview) -->
-        @if (!isPreviewMode)
-        {
+            <!-- ============================================ -->
+            <!-- PROPERTIES PANEL (RIGHT SIDEBAR) -->
+            <!-- ============================================ -->
             <div class="builder-sidebar builder-sidebar-right">
                 @if (selectedComponentId != 0 && selectedComponent != null)
                 {
@@ -489,6 +525,8 @@
                                        @bind="selectedComponent.Title"
                                        placeholder="Enter component title" />
                             </div>
+
+                            <!-- Component Description -->
                             <div class="property-section">
                                 <label class="property-label">
                                     <i class="fas fa-align-left me-2"></i>
@@ -504,6 +542,8 @@
                                     Optional description to help others understand this component
                                 </small>
                             </div>
+
+                            <!-- SQL Query -->
                             <div class="property-section">
                                 <label class="property-label">
                                     <i class="fas fa-code me-2"></i>
@@ -568,40 +608,24 @@
                                     </button>
                                 }
                             </div>
+
+                            <!-- Component Type -->
                             <div class="property-section">
-                                <label><i class="fas fa-shapes me-1"></i> Component Type</label>
+                                <label class="property-label">
+                                    <i class="fas fa-shapes me-2"></i>
+                                    Component Type
+                                </label>
                                 <select class="form-select" @bind="selectedComponentType" @bind:after="OnComponentTypeChanged">
+                                    <option value="1">Label</option>
                                     <option value="2">Table</option>
                                     <option value="3">KPI / Number</option>
                                     <option value="4">Chart</option>
                                 </select>
                             </div>
-                            @*  @if (selectedComponentType == 4)
+
+                            <!-- Chart Type (Only if Chart) -->
+                            @if (selectedComponent.DataViewingTypeID == 4)
                             {
-                                <div class="property-section">
-                                    <label><i class="fas fa-chart-bar me-1"></i> Chart Type</label>
-                                    <div class="chart-type-selector-grid">
-                                        @foreach (var chartType in new[] {
-                                                        ("bar", "fa-chart-bar", "Bar"),
-                                                        ("line", "fa-chart-line", "Line"),
-                                                        ("pie", "fa-chart-pie", "Pie"),
-                                                        ("donut", "fa-circle-notch", "Donut"),
-                                                        ("area", "fa-chart-area", "Area")
-                                                        })
-                                        {
-                                            <div class="chart-type-card @(selectedComponent.ChartType == chartType.Item1 ? "active" : "")"
-                                                 @onclick="() => UpdateChartType(chartType.Item1)">
-                                                <i class="fas @chartType.Item2 fa-2x mb-2"></i>
-                                                <span>@chartType.Item3</span>
-                                            </div>
-                                        }
-                                    </div>
-                                </div> *@
-                            }
-                            <!-- Component Type (Chart/Table/KPI) -->
-                            @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Chart)
-                            {
-                                <!-- CHART TYPE SELECTION - SAME GRAPHICS -->
                                 <div class="property-section">
                                     <label class="property-label">
                                         <i class="fas fa-chart-bar me-2"></i>
@@ -636,14 +660,18 @@
                                     </div>
                                 </div>
                             }
-                            @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
+
+                            <!-- Table Options (Only if Table) -->
+                            @if (selectedComponent.DataViewingTypeID == 2)
                             {
                                 <div class="property-section">
-                                    <h6><i class="fas fa-table me-2"></i>Table Options</h6>
+                                    <label class="property-label">
+                                        <i class="fas fa-table me-2"></i>
+                                        Table Options
+                                    </label>
 
-                                    <!-- Page Size -->
                                     <div class="form-group mb-3">
-                                        <label class="form-label">Rows Per Page</label>
+                                        <label class="form-label small">Rows Per Page</label>
                                         <select class="form-select form-select-sm" @bind="tablePageSize">
                                             <option value="10">10 rows</option>
                                             <option value="25">25 rows</option>
@@ -652,7 +680,6 @@
                                         </select>
                                     </div>
 
-                                    <!-- Features -->
                                     <div class="form-check mb-2">
                                         <input class="form-check-input" type="checkbox" @bind="tableEnablePagination" id="tablePagination">
                                         <label class="form-check-label" for="tablePagination">
@@ -673,68 +700,20 @@
                                             <i class="fas fa-sort me-1"></i> Enable Sorting
                                         </label>
                                     </div>
-
-                                    <!-- Apply Button -->
-                                    <button class="btn btn-sm btn-primary mt-2 w-100" @onclick="ApplyTableOptions">
-                                        <i class="fas fa-check me-1"></i> Apply Table Options
-                                    </button>
                                 </div>
                             }
 
-                            @* @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Table)
+                            <!-- KPI Options (Only if Number) -->
+                            @if (selectedComponent.DataViewingTypeID == 3)
                             {
-                                <!-- TABLE CONFIGURATION -->
                                 <div class="property-section">
                                     <label class="property-label">
-                                        <i class="fas fa-table me-2"></i>
-                                        Table Options
+                                        <i class="fas fa-tachometer-alt me-2"></i>
+                                        KPI Options
                                     </label>
 
-                                    <div class="table-options-grid">
-                                        <div class="table-option @(GetTableOption("striped") ? "selected" : "")"
-                                             @onclick='() => ToggleTableOption("striped")'>
-                                            <i class="fas fa-bars fa-2x mb-2"></i>
-                                            <span>Striped Rows</span>
-                                        </div>
-                                        <div class="table-option @(GetTableOption("bordered") ? "selected" : "")"
-                                             @onclick='() => ToggleTableOption("bordered")'>
-                                            <i class="fas fa-border-all fa-2x mb-2"></i>
-                                            <span>Bordered</span>
-                                        </div>
-                                        <div class="table-option @(GetTableOption("hover") ? "selected" : "")"
-                                             @onclick='() => ToggleTableOption("hover")'>
-                                            <i class="fas fa-hand-pointer fa-2x mb-2"></i>
-                                            <span>Hover Effect</span>
-                                        </div>
-                                        <div class="table-option @(GetTableOption("pagination") ? "selected" : "")"
-                                             @onclick='() => ToggleTableOption("pagination")'>
-                                            <i class="fas fa-ellipsis-h fa-2x mb-2"></i>
-                                            <span>Pagination</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-3">
-                                        <label class="form-label">Rows Per Page</label>
-                                        <select class="form-control" @bind="selectedTablePageSize">
-                                            <option value="5">5 rows</option>
-                                            <option value="10">10 rows</option>
-                                            <option value="25">25 rows</option>
-                                            <option value="50">50 rows</option>
-                                            <option value="100">100 rows</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            }
- *@
-
-                            @if (selectedComponent.DataViewingTypeID == (int)DataViewingTypeEnum.Number)
-                            {
-                                <div class="property-section">
-                                    <h6><i class="fas fa-tachometer-alt me-2"></i>KPI Options</h6>
-
-                                    <!-- Format Type -->
                                     <div class="form-group mb-3">
-                                        <label class="form-label">Number Format</label>
+                                        <label class="form-label small">Number Format</label>
                                         <select class="form-select form-select-sm" @bind="kpiNumberFormat">
                                             <option value="number">Number (1,234.56)</option>
                                             <option value="currency">Currency ($1,234.56)</option>
@@ -743,104 +722,47 @@
                                         </select>
                                     </div>
 
-                                    <!-- Decimals -->
                                     <div class="form-group mb-3">
-                                        <label class="form-label">Decimal Places</label>
+                                        <label class="form-label small">Decimal Places</label>
                                         <input type="number" class="form-control form-control-sm"
                                                @bind="kpiDecimalPlaces" min="0" max="4" />
                                     </div>
 
-                                    <!-- Prefix & Suffix -->
                                     <div class="row mb-3">
                                         <div class="col-6">
-                                            <label class="form-label">Prefix</label>
+                                            <label class="form-label small">Prefix</label>
                                             <input type="text" class="form-control form-control-sm"
                                                    @bind="kpiPrefix" placeholder="$" maxlength="5" />
                                         </div>
                                         <div class="col-6">
-                                            <label class="form-label">Suffix</label>
+                                            <label class="form-label small">Suffix</label>
                                             <input type="text" class="form-control form-control-sm"
                                                    @bind="kpiSuffix" placeholder="%" maxlength="5" />
                                         </div>
                                     </div>
 
-                                    <!-- Icon -->
                                     <div class="form-group mb-3">
-                                        <label class="form-label">Icon (Font Awesome)</label>
+                                        <label class="form-label small">Icon (Font Awesome)</label>
                                         <input type="text" class="form-control form-control-sm"
                                                @bind="kpiIcon" placeholder="dollar-sign" />
                                         <small class="text-muted">Without 'fa-' prefix</small>
                                     </div>
 
-                                    <!-- Trend -->
                                     <div class="form-check mb-3">
                                         <input class="form-check-input" type="checkbox" @bind="kpiShowTrend" id="kpiTrend">
                                         <label class="form-check-label" for="kpiTrend">
                                             <i class="fas fa-chart-line me-1"></i> Show Trend Indicator
                                         </label>
                                     </div>
-
-                                    <!-- Apply Button -->
-                                    <button class="btn btn-sm btn-primary w-100" @onclick="ApplyKPIOptions">
-                                        <i class="fas fa-check me-1"></i> Apply KPI Options
-                                    </button>
                                 </div>
                             }
-                            <!-- COMPONENT SIZE - SAME GRAPHICS -->
+
+                            <!-- Component Size -->
                             <div class="property-section">
                                 <label class="property-label">
                                     <i class="fas fa-expand me-2"></i>
                                     Component Size
                                 </label>
-                                @*                                 <div class="size-selection-grid">
-                                    <div class="size-option @(IsComponentSize(3, 2) ? "selected" : "")"
-                                         @onclick='() => UpdateComponentSize(3, 2)'>
-                                        <div class="size-preview small-preview"></div>
-                                        <span>Small</span>
-                                        <small class="text-muted">3×2</small>
-                                    </div>
-                                    <div class="size-option @(IsComponentSize(6, 3) ? "selected" : "")"
-                                         @onclick='() => UpdateComponentSize(6, 3)'>
-                                        <div class="size-preview medium-preview"></div>
-                                        <span>Medium</span>
-                                        <small class="text-muted">6×3</small>
-                                    </div>
-                                    <div class="size-option @(IsComponentSize(12, 4) ? "selected" : "")"
-                                         @onclick='() => UpdateComponentSize(12, 4)'>
-                                        <div class="size-preview large-preview"></div>
-                                        <span>Large</span>
-                                        <small class="text-muted">12×4</small>
-                                    </div>
-                                    <div class="size-option @(IsComponentSize(12, 6) ? "selected" : "")"
-                                         @onclick='() => UpdateComponentSize(12, 6)'>
-                                        <div class="size-preview xlarge-preview"></div>
-                                        <span>Extra Large</span>
-                                        <small class="text-muted">12×6</small>
-                                    </div>
-                                </div>
-
-                                <!-- Custom Size -->
-                                <div class="custom-size mt-3">
-                                    <label class="form-label">Custom Size</label>
-                                    <div class="row g-2">
-                                        <div class="col-6">
-                                            <label class="small text-muted">Width (1-12)</label>
-                                            <input type="number"
-                                                   class="form-control"
-                                                   @bind="selectedComponent.GridWidth"
-                                                   min="1"
-                                                   max="12" />
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="small text-muted">Height</label>
-                                            <input type="number"
-                                                   class="form-control"
-                                                   @bind="selectedComponent.GridHeight"
-                                                   min="1"
-                                                   max="10" />
-                                        </div>
-                                    </div>
-                                </div> *@
                                 <div class="size-selector">
                                     @foreach (var size in new[] { (3, 2), (6, 2), (6, 3), (12, 3), (12, 4) })
                                     {
@@ -872,10 +794,10 @@
                     </div>
                 }
             </div>
-        }
+        </div>
+    }
+</div>
 
-
-    </div>
 
     <style>
         /* Preview Mode Styles */
