@@ -4841,3 +4841,306 @@
         ToastService.ShowSuccess("KPI options applied!");
     }
 }
+<script suppress-error="BL9992">
+    // Enhanced chart rendering with legends and better visuals
+    window.renderDynamicChart = function(componentId, chartType, data, title) {
+        const container = document.querySelector(`#chart-${componentId}`);
+        if (!container || !data || data.length === 0) {
+            console.log(`Chart ${componentId}: No container or data`);
+            return;
+        }
+
+        console.log(`Rendering chart ${componentId} with type ${chartType}`);
+
+        // Get column names from first row
+        const columns = Object.keys(data[0]);
+        const xColumn = columns[0];
+        const yColumn = columns[1];
+
+        // Extract data
+        const categories = data.map(row => row[xColumn]);
+        const values = data.map(row => row[yColumn]);
+
+        let options;
+
+        switch(chartType.toLowerCase()) {
+            case 'line':
+            case 'area':
+                options = {
+                    series: [{
+                        name: yColumn,
+                        data: values
+                    }],
+                    chart: {
+                        id: `chart-${componentId}`,
+                        type: chartType,
+                        height: '100%',
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: true,
+                                selection: false,
+                                zoom: true,
+                                zoomin: true,
+                                zoomout: true,
+                                pan: false,
+                                reset: true
+                            }
+                        },
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        }
+                    },
+                    dataLabels: { enabled: false },
+                    stroke: {
+                        curve: 'smooth',
+                        width: 3,  // ✅ Thicker line
+                        colors: ['#4361EE']
+                    },
+                    xaxis: {
+                        categories: categories,
+                        title: {
+                            text: xColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' }
+                        }
+                    },
+                    yaxis: {
+                        min: 0,  // ✅ Fix: Start at 0
+                        title: {
+                            text: yColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' },
+                            formatter: function(value) {
+                                return value.toFixed(0);
+                            }
+                        }
+                    },
+                    colors: ['#4361EE'],
+                    fill: {
+                        type: chartType === 'area' ? 'gradient' : 'solid',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.5,
+                            opacityTo: 0.1,
+                            stops: [0, 90, 100]
+                        }
+                    },
+                    grid: {
+                        borderColor: '#e5e7eb',
+                        strokeDashArray: 4,
+                        padding: {
+                            bottom: 10  // ✅ Fix: Prevent line going below canvas
+                        }
+                    },
+                    // ✅ ADD LEGEND
+                    legend: {
+                        show: true,
+                        position: 'top',
+                        horizontalAlign: 'left',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        fontFamily: 'inherit',
+                        markers: {
+                            width: 12,
+                            height: 12,
+                            radius: 2
+                        },
+                        itemMargin: {
+                            horizontal: 10
+                        }
+                    },
+                    tooltip: {
+                        shared: true,
+                        intersect: false,
+                        y: {
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                };
+                break;
+
+    case 'pie':
+    case 'donut':
+        const total = values.reduce((a, b) => a + b, 0);
+        options = {
+            series: values,
+            chart: {
+                id: `chart-${componentId}`,
+                type: chartType,
+                height: '100%'
+            },
+            labels: categories,
+            colors: ['#667EEA', '#48BB78', '#F6AD55', '#9F7AEA', '#FC8181', '#14B8A6', '#8B5CF6'],
+            legend: {
+                show: true,
+                position: 'bottom',
+                horizontalAlign: 'center',
+                fontSize: '14px',
+                fontWeight: 600,
+                markers: { width: 14, height: 14, radius: 12 },
+                itemMargin: { horizontal: 12, vertical: 8 },
+                formatter: function(seriesName, opts) {
+                    const value = opts.w.globals.series[opts.seriesIndex];
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return seriesName + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) {
+                    return val.toFixed(1) + "%";
+                },
+                style: { fontSize: '13px', fontWeight: 700, colors: ['#fff'] }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: chartType === 'donut' ? '65%' : '0%'
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return value.toLocaleString() + ' (' + percentage + '%)';
+                    }
+                }
+            }
+        };
+        break;
+            default: // bar
+                options = {
+                    series: [{
+                        name: yColumn,
+                        data: values
+                    }],
+                    chart: {
+                        id: `chart-${componentId}`,
+                        type: 'bar',
+                        height: '100%',
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: true
+                            }
+                        },
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        }
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            borderRadius: 6,
+                            dataLabels: {
+                                position: 'top'
+                            },
+                            columnWidth: '60%'
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function(val) {
+                            return val.toLocaleString();
+                        },
+                        offsetY: -20,
+                        style: {
+                            fontSize: '11px',
+                            colors: ["#304758"],
+                            fontWeight: 600
+                        }
+                    },
+                    xaxis: {
+                        categories: categories,
+                        title: {
+                            text: xColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' },
+                            rotate: -45,
+                            trim: true
+                        }
+                    },
+                    yaxis: {
+                        min: 0,
+                        title: {
+                            text: yColumn,
+                            style: { fontSize: '12px', fontWeight: 600, color: '#6b7280' }
+                        },
+                        labels: {
+                            style: { colors: '#6b7280', fontSize: '11px' },
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    },
+                    colors: ['#667EEA'],
+                    grid: {
+                        borderColor: '#e5e7eb',
+                        strokeDashArray: 4
+                    },
+                    // ✅ LEGEND (optional for single series, but good for consistency)
+                    legend: {
+                        show: false,  // Hide for single series bar
+                        position: 'top',
+                        horizontalAlign: 'left',
+                        fontSize: '13px',
+                        fontWeight: 500
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                };
+        }
+
+        // Clear existing chart if any
+        const existingChart = ApexCharts.getChartByID(`chart-${componentId}`);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+
+        // Render new chart
+        const chart = new ApexCharts(container, options);
+        chart.render();
+
+        console.log(`Chart ${componentId} rendered successfully`);
+    };
+
+        window.enterFullscreen = function() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+    };
+
+    window.exitFullscreen = function() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    };
+</script>
