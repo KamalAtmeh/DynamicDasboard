@@ -1,0 +1,1225 @@
+﻿
+/* ============================================ */
+/* 1. LAYOUT & STRUCTURE */
+/* ============================================ */
+.builder-content.preview-mode {
+    background: #f5f5f5;
+}
+
+.builder-canvas-container.fullscreen {
+    width: 100%;
+    flex: 1;
+}
+
+.builder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-height: 60px;
+}
+
+.builder-header-left,
+.builder-header-center,
+.builder-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.builder-header-center {
+    flex: 1;
+    justify-content: center;
+}
+
+.builder-design {
+    display: flex;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+.builder-canvas {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+    transform-origin: top left;
+    transition: transform 0.2s ease;
+}
+
+/* ============================================ */
+/* 2. BUILDER HEADER ELEMENTS */
+/* ============================================ */
+
+.dashboard-title-section {
+    display: flex;
+    align-items: center;
+    color: white;
+    gap: 8px;
+}
+
+    .dashboard-title-section i {
+        font-size: 20px;
+    }
+
+    .dashboard-title-section h5 {
+        color: white;
+        font-weight: 600;
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .dashboard-title-section .badge {
+        font-size: 10px;
+        padding: 4px 8px;
+        font-weight: 600;
+    }
+
+/* ============================================ */
+/* 3. BUILDER HEADER BUTTONS */
+/* ============================================ */
+
+.builder-header .btn-group {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.builder-header .btn {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.builder-header .btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.builder-header .btn i {
+    font-size: 14px;
+}
+
+.builder-header .btn-success {
+    background: #10b981;
+    color: white;
+    font-weight: 600;
+}
+
+    .builder-header .btn-success:hover:not(:disabled) {
+        background: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+
+.builder-header .btn-primary {
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+}
+
+    .builder-header .btn-primary:hover:not(:disabled) {
+        background: #2563eb;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+
+.builder-header .btn-outline-success,
+.builder-header .btn-outline-info {
+    background: white;
+    border: 2px solid white;
+    color: #667eea;
+    font-weight: 500;
+}
+
+    .builder-header .btn-outline-success:hover:not(:disabled),
+    .builder-header .btn-outline-info:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+    }
+
+.builder-header .btn-outline-secondary {
+    background: white;
+    border: 2px solid white;
+    color: #667eea;
+    font-weight: 500;
+}
+
+    .builder-header .btn-outline-secondary:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+    }
+
+.builder-header .btn-secondary {
+    background: rgba(255, 255, 255, 0.95);
+    color: #667eea;
+    font-weight: 600;
+    border: 2px solid white;
+}
+
+    .builder-header .btn-secondary:hover {
+        background: white;
+    }
+
+.builder-header .btn-outline-danger {
+    background: white;
+    border: 2px solid white;
+    color: #ef4444;
+    font-weight: 500;
+}
+
+    .builder-header .btn-outline-danger:hover:not(:disabled) {
+        background: #ef4444;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    }
+
+.builder-header .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.builder-header .btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
+.builder-header .btn-group .btn {
+    border-right: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+    .builder-header .btn-group .btn:last-child {
+        border-right: none;
+    }
+
+.builder-header .btn-group .btn-outline-danger {
+    border-right: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.zoom-display {
+    cursor: default !important;
+    font-weight: 600;
+    min-width: 60px;
+    pointer-events: none;
+}
+
+.builder-header .spinner-border-sm {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+}
+
+/* ============================================ */
+/* 4. COMPONENT STRUCTURE */
+/* ============================================ */
+
+.component-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    background: white;
+    min-height: 45px;
+}
+
+.component-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #2d3748;
+}
+
+.component-actions {
+    display: flex;
+    gap: 4px;
+}
+
+    .component-actions .btn-link {
+        padding: 4px 8px;
+        color: #64748b;
+        transition: all 0.2s;
+    }
+
+        .component-actions .btn-link:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 4px;
+        }
+
+.component-body {
+    height: calc(100% - 45px);
+    overflow: auto;
+    position: relative;
+}
+
+    .component-body .table {
+        font-size: 0.85rem;
+    }
+
+        .component-body .table th {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+.dashboard-component.selected {
+    outline: 3px solid #667eea;
+    outline-offset: -3px;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+/* ============================================ */
+/* 5. DATA VISUALIZATION - KPI */
+/* ============================================ */
+
+.kpi-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 30px 20px;
+}
+
+.kpi-value {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #667eea;
+    line-height: 1;
+    margin-bottom: 12px;
+    font-family: 'Inter', sans-serif;
+}
+
+.kpi-label {
+    font-size: 1.1rem;
+    color: #718096;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* ============================================ */
+/* 6. DATA VISUALIZATION - TABLES */
+/* ============================================ */
+
+.table-responsive {
+    max-height: 100%;
+    overflow: auto;
+}
+
+    .table-responsive .table {
+        margin-bottom: 0;
+    }
+
+    .table-responsive thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+.chart-data-table {
+    font-size: 0.85rem;
+}
+
+    .chart-data-table .table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+/* ============================================ */
+/* 7. DATA VISUALIZATION - CHARTS & LABELS */
+/* ============================================ */
+
+.chart-preview {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 1rem;
+}
+
+.chart-data-preview {
+    padding: 1rem;
+    height: 100%;
+    overflow: auto;
+}
+
+.chart-header {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.label-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+}
+
+.label-value {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.label-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: center;
+    opacity: 0.95;
+}
+
+/* ============================================ */
+/* 8. DATA VISUALIZATION - CARDS */
+/* ============================================ */
+
+.card-display {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.card-content {
+    text-align: center;
+    width: 100%;
+}
+
+.card-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.25rem;
+}
+
+.card-description {
+    font-size: 0.9rem;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* ============================================ */
+/* 9. LOADING & PLACEHOLDER STATES */
+/* ============================================ */
+
+.component-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+}
+
+    .component-loading .spinner-border {
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+    }
+
+.component-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+    .component-placeholder i {
+        color: #cbd5e0;
+        margin-bottom: 16px;
+    }
+
+    .component-placeholder p {
+        font-size: 14px;
+        margin: 0 0 8px 0;
+    }
+
+    .component-placeholder small {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+.empty-canvas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+}
+
+    .empty-canvas i {
+        color: #cbd5e0;
+    }
+
+    .empty-canvas h5 {
+        margin: 16px 0 8px;
+        color: #2d3748;
+    }
+
+    .empty-canvas p {
+        color: #718096;
+        max-width: 400px;
+        text-align: center;
+    }
+
+/* ============================================ */
+/* 10. PREVIEW MODE */
+/* ============================================ */
+
+.preview-fullscreen {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f5f5f5;
+    z-index: 1000;
+    overflow: auto;
+}
+
+.fullscreen-preview {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f5f5f5;
+    z-index: 1000;
+    overflow: auto;
+}
+
+.preview-container {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+    .preview-header h4 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+    padding: 30px 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.dashboard-grid-preview {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+    padding: 0 20px;
+}
+
+.builder-content.preview-mode .component-actions {
+    display: none;
+}
+
+.builder-content.preview-mode .component-header {
+    cursor: default;
+}
+
+/* ============================================ */
+/* 11. PROPERTIES PANEL */
+/* ============================================ */
+
+.properties-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 380px;
+    height: 100vh;
+    background: white;
+    border-left: 1px solid #e2e8f0;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.properties-header {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+    .properties-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+.btn-close-panel {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+    .btn-close-panel:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+.properties-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.property-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+    .property-section:last-child {
+        border-bottom: none;
+    }
+
+.property-label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: #2d3748;
+    margin-bottom: 12px;
+}
+
+.property-section select.form-select {
+    font-size: 14px;
+    padding: 8px 12px;
+}
+
+.property-section label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #2d3748;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.property-actions {
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 24px;
+}
+
+/* ============================================ */
+/* 12. INTERACTIVE GRIDS - CHART TYPES */
+/* ============================================ */
+
+.chart-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.chart-type-option {
+    padding: 16px 8px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+    .chart-type-option:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+
+    .chart-type-option.selected {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .chart-type-option i {
+        color: #667eea;
+        display: block;
+    }
+
+    .chart-type-option span {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #4a5568;
+        margin-top: 8px;
+    }
+
+.chart-type-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.chart-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+    .chart-type-card:hover {
+        border-color: #667eea;
+        background: #f7fafc;
+        transform: translateY(-2px);
+    }
+
+    .chart-type-card.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .chart-type-card i {
+        color: #667eea;
+    }
+
+    .chart-type-card span {
+        font-size: 11px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-top: 4px;
+    }
+
+/* ============================================ */
+/* 13. INTERACTIVE GRIDS - SIZE SELECTOR */
+/* ============================================ */
+
+.size-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.size-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .size-option:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .size-option.active,
+    .size-option.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+.size-preview {
+    background: #667eea;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.size-option span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* Size Selection Grid */
+.size-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.small-preview {
+    width: 40px;
+    height: 30px;
+}
+
+.medium-preview {
+    width: 60px;
+    height: 40px;
+}
+
+.large-preview {
+    width: 80px;
+    height: 45px;
+}
+
+.xlarge-preview {
+    width: 80px;
+    height: 60px;
+}
+
+.size-option small {
+    display: block;
+    font-size: 11px;
+}
+
+/* ============================================ */
+/* 14. INTERACTIVE GRIDS - TABLE OPTIONS */
+/* ============================================ */
+
+.table-options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.table-option {
+    padding: 16px 8px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .table-option:hover {
+        border-color: #48bb78;
+        transform: translateY(-2px);
+    }
+
+    .table-option.selected {
+        border-color: #48bb78;
+        background: rgba(72, 187, 120, 0.1);
+    }
+
+    .table-option i {
+        color: #48bb78;
+    }
+
+    .table-option span {
+        display: block;
+        font-size: 11px;
+        font-weight: 500;
+        margin-top: 8px;
+    }
+
+/* ============================================ */
+/* 15. INTERACTIVE GRIDS - KPI STYLES */
+/* ============================================ */
+
+.kpi-style-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.kpi-style-option {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .kpi-style-option:hover {
+        border-color: #9f7aea;
+        transform: translateY(-2px);
+    }
+
+    .kpi-style-option.selected {
+        border-color: #9f7aea;
+        background: rgba(159, 122, 234, 0.1);
+    }
+
+.kpi-preview {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+    .kpi-preview.kpi-default {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .kpi-preview.kpi-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .kpi-preview.kpi-minimal {
+        background: white;
+        border-left: 4px solid #667eea;
+    }
+
+/* ============================================ */
+/* 16. INTERACTIVE GRIDS - COLOR PICKER */
+/* ============================================ */
+
+.color-picker-grid {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.color-option {
+    cursor: pointer;
+    padding: 4px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+    .color-option:hover {
+        transform: scale(1.1);
+    }
+
+    .color-option.selected {
+        border-color: #2d3748;
+    }
+
+.color-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================ */
+/* 17. SQL EDITOR & VIEWER */
+/* ============================================ */
+
+.sql-viewer-large {
+    background: #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #334155;
+}
+
+.sql-editor-large {
+    background: #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #334155;
+}
+
+.sql-viewer {
+    background: #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.sql-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+}
+
+    .sql-header span {
+        color: #94a3b8;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+.sql-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sql-action {
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+}
+
+    .btn-sql-action:hover {
+        background: #334155;
+        color: #e2e8f0;
+        border-color: #475569;
+    }
+
+    .btn-sql-action.text-success {
+        color: #10b981;
+        border-color: #10b981;
+    }
+
+        .btn-sql-action.text-success:hover {
+            background: #10b981;
+            color: white;
+        }
+
+    .btn-sql-action.text-danger {
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+
+        .btn-sql-action.text-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+.sql-code-large {
+    margin: 0;
+    padding: 16px;
+    color: #a5f3fc;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 150px;
+    max-height: 300px;
+    overflow-y: auto;
+    background: transparent;
+    border: none;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.sql-textarea {
+    width: 100%;
+    padding: 16px;
+    background: #0f172a;
+    border: none;
+    color: #a5f3fc;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 200px;
+    outline: none;
+}
+
+    .sql-textarea::placeholder {
+        color: #475569;
+    }
+
+    .sql-textarea:focus {
+        background: #0f172a;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) inset;
+    }
+
+.sql-code {
+    margin: 0;
+    padding: 12px;
+    color: #a5f3fc;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+    background: transparent;
+    border: none;
+}
+
+.sql-display-compact {
+    background: #1e293b;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+    .sql-display-compact pre {
+        color: #e2e8f0;
+        font-size: 12px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+/* SQL Scrollbars */
+.sql-code-large::-webkit-scrollbar,
+.sql-textarea::-webkit-scrollbar,
+.sql-code::-webkit-scrollbar {
+    width: 10px;
+}
+
+.sql-code-large::-webkit-scrollbar-track,
+.sql-textarea::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.sql-code::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sql-code-large::-webkit-scrollbar-thumb,
+.sql-textarea::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 5px;
+}
+
+.sql-code::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.sql-code-large::-webkit-scrollbar-thumb:hover,
+.sql-textarea::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* ============================================ */
+/* 18. STEPS INDICATOR */
+/* ============================================ */
+
+.steps-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+}
+
+.step.active .step-number {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.step.completed .step-number {
+    background: #10b981;
+    color: white;
+}
+
+    .step.completed .step-number::before {
+        content: "✓";
+    }
+
+.step-label {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #999;
+    font-weight: 500;
+}
+
+.step.active .step-label {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.step-line {
+    width: 80px;
+    height: 2px;
+    background: #e0e0e0;
+    margin: 0 1rem;
+    transition: all 0.3s;
+}
+
+    .step-line.active {
+        background: #667eea;
+    }
+
+.step-content {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* ============================================ */
+/* 19. UTILITY CLASSES */
+/* ============================================ */
+
+.examples-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
