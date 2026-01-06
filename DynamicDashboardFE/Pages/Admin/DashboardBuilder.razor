@@ -176,7 +176,7 @@
     <!-- Main Content -->
     @* REPLACE the builder-content section with this enhanced version *@
 
-    <div class="builder-content @(isPreviewMode ? "preview-mode" : "")">
+    <div class="builder-content @(isPreviewMode ? "preview-mode" : "") @(selectedComponentId > 0 ? "with-properties" : "full-width")">
         @if (isPreviewMode)
         {
             <!-- ============================================ -->
@@ -219,7 +219,7 @@
                                 }
                                 else if (componentData.ContainsKey(component.ComponentID))
                                 {
-                                    @if (component.DataViewingTypeID == 2)
+                                    @if (component.DataViewingTypeID == 1)
                                     {
                                         <!-- TABLE -->
                                         var data = GetComponentData(component.ComponentID);
@@ -296,7 +296,45 @@
                                         <!-- ✅ CHART - DIRECT DIV (CRITICAL!) -->
                                         <div id="chart-@component.ComponentID" style="height: 100%; min-height: 250px;"></div>
                                     }
-                                    else if (component.DataViewingTypeID == 1)
+                                    else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Table)  // 1 = TABLE ✅
+                                    {
+                                        <!-- TABLE -->
+                                        var data = GetComponentData(component.ComponentID);
+                                        if (data != null && data.Any())
+                                        {
+                                            var columns = data.First().Keys.ToList();
+                                            var displayData = data.Take(10).ToList();
+
+                                            <div class="table-responsive" style="max-height: 100%; overflow: auto;">
+                                                <table class="table table-sm table-hover mb-0">
+                                                    <thead class="sticky-top bg-light">
+                                                        <tr>
+                                                            @foreach (var col in columns)
+                                                            {
+                                                                <th style="font-size: 11px; padding: 8px;">@col</th>
+                                                            }
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var row in displayData)
+                                                        {
+                                                            <tr>
+                                                                @foreach (var col in columns)
+                                                                {
+                                                                    <td style="font-size: 11px; padding: 8px;">@row[col]</td>
+                                                                }
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted text-center">No data available</p>
+                                        }
+                                    }
+                                    else if (component.DataViewingTypeID == (int)DataViewingTypeEnum.Label)  // 2 = LABEL ✅
                                     {
                                         <!-- LABEL -->
                                         <div class="label-display" style="padding: 20px; text-align: center;">
@@ -307,6 +345,7 @@
                                             }
                                         </div>
                                     }
+
                                 }
                                 else
                                 {
@@ -363,7 +402,7 @@
                                         }
                                         else if (componentData.ContainsKey(component.ComponentID))
                                         {
-                                            @if (component.DataViewingTypeID == 2)
+                                            @if (component.DataViewingTypeID == 1)
                                             {
                                                 <!-- TABLE -->
                                                 var data = GetComponentData(component.ComponentID);
@@ -440,7 +479,7 @@
                                                 <!-- ✅ CHART - DIRECT DIV (CRITICAL!) -->
                                                 <div id="chart-@component.ComponentID" style="height: 100%; min-height: 250px;"></div>
                                             }
-                                            else if (component.DataViewingTypeID == 1)
+                                            else if (component.DataViewingTypeID == 2)
                                             {
                                                 <!-- LABEL -->
                                                 <div class="label-display" style="padding: 20px; text-align: center;">
@@ -660,7 +699,7 @@
                                 }
 
                                 <!-- Table Options (Only if Table) -->
-                                @if (selectedComponent.DataViewingTypeID == 2)
+                                @if (selectedComponent.DataViewingTypeID == 1)
                                 {
                                     <div class="property-section">
                                         <label class="property-label">
@@ -2570,17 +2609,16 @@
 
         if (isPreviewMode)
         {
-            // Close properties panel when entering preview mode
+            // ENTERING preview mode
             selectedComponentId = 0;
 
-            // ✅ AUTO-LOAD: If no data loaded yet, load all component data
+            // Auto-load if no data
             if (!componentData.Any() || dashboard.Components.Any(c => !componentData.ContainsKey(c.ComponentID)))
             {
                 await LoadAllComponentsData();
             }
             else
             {
-                // ✅ REFRESH CHARTS: If data exists, just re-render charts for preview
                 StateHasChanged();
                 await Task.Delay(200);
                 await RenderAllCharts();
@@ -2588,8 +2626,21 @@
         }
         else
         {
-            // Exiting preview mode - just update state
-            StateHasChanged();
+            // ✅ FIX 1: EXITING preview mode - load data if missing
+            Console.WriteLine("Exiting preview mode - checking data...");
+
+            if (!componentData.Any() || dashboard.Components.Any(c => !componentData.ContainsKey(c.ComponentID)))
+            {
+                Console.WriteLine("Loading data after preview exit...");
+                await LoadAllComponentsData();
+            }
+            else
+            {
+                // Data exists, just re-render
+                StateHasChanged();
+                await Task.Delay(200);
+                await RenderAllCharts();
+            }
         }
     }
 

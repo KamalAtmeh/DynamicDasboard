@@ -1,9 +1,41 @@
-﻿
+﻿/* ============================================ */
+/* DASHBOARD BUILDER - COMPLETE CSS FILE */
+/* Includes ALL existing styles + Round 1 Fixes */
+/* ============================================ */
+
 /* ============================================ */
 /* 1. LAYOUT & STRUCTURE */
 /* ============================================ */
+
+.builder-content {
+    display: flex;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+    transition: all 0.3s ease;  /* ✅ FIX 5: Smooth transition */
+}
+
+/* ✅ FIX 5: When properties panel is OPEN */
+.builder-content.with-properties .builder-canvas-container {
+    width: calc(100% - 400px);
+    transition: width 0.3s ease;
+}
+
+/* ✅ FIX 5: When properties panel is CLOSED */
+.builder-content.full-width .builder-canvas-container {
+    width: 100%;  /* Expand to fill space! */
+    transition: width 0.3s ease;
+}
+
 .builder-content.preview-mode {
     background: #f5f5f5;
+}
+
+.builder-canvas-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f8f9fa;
 }
 
 .builder-canvas-container.fullscreen {
@@ -11,6 +43,7 @@
     flex: 1;
 }
 
+/* ✅ FIX 6: Toolbar always on top */
 .builder-header {
     display: flex;
     align-items: center;
@@ -20,6 +53,9 @@
     border-bottom: 3px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     min-height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 200;  /* ✅ FIX 6: Above properties panel */
 }
 
 .builder-header-left,
@@ -195,18 +231,6 @@
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
 }
 
-.builder-header .btn-group .btn {
-    border-right: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-    .builder-header .btn-group .btn:last-child {
-        border-right: none;
-    }
-
-.builder-header .btn-group .btn-outline-danger {
-    border-right: 1px solid rgba(239, 68, 68, 0.2);
-}
-
 .zoom-display {
     cursor: default !important;
     font-weight: 600;
@@ -214,24 +238,45 @@
     pointer-events: none;
 }
 
-.builder-header .spinner-border-sm {
-    width: 14px;
-    height: 14px;
-    border-width: 2px;
+/* ============================================ */
+/* 4. DASHBOARD GRID & COMPONENTS */
+/* ============================================ */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+    min-height: 600px;
 }
 
-/* ============================================ */
-/* 4. COMPONENT STRUCTURE */
-/* ============================================ */
+.dashboard-component {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+    .dashboard-component:hover {
+        border-color: #cbd5e0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .dashboard-component.selected {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
 
 .component-header {
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid #e2e8f0;
-    background: white;
-    min-height: 45px;
 }
 
 .component-title {
@@ -245,348 +290,31 @@
     gap: 4px;
 }
 
-    .component-actions .btn-link {
-        padding: 4px 8px;
-        color: #64748b;
-        transition: all 0.2s;
-    }
-
-        .component-actions .btn-link:hover {
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 4px;
-        }
-
 .component-body {
-    height: calc(100% - 45px);
-    overflow: auto;
-    position: relative;
-}
-
-    .component-body .table {
-        font-size: 0.85rem;
-    }
-
-        .component-body .table th {
-            background: #f8f9fa;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-.dashboard-component.selected {
-    outline: 3px solid #667eea;
-    outline-offset: -3px;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
-}
-
-/* ============================================ */
-/* 5. DATA VISUALIZATION - KPI */
-/* ============================================ */
-
-.kpi-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 30px 20px;
-}
-
-.kpi-value {
-    font-size: 3.5rem;
-    font-weight: 700;
-    color: #667eea;
-    line-height: 1;
-    margin-bottom: 12px;
-    font-family: 'Inter', sans-serif;
-}
-
-.kpi-label {
-    font-size: 1.1rem;
-    color: #718096;
-    font-weight: 500;
-    text-align: center;
-}
-
-/* ============================================ */
-/* 6. DATA VISUALIZATION - TABLES */
-/* ============================================ */
-
-.table-responsive {
-    max-height: 100%;
+    flex: 1;
+    padding: 16px;
     overflow: auto;
 }
 
-    .table-responsive .table {
-        margin-bottom: 0;
-    }
-
-    .table-responsive thead {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-.chart-data-table {
-    font-size: 0.85rem;
-}
-
-    .chart-data-table .table th {
-        background: #f8f9fa;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
 /* ============================================ */
-/* 7. DATA VISUALIZATION - CHARTS & LABELS */
-/* ============================================ */
-
-.chart-preview {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    padding: 1rem;
-}
-
-.chart-data-preview {
-    padding: 1rem;
-    height: 100%;
-    overflow: auto;
-}
-
-.chart-header {
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.75rem;
-}
-
-.label-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 20px;
-}
-
-.label-value {
-    font-size: 3rem;
-    font-weight: 800;
-    line-height: 1;
-    margin-bottom: 0.5rem;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.label-text {
-    font-size: 1.1rem;
-    font-weight: 500;
-    text-align: center;
-    opacity: 0.95;
-}
-
-/* ============================================ */
-/* 8. DATA VISUALIZATION - CARDS */
-/* ============================================ */
-
-.card-display {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-.card-content {
-    text-align: center;
-    width: 100%;
-}
-
-.card-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 0.5rem;
-}
-
-.card-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #4a5568;
-    margin-bottom: 0.25rem;
-}
-
-.card-description {
-    font-size: 0.9rem;
-    color: #718096;
-    line-height: 1.4;
-}
-
-/* ============================================ */
-/* 9. LOADING & PLACEHOLDER STATES */
-/* ============================================ */
-
-.component-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 40px 20px;
-}
-
-    .component-loading .spinner-border {
-        width: 40px;
-        height: 40px;
-        border-width: 3px;
-    }
-
-.component-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 40px 20px;
-    text-align: center;
-}
-
-    .component-placeholder i {
-        color: #cbd5e0;
-        margin-bottom: 16px;
-    }
-
-    .component-placeholder p {
-        font-size: 14px;
-        margin: 0 0 8px 0;
-    }
-
-    .component-placeholder small {
-        font-size: 12px;
-        color: #94a3b8;
-    }
-
-.empty-canvas {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 400px;
-}
-
-    .empty-canvas i {
-        color: #cbd5e0;
-    }
-
-    .empty-canvas h5 {
-        margin: 16px 0 8px;
-        color: #2d3748;
-    }
-
-    .empty-canvas p {
-        color: #718096;
-        max-width: 400px;
-        text-align: center;
-    }
-
-/* ============================================ */
-/* 10. PREVIEW MODE */
-/* ============================================ */
-
-.preview-fullscreen {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #f5f5f5;
-    z-index: 1000;
-    overflow: auto;
-}
-
-.fullscreen-preview {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #f5f5f5;
-    z-index: 1000;
-    overflow: auto;
-}
-
-.preview-container {
-    width: 100%;
-    height: 100%;
-    padding: 20px;
-}
-
-.preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 40px;
-    background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-    .preview-header h4 {
-        margin: 0;
-        color: #2d3748;
-        font-size: 20px;
-        font-weight: 600;
-    }
-
-.preview-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 20px;
-    padding: 30px 40px;
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-.dashboard-grid-preview {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 16px;
-    padding: 0 20px;
-}
-
-.builder-content.preview-mode .component-actions {
-    display: none;
-}
-
-.builder-content.preview-mode .component-header {
-    cursor: default;
-}
-
-/* ============================================ */
-/* 11. PROPERTIES PANEL */
+/* 5. PROPERTIES PANEL */
+/* ✅ FIX 6: Sticky positioning, proper z-index */
 /* ============================================ */
 
 .properties-panel {
-    position: fixed;
+    position: sticky;  /* ✅ FIX 6: Changed from fixed */
+    top: 60px;  /* Below header */
     right: 0;
-    top: 0;
-    width: 380px;
-    height: 100vh;
+    width: 400px;
+    height: calc(100vh - 60px);
     background: white;
     border-left: 1px solid #e2e8f0;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    z-index: 100;  /* ✅ FIX 6: Lower than toolbar */
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease;
 }
 
 .properties-header {
@@ -597,6 +325,9 @@
     align-items: center;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
     .properties-header h5 {
@@ -643,130 +374,123 @@
     margin-bottom: 12px;
 }
 
-.property-section select.form-select {
-    font-size: 14px;
-    padding: 8px 12px;
-}
-
-.property-section label {
-    font-weight: 600;
-    font-size: 13px;
-    color: #2d3748;
-    margin-bottom: 8px;
-    display: block;
-}
-
 .property-actions {
-    padding-top: 16px;
+    padding: 16px 20px;
     border-top: 1px solid #e2e8f0;
-    margin-top: 24px;
+    background: white;
+    position: sticky;
+    bottom: 0;
 }
 
 /* ============================================ */
-/* 12. INTERACTIVE GRIDS - CHART TYPES */
+/* 6. PREVIEW MODE */
 /* ============================================ */
 
-.chart-type-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+.preview-fullscreen {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f5f5f5;
+    z-index: 1000;
+    overflow: auto;
 }
 
-.chart-type-option {
-    padding: 16px 8px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: white;
+.preview-header {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-}
-
-    .chart-type-option:hover {
-        border-color: #667eea;
-        background: #f8f9ff;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-    }
-
-    .chart-type-option.selected {
-        border-color: #667eea;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-    }
-
-    .chart-type-option i {
-        color: #667eea;
-        display: block;
-    }
-
-    .chart-type-option span {
-        display: block;
-        font-size: 12px;
-        font-weight: 500;
-        color: #4a5568;
-        margin-top: 8px;
-    }
-
-.chart-type-selector-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.chart-type-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 8px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
+    padding: 20px 40px;
     background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-    .chart-type-card:hover {
-        border-color: #667eea;
-        background: #f7fafc;
-        transform: translateY(-2px);
-    }
-
-    .chart-type-card.active {
-        border-color: #667eea;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-    }
-
-    .chart-type-card i {
-        color: #667eea;
-    }
-
-    .chart-type-card span {
-        font-size: 11px;
-        font-weight: 600;
+    .preview-header h4 {
+        margin: 0;
         color: #2d3748;
-        margin-top: 4px;
+        font-size: 20px;
+        font-weight: 600;
     }
 
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+    padding: 30px 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.builder-content.preview-mode .component-actions {
+    display: none;
+}
+
+.builder-content.preview-mode .component-header {
+    cursor: default;
+}
+
 /* ============================================ */
-/* 13. INTERACTIVE GRIDS - SIZE SELECTOR */
+/* 7. LOADING & PLACEHOLDER STATES */
 /* ============================================ */
 
-.size-selector {
+.component-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+}
+
+    .component-loading .spinner-border {
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+    }
+
+.component-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+    .component-placeholder i {
+        color: #cbd5e0;
+        margin-bottom: 16px;
+    }
+
+.empty-canvas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+}
+
+/* ============================================ */
+/* 8. CHART SIZE SELECTOR */
+/* ============================================ */
+
+.size-selector-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
 }
 
 .size-option {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 8px;
     padding: 12px;
     border: 2px solid #e2e8f0;
     border-radius: 8px;
@@ -775,103 +499,22 @@
 }
 
     .size-option:hover {
-        border-color: #667eea;
+        border-color: #cbd5e0;
         transform: translateY(-2px);
     }
 
-    .size-option.active,
-    .size-option.selected {
+    .size-option.active {
         border-color: #667eea;
-        background: rgba(102, 126, 234, 0.1);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        background: rgba(102, 126, 234, 0.05);
     }
 
 .size-preview {
     background: #667eea;
     border-radius: 4px;
-    margin-bottom: 8px;
-}
-
-.size-option span {
-    font-size: 12px;
-    font-weight: 600;
-    color: #2d3748;
-}
-
-/* Size Selection Grid */
-.size-selection-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.small-preview {
-    width: 40px;
-    height: 30px;
-}
-
-.medium-preview {
-    width: 60px;
-    height: 40px;
-}
-
-.large-preview {
-    width: 80px;
-    height: 45px;
-}
-
-.xlarge-preview {
-    width: 80px;
-    height: 60px;
-}
-
-.size-option small {
-    display: block;
-    font-size: 11px;
 }
 
 /* ============================================ */
-/* 14. INTERACTIVE GRIDS - TABLE OPTIONS */
-/* ============================================ */
-
-.table-options-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.table-option {
-    padding: 16px 8px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-    .table-option:hover {
-        border-color: #48bb78;
-        transform: translateY(-2px);
-    }
-
-    .table-option.selected {
-        border-color: #48bb78;
-        background: rgba(72, 187, 120, 0.1);
-    }
-
-    .table-option i {
-        color: #48bb78;
-    }
-
-    .table-option span {
-        display: block;
-        font-size: 11px;
-        font-weight: 500;
-        margin-top: 8px;
-    }
-
-/* ============================================ */
-/* 15. INTERACTIVE GRIDS - KPI STYLES */
+/* 9. KPI STYLES */
 /* ============================================ */
 
 .kpi-style-grid {
@@ -899,78 +542,9 @@
         background: rgba(159, 122, 234, 0.1);
     }
 
-.kpi-preview {
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    text-align: center;
-}
-
-    .kpi-preview.kpi-default {
-        background: #f7fafc;
-        border: 1px solid #e2e8f0;
-    }
-
-    .kpi-preview.kpi-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .kpi-preview.kpi-minimal {
-        background: white;
-        border-left: 4px solid #667eea;
-    }
-
 /* ============================================ */
-/* 16. INTERACTIVE GRIDS - COLOR PICKER */
+/* 10. SQL VIEWER */
 /* ============================================ */
-
-.color-picker-grid {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-
-.color-option {
-    cursor: pointer;
-    padding: 4px;
-    border: 2px solid transparent;
-    border-radius: 50%;
-    transition: all 0.2s;
-}
-
-    .color-option:hover {
-        transform: scale(1.1);
-    }
-
-    .color-option.selected {
-        border-color: #2d3748;
-    }
-
-.color-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* ============================================ */
-/* 17. SQL EDITOR & VIEWER */
-/* ============================================ */
-
-.sql-viewer-large {
-    background: #1e293b;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #334155;
-}
-
-.sql-editor-large {
-    background: #1e293b;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #334155;
-}
 
 .sql-viewer {
     background: #1e293b;
@@ -992,89 +566,6 @@
         color: #94a3b8;
         font-size: 13px;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-.sql-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-sql-action {
-    background: transparent;
-    border: 1px solid #334155;
-    color: #94a3b8;
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 13px;
-}
-
-    .btn-sql-action:hover {
-        background: #334155;
-        color: #e2e8f0;
-        border-color: #475569;
-    }
-
-    .btn-sql-action.text-success {
-        color: #10b981;
-        border-color: #10b981;
-    }
-
-        .btn-sql-action.text-success:hover {
-            background: #10b981;
-            color: white;
-        }
-
-    .btn-sql-action.text-danger {
-        color: #ef4444;
-        border-color: #ef4444;
-    }
-
-        .btn-sql-action.text-danger:hover {
-            background: #ef4444;
-            color: white;
-        }
-
-.sql-code-large {
-    margin: 0;
-    padding: 16px;
-    color: #a5f3fc;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    min-height: 150px;
-    max-height: 300px;
-    overflow-y: auto;
-    background: transparent;
-    border: none;
-    white-space: pre-wrap;
-    word-break: break-all;
-}
-
-.sql-textarea {
-    width: 100%;
-    padding: 16px;
-    background: #0f172a;
-    border: none;
-    color: #a5f3fc;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    resize: vertical;
-    min-height: 200px;
-    outline: none;
-}
-
-    .sql-textarea::placeholder {
-        color: #475569;
-    }
-
-    .sql-textarea:focus {
-        background: #0f172a;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) inset;
     }
 
 .sql-code {
@@ -1090,136 +581,124 @@
     border: none;
 }
 
-.sql-display-compact {
-    background: #1e293b;
-    border-radius: 6px;
-    padding: 10px;
-}
+/* ============================================ */
+/* 11. ANIMATIONS */
+/* ============================================ */
 
-    .sql-display-compact pre {
-        color: #e2e8f0;
-        font-size: 12px;
-        font-family: 'Consolas', 'Monaco', monospace;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
     }
-
-/* SQL Scrollbars */
-.sql-code-large::-webkit-scrollbar,
-.sql-textarea::-webkit-scrollbar,
-.sql-code::-webkit-scrollbar {
-    width: 10px;
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.sql-code-large::-webkit-scrollbar-track,
-.sql-textarea::-webkit-scrollbar-track {
-    background: #0f172a;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
-.sql-code::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.sql-code-large::-webkit-scrollbar-thumb,
-.sql-textarea::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 5px;
-}
-
-.sql-code::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-}
-
-.sql-code-large::-webkit-scrollbar-thumb:hover,
-.sql-textarea::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ============================================ */
-/* 18. STEPS INDICATOR */
+/* 12. RESPONSIVE */
 /* ============================================ */
 
-.steps-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 2rem;
-}
-
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-}
-
-.step-number {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #e0e0e0;
-    color: #999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 1.1rem;
-    transition: all 0.3s;
-}
-
-.step.active .step-number {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.step.completed .step-number {
-    background: #10b981;
-    color: white;
-}
-
-    .step.completed .step-number::before {
-        content: "✓";
+@media (max-width: 1200px) {
+    .properties-panel {
+        width: 350px;
     }
+    
+    .builder-content.with-properties .builder-canvas-container {
+        width: calc(100% - 350px);
+    }
+}
 
-.step-label {
+@media (max-width: 768px) {
+    .properties-panel {
+        width: 100%;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        z-index: 1001;
+    }
+    
+    .builder-content.with-properties .builder-canvas-container {
+        width: 100%;
+    }
+    
+    .builder-header {
+        flex-wrap: wrap;
+        padding: 8px 12px;
+    }
+    
+    .builder-header-left,
+    .builder-header-center,
+    .builder-header-right {
+        gap: 4px;
+    }
+}
+
+/* ============================================ */
+/* 13. UTILITY CLASSES */
+/* ============================================ */
+
+.text-muted {
+    color: #718096;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.mb-1 {
+    margin-bottom: 0.25rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.mt-2 {
     margin-top: 0.5rem;
-    font-size: 0.85rem;
-    color: #999;
-    font-weight: 500;
 }
 
-.step.active .step-label {
-    color: #667eea;
-    font-weight: 600;
-}
-
-.step-line {
-    width: 80px;
-    height: 2px;
-    background: #e0e0e0;
-    margin: 0 1rem;
-    transition: all 0.3s;
-}
-
-    .step-line.active {
-        background: #667eea;
-    }
-
-.step-content {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-/* ============================================ */
-/* 19. UTILITY CLASSES */
-/* ============================================ */
-
-.examples-section {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
+.mt-3 {
     margin-top: 1rem;
 }
 
+.d-flex {
+    display: flex;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.justify-content-center {
+    justify-content: center;
+}
+
+/* ============================================ */
+/* END OF FILE */
+/* ============================================ */

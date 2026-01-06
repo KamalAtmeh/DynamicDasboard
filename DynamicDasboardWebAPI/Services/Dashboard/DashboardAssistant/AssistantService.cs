@@ -274,10 +274,11 @@ Example output:
         {
             return typeId switch
             {
-                1 => "Label",
-                2 => "Table",
-                3 => "KPI/Number",
-                4 => "Chart",
+                (int)DataViewingTypeEnum.Table => "Table",        // 1 ✅ FIXED
+                (int)DataViewingTypeEnum.Label => "Label",        // 2 ✅ FIXED
+                (int)DataViewingTypeEnum.Number => "KPI/Number",  // 3 ✅
+                (int)DataViewingTypeEnum.Chart => "Chart",        // 4 ✅
+                (int)DataViewingTypeEnum.Card => "Card",          // 5 ✅ ADDED
                 _ => "Unknown"
             };
         }
