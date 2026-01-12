@@ -115,7 +115,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         public async Task<string> GenerateSqlAsync(
             string question,
             string confirmedUnderstanding,
-            string databaseSchema,
+            string databaseSchema, string DataBaseTypeName,
             Dictionary<string, string> resolvedAmbiguities = null)
         {
             try
@@ -127,6 +127,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 var userPrompt = new StringBuilder();
                 userPrompt.AppendLine($"Original question: {question}");
                 userPrompt.AppendLine($"Confirmed understanding: {confirmedUnderstanding}");
+                userPrompt.AppendLine($"Please generate the SQL query based on DataBase Type : {DataBaseTypeName}");
 
                 if (resolvedAmbiguities != null && resolvedAmbiguities.Count > 0)
                 {
@@ -522,9 +523,12 @@ Do NOT generate SQL - only explain what the chart will show.";
             prompt.AppendLine("3. Resolved ambiguities (if any)");
 
             prompt.AppendLine("\nGenerate a SQL query that:");
-            prompt.AppendLine("1. Is syntactically correct for SQL Server");
-            prompt.AppendLine("2. Uses only table and column names from the provided schema structure");
-            prompt.AppendLine("3. If you find complexity in the query, take your time and process it step by step. Accuracy is more important than performance");
+            prompt.AppendLine("1. Is syntactically correct for provided databasetype , for example SQL Server doesnt allow LIMIT or FORMAT_DATE keywords in the query");
+            prompt.AppendLine("2. Uses proper table and column names from the schema");
+            prompt.AppendLine("3. Includes appropriate JOINs when needed");
+            prompt.AppendLine("4. Applies any filters specified in the question");
+            prompt.AppendLine("5. Returns only the requested data");
+            prompt.AppendLine("6. If you found complexity in the query , take your time and take it step by step . accuracy is more important than performance");
 
             prompt.AppendLine("\nDatabase schema:");
             prompt.AppendLine(databaseSchema);

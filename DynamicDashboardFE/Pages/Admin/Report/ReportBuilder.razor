@@ -1,0 +1,788 @@
+@* @page "/report/builder"
+@page "/report/builder/{ReportId:int}"
+
+<PageTitle>AI Report Builder</PageTitle>
+
+<div class="report-builder-container">
+    <!-- Header -->
+    <header class="builder-header">
+        <div class="header-left">
+            <div class="header-icon">
+                <i class="fas fa-magic"></i>
+            </div>
+            <div class="header-title-section">
+                <h1 class="header-title">AI Report Builder</h1>
+                <span class="header-subtitle">Create powerful reports with natural language</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            @if (currentReport != null)
+            {
+                <div class="report-status @GetStatusClass()">
+                    <i class="fas fa-circle"></i>
+                    <span>@currentReport.Status</span>
+                </div>
+            }
+            <button class="btn-header btn-header-secondary" @onclick="ToggleAIAssistant" title="AI Assistant">
+                <i class="fas fa-robot"></i>
+                <span>AI Assistant</span>
+                @if (showAIAssistant)
+                {
+                    <i class="fas fa-chevron-right ms-1"></i>
+                }
+                else
+                {
+                    <i class="fas fa-chevron-left ms-1"></i>
+                }
+            </button>
+            <button class="btn-header btn-header-secondary" @onclick="SaveReport" disabled="@(isSaving || currentReport == null)">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                else
+                {
+                    <i class="fas fa-save"></i>
+                }
+                <span>Save</span>
+            </button>
+            <button class="btn-header btn-header-primary" @onclick="ShowExportModal" disabled="@(currentReport == null)">
+                <i class="fas fa-file-export"></i>
+                <span>Export</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="builder-content">
+        <!-- Main Canvas -->
+        <div class="builder-canvas @(showAIAssistant ? "with-assistant" : "")">
+            
+            <!-- Report Info Bar -->
+            <div class="report-info-bar">
+                <div class="info-field">
+                    <label>Report Title</label>
+                    <input type="text" class="info-input title-input" 
+                           placeholder="Enter report title..."
+                           @bind="reportTitle" 
+                           @bind:event="oninput" />
+                </div>
+                <div class="info-field database-field">
+                    <label>Database</label>
+                    <select class="info-select" @bind="selectedDatabaseId" disabled="@(currentReport != null)">
+                        <option value="0">Select database...</option>
+                        @foreach (var db in databases)
+                        {
+                            <option value="@db.DatabaseID">@db.Name</option>
+                        }
+                    </select>
+                </div>
+                @if (currentReport != null)
+                {
+                    <div class="info-badge">
+                        <i class="fas fa-layer-group"></i>
+                        <span>@(currentReport.Sections?.Count ?? 0) Sections</span>
+                    </div>
+                }
+            </div>
+
+            <!-- AI Generation Card (shown when no report) -->
+            @if (currentReport == null)
+            {
+                <div class="ai-generation-card">
+                    <div class="generation-icon">
+                        <div class="icon-glow"></div>
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h2 class="generation-title">What report would you like to create?</h2>
+                    <p class="generation-subtitle">Describe your report in natural language and let AI do the magic</p>
+                    
+                    <div class="generation-input-wrapper">
+                        <textarea class="generation-input" 
+                                  placeholder="e.g., Create a Q4 sales performance report showing revenue by region, top 10 products, and monthly trends..."
+                                  @bind="generationPrompt"
+                                  @bind:event="oninput"
+                                  @onkeydown="HandleGenerationKeyDown"
+                                  rows="3"></textarea>
+                        <button class="btn-generate @(isGenerating ? "generating" : "")" 
+                                @onclick="GenerateReport" 
+                                disabled="@(isGenerating || selectedDatabaseId == 0 || string.IsNullOrWhiteSpace(generationPrompt))">
+                            @if (isGenerating)
+                            {
+                                <div class="generate-spinner"></div>
+                                <span>Generating...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sparkles"></i>
+                                <span>Generate Report</span>
+                            }
+                        </button>
+                    </div>
+
+                    <div class="example-prompts">
+                        <span class="example-label">Try these examples:</span>
+                        <div class="example-chips">
+                            <button class="example-chip" @onclick='() => UseExamplePrompt("Create a monthly sales report with revenue breakdown by product category")'>
+                                <i class="fas fa-chart-line"></i> Sales Report
+                            </button>
+                            <button class="example-chip" @onclick='() => UseExamplePrompt("Show me customer analytics including top customers, order frequency, and lifetime value")'>
+                                <i class="fas fa-users"></i> Customer Analytics
+                            </button>
+                            <button class="example-chip" @onclick='() => UseExamplePrompt("Generate an inventory status report with stock levels, reorder points, and slow-moving items")'>
+                                <i class="fas fa-boxes"></i> Inventory Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Sections Container -->
+                <div class="sections-container">
+                    <!-- Section Actions Bar -->
+                    <div class="sections-header">
+                        <h3 class="sections-title">
+                            <i class="fas fa-list-alt"></i>
+                            Report Sections
+                        </h3>
+                        <div class="sections-actions">
+                            <button class="btn-section-action" @onclick="AddManualSection" title="Add Section Manually">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Section</span>
+                            </button>
+                            <button class="btn-section-action btn-ai" @onclick="ShowAddSectionWithAI" title="Add Section with AI">
+                                <i class="fas fa-robot"></i>
+                                <span>AI Add Section</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sections List -->
+                    <div class="sections-list">
+                        @if (currentReport.Sections != null && currentReport.Sections.Any())
+                        {
+                            @foreach (var section in currentReport.Sections.OrderBy(s => s.DisplayOrder))
+                            {
+                                <div class="section-card @(section.SectionID == selectedSectionId ? "selected" : "") @(section.IsExpanded ? "expanded" : "collapsed")">
+                                    <!-- Section Header -->
+                                    <div class="section-header" @onclick="() => ToggleSectionExpand(section)">
+                                        <div class="section-header-left">
+                                            <div class="section-drag-handle" @onclick:stopPropagation="true">
+                                                <i class="fas fa-grip-vertical"></i>
+                                            </div>
+                                            <div class="section-icon @GetSectionIconClass(section.SectionType)">
+                                                <i class="fas @section.SectionIcon"></i>
+                                            </div>
+                                            <div class="section-info">
+                                                <span class="section-order">@(section.DisplayOrder + 1).</span>
+                                                <h4 class="section-title">@section.Title</h4>
+                                                <span class="section-type-badge">@section.SectionTypeName</span>
+                                            </div>
+                                        </div>
+                                        <div class="section-header-actions" @onclick:stopPropagation="true">
+                                            @if (section.SectionType == ReportSectionTypeEnum.DataTable)
+                                            {
+                                                <button class="btn-section-icon" @onclick="() => ShowEditSqlModal(section)" title="Edit SQL">
+                                                    <i class="fas fa-code"></i>
+                                                </button>
+                                                <button class="btn-section-icon" @onclick="() => ShowColumnConfigModal(section)" title="Configure Columns">
+                                                    <i class="fas fa-columns"></i>
+                                                </button>
+                                                <button class="btn-section-icon @(section.IsDisplayedAsChart ? "active" : "")" 
+                                                        @onclick="() => ToggleChartMode(section)" 
+                                                        title="@(section.IsDisplayedAsChart ? "Show as Table" : "Show as Chart")">
+                                                    <i class="fas @(section.IsDisplayedAsChart ? "fa-table" : "fa-chart-bar")"></i>
+                                                </button>
+                                            }
+                                            @if (section.SectionType == ReportSectionTypeEnum.ExecutiveSummary)
+                                            {
+                                                <button class="btn-section-icon" @onclick="() => RegenerateSummary(section)" title="Regenerate Summary">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            }
+                                            <button class="btn-section-icon" @onclick="() => MoveSection(section, -1)" 
+                                                    disabled="@(section.DisplayOrder == 0)" title="Move Up">
+                                                <i class="fas fa-chevron-up"></i>
+                                            </button>
+                                            <button class="btn-section-icon" @onclick="() => MoveSection(section, 1)" 
+                                                    disabled="@(section.DisplayOrder == currentReport.Sections.Count - 1)" title="Move Down">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                            <button class="btn-section-icon btn-danger" @onclick="() => DeleteSection(section)" title="Delete Section">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            <button class="btn-section-icon expand-toggle">
+                                                <i class="fas @(section.IsExpanded ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Section Content -->
+                                    @if (section.IsExpanded)
+                                    {
+                                        <div class="section-content">
+                                            @if (section.SectionType == ReportSectionTypeEnum.ExecutiveSummary)
+                                            {
+                                                <!-- Executive Summary Content -->
+                                                <div class="executive-summary-content">
+                                                    @if (string.IsNullOrEmpty(section.TextContent))
+                                                    {
+                                                        <div class="summary-placeholder">
+                                                            <i class="fas fa-file-alt"></i>
+                                                            <p>Executive summary will be generated after loading data.</p>
+                                                            <button class="btn-generate-summary" @onclick="() => RegenerateSummary(section)">
+                                                                <i class="fas fa-magic"></i> Generate Now
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="summary-text">
+                                                            @((MarkupString)FormatSummaryText(section.TextContent))
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else if (section.SectionType == ReportSectionTypeEnum.DataTable)
+                                            {
+                                                <!-- Data Table Content -->
+                                                @if (section.IsDisplayedAsChart)
+                                                {
+                                                    <!-- Chart View -->
+                                                    <div class="chart-container">
+                                                        @if (sectionData.ContainsKey(section.SectionID) && sectionData[section.SectionID].Any())
+                                                        {
+                                                            <div class="chart-placeholder">
+                                                                <i class="fas fa-chart-bar"></i>
+                                                                <p>Chart visualization coming soon!</p>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="no-data-message">
+                                                                <i class="fas fa-database"></i>
+                                                                <p>No data loaded yet</p>
+                                                                <button class="btn-load-data" @onclick="() => LoadSectionData(section)">
+                                                                    <i class="fas fa-play"></i> Load Data
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <!-- Table View -->
+                                                    <div class="data-table-container">
+                                                        @if (sectionLoading.ContainsKey(section.SectionID) && sectionLoading[section.SectionID])
+                                                        {
+                                                            <div class="table-loading">
+                                                                <div class="loading-spinner"></div>
+                                                                <p>Loading data...</p>
+                                                            </div>
+                                                        }
+                                                        else if (sectionData.ContainsKey(section.SectionID) && sectionData[section.SectionID].Any())
+                                                        {
+                                                            <!-- Table Toolbar -->
+                                                            <div class="table-toolbar">
+                                                                <div class="toolbar-left">
+                                                                    <div class="search-box">
+                                                                        <i class="fas fa-search"></i>
+                                                                        <input type="text" placeholder="Search..." 
+                                                                               @bind="sectionSearchTerms[section.SectionID]"
+                                                                               @bind:event="oninput"
+                                                                               @onkeyup="() => FilterSectionData(section)" />
+                                                                    </div>
+                                                                    <span class="row-count">
+                                                                        @GetFilteredData(section).Count of @sectionTotalCounts[section.SectionID] rows
+                                                                    </span>
+                                                                </div>
+                                                                <div class="toolbar-right">
+                                                                    <button class="btn-toolbar" @onclick="() => ShowColumnConfigModal(section)" title="Configure Columns">
+                                                                        <i class="fas fa-columns"></i>
+                                                                    </button>
+                                                                    <button class="btn-toolbar" @onclick="() => RefreshSectionData(section)" title="Refresh Data">
+                                                                        <i class="fas fa-sync-alt"></i>
+                                                                    </button>
+                                                                    <div class="dropdown">
+                                                                        <button class="btn-toolbar" @onclick="() => ToggleExportDropdown(section.SectionID)" title="Export">
+                                                                            <i class="fas fa-download"></i>
+                                                                        </button>
+                                                                        @if (showExportDropdown == section.SectionID)
+                                                                        {
+                                                                            <div class="dropdown-menu show">
+                                                                                <button class="dropdown-item" @onclick="() => ExportSectionData(section, "excel")">
+                                                                                    <i class="fas fa-file-excel"></i> Excel
+                                                                                </button>
+                                                                                <button class="dropdown-item" @onclick="() => ExportSectionData(section, "csv")">
+                                                                                    <i class="fas fa-file-csv"></i> CSV
+                                                                                </button>
+                                                                            </div>
+                                                                        }
+                                                                    </div>
+                                                                    <button class="btn-toolbar btn-explain" @onclick="() => ExplainSectionData(section)" title="Explain Data with AI">
+                                                                        <i class="fas fa-lightbulb"></i>
+                                                                        <span>Explain</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Data Table -->
+                                                            <div class="table-wrapper">
+                                                                <table class="data-table">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            @foreach (var column in GetVisibleColumns(section))
+                                                                            {
+                                                                                <th class="@GetColumnAlignmentClass(column) @(sectionSortColumn.GetValueOrDefault(section.SectionID) == column.ColumnName ? "sorted" : "")"
+                                                                                    @onclick="() => SortByColumn(section, column.ColumnName)">
+                                                                                    <div class="th-content">
+                                                                                        <span>@column.DisplayName</span>
+                                                                                        @if (sectionSortColumn.GetValueOrDefault(section.SectionID) == column.ColumnName)
+                                                                                        {
+                                                                                            <i class="fas @(sectionSortAscending.GetValueOrDefault(section.SectionID, true) ? "fa-sort-up" : "fa-sort-down")"></i>
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            <i class="fas fa-sort sort-inactive"></i>
+                                                                                        }
+                                                                                    </div>
+                                                                                    <!-- Column Filter -->
+                                                                                    <div class="column-filter" @onclick:stopPropagation="true">
+                                                                                        <input type="text" placeholder="Filter..." 
+                                                                                               @bind="columnFilters[$"{section.SectionID}_{column.ColumnName}"]"
+                                                                                               @bind:event="oninput"
+                                                                                               @onkeyup="() => FilterSectionData(section)" />
+                                                                                    </div>
+                                                                                </th>
+                                                                            }
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @foreach (var row in GetPagedData(section))
+                                                                        {
+                                                                            <tr>
+                                                                                @foreach (var column in GetVisibleColumns(section))
+                                                                                {
+                                                                                    <td class="@GetColumnAlignmentClass(column)">
+                                                                                        @if (row.ContainsKey(column.ColumnName))
+                                                                                        {
+                                                                                            <span class="@GetCellClass(column, row[column.ColumnName])">
+                                                                                                @FormatCellValue(column, row[column.ColumnName])
+                                                                                            </span>
+                                                                                        }
+                                                                                    </td>
+                                                                                }
+                                                                            </tr>
+                                                                        }
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+
+                                                            <!-- Pagination -->
+                                                            <div class="table-pagination">
+                                                                <div class="pagination-info">
+                                                                    Showing @GetPageStart(section) - @GetPageEnd(section) of @GetFilteredData(section).Count
+                                                                </div>
+                                                                <div class="pagination-controls">
+                                                                    <button class="btn-page" @onclick="() => GoToPage(section, 1)" 
+                                                                            disabled="@(GetCurrentPage(section) == 1)">
+                                                                        <i class="fas fa-angle-double-left"></i>
+                                                                    </button>
+                                                                    <button class="btn-page" @onclick="() => GoToPage(section, GetCurrentPage(section) - 1)" 
+                                                                            disabled="@(GetCurrentPage(section) == 1)">
+                                                                        <i class="fas fa-angle-left"></i>
+                                                                    </button>
+                                                                    <span class="page-indicator">
+                                                                        Page @GetCurrentPage(section) of @GetTotalPages(section)
+                                                                    </span>
+                                                                    <button class="btn-page" @onclick="() => GoToPage(section, GetCurrentPage(section) + 1)" 
+                                                                            disabled="@(GetCurrentPage(section) >= GetTotalPages(section))">
+                                                                        <i class="fas fa-angle-right"></i>
+                                                                    </button>
+                                                                    <button class="btn-page" @onclick="() => GoToPage(section, GetTotalPages(section))" 
+                                                                            disabled="@(GetCurrentPage(section) >= GetTotalPages(section))">
+                                                                        <i class="fas fa-angle-double-right"></i>
+                                                                    </button>
+                                                                    <select class="page-size-select" @onchange="(e) => ChangePageSize(section, e)">
+                                                                        <option value="10" selected="@(GetPageSize(section) == 10)">10</option>
+                                                                        <option value="25" selected="@(GetPageSize(section) == 25)">25</option>
+                                                                        <option value="50" selected="@(GetPageSize(section) == 50)">50</option>
+                                                                        <option value="100" selected="@(GetPageSize(section) == 100)">100</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                        else if (sectionErrors.ContainsKey(section.SectionID))
+                                                        {
+                                                            <div class="table-error">
+                                                                <i class="fas fa-exclamation-triangle"></i>
+                                                                <p>@sectionErrors[section.SectionID]</p>
+                                                                <button class="btn-retry" @onclick="() => LoadSectionData(section)">
+                                                                    <i class="fas fa-redo"></i> Retry
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="no-data-message">
+                                                                <i class="fas fa-database"></i>
+                                                                <p>Click to load data</p>
+                                                                <button class="btn-load-data" @onclick="() => LoadSectionData(section)">
+                                                                    <i class="fas fa-play"></i> Load Data
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="no-sections-message">
+                                <i class="fas fa-layer-group"></i>
+                                <p>No sections yet. Add sections using the buttons above or ask AI!</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- AI Assistant Panel -->
+        @if (showAIAssistant)
+        {
+            <aside class="ai-assistant-panel">
+                <div class="assistant-header">
+                    <div class="assistant-title">
+                        <div class="assistant-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h3>AI Report Copilot</h3>
+                            <span class="assistant-status">Ready to help</span>
+                        </div>
+                    </div>
+                    <button class="btn-close-assistant" @onclick="ToggleAIAssistant">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="assistant-content">
+                    <!-- Chat History -->
+                    <div class="chat-history" @ref="chatHistoryRef">
+                        @if (!chatMessages.Any())
+                        {
+                            <div class="chat-welcome">
+                                <div class="welcome-icon">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <h4>How can I help?</h4>
+                                <p>I can help you create reports, add sections, or explain your data.</p>
+                                
+                                <div class="quick-actions">
+                                    <button class="quick-action" @onclick='() => SendQuickMessage("Create a sales performance report")'>
+                                        <i class="fas fa-chart-line"></i>
+                                        Create Report
+                                    </button>
+                                    <button class="quick-action" @onclick='() => SendQuickMessage("Add a section showing top customers")' 
+                                            disabled="@(currentReport == null)">
+                                        <i class="fas fa-plus"></i>
+                                        Add Section
+                                    </button>
+                                    <button class="quick-action" @onclick='() => SendQuickMessage("Explain this data")' 
+                                            disabled="@(selectedSectionId == 0)">
+                                        <i class="fas fa-lightbulb"></i>
+                                        Explain Data
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var message in chatMessages)
+                            {
+                                <div class="chat-message @message.Role">
+                                    <div class="message-avatar">
+                                        @if (message.Role == "user")
+                                        {
+                                            <i class="fas fa-user"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-robot"></i>
+                                        }
+                                    </div>
+                                    <div class="message-content">
+                                        <div class="message-text">@((MarkupString)FormatChatMessage(message.Content))</div>
+                                        <span class="message-time">@message.Timestamp.ToString("HH:mm")</span>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (isAIThinking)
+                            {
+                                <div class="chat-message assistant thinking">
+                                    <div class="message-avatar">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div class="message-content">
+                                        <div class="thinking-dots">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-container">
+                        <textarea class="chat-input" 
+                                  placeholder="Ask me anything about your report..."
+                                  @bind="chatInput"
+                                  @bind:event="oninput"
+                                  @onkeydown="HandleChatKeyDown"
+                                  rows="2"></textarea>
+                        <button class="btn-send" @onclick="SendChatMessage" disabled="@(isAIThinking || string.IsNullOrWhiteSpace(chatInput))">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        }
+    </div>
+</div>
+
+<!-- SQL Editor Modal -->
+@if (showSqlModal)
+{
+    <div class="modal-backdrop" @onclick="CloseSqlModal"></div>
+    <div class="modal-container sql-modal">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-code"></i>
+                <span>Edit SQL - @editingSection?.Title</span>
+            </div>
+            <button class="btn-modal-close" @onclick="CloseSqlModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="sql-editor-container">
+                <label class="editor-label">SQL Query</label>
+                <textarea class="sql-editor" @bind="editingSql" rows="12"></textarea>
+            </div>
+            
+            <div class="sql-test-section">
+                <button class="btn-test-query" @onclick="TestSqlQuery" disabled="@isTestingQuery">
+                    @if (isTestingQuery)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-play"></i>
+                    }
+                    <span>Test Query</span>
+                </button>
+                
+                @if (!string.IsNullOrEmpty(testQueryResult))
+                {
+                    <div class="test-result @(testQuerySuccess ? "success" : "error")">
+                        <i class="fas @(testQuerySuccess ? "fa-check-circle" : "fa-exclamation-circle")"></i>
+                        <span>@testQueryResult</span>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-modal-secondary" @onclick="CloseSqlModal">
+                Cancel
+            </button>
+            <button class="btn-modal btn-modal-primary" @onclick="SaveSqlChanges" disabled="@(string.IsNullOrWhiteSpace(editingSql))">
+                <i class="fas fa-save"></i>
+                Save Changes
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Column Configuration Modal -->
+@if (showColumnModal)
+{
+    <div class="modal-backdrop" @onclick="CloseColumnModal"></div>
+    <div class="modal-container column-modal">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-columns"></i>
+                <span>Configure Columns - @editingSection?.Title</span>
+            </div>
+            <button class="btn-modal-close" @onclick="CloseColumnModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="column-config-list">
+                @if (editingColumnConfig != null)
+                {
+                    @foreach (var column in editingColumnConfig.Columns.OrderBy(c => c.DisplayOrder))
+                    {
+                        <div class="column-config-item @(column.IsVisible ? "" : "hidden-column")">
+                            <div class="column-drag">
+                                <i class="fas fa-grip-vertical"></i>
+                            </div>
+                            <div class="column-visibility">
+                                <input type="checkbox" @bind="column.IsVisible" id="col_@column.ColumnName" />
+                                <label for="col_@column.ColumnName"></label>
+                            </div>
+                            <div class="column-name">
+                                <input type="text" @bind="column.DisplayName" class="column-name-input" />
+                                <span class="column-original">@column.ColumnName</span>
+                            </div>
+                            <div class="column-type">
+                                <select @bind="column.DataType">
+                                    @foreach (var type in Enum.GetValues<ColumnDataTypeEnum>())
+                                    {
+                                        <option value="@type">@type</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="column-align">
+                                <select @bind="column.Alignment">
+                                    @foreach (var align in Enum.GetValues<ColumnAlignmentEnum>())
+                                    {
+                                        <option value="@align">@align</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-modal-secondary" @onclick="CloseColumnModal">
+                Cancel
+            </button>
+            <button class="btn-modal btn-modal-primary" @onclick="SaveColumnConfig">
+                <i class="fas fa-save"></i>
+                Save Configuration
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Export Modal -->
+@if (showExportModal)
+{
+    <div class="modal-backdrop" @onclick="CloseExportModal"></div>
+    <div class="modal-container export-modal">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-file-export"></i>
+                <span>Export Report</span>
+            </div>
+            <button class="btn-modal-close" @onclick="CloseExportModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="export-formats">
+                <div class="export-format @(selectedExportFormat == "pdf" ? "selected" : "")" @onclick='() => selectedExportFormat = "pdf"'>
+                    <i class="fas fa-file-pdf"></i>
+                    <span>PDF</span>
+                </div>
+                <div class="export-format @(selectedExportFormat == "excel" ? "selected" : "")" @onclick='() => selectedExportFormat = "excel"'>
+                    <i class="fas fa-file-excel"></i>
+                    <span>Excel</span>
+                </div>
+                <div class="export-format @(selectedExportFormat == "word" ? "selected" : "")" @onclick='() => selectedExportFormat = "word"'>
+                    <i class="fas fa-file-word"></i>
+                    <span>Word</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-modal-secondary" @onclick="CloseExportModal">
+                Cancel
+            </button>
+            <button class="btn-modal btn-modal-primary" @onclick="ExportReport">
+                <i class="fas fa-download"></i>
+                Export
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Data Explanation Modal -->
+@if (showExplanationModal)
+{
+    <div class="modal-backdrop" @onclick="CloseExplanationModal"></div>
+    <div class="modal-container explanation-modal">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-lightbulb"></i>
+                <span>AI Data Explanation</span>
+            </div>
+            <button class="btn-modal-close" @onclick="CloseExplanationModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            @if (isExplaining)
+            {
+                <div class="explanation-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Analyzing data...</p>
+                </div>
+            }
+            else if (currentExplanation != null)
+            {
+                <div class="explanation-content">
+                    <div class="explanation-text">
+                        @((MarkupString)FormatSummaryText(currentExplanation.Explanation))
+                    </div>
+                    
+                    @if (currentExplanation.KeyInsights?.Any() == true)
+                    {
+                        <div class="explanation-insights">
+                            <h4><i class="fas fa-star"></i> Key Insights</h4>
+                            <ul>
+                                @foreach (var insight in currentExplanation.KeyInsights)
+                                {
+                                    <li>@insight</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    
+                    @if (currentExplanation.Trends?.Any() == true)
+                    {
+                        <div class="explanation-trends">
+                            <h4><i class="fas fa-chart-line"></i> Trends</h4>
+                            <ul>
+                                @foreach (var trend in currentExplanation.Trends)
+                                {
+                                    <li>@trend</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-modal-primary" @onclick="CloseExplanationModal">
+                Close
+            </button>
+        </div>
+    </div>
+}
+ *@

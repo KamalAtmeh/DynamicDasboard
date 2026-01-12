@@ -2752,6 +2752,1172 @@
             Objects referenced in the SQL script
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Models.Report">
+            <summary>
+            Represents an AI-generated report entity.
+            A report contains multiple sections, each with its own data query and visualization.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.ReportID">
+            <summary>
+            Gets or sets the unique identifier for the report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.Title">
+            <summary>
+            Gets or sets the report title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.Description">
+            <summary>
+            Gets or sets the report description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.DatabaseID">
+            <summary>
+            Gets or sets the database ID this report is associated with.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.ReportType">
+            <summary>
+            Gets or sets the report type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.Status">
+            <summary>
+            Gets or sets the report status.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.GeneratedPrompt">
+            <summary>
+            Gets or sets the original natural language prompt used to generate this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.ExecutiveSummary">
+            <summary>
+            Gets or sets the AI-generated executive summary for this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.LLMProvider">
+            <summary>
+            Gets or sets the LLM provider used to generate this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.Configuration">
+            <summary>
+            Gets or sets the report configuration as JSON.
+            Includes styling, branding, and layout options.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.IsTemplate">
+            <summary>
+            Gets or sets whether this report is a template.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.IsPublic">
+            <summary>
+            Gets or sets whether this report is publicly visible in the marketplace.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.CreatedBy">
+            <summary>
+            Gets or sets the user who created this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.CreatedAt">
+            <summary>
+            Gets or sets the creation timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.LastModifiedBy">
+            <summary>
+            Gets or sets the user who last modified this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.LastModifiedAt">
+            <summary>
+            Gets or sets the last modification timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.Sections">
+            <summary>
+            Gets or sets the collection of sections in this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.Database">
+            <summary>
+            Gets or sets the associated database (navigation property).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.SectionCount">
+            <summary>
+            Gets the total number of sections in this report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.DatabaseName">
+            <summary>
+            Gets the database name (for display purposes).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.StatusName">
+            <summary>
+            Gets the status display name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.Report.ReportTypeName">
+            <summary>
+            Gets the report type display name.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportTypeEnum">
+            <summary>
+            Enum representing report types.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Custom">
+            <summary>Custom report created by user.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Sales">
+            <summary>Sales performance report.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Financial">
+            <summary>Financial report.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.HR">
+            <summary>Human resources report.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Operations">
+            <summary>Operations report.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Marketing">
+            <summary>Marketing report.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Inventory">
+            <summary>Inventory report.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportTypeEnum.Customer">
+            <summary>Customer analytics report.</summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportStatusEnum">
+            <summary>
+            Enum representing report status.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportStatusEnum.Draft">
+            <summary>Report is in draft state.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportStatusEnum.Published">
+            <summary>Report is published and active.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportStatusEnum.Archived">
+            <summary>Report is archived.</summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.CreateReportRequest">
+            <summary>
+            DTO for creating a new report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateReportRequest.Title">
+            <summary>
+            Gets or sets the report title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateReportRequest.Description">
+            <summary>
+            Gets or sets the report description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateReportRequest.DatabaseID">
+            <summary>
+            Gets or sets the database ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateReportRequest.ReportType">
+            <summary>
+            Gets or sets the report type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateReportRequest.CreatedBy">
+            <summary>
+            Gets or sets the user creating the report.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.UpdateReportRequest">
+            <summary>
+            DTO for updating an existing report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.ReportID">
+            <summary>
+            Gets or sets the report ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.Title">
+            <summary>
+            Gets or sets the report title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.Description">
+            <summary>
+            Gets or sets the report description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.Status">
+            <summary>
+            Gets or sets the report status.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.ExecutiveSummary">
+            <summary>
+            Gets or sets the executive summary.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.Configuration">
+            <summary>
+            Gets or sets the report configuration.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.ModifiedBy">
+            <summary>
+            Gets or sets the user modifying the report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateReportRequest.Sections">
+            <summary>
+            Gets or sets the sections to update.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportListItemDto">
+            <summary>
+            DTO for report list item (lightweight).
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.CreateSectionRequest">
+            <summary>
+            DTO for creating a new section.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.ReportID">
+            <summary>
+            Gets or sets the parent report ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.Title">
+            <summary>
+            Gets or sets the section title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.Description">
+            <summary>
+            Gets or sets the section description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.SectionType">
+            <summary>
+            Gets or sets the section type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.QueryText">
+            <summary>
+            Gets or sets the SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.QueryIntent">
+            <summary>
+            Gets or sets the query intent.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.TextContent">
+            <summary>
+            Gets or sets the text content (for text sections).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.CreateSectionRequest.DisplayOrder">
+            <summary>
+            Gets or sets the display order.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.UpdateSectionRequest">
+            <summary>
+            DTO for updating a section.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.SectionID">
+            <summary>
+            Gets or sets the section ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.Title">
+            <summary>
+            Gets or sets the section title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.Description">
+            <summary>
+            Gets or sets the section description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.QueryText">
+            <summary>
+            Gets or sets the SQL query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.TextContent">
+            <summary>
+            Gets or sets the text content.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.ColumnConfiguration">
+            <summary>
+            Gets or sets the column configuration JSON.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.IsVisible">
+            <summary>
+            Gets or sets whether the section is visible.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.IsDisplayedAsChart">
+            <summary>
+            Gets or sets whether to display as chart.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.ChartType">
+            <summary>
+            Gets or sets the chart type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.UpdateSectionRequest.DisplayOrder">
+            <summary>
+            Gets or sets the display order.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReorderSectionsRequest">
+            <summary>
+            DTO for reordering sections.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReorderSectionsRequest.ReportID">
+            <summary>
+            Gets or sets the report ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReorderSectionsRequest.SectionOrder">
+            <summary>
+            Gets or sets the section IDs in new order.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.GenerateReportRequest">
+            <summary>
+            Request for AI-powered report generation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportRequest.Prompt">
+            <summary>
+            Gets or sets the natural language prompt describing the report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportRequest.DatabaseID">
+            <summary>
+            Gets or sets the database ID to query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportRequest.Title">
+            <summary>
+            Gets or sets the report title (optional, can be AI-generated).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportRequest.IncludeExecutiveSummary">
+            <summary>
+            Gets or sets whether to generate executive summary.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportRequest.MaxSections">
+            <summary>
+            Gets or sets the maximum number of sections to generate.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportRequest.CreatedBy">
+            <summary>
+            Gets or sets the user creating the report.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.GenerateReportResponse">
+            <summary>
+            Response from AI report generation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportResponse.Success">
+            <summary>
+            Gets or sets whether generation was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportResponse.ErrorMessage">
+            <summary>
+            Gets or sets the error message if generation failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportResponse.Report">
+            <summary>
+            Gets or sets the generated report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportResponse.Explanation">
+            <summary>
+            Gets or sets the AI's explanation of the report structure.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateReportResponse.Suggestions">
+            <summary>
+            Gets or sets any suggestions for additional sections.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.GenerateSectionRequest">
+            <summary>
+            Request for adding a single section via AI.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionRequest.ReportID">
+            <summary>
+            Gets or sets the report ID to add section to.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionRequest.Prompt">
+            <summary>
+            Gets or sets the natural language description of the section.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionRequest.DatabaseID">
+            <summary>
+            Gets or sets the database ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionRequest.PreferredSectionType">
+            <summary>
+            Gets or sets the preferred section type.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.GenerateSectionResponse">
+            <summary>
+            Response from AI section generation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionResponse.Success">
+            <summary>
+            Gets or sets whether generation was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionResponse.ErrorMessage">
+            <summary>
+            Gets or sets the error message if generation failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionResponse.Section">
+            <summary>
+            Gets or sets the generated section.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.GenerateSectionResponse.Explanation">
+            <summary>
+            Gets or sets the AI's explanation.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.SectionSuggestion">
+            <summary>
+            Suggestion for additional report sections.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SectionSuggestion.Title">
+            <summary>
+            Gets or sets the suggested section title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SectionSuggestion.Description">
+            <summary>
+            Gets or sets the suggested section description.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SectionSuggestion.SectionType">
+            <summary>
+            Gets or sets the suggested section type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.SectionSuggestion.QueryIntent">
+            <summary>
+            Gets or sets the query intent.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ExplainDataRequest">
+            <summary>
+            Request for AI data explanation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataRequest.SectionID">
+            <summary>
+            Gets or sets the section ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataRequest.Data">
+            <summary>
+            Gets or sets the data to explain.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataRequest.Context">
+            <summary>
+            Gets or sets the original question/context.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ExplainDataResponse">
+            <summary>
+            Response from AI data explanation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataResponse.Success">
+            <summary>
+            Gets or sets whether explanation was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataResponse.ErrorMessage">
+            <summary>
+            Gets or sets the error message if failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataResponse.Explanation">
+            <summary>
+            Gets or sets the AI-generated explanation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataResponse.KeyInsights">
+            <summary>
+            Gets or sets key insights extracted from the data.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExplainDataResponse.Trends">
+            <summary>
+            Gets or sets any trends identified.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest">
+            <summary>
+            Request for executing section query.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest.SectionID">
+            <summary>
+            Gets or sets the section ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest.Filters">
+            <summary>
+            Gets or sets optional filter parameters.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest.Page">
+            <summary>
+            Gets or sets the page number (1-based).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest.PageSize">
+            <summary>
+            Gets or sets the page size.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest.SortColumn">
+            <summary>
+            Gets or sets the sort column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryRequest.SortDirection">
+            <summary>
+            Gets or sets the sort direction.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse">
+            <summary>
+            Response from section query execution.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse.Success">
+            <summary>
+            Gets or sets whether execution was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse.ErrorMessage">
+            <summary>
+            Gets or sets the error message if failed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse.Data">
+            <summary>
+            Gets or sets the query results.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse.TotalCount">
+            <summary>
+            Gets or sets the total row count (before pagination).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse.Columns">
+            <summary>
+            Gets or sets the column metadata.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExecuteSectionQueryResponse.ExecutionTimeMs">
+            <summary>
+            Gets or sets the execution time in milliseconds.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ColumnMetadata">
+            <summary>
+            Metadata about a result column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnMetadata.Name">
+            <summary>
+            Gets or sets the column name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnMetadata.DataType">
+            <summary>
+            Gets or sets the data type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ColumnMetadata.IsNullable">
+            <summary>
+            Gets or sets whether the column is nullable.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ExportReportRequest">
+            <summary>
+            Request for exporting a report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.ReportID">
+            <summary>
+            Gets or sets the report ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.Format">
+            <summary>
+            Gets or sets the export format.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.ExportAllSections">
+            <summary>
+            Gets or sets whether to include all sections or specific ones.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.SectionIDs">
+            <summary>
+            Gets or sets specific section IDs to export.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.IncludeExecutiveSummary">
+            <summary>
+            Gets or sets whether to include executive summary.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.PageSize">
+            <summary>
+            Gets or sets the page size for PDF export.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ExportReportRequest.IncludeTimestamp">
+            <summary>
+            Gets or sets whether to include timestamp.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportExportFormat">
+            <summary>
+            Enum for report export formats.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportExportFormat.PDF">
+            <summary>PDF format.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportExportFormat.Excel">
+            <summary>Excel format.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportExportFormat.Word">
+            <summary>Word/DOCX format.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportExportFormat.HTML">
+            <summary>HTML format.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportExportFormat.CSV">
+            <summary>CSV format.</summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.AIChatMessage">
+            <summary>
+            Message in AI assistant conversation.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatMessage.Role">
+            <summary>
+            Gets or sets the message role (user/assistant).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatMessage.Content">
+            <summary>
+            Gets or sets the message content.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatMessage.Timestamp">
+            <summary>
+            Gets or sets the timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatMessage.Action">
+            <summary>
+            Gets or sets any action performed (e.g., "section_added", "report_generated").
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatMessage.ActionData">
+            <summary>
+            Gets or sets action data (e.g., section ID).
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.AIChatRequest">
+            <summary>
+            Request for AI chat interaction.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatRequest.ReportID">
+            <summary>
+            Gets or sets the report ID (if working on existing report).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatRequest.DatabaseID">
+            <summary>
+            Gets or sets the database ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatRequest.Message">
+            <summary>
+            Gets or sets the user message.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatRequest.ConversationHistory">
+            <summary>
+            Gets or sets the conversation history.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.AIChatResponse">
+            <summary>
+            Response from AI chat interaction.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.Success">
+            <summary>
+            Gets or sets whether the request was successful.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.Message">
+            <summary>
+            Gets or sets the AI response message.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.Action">
+            <summary>
+            Gets or sets the action performed.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.ActionData">
+            <summary>
+            Gets or sets action-specific data.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.UpdatedReport">
+            <summary>
+            Gets or sets the updated report (if modified).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.NewSection">
+            <summary>
+            Gets or sets any new section added.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.AIChatResponse.DataExplanation">
+            <summary>
+            Gets or sets data explanation (if requested).
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportSection">
+            <summary>
+            Represents a section within a report.
+            Each section can contain data (table/chart) or text (executive summary).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.SectionID">
+            <summary>
+            Gets or sets the unique identifier for the section.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.ReportID">
+            <summary>
+            Gets or sets the parent report ID.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.Title">
+            <summary>
+            Gets or sets the section title.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.Description">
+            <summary>
+            Gets or sets the section description or subtitle.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.SectionType">
+            <summary>
+            Gets or sets the section type.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.DisplayOrder">
+            <summary>
+            Gets or sets the display order of this section within the report.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.IsVisible">
+            <summary>
+            Gets or sets whether this section is visible.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.IsExpanded">
+            <summary>
+            Gets or sets whether this section is expanded in the UI.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.QueryText">
+            <summary>
+            Gets or sets the SQL query for this section.
+            Only applicable for DataTable and Chart sections.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.QueryIntent">
+            <summary>
+            Gets or sets the natural language description of what this section displays.
+            Used for AI generation and user understanding.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.TextContent">
+            <summary>
+            Gets or sets the text content for text-based sections (ExecutiveSummary, TextBlock).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.ColumnConfiguration">
+            <summary>
+            Gets or sets the column configuration as JSON.
+            Defines which columns to show, their order, formatting, and conditional rules.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.VisualizationConfig">
+            <summary>
+            Gets or sets the visualization configuration as JSON.
+            Used when section is converted to chart.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.ChartType">
+            <summary>
+            Gets or sets the chart type if this section is displayed as a chart.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.IsDisplayedAsChart">
+            <summary>
+            Gets or sets whether this section is currently displayed as a chart.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.CreatedAt">
+            <summary>
+            Gets or sets the creation timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.LastModifiedAt">
+            <summary>
+            Gets or sets the last modification timestamp.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.Report">
+            <summary>
+            Gets or sets the parent report (navigation property).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.SectionTypeName">
+            <summary>
+            Gets the section type display name.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportSection.SectionIcon">
+            <summary>
+            Gets the icon for this section type.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.ReportSection.GetColumnConfiguration">
+            <summary>
+            Gets the column configuration as a strongly-typed object.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardCommon.Models.ReportSection.SetColumnConfiguration(DynamicDashboardCommon.Models.ReportColumnConfiguration)">
+            <summary>
+            Sets the column configuration from a strongly-typed object.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportSectionTypeEnum">
+            <summary>
+            Enum representing report section types.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportSectionTypeEnum.ExecutiveSummary">
+            <summary>AI-generated executive summary text.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportSectionTypeEnum.DataTable">
+            <summary>Data table with sorting, filtering, and pagination.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportSectionTypeEnum.Chart">
+            <summary>Chart visualization.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportSectionTypeEnum.TextBlock">
+            <summary>Static text block.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ReportSectionTypeEnum.KPICards">
+            <summary>KPI cards row.</summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportColumnConfiguration">
+            <summary>
+            Configuration for report columns including visibility, formatting, and conditional rules.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.Columns">
+            <summary>
+            Gets or sets the list of column definitions.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.DefaultSortColumn">
+            <summary>
+            Gets or sets the default sort column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.DefaultSortDirection">
+            <summary>
+            Gets or sets the default sort direction (asc/desc).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.DefaultPageSize">
+            <summary>
+            Gets or sets the default page size.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.ShowRowNumbers">
+            <summary>
+            Gets or sets whether to show row numbers.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.EnableRowSelection">
+            <summary>
+            Gets or sets whether to enable row selection.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.ShowSearch">
+            <summary>
+            Gets or sets whether to show the search box.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.ShowColumnFilters">
+            <summary>
+            Gets or sets whether to show column filters.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.ShowPagination">
+            <summary>
+            Gets or sets whether to show pagination.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnConfiguration.ShowExport">
+            <summary>
+            Gets or sets whether to show export options.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ReportColumnDefinition">
+            <summary>
+            Definition for a single column in a report section.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.ColumnName">
+            <summary>
+            Gets or sets the column name (from SQL query).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.DisplayName">
+            <summary>
+            Gets or sets the display header text.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.IsVisible">
+            <summary>
+            Gets or sets whether this column is visible.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.DisplayOrder">
+            <summary>
+            Gets or sets the display order.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.Width">
+            <summary>
+            Gets or sets the column width (px, %, or auto).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.DataType">
+            <summary>
+            Gets or sets the data type for formatting.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.Alignment">
+            <summary>
+            Gets or sets the text alignment.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.FormatString">
+            <summary>
+            Gets or sets the format string (e.g., "C2" for currency, "P1" for percentage).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.IsSortable">
+            <summary>
+            Gets or sets whether this column is sortable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.IsFilterable">
+            <summary>
+            Gets or sets whether this column is filterable.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ReportColumnDefinition.ConditionalFormats">
+            <summary>
+            Gets or sets the conditional formatting rules for this column.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ConditionalFormatRuleReport">
+            <summary>
+            Conditional formatting rule for a column.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.Operator">
+            <summary>
+            Gets or sets the condition operator.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.Value">
+            <summary>
+            Gets or sets the comparison value.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.Value2">
+            <summary>
+            Gets or sets the secondary value (for between operator).
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.BackgroundColor">
+            <summary>
+            Gets or sets the background color when condition is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.TextColor">
+            <summary>
+            Gets or sets the text color when condition is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.Icon">
+            <summary>
+            Gets or sets the icon to display when condition is met.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.ConditionalFormatRuleReport.ShowAsBadge">
+            <summary>
+            Gets or sets whether to show as a badge.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ColumnDataTypeEnum">
+            <summary>
+            Enum for column data types.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.Text">
+            <summary>Plain text.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.Number">
+            <summary>Numeric value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.Currency">
+            <summary>Currency value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.Percentage">
+            <summary>Percentage value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.Date">
+            <summary>Date value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.DateTime">
+            <summary>DateTime value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnDataTypeEnum.Boolean">
+            <summary>Boolean value.</summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ColumnAlignmentEnum">
+            <summary>
+            Enum for column alignment.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnAlignmentEnum.Left">
+            <summary>Left aligned.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnAlignmentEnum.Center">
+            <summary>Center aligned.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ColumnAlignmentEnum.Right">
+            <summary>Right aligned.</summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.ConditionalOperatorEnum">
+            <summary>
+            Enum for conditional formatting operators.
+            </summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.Equals">
+            <summary>Equal to value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.NotEquals">
+            <summary>Not equal to value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.GreaterThan">
+            <summary>Greater than value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.GreaterThanOrEqual">
+            <summary>Greater than or equal to value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.LessThan">
+            <summary>Less than value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.LessThanOrEqual">
+            <summary>Less than or equal to value.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.Between">
+            <summary>Between two values.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.Contains">
+            <summary>Contains text.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.StartsWith">
+            <summary>Starts with text.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.EndsWith">
+            <summary>Ends with text.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.IsEmpty">
+            <summary>Is null or empty.</summary>
+        </member>
+        <member name="F:DynamicDashboardCommon.Models.ConditionalOperatorEnum.IsNotEmpty">
+            <summary>Is not null or empty.</summary>
+        </member>
         <member name="T:DynamicDashboardCommon.Models.BatchProcessingLog">
             <summary>
             Represents a log entry for a batch processing job.

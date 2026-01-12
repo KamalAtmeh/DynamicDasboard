@@ -369,7 +369,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         public async Task<string> GenerateSqlAsync(
      string question,
      string confirmedUnderstanding,
-     string databaseSchema,
+     string databaseSchema, string DataBaseTypeName,
      Dictionary<string, string> resolvedAmbiguities = null)
         {
             try
@@ -381,6 +381,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 var userPrompt = new StringBuilder();
                 userPrompt.AppendLine($"Original question: {question}");
                 userPrompt.AppendLine($"Confirmed understanding: {confirmedUnderstanding}");
+                userPrompt.AppendLine($"Please generate the SQL query based on DataBase Type : {DataBaseTypeName}");
 
                 // Add null check and safe enumeration for resolvedAmbiguities
                 if (resolvedAmbiguities != null && resolvedAmbiguities.Count > 0)
@@ -609,40 +610,36 @@ Do NOT generate SQL - only explain what the chart will show.";
             }
         }
 
+
         private string BuildSqlGenerationSystemPrompt(string databaseSchema)
         {
-            try
-            {
-                var prompt = new StringBuilder();
+            var prompt = new StringBuilder();
 
-                prompt.AppendLine("You are an AI assistant that generates SQL queries from natural language questions. " +
-                    "Your task is to generate a valid SQL query that correctly answers the given question.");
+            prompt.AppendLine("You are an AI assistant that generates SQL queries from natural language questions. " +
+                "Your task is to generate a valid SQL query that correctly answers the given question.");
 
-                prompt.AppendLine("\nYou will be provided with:");
-                prompt.AppendLine("1. The original natural language question");
-                prompt.AppendLine("2. A confirmed understanding of what the question means");
-                prompt.AppendLine("3. Resolved ambiguities (if any)");
+            prompt.AppendLine("\nYou will be provided with:");
+            prompt.AppendLine("1. The original natural language question");
+            prompt.AppendLine("2. A confirmed understanding of what the question means");
+            prompt.AppendLine("3. Resolved ambiguities (if any)");
 
-                prompt.AppendLine("\nGenerate a SQL query that:");
-                prompt.AppendLine("1. Is syntactically correct for SQL Server");
-                prompt.AppendLine("2. it is important to make sure Usage of only table and column names from the provided schema structure");
-                prompt.AppendLine("3. If you found complexity in the query , take your time and take it step by step . accuracy is more important than performance");
-                //prompt.AppendLine("3. Includes appropriate JOINs when needed");
-                //prompt.AppendLine("4. Applies any filters specified in the question");
-                prompt.AppendLine("3. Returns only the requested data");
+            prompt.AppendLine("\nGenerate a SQL query that:");
+            prompt.AppendLine("1. Is syntactically correct for provided databasetype , for example SQL Server doesnt allow LIMIT or FORMAT_DATE keywords in the query");
+            prompt.AppendLine("2. Uses proper table and column names from the schema");
+            prompt.AppendLine("3. Includes appropriate JOINs when needed");
+            prompt.AppendLine("4. Applies any filters specified in the question");
+            prompt.AppendLine("5. Returns only the requested data");
+            prompt.AppendLine("6. If you found complexity in the query , take your time and take it step by step . accuracy is more important than performance");
 
-                prompt.AppendLine("\nDatabase schema:");
-                prompt.AppendLine(databaseSchema);
+            prompt.AppendLine("\nDatabase schema:");
+            prompt.AppendLine(databaseSchema);
 
-                prompt.AppendLine("\nReturn ONLY the SQL query without any explanation or formatting.");
+            prompt.AppendLine("\nReturn ONLY the SQL query without any explanation or formatting.");
 
-                return prompt.ToString();
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
+            return prompt.ToString();
         }
+
+     
 
         private async Task<string> CallClaudeApiAsync(string systemPrompt, string userPrompt)
         {

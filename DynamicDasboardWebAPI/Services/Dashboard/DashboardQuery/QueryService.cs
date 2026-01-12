@@ -38,7 +38,7 @@ namespace DynamicDasboardWebAPI.Services
             objDataBaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
             objSchemaService = schemaService ?? throw new ArgumentNullException(nameof(schemaService));
             _llmServiceFactory = llmServiceFactory ?? throw new ArgumentNullException(nameof(llmServiceFactory));
-
+            _llmService = llmServiceFactory?.CreateLlmService() ?? throw new ArgumentNullException(nameof(llmServiceFactory));
             // Create LLM service using factory
             _llmService = _llmServiceFactory.CreateLlmService();
         }
@@ -112,6 +112,7 @@ namespace DynamicDasboardWebAPI.Services
                 var schemaText = string.Empty;
                 // Get database metadata
                 var schemaObj = await objSchemaService.GetSchemaObject(request.DatabaseId);
+                Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
                 if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
 
@@ -123,7 +124,6 @@ namespace DynamicDasboardWebAPI.Services
                 else
                 {
                     // Fallback to metadata if no saved schema
-                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
                     schemaObj = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(request.DatabaseId, objDataBase);
 
                     schemaText = objSchemaService.BuildOptimizedSchemaString(schemaObj);
@@ -133,7 +133,7 @@ namespace DynamicDasboardWebAPI.Services
                 var sql = await _llmService.GenerateSqlAsync(
                     request.OriginalQuestion,
                     request.ConfirmedUnderstanding,
-                    schemaText,
+                    schemaText, objDataBase.DatabaseTypeName,
                     request.ResolvedAmbiguities);
 
                 // Return SQL generation response
@@ -209,6 +209,7 @@ namespace DynamicDasboardWebAPI.Services
                 var schemaText = string.Empty;
                 // Get database metadata
                 var schemaObj = await objSchemaService.GetSchemaObject(request.DatabaseId);
+                Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
                 if (schemaObj != null && !string.IsNullOrEmpty(schemaObj.SchemaData))
                 {
 
@@ -220,7 +221,7 @@ namespace DynamicDasboardWebAPI.Services
                 else
                 {
                     // Fallback to metadata if no saved schema
-                    Database objDataBase = await objDataBaseService.GetDatabaseByIdAsync(request.DatabaseId);
+                   
                     schemaObj = await objSchemaService.GenerateAndGetDatabaseSchemaFromConnectedDBAsync(request.DatabaseId, objDataBase);
 
                     schemaText = objSchemaService.BuildOptimizedSchemaString(schemaObj);
@@ -234,7 +235,7 @@ namespace DynamicDasboardWebAPI.Services
                 var sql = await _llmService.GenerateSqlAsync(
                     request.Question,
                     explanation.Explanation,
-                    schemaText,
+                    schemaText, objDataBase.DatabaseTypeName,
                     null);
 
                 // Execute the query

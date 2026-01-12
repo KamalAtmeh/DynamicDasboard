@@ -8,6 +8,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 using System.Text.Json.Serialization;
+using DynamicDasboardWebAPI.Services.Report;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,6 +130,9 @@ builder.Services.AddScoped<IAssistantService>(provider =>
 
     return new AssistantService(logsService, llmService, schemaService);
 });
+
+//builder.Services.AddScoped<IReportService, ReportService>();
+
 
 
 // Register HttpClient with a base address

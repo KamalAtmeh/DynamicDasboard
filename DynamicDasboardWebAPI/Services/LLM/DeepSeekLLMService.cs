@@ -67,7 +67,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         public async Task<string> GenerateSqlAsync(
             string question,
             string confirmedUnderstanding,
-            string databaseSchema,
+            string databaseSchema, string DataBaseTypeName,
             Dictionary<string, string> resolvedAmbiguities = null)
         {
             try
@@ -79,6 +79,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 var userPrompt = new StringBuilder();
                 userPrompt.AppendLine($"Original question: {question}");
                 userPrompt.AppendLine($"Confirmed understanding: {confirmedUnderstanding}");
+                userPrompt.AppendLine($"Please generate the SQL query based on DataBase Type : {DataBaseTypeName}");
 
                 if (resolvedAmbiguities != null && resolvedAmbiguities.Count > 0)
                 {
@@ -307,7 +308,7 @@ Do NOT generate SQL - only explain what the chart will show.";
             prompt.AppendLine("3. Resolved ambiguities (if any)");
 
             prompt.AppendLine("\nGenerate a SQL query that:");
-            prompt.AppendLine("1. Is syntactically correct for SQL Server");
+            prompt.AppendLine("1. Is syntactically correct for provided databasetype , for example SQL Server doesnt allow LIMIT or FORMAT_DATE keywords in the query");
             prompt.AppendLine("2. Uses proper table and column names from the schema");
             prompt.AppendLine("3. Includes appropriate JOINs when needed");
             prompt.AppendLine("4. Applies any filters specified in the question");
@@ -333,7 +334,7 @@ Do NOT generate SQL - only explain what the chart will show.";
                     new { role = "user", content = userPrompt }
                 },
                 temperature = 0.2, //temp
-                max_tokens = 16000 //temp
+                max_tokens = 8000 //temp
             };
 
             var content = new StringContent(

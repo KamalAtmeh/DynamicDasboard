@@ -34,7 +34,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         Task<string> GenerateSqlAsync(
             string question,
             string confirmedUnderstanding,
-            string databaseSchema,
+            string databaseSchema, string DataBaseTypeName,
             Dictionary<string, string> resolvedAmbiguities = null);
 
         /// <summary>

@@ -89,7 +89,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
         public async Task<string> GenerateSqlAsync(
             string question,
             string confirmedUnderstanding,
-            string databaseSchema,
+            string databaseSchema, string DataBaseTypeName,
             Dictionary<string, string> resolvedAmbiguities = null)
         {
             try
@@ -100,7 +100,7 @@ namespace DynamicDasboardWebAPI.Services.LLM
                 var userPrompt = new StringBuilder();
                 userPrompt.AppendLine($"Original question: {question}");
                 userPrompt.AppendLine($"Confirmed understanding: {confirmedUnderstanding}");
-
+                userPrompt.AppendLine($"Please generate the SQL query based on DataBase Type : {DataBaseTypeName}");
                 if (resolvedAmbiguities != null && resolvedAmbiguities.Count > 0)
                 {
                     userPrompt.AppendLine("\nResolved ambiguities:");
@@ -243,28 +243,25 @@ Do NOT generate SQL - only explain what the chart will show.";
         {
             var prompt = new StringBuilder();
 
-            prompt.AppendLine("You are an expert SQL developer that generates accurate SQL queries from natural language questions. " +
-                "Your specialty is understanding database schemas and writing efficient, correct SQL.");
+            prompt.AppendLine("You are an AI assistant that generates SQL queries from natural language questions. " +
+                "Your task is to generate a valid SQL query that correctly answers the given question.");
 
-            prompt.AppendLine("\nWhen generating SQL:");
-            prompt.AppendLine("1. Use only tables and columns specified in the schema");
-            prompt.AppendLine("2. Choose appropriate JOINs based on the relationships");
-            prompt.AppendLine("3. Apply proper filtering conditions");
-            prompt.AppendLine("4. Format the SQL with proper indentation for readability");
-            prompt.AppendLine("5. Qualify column names with table names or aliases");
-            prompt.AppendLine("6. Include a business-friendly explanation of what the query does");
+            prompt.AppendLine("\nYou will be provided with:");
+            prompt.AppendLine("1. The original natural language question");
+            prompt.AppendLine("2. A confirmed understanding of what the question means");
+            prompt.AppendLine("3. Resolved ambiguities (if any)");
 
-            prompt.AppendLine("\nDatabase Schema:");
+            prompt.AppendLine("\nGenerate a SQL query that:");
+            prompt.AppendLine("1. Is syntactically correct for provided databasetype , for example SQL Server doesnt allow LIMIT or FORMAT_DATE keywords in the query");
+            prompt.AppendLine("2. Uses proper table and column names from the schema");
+            prompt.AppendLine("3. Includes appropriate JOINs when needed");
+            prompt.AppendLine("4. Applies any filters specified in the question");
+            prompt.AppendLine("5. Returns only the requested data");
+
+            prompt.AppendLine("\nDatabase schema:");
             prompt.AppendLine(databaseSchema);
 
-            if (dbDescriptions != null && dbDescriptions.Count > 0)
-            {
-                prompt.AppendLine("\nBusiness Terminology (use these terms in your explanations):");
-                foreach (var desc in dbDescriptions)
-                {
-                    prompt.AppendLine($"- {desc.Key}: {desc.Value}");
-                }
-            }
+            prompt.AppendLine("\nReturn ONLY the SQL query without any explanation or formatting.");
 
             return prompt.ToString();
         }

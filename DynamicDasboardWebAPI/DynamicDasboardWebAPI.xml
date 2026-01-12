@@ -499,6 +499,229 @@
             Gets a user by ID.
             </summary>
         </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.ReportController">
+            <summary>
+            API Controller for AI Report Builder operations.
+            Handles report CRUD, section management, AI generation, and data operations.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.#ctor(DynamicDasboardWebAPI.Services.Report.IReportService)">
+            <summary>
+            Initializes a new instance of the ReportController.
+            </summary>
+            <param name="reportService">The report service.</param>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetAllReports(System.Nullable{System.Int32},System.Nullable{System.Int32},System.String)">
+            <summary>
+            Gets all reports with optional filtering.
+            </summary>
+            <param name="databaseId">Optional database ID filter.</param>
+            <param name="status">Optional status filter (0=Draft, 1=Published, 2=Archived).</param>
+            <param name="createdBy">Optional creator filter.</param>
+            <returns>List of reports.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetReportById(System.Int32)">
+            <summary>
+            Gets a report by ID with all sections.
+            </summary>
+            <param name="id">The report ID.</param>
+            <returns>The complete report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.CreateReport(DynamicDashboardCommon.Models.CreateReportRequest)">
+            <summary>
+            Creates a new report manually (without AI).
+            </summary>
+            <param name="request">The create report request.</param>
+            <returns>The created report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.UpdateReport(System.Int32,DynamicDashboardCommon.Models.UpdateReportRequest)">
+            <summary>
+            Updates an existing report.
+            </summary>
+            <param name="id">The report ID.</param>
+            <param name="request">The update request.</param>
+            <returns>The updated report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.DeleteReport(System.Int32)">
+            <summary>
+            Deletes a report.
+            </summary>
+            <param name="id">The report ID.</param>
+            <returns>Success status.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetReportSections(System.Int32)">
+            <summary>
+            Gets all sections for a report.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <returns>List of sections.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.AddSection(System.Int32,DynamicDashboardCommon.Models.CreateSectionRequest)">
+            <summary>
+            Adds a new section to a report.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="request">The create section request.</param>
+            <returns>The created section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetSectionById(System.Int32,System.Int32)">
+            <summary>
+            Gets a section by ID.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <returns>The section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.UpdateSection(System.Int32,System.Int32,DynamicDashboardCommon.Models.UpdateSectionRequest)">
+            <summary>
+            Updates a section.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <param name="request">The update request.</param>
+            <returns>The updated section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.DeleteSection(System.Int32,System.Int32)">
+            <summary>
+            Deletes a section.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <returns>Success status.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.ReorderSections(System.Int32,DynamicDashboardCommon.Models.ReorderSectionsRequest)">
+            <summary>
+            Reorders sections within a report.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="request">The reorder request.</param>
+            <returns>Success status.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.ToggleSectionVisibility(System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Toggles section visibility.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <param name="isVisible">Visibility state.</param>
+            <returns>The updated section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.ToggleSectionChartMode(System.Int32,System.Int32,System.Boolean,System.String)">
+            <summary>
+            Toggles section between table and chart display.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <param name="displayAsChart">Whether to display as chart.</param>
+            <param name="chartType">The chart type.</param>
+            <returns>The updated section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GenerateReport(DynamicDashboardCommon.Models.GenerateReportRequest)">
+            <summary>
+            Generates a complete report using AI from a natural language prompt.
+            </summary>
+            <param name="request">The generation request.</param>
+            <returns>The generated report response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GenerateSection(System.Int32,DynamicDashboardCommon.Models.GenerateSectionRequest)">
+            <summary>
+            Generates a new section using AI.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="request">The section generation request.</param>
+            <returns>The generated section response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.RegenerateExecutiveSummary(System.Int32)">
+            <summary>
+            Regenerates the executive summary for a report.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <returns>The updated report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.ExplainData(System.Int32,System.Int32,DynamicDashboardCommon.Models.ExplainDataRequest)">
+            <summary>
+            Gets AI explanation of section data.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <param name="request">The explain data request.</param>
+            <returns>The explanation response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.Chat(DynamicDashboardCommon.Models.AIChatRequest)">
+            <summary>
+            Processes an AI chat message for report building.
+            </summary>
+            <param name="request">The chat request.</param>
+            <returns>The AI response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetSectionData(System.Int32,System.Int32,System.Int32,System.Int32,System.String,System.String)">
+            <summary>
+            Executes a section's query and returns paginated data.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <param name="page">Page number (1-based).</param>
+            <param name="pageSize">Page size.</param>
+            <param name="sortColumn">Optional sort column.</param>
+            <param name="sortDirection">Sort direction (asc/desc).</param>
+            <returns>The query results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetSectionDataFull(System.Int32,System.Int32)">
+            <summary>
+            Executes a section's query and returns all data (no pagination).
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <returns>All query results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.TestQuery(DynamicDasboardWebAPI.Controllers.TestQueryRequest)">
+            <summary>
+            Tests a SQL query without saving.
+            </summary>
+            <param name="sql">The SQL query.</param>
+            <param name="databaseId">The database ID.</param>
+            <returns>Query results or error.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.GetSectionColumns(System.Int32,System.Int32)">
+            <summary>
+            Gets column metadata for a section's query.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <returns>List of column metadata.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.ExportReport(System.Int32,DynamicDashboardCommon.Models.ExportReportRequest)">
+            <summary>
+            Exports a report to the specified format.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="request">The export request.</param>
+            <returns>The exported file.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.ReportController.ExportSectionData(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Exports a single section's data.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <param name="sectionId">The section ID.</param>
+            <param name="format">The export format (0=PDF, 1=Excel, 2=Word, 3=HTML, 4=CSV).</param>
+            <returns>The exported file.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Controllers.TestQueryRequest">
+            <summary>
+            Request model for testing SQL queries.
+            </summary>
+        </member>
+        <member name="P:DynamicDasboardWebAPI.Controllers.TestQueryRequest.Sql">
+            <summary>
+            Gets or sets the SQL query to test.
+            </summary>
+        </member>
+        <member name="P:DynamicDasboardWebAPI.Controllers.TestQueryRequest.DatabaseId">
+            <summary>
+            Gets or sets the database ID.
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.BaseRepository.WithConnectionAsync``1(System.Func{System.Data.IDbConnection,System.Threading.Tasks.Task{``0}},System.Int32,System.Boolean)">
             <summary>
             A common helper to manage connection creation, opening, and disposal 
@@ -888,39 +1111,6 @@
             <summary>
             Test a database connection using DbConnectionFactory logic (no direct DB usage).
             </summary>
-        </member>
-        <member name="T:DynamicDasboardWebAPI.Repositories.IDatabaseRepository">
-            <summary>
-            Interface for database repository operations.
-            Provides methods to interact with database entities and their metadata.
-            </summary>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.IDatabaseRepository.GetAllDatabasesAsync">
-            <summary>
-            Retrieves all databases asynchronously.
-            </summary>
-            <returns>A task that represents the asynchronous operation. The task result contains a collection of databases.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.IDatabaseRepository.AddDatabaseAsync(DynamicDashboardCommon.Models.Database)">
-            <summary>
-            Adds a new database asynchronously.
-            </summary>
-            <param name="database">The database entity to add.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the ID of the added database.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.IDatabaseRepository.GetDatabaseMetadataAsync(System.Int32)">
-            <summary>
-            Retrieves metadata for a specific database asynchronously.
-            </summary>
-            <param name="databaseId">The ID of the database.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains a collection of tables associated with the database.</returns>
-        </member>
-        <member name="M:DynamicDasboardWebAPI.Repositories.IDatabaseRepository.GetDatabaseByNameAsync(System.String)">
-            <summary>
-            Retrieves a database by its name asynchronously.
-            </summary>
-            <param name="databaseName">The name of the database.</param>
-            <returns>A task that represents the asynchronous operation. The task result contains the database entity.</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Repositories.RelationshipRepository.GetRelationshipsByTableIdAsync(System.Int32)">
             <summary>
@@ -1914,7 +2104,7 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.LLM.ClaudeLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
@@ -1934,7 +2124,7 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DatabricksLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
@@ -1967,7 +2157,7 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.LLM.DeepSeekLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
@@ -1994,7 +2184,7 @@
             <param name="adminDescriptions">Optional dictionary of admin descriptions for database entities</param>
             <returns>An explanation response including understanding explanation and identified ambiguities</returns>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.ILLMService.GenerateSqlAsync(System.String,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <summary>
             Generates SQL from a natural language question after confirmation of understanding.
             </summary>
@@ -2075,7 +2265,7 @@
         <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateExplanationAsync(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+        <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateSqlAsync(System.String,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
             <inheritdoc/>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.LLM.SQLCoderLLMService.GenerateResultExplanationAsync(System.String,System.String,System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,System.Object}})">
@@ -2121,6 +2311,172 @@
             <param name="eventType">The type of the event.</param>
             <param name="eventDescription">The description of the event.</param>
             <returns>A task that represents the asynchronous operation.</returns>
+        </member>
+        <member name="T:DynamicDasboardWebAPI.Services.Report.IReportService">
+            <summary>
+            Service interface for Report business logic operations.
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.GetAllReportsAsync(System.Nullable{System.Int32},System.Nullable{DynamicDashboardCommon.Models.ReportStatusEnum},System.String)">
+            <summary>
+            Gets all reports with optional filtering.
+            </summary>
+            <param name="databaseId">Optional database ID filter.</param>
+            <param name="status">Optional status filter.</param>
+            <param name="createdBy">Optional creator filter.</param>
+            <returns>List of report summaries.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.GetReportByIdAsync(System.Int32)">
+            <summary>
+            Gets a report by ID with all sections and data.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <returns>The complete report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.CreateReportAsync(DynamicDashboardCommon.Models.CreateReportRequest)">
+            <summary>
+            Creates a new report manually (without AI).
+            </summary>
+            <param name="request">The create report request.</param>
+            <returns>The created report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.UpdateReportAsync(DynamicDashboardCommon.Models.UpdateReportRequest)">
+            <summary>
+            Updates an existing report.
+            </summary>
+            <param name="request">The update report request.</param>
+            <returns>The updated report.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.DeleteReportAsync(System.Int32)">
+            <summary>
+            Deletes a report.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <returns>True if deleted successfully.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.AddSectionAsync(DynamicDashboardCommon.Models.CreateSectionRequest)">
+            <summary>
+            Adds a new section to a report manually.
+            </summary>
+            <param name="request">The create section request.</param>
+            <returns>The created section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.UpdateSectionAsync(DynamicDashboardCommon.Models.UpdateSectionRequest)">
+            <summary>
+            Updates an existing section.
+            </summary>
+            <param name="request">The update section request.</param>
+            <returns>The updated section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.DeleteSectionAsync(System.Int32)">
+            <summary>
+            Deletes a section from a report.
+            </summary>
+            <param name="sectionId">The section ID.</param>
+            <returns>True if deleted successfully.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ReorderSectionsAsync(DynamicDashboardCommon.Models.ReorderSectionsRequest)">
+            <summary>
+            Reorders sections within a report.
+            </summary>
+            <param name="request">The reorder request.</param>
+            <returns>True if reordered successfully.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ToggleSectionVisibilityAsync(System.Int32,System.Boolean)">
+            <summary>
+            Toggles section visibility.
+            </summary>
+            <param name="sectionId">The section ID.</param>
+            <param name="isVisible">Visibility state.</param>
+            <returns>The updated section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ToggleSectionChartModeAsync(System.Int32,System.Boolean,System.String)">
+            <summary>
+            Converts a section between table and chart display.
+            </summary>
+            <param name="sectionId">The section ID.</param>
+            <param name="displayAsChart">Whether to display as chart.</param>
+            <param name="chartType">The chart type if displaying as chart.</param>
+            <returns>The updated section.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.GenerateReportAsync(DynamicDashboardCommon.Models.GenerateReportRequest)">
+            <summary>
+            Generates a complete report using AI from a natural language prompt.
+            </summary>
+            <param name="request">The generation request.</param>
+            <returns>The generated report response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.GenerateSectionAsync(DynamicDashboardCommon.Models.GenerateSectionRequest)">
+            <summary>
+            Adds a new section to an existing report using AI.
+            </summary>
+            <param name="request">The section generation request.</param>
+            <returns>The generated section response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.RegenerateExecutiveSummaryAsync(System.Int32)">
+            <summary>
+            Regenerates the executive summary for a report.
+            </summary>
+            <param name="reportId">The report ID.</param>
+            <returns>The updated report with new summary.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ExplainDataAsync(DynamicDashboardCommon.Models.ExplainDataRequest)">
+            <summary>
+            Gets AI explanation of section data.
+            </summary>
+            <param name="request">The explain data request.</param>
+            <returns>The explanation response.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ProcessChatMessageAsync(DynamicDashboardCommon.Models.AIChatRequest)">
+            <summary>
+            Processes an AI chat message for report building.
+            </summary>
+            <param name="request">The chat request.</param>
+            <returns>The AI response with any actions taken.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ExecuteSectionQueryAsync(DynamicDashboardCommon.Models.ExecuteSectionQueryRequest)">
+            <summary>
+            Executes a section's query and returns data.
+            </summary>
+            <param name="request">The execution request.</param>
+            <returns>The query results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ExecuteSectionQueryFullAsync(System.Int32)">
+            <summary>
+            Executes a section's query with full data (no pagination).
+            </summary>
+            <param name="sectionId">The section ID.</param>
+            <returns>All query results.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.TestQueryAsync(System.String,System.Int32)">
+            <summary>
+            Tests a SQL query without saving.
+            </summary>
+            <param name="sql">The SQL query.</param>
+            <param name="databaseId">The database ID.</param>
+            <returns>Query results or error.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.GetSectionColumnsAsync(System.Int32)">
+            <summary>
+            Gets column metadata for a section's query.
+            </summary>
+            <param name="sectionId">The section ID.</param>
+            <returns>List of column metadata.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ExportReportAsync(DynamicDashboardCommon.Models.ExportReportRequest)">
+            <summary>
+            Exports a report to the specified format.
+            </summary>
+            <param name="request">The export request.</param>
+            <returns>The exported file bytes.</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.Report.IReportService.ExportSectionDataAsync(System.Int32,DynamicDashboardCommon.Models.ReportExportFormat)">
+            <summary>
+            Exports a single section's data.
+            </summary>
+            <param name="sectionId">The section ID.</param>
+            <param name="format">The export format.</param>
+            <returns>The exported file bytes.</returns>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.TestAutomation.DatasetComparisonService">
             <summary>
