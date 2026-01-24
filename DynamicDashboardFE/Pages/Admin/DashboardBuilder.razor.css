@@ -1460,7 +1460,7 @@
     grid-template-columns: repeat(12, 1fr);
     gap: 20px;
     padding: 30px 40px;
-    max-width: 1600px;
+    max-width: 100%;
     margin: 0 auto;
 }
 
@@ -2219,6 +2219,84 @@
         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
     }
 
-/* ============================================ */
-/* END OF FILE                                 */
-/* ============================================ */
+.template-preview-enhanced {
+    height: 140px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.template-icon {
+    font-size: 4rem;
+    color: white;
+    opacity: 0.9;
+}
+
+.template-card-enhanced:hover .template-icon {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
+
+/* Suggestions Panel */
+.suggestions-panel {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    overflow: hidden;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestions-header {
+    padding: 0.75rem 1rem;
+    background: rgba(251, 191, 36, 0.2);
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #92400e;
+}
+
+.suggestions-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    font-size: 0.9rem;
+    color: #78350f;
+}
+
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+
+    .suggestion-item:hover {
+        background: rgba(251, 191, 36, 0.3);
+        padding-left: 1.25rem;
+    }
+
+    .suggestion-item i {
+        font-size: 0.7rem;
+        transition: transform 0.2s;
+    }
+
+    .suggestion-item:hover i {
+        transform: translateX(4px);
+    }

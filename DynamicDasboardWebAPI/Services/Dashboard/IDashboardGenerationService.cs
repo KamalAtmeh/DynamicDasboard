@@ -1,27 +1,32 @@
 ﻿using DynamicDashboardCommon.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace DynamicDasboardWebAPI.Services
 {
     /// <summary>
-    /// Interface for dashboard generation services with template support.
+    /// Interface for AI-powered dashboard generation service.
+    /// Uses templates for layout and LLM for intelligent content generation.
     /// </summary>
     public interface IDashboardGenerationService
     {
         /// <summary>
-        /// Generates dashboard suggestions based on database schema using default template.
+        /// Generates dashboard suggestions using default template.
         /// </summary>
-        /// <param name="databaseId">The database ID to analyze.</param>
-        /// <returns>A list of suggested dashboards.</returns>
+        /// <param name="databaseId">Target database ID</param>
+        /// <returns>List of generated dashboard models</returns>
         Task<List<DashboardModel>> GenerateDashboardSuggestionsAsync(int databaseId);
 
         /// <summary>
-        /// Generates dashboard suggestions based on database schema using a specific template.
+        /// Generates a dashboard using template layout and LLM-generated content.
+        /// Template defines positions (grid layout), LLM generates content (titles, queries, chart types).
         /// </summary>
-        /// <param name="databaseId">The database ID to analyze.</param>
-        /// <param name="templateId">The template ID to use (e.g., "executive-standard", "operational-dashboard").</param>
-        /// <returns>A list of suggested dashboards.</returns>
+        /// <param name="databaseId">Target database ID to analyze schema from</param>
+        /// <param name="templateId">Template ID defining layout and AI guidance</param>
+        /// <returns>List containing generated dashboard with intelligent components</returns>
         Task<List<DashboardModel>> GenerateDashboardSuggestionsAsync(int databaseId, string templateId);
+
+        /// <summary>
+        /// Generates suggested questions based on database schema
+        /// </summary>
+        Task<List<string>> GenerateSuggestedQuestionsAsync(int databaseId);
     }
 }

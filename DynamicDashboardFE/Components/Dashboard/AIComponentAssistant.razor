@@ -83,7 +83,7 @@
                         <option value="0">-- Select a database --</option>
                         @foreach (var db in AvailableDatabases)
                         {
-                            <option value="@db.DatabaseID">@db.Name</option>
+                            <option value="@db.DatabaseID">@db.FriendlyName</option>
                         }
                     </select>
                     <i class="fas fa-database select-icon"></i>

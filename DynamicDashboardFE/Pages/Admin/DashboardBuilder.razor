@@ -2,6 +2,7 @@
 @page "/dashboard/builder/{DashboardId:int}"
 @using DynamicDashboardCommon.Models
 @using DynamicDashboardCommon.Enums
+
 @using System.Text.Json
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
@@ -645,7 +646,10 @@
                                         </button>
                                     }
                                 </div>
-
+                                <button class="btn btn-primary w-100 mb-2" @onclick="ApplyComponentChanges">
+                                    <i class="fas fa-check me-2"></i>
+                                    Apply Changes
+                                </button>
                                 <!-- Component Type -->
                                 <div class="property-section">
                                     <label class="property-label">
@@ -741,9 +745,9 @@
                                 }
 
                                 <!-- KPI Options (Only if Number) -->
-                                @if (selectedComponent.DataViewingTypeID == 3)
+                                @if (selectedComponent.DataViewingTypeID == 10)
                                 {
-                                    <div class="property-section">
+                                    <div class="property-section" style="display:none">
                                         <label class="property-label">
                                             <i class="fas fa-tachometer-alt me-2"></i>
                                             KPI Options
@@ -882,75 +886,32 @@
                 </div>
 
                 <!-- Template Cards -->
+                <!-- Template Cards -->
                 <div class="row g-4">
-                    @foreach (var template in availableTemplates)
+                    @foreach (var tmpl in availableTemplates)
                     {
                         <div class="col-lg-4">
-                            <div class="template-card-enhanced @(selectedTemplateId == template.Id ? "selected" : "")"
-                                 @onclick="() => selectedTemplateId = template.Id">
+                            <div class="template-card-enhanced @(selectedTemplateId == tmpl.Id ? "selected" : "")"
+                                 @onclick="() => selectedTemplateId = tmpl.Id">
 
-                                <!-- Template Preview -->
+                                <!-- Template Icon Preview -->
                                 <div class="template-preview-enhanced">
-                                    @if (template.Id == "executive-template")
-                                    {
-                                        <!-- Executive Template Visual -->
-                                        <div class="preview-row" style="height: 25%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
-                                        </div>
-                                        <div class="preview-box mt-2" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); height: 35%;"></div>
-                                        <div class="preview-row mt-2" style="height: 32%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
-                                        </div>
-                                    }
-                                    else if (template.Id == "operational-template")
-                                    {
-                                        <!-- Operational Template Visual -->
-                                        <div class="preview-row" style="height: 20%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
-                                        </div>
-                                        <div class="preview-row mt-2" style="height: 35%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); flex: 2;"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); flex: 1;"></div>
-                                        </div>
-                                        <div class="preview-box mt-2" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); height: 37%;"></div>
-                                    }
-                                    else if (template.Id == "performance-template")
-                                    {
-                                        <!-- Performance Template Visual -->
-                                        <div class="preview-row" style="height: 22%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
-                                        </div>
-                                        <div class="preview-row mt-2" style="height: 45%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); flex: 3;"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); flex: 2;"></div>
-                                        </div>
-                                        <div class="preview-row mt-2" style="height: 25%;">
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
-                                            <div class="preview-box" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);"></div>
-                                        </div>
-                                    }
+                                    <i class="@GetTemplateIcon(tmpl.Category) template-icon"></i>
                                 </div>
 
                                 <!-- Template Info -->
                                 <div class="template-info">
-                                    <h5 class="template-title">@template.Name</h5>
-                                    <p class="template-description">@template.Description</p>
+                                    <h5 class="template-title">@tmpl.Name</h5>
+                                    <p class="template-description">@tmpl.Description</p>
                                     <div class="template-meta">
                                         <span class="badge bg-light text-dark">
-                                            <i class="fas fa-th me-1"></i>@template.Components.Count components
+                                            <i class="fas fa-th me-1"></i>@tmpl.Components.Count components
                                         </span>
                                         <span class="badge bg-light text-dark">
-                                            <i class="fas fa-layer-group me-1"></i>@template.Category
+                                            <i class="fas fa-layer-group me-1"></i>@tmpl.Category
                                         </span>
                                     </div>
-                                    @if (selectedTemplateId == template.Id)
+                                    @if (selectedTemplateId == tmpl.Id)
                                     {
                                         <div class="selected-badge">
                                             <i class="fas fa-check-circle me-2"></i>Selected
@@ -1037,10 +998,47 @@
                 {
                     <div class="step-content">
                         <div class="mb-4">
-                            <label class="form-label fw-bold d-flex align-items-center mb-2" style="font-size: 1.1rem;">
-                                <i class="fas fa-comment-dots me-2 text-primary"></i>
-                                What would you like to visualize?
-                            </label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold d-flex align-items-center mb-0" style="font-size: 1.1rem;">
+                                    <i class="fas fa-comment-dots me-2 text-primary"></i>
+                                    What would you like to visualize?
+                                </label>
+                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                        @onclick="LoadSuggestedQuestions"
+                                        disabled="@isLoadingSuggestions">
+                                    @if (isLoadingSuggestions)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1"></span>
+                                        <text>Loading...</text>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        <text>Suggest Questions</text>
+                                    }
+                                </button>
+                            </div>
+
+                            <!-- Suggestions Panel -->
+                            @if (suggestedQuestions != null && suggestedQuestions.Any())
+                            {
+                                <div class="suggestions-panel mb-3">
+                                    <div class="suggestions-header">
+                                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                                        <span>Click a question to use it:</span>
+                                        <button type="button" class="btn-close btn-sm ms-auto" @onclick="ClearSuggestions"></button>
+                                    </div>
+                                    <div class="suggestions-list">
+                                        @foreach (var question in suggestedQuestions)
+                                        {
+                                            <div class="suggestion-item" @onclick="() => UseSuggestion(question)">
+                                                <i class="fas fa-chevron-right me-2 text-muted"></i>
+                                                @question
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                             <textarea class="form-control"
                                       rows="5"
                                       @bind="customChartQuery"
@@ -1580,6 +1578,9 @@
 
     private bool showSettingsModal = false;
 
+    // Suggested Questions
+    private List<string> suggestedQuestions = new List<string>();
+    private bool isLoadingSuggestions = false;
 
     // Analysis response to pass to generation step
     private AnalysisResponse analysisResponse = null;
@@ -1899,6 +1900,65 @@
         {
             isGeneratingFromTemplate = false;
         }
+    }
+
+    /// <summary>
+    /// Loads suggested questions based on the database schema
+    /// </summary>
+    private async Task LoadSuggestedQuestions()
+    {
+        if (dashboard.DatabaseID <= 0)
+        {
+            ToastService.ShowWarning("Please select a database first");
+            return;
+        }
+
+        isLoadingSuggestions = true;
+        suggestedQuestions.Clear();
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<string>>(
+                $"api/dashboard/suggest-questions/{dashboard.DatabaseID}");
+
+            if (response != null && response.Any())
+            {
+                suggestedQuestions = response;
+            }
+            else
+            {
+                ToastService.ShowInfo("No suggestions available for this schema");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Failed to load suggestions");
+            Console.WriteLine($"Error loading suggestions: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingSuggestions = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Uses a suggested question
+    /// </summary>
+    private void UseSuggestion(string question)
+    {
+        customChartQuery = question;
+        suggestedQuestions.Clear();
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Clears the suggestions panel
+    /// </summary>
+    private void ClearSuggestions()
+    {
+        suggestedQuestions.Clear();
     }
 
     private void SelectComponent(int componentId)
@@ -3855,6 +3915,21 @@
 
         selectedComponent.VisualizationConfig = JsonSerializer.Serialize(config);
         ToastService.ShowSuccess("KPI options applied!");
+    }
+
+    private string GetTemplateIcon(string category)
+    {
+        return category?.ToLower() switch
+        {
+            "executive" => "fas fa-crown",
+            "operations" => "fas fa-cogs",
+            "finance" => "fas fa-dollar-sign",
+            "analytics" => "fas fa-chart-pie",
+            "performance" => "fas fa-tachometer-alt",
+            "sales" => "fas fa-shopping-cart",
+            "basic" => "fas fa-th-large",
+            _ => "fas fa-chart-bar"
+        };
     }
 }
 <script suppress-error="BL9992">

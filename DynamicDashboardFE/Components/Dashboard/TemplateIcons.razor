@@ -1,0 +1,292 @@
+﻿@* ============================================================================
+   TEMPLATE ICONS COMPONENT
+   Provides beautiful SVG icons for each dashboard template type
+   ============================================================================ *@
+
+@code {
+    /// <summary>
+    /// Returns SVG icon markup for a given template category/id
+    /// </summary>
+    public static MarkupString GetTemplateIcon(string templateId, string category)
+    {
+        var iconSvg = (templateId?.ToLower(), category?.ToLower()) switch
+        {
+            ("executive-standard", _) or (_, "executive") => ExecutiveIcon,
+            ("operational-dashboard", _) or (_, "operations") => OperationalIcon,
+            ("financial-dashboard", _) or (_, "finance") => FinancialIcon,
+            ("analytics-dashboard", _) or (_, "analytics") => AnalyticsIcon,
+            ("performance-dashboard", _) or (_, "performance") => PerformanceIcon,
+            ("sales-dashboard", _) or (_, "sales") => SalesIcon,
+            ("simple-overview", _) or (_, "basic") => SimpleOverviewIcon,
+            ("detailed-analysis", _) => DetailedAnalysisIcon,
+            _ => DefaultIcon
+        };
+
+        return new MarkupString(iconSvg);
+    }
+
+    #region SVG Icons
+
+    // ========================================
+    // EXECUTIVE DASHBOARD - Crown with Chart
+    // ========================================
+    private const string ExecutiveIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""exec-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#667eea""/>
+      <stop offset=""100%"" style=""stop-color:#764ba2""/>
+    </linearGradient>
+    <linearGradient id=""exec-gold"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#f6d365""/>
+      <stop offset=""100%"" style=""stop-color:#fda085""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#exec-grad)"" opacity=""0.1""/>
+  <!-- Crown -->
+  <path d=""M30 55 L40 35 L50 50 L60 30 L70 50 L80 35 L90 55 L85 75 L35 75 Z""
+        fill=""url(#exec-gold)"" stroke=""#f6d365"" stroke-width=""2""/>
+  <!-- Crown Jewels -->
+  <circle cx=""60"" cy=""45"" r=""4"" fill=""#667eea""/>
+  <circle cx=""45"" cy=""52"" r=""3"" fill=""#764ba2""/>
+  <circle cx=""75"" cy=""52"" r=""3"" fill=""#764ba2""/>
+  <!-- Chart Bars -->
+  <rect x=""38"" y=""82"" width=""12"" height=""20"" rx=""2"" fill=""url(#exec-grad)"" opacity=""0.8""/>
+  <rect x=""54"" y=""72"" width=""12"" height=""30"" rx=""2"" fill=""url(#exec-grad)""/>
+  <rect x=""70"" y=""78"" width=""12"" height=""24"" rx=""2"" fill=""url(#exec-grad)"" opacity=""0.8""/>
+</svg>";
+
+    // ========================================
+    // OPERATIONAL DASHBOARD - Gears with Pulse
+    // ========================================
+    private const string OperationalIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""ops-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#11998e""/>
+      <stop offset=""100%"" style=""stop-color:#38ef7d""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#ops-grad)"" opacity=""0.1""/>
+  <!-- Main Gear -->
+  <path d=""M60 25 L63 25 L65 30 L70 28 L73 32 L69 36 L72 40 L77 39 L79 44 L74 47 L75 52 L80 53 L80 58 L75 59 L74 64 L79 67 L77 72 L72 71 L69 75 L73 79 L70 83 L65 81 L63 86 L60 86 L57 86 L55 81 L50 83 L47 79 L51 75 L48 71 L43 72 L41 67 L46 64 L45 59 L40 58 L40 53 L45 52 L46 47 L41 44 L43 39 L48 40 L51 36 L47 32 L50 28 L55 30 L57 25 Z""
+        fill=""url(#ops-grad)"" stroke=""#11998e"" stroke-width=""1""/>
+  <circle cx=""60"" cy=""55"" r=""12"" fill=""white""/>
+  <circle cx=""60"" cy=""55"" r=""6"" fill=""url(#ops-grad)""/>
+  <!-- Small Gear -->
+  <circle cx=""85"" cy=""80"" r=""15"" fill=""url(#ops-grad)"" opacity=""0.7""/>
+  <circle cx=""85"" cy=""80"" r=""8"" fill=""white""/>
+  <circle cx=""85"" cy=""80"" r=""4"" fill=""url(#ops-grad)""/>
+  <!-- Pulse Line -->
+  <path d=""M20 95 L35 95 L40 85 L45 100 L50 90 L55 95 L100 95""
+        stroke=""url(#ops-grad)"" stroke-width=""3"" fill=""none"" stroke-linecap=""round""/>
+</svg>";
+
+    // ========================================
+    // FINANCIAL DASHBOARD - Dollar with Trend
+    // ========================================
+    private const string FinancialIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""fin-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#f093fb""/>
+      <stop offset=""100%"" style=""stop-color:#f5576c""/>
+    </linearGradient>
+    <linearGradient id=""fin-green"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#11998e""/>
+      <stop offset=""100%"" style=""stop-color:#38ef7d""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#fin-grad)"" opacity=""0.1""/>
+  <!-- Coin Circle -->
+  <circle cx=""50"" cy=""55"" r=""30"" fill=""url(#fin-grad)"" opacity=""0.2"" stroke=""url(#fin-grad)"" stroke-width=""3""/>
+  <!-- Dollar Sign -->
+  <text x=""50"" y=""65"" font-family=""Arial, sans-serif"" font-size=""36"" font-weight=""bold""
+        fill=""url(#fin-grad)"" text-anchor=""middle"">$</text>
+  <!-- Trend Arrow Up -->
+  <path d=""M70 85 L70 45 L90 45"" stroke=""url(#fin-green)"" stroke-width=""4"" fill=""none"" stroke-linecap=""round""/>
+  <path d=""M82 35 L90 45 L82 55"" stroke=""url(#fin-green)"" stroke-width=""4"" fill=""none"" stroke-linecap=""round"" stroke-linejoin=""round""/>
+  <!-- Coins Stack -->
+  <ellipse cx=""95"" cy=""85"" rx=""12"" ry=""4"" fill=""url(#fin-grad)"" opacity=""0.5""/>
+  <ellipse cx=""95"" cy=""80"" rx=""12"" ry=""4"" fill=""url(#fin-grad)"" opacity=""0.7""/>
+  <ellipse cx=""95"" cy=""75"" rx=""12"" ry=""4"" fill=""url(#fin-grad)""/>
+</svg>";
+
+    // ========================================
+    // ANALYTICS DASHBOARD - Magnifying Glass with Data
+    // ========================================
+    private const string AnalyticsIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""ana-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#4facfe""/>
+      <stop offset=""100%"" style=""stop-color:#00f2fe""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#ana-grad)"" opacity=""0.1""/>
+  <!-- Magnifying Glass -->
+  <circle cx=""50"" cy=""50"" r=""28"" fill=""white"" stroke=""url(#ana-grad)"" stroke-width=""5""/>
+  <line x1=""70"" y1=""70"" x2=""95"" y2=""95"" stroke=""url(#ana-grad)"" stroke-width=""8"" stroke-linecap=""round""/>
+  <!-- Data Bars Inside Glass -->
+  <rect x=""35"" y=""55"" width=""8"" height=""15"" rx=""2"" fill=""url(#ana-grad)"" opacity=""0.6""/>
+  <rect x=""46"" y=""45"" width=""8"" height=""25"" rx=""2"" fill=""url(#ana-grad)""/>
+  <rect x=""57"" y=""50"" width=""8"" height=""20"" rx=""2"" fill=""url(#ana-grad)"" opacity=""0.6""/>
+  <!-- Data Points -->
+  <circle cx=""39"" cy=""40"" r=""3"" fill=""url(#ana-grad)""/>
+  <circle cx=""50"" cy=""35"" r=""3"" fill=""url(#ana-grad)""/>
+  <circle cx=""61"" cy=""38"" r=""3"" fill=""url(#ana-grad)""/>
+  <path d=""M39 40 L50 35 L61 38"" stroke=""url(#ana-grad)"" stroke-width=""2"" fill=""none""/>
+</svg>";
+
+    // ========================================
+    // PERFORMANCE DASHBOARD - Speedometer/Gauge
+    // ========================================
+    private const string PerformanceIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""perf-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#fa709a""/>
+      <stop offset=""100%"" style=""stop-color:#fee140""/>
+    </linearGradient>
+    <linearGradient id=""perf-gauge"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""0%"">
+      <stop offset=""0%"" style=""stop-color:#f5576c""/>
+      <stop offset=""50%"" style=""stop-color:#fee140""/>
+      <stop offset=""100%"" style=""stop-color:#38ef7d""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#perf-grad)"" opacity=""0.1""/>
+  <!-- Gauge Arc Background -->
+  <path d=""M25 75 A40 40 0 0 1 95 75"" stroke=""#e0e0e0"" stroke-width=""10"" fill=""none"" stroke-linecap=""round""/>
+  <!-- Gauge Arc Filled -->
+  <path d=""M25 75 A40 40 0 0 1 85 45"" stroke=""url(#perf-gauge)"" stroke-width=""10"" fill=""none"" stroke-linecap=""round""/>
+  <!-- Gauge Center -->
+  <circle cx=""60"" cy=""70"" r=""8"" fill=""url(#perf-grad)""/>
+  <!-- Needle -->
+  <path d=""M60 70 L75 40"" stroke=""url(#perf-grad)"" stroke-width=""4"" stroke-linecap=""round""/>
+  <circle cx=""75"" cy=""40"" r=""4"" fill=""url(#perf-grad)""/>
+  <!-- Speed Labels -->
+  <text x=""28"" y=""85"" font-family=""Arial"" font-size=""10"" fill=""#888"">0</text>
+  <text x=""55"" y=""30"" font-family=""Arial"" font-size=""10"" fill=""#888"">50</text>
+  <text x=""88"" y=""85"" font-family=""Arial"" font-size=""10"" fill=""#888"">100</text>
+  <!-- Trophy -->
+  <path d=""M55 95 L65 95 L63 105 L57 105 Z"" fill=""url(#perf-grad)""/>
+  <path d=""M52 95 L68 95 L68 90 L52 90 Z"" fill=""url(#perf-grad)""/>
+</svg>";
+
+    // ========================================
+    // SALES DASHBOARD - Shopping/Revenue
+    // ========================================
+    private const string SalesIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""sales-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#f857a6""/>
+      <stop offset=""100%"" style=""stop-color:#ff5858""/>
+    </linearGradient>
+    <linearGradient id=""sales-green"" x1=""0%"" y1=""100%"" x2=""100%"" y2=""0%"">
+      <stop offset=""0%"" style=""stop-color:#11998e""/>
+      <stop offset=""100%"" style=""stop-color:#38ef7d""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#sales-grad)"" opacity=""0.1""/>
+  <!-- Shopping Bag -->
+  <path d=""M35 45 L30 95 L90 95 L85 45 Z"" fill=""url(#sales-grad)"" opacity=""0.9""/>
+  <path d=""M45 45 L45 35 Q45 20 60 20 Q75 20 75 35 L75 45""
+        stroke=""url(#sales-grad)"" stroke-width=""5"" fill=""none"" stroke-linecap=""round""/>
+  <!-- Dollar Sign on Bag -->
+  <text x=""60"" y=""78"" font-family=""Arial, sans-serif"" font-size=""28"" font-weight=""bold""
+        fill=""white"" text-anchor=""middle"">$</text>
+  <!-- Trend Arrow -->
+  <path d=""M75 60 L95 35"" stroke=""url(#sales-green)"" stroke-width=""4"" stroke-linecap=""round""/>
+  <path d=""M88 32 L98 32 L98 42"" stroke=""url(#sales-green)"" stroke-width=""4"" fill=""none"" stroke-linecap=""round"" stroke-linejoin=""round""/>
+</svg>";
+
+    // ========================================
+    // SIMPLE OVERVIEW - Minimal Grid
+    // ========================================
+    private const string SimpleOverviewIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""simple-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#a8edea""/>
+      <stop offset=""100%"" style=""stop-color:#fed6e3""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#simple-grad)"" opacity=""0.2""/>
+  <!-- Simple Grid -->
+  <rect x=""25"" y=""30"" width=""30"" height=""25"" rx=""4"" fill=""url(#simple-grad)"" stroke=""#a8edea"" stroke-width=""2""/>
+  <rect x=""65"" y=""30"" width=""30"" height=""25"" rx=""4"" fill=""url(#simple-grad)"" stroke=""#a8edea"" stroke-width=""2""/>
+  <rect x=""25"" y=""65"" width=""70"" height=""30"" rx=""4"" fill=""url(#simple-grad)"" stroke=""#fed6e3"" stroke-width=""2""/>
+  <!-- Simple Icons -->
+  <text x=""40"" y=""47"" font-family=""Arial"" font-size=""14"" fill=""#667"" text-anchor=""middle"">#</text>
+  <text x=""80"" y=""47"" font-family=""Arial"" font-size=""14"" fill=""#667"" text-anchor=""middle"">%</text>
+  <!-- Simple Chart Line -->
+  <path d=""M35 85 L50 75 L65 80 L85 70"" stroke=""#a8edea"" stroke-width=""3"" fill=""none"" stroke-linecap=""round""/>
+</svg>";
+
+    // ========================================
+    // DETAILED ANALYSIS - Complex Layers
+    // ========================================
+    private const string DetailedAnalysisIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""detail-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#667eea""/>
+      <stop offset=""100%"" style=""stop-color:#764ba2""/>
+    </linearGradient>
+    <linearGradient id=""detail-blue"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#4facfe""/>
+      <stop offset=""100%"" style=""stop-color:#00f2fe""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#detail-grad)"" opacity=""0.1""/>
+  <!-- Stacked Layers -->
+  <path d=""M60 25 L95 40 L60 55 L25 40 Z"" fill=""url(#detail-grad)"" opacity=""0.4""/>
+  <path d=""M60 35 L95 50 L60 65 L25 50 Z"" fill=""url(#detail-grad)"" opacity=""0.6""/>
+  <path d=""M60 45 L95 60 L60 75 L25 60 Z"" fill=""url(#detail-grad)"" opacity=""0.8""/>
+  <path d=""M60 55 L95 70 L60 85 L25 70 Z"" fill=""url(#detail-grad)""/>
+  <!-- Data Points -->
+  <circle cx=""40"" cy=""62"" r=""4"" fill=""url(#detail-blue)""/>
+  <circle cx=""60"" cy=""70"" r=""4"" fill=""url(#detail-blue)""/>
+  <circle cx=""80"" cy=""62"" r=""4"" fill=""url(#detail-blue)""/>
+  <!-- Connection Lines -->
+  <path d=""M40 62 L60 70 L80 62"" stroke=""url(#detail-blue)"" stroke-width=""2"" fill=""none""/>
+  <!-- Mini Chart -->
+  <rect x=""70"" y=""85"" width=""6"" height=""12"" rx=""1"" fill=""url(#detail-grad)"" opacity=""0.6""/>
+  <rect x=""78"" y=""80"" width=""6"" height=""17"" rx=""1"" fill=""url(#detail-grad)"" opacity=""0.8""/>
+  <rect x=""86"" y=""83"" width=""6"" height=""14"" rx=""1"" fill=""url(#detail-grad)""/>
+</svg>";
+
+    // ========================================
+    // DEFAULT ICON - Generic Dashboard
+    // ========================================
+    private const string DefaultIcon = @"
+<svg viewBox=""0 0 120 120"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+  <defs>
+    <linearGradient id=""default-grad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" style=""stop-color:#667eea""/>
+      <stop offset=""100%"" style=""stop-color:#764ba2""/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx=""60"" cy=""60"" r=""55"" fill=""url(#default-grad)"" opacity=""0.1""/>
+  <!-- Dashboard Grid -->
+  <rect x=""25"" y=""25"" width=""30"" height=""20"" rx=""4"" fill=""url(#default-grad)"" opacity=""0.7""/>
+  <rect x=""65"" y=""25"" width=""30"" height=""20"" rx=""4"" fill=""url(#default-grad)"" opacity=""0.7""/>
+  <rect x=""25"" y=""55"" width=""45"" height=""40"" rx=""4"" fill=""url(#default-grad)""/>
+  <rect x=""80"" y=""55"" width=""15"" height=""18"" rx=""4"" fill=""url(#default-grad)"" opacity=""0.5""/>
+  <rect x=""80"" y=""77"" width=""15"" height=""18"" rx=""4"" fill=""url(#default-grad)"" opacity=""0.5""/>
+  <!-- Chart inside -->
+  <path d=""M32 85 L45 70 L55 78 L65 65"" stroke=""white"" stroke-width=""2"" fill=""none"" stroke-linecap=""round""/>
+</svg>";
+
+    #endregion
+}

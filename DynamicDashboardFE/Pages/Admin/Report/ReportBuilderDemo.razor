@@ -1,0 +1,1292 @@
+﻿@page "/report/builder-demo"
+
+<PageTitle>AI Report Builder - Demo</PageTitle>
+
+<div class="rb-container">
+    <!-- Header -->
+    <header class="rb-header">
+        <div class="rb-header-left">
+            <div class="rb-header-icon">
+                <i class="fas fa-magic"></i>
+            </div>
+            <div>
+                <h1 class="rb-title">AI Report Builder</h1>
+                <span class="rb-subtitle">Create powerful reports with natural language</span>
+            </div>
+        </div>
+        <div class="rb-header-actions">
+            <span class="rb-status"><i class="fas fa-circle"></i> Draft</span>
+            <button class="rb-btn rb-btn-secondary" @onclick="() => showAssistant = !showAssistant">
+                <i class="fas fa-robot"></i> AI Assistant
+            </button>
+            <button class="rb-btn rb-btn-secondary" @onclick="ShowToast">
+                <i class="fas fa-save"></i> Save
+            </button>
+            <button class="rb-btn rb-btn-primary" @onclick="() => showExportModal = true">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="rb-content">
+        <!-- Canvas -->
+        <div class="rb-canvas @(showAssistant ? "with-panel" : "")">
+
+            <!-- Info Bar -->
+            <div class="rb-info-bar">
+                <div class="rb-field">
+                    <label>Report Title</label>
+                    <input type="text" @bind="reportTitle" placeholder="Enter title..." />
+                </div>
+                <div class="rb-field">
+                    <label>Database</label>
+                    <select @bind="selectedDb">
+                        <option value="">Select...</option>
+                        <option value="sales">Sales DB</option>
+                        <option value="inventory">Inventory DB</option>
+                    </select>
+                </div>
+                <div class="rb-badge">
+                    <i class="fas fa-layer-group"></i> 3 Sections
+                </div>
+            </div>
+
+            <!-- Generation Card (shown initially) -->
+            @if (showGenerationCard)
+            {
+                <div class="rb-generation-card">
+                    <div class="rb-gen-icon">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h2>What report would you like to create?</h2>
+                    <p>Describe your report in natural language</p>
+                    <div class="rb-gen-input">
+                        <textarea @bind="prompt" rows="3" placeholder="e.g., Create a sales report with monthly revenue trends..."></textarea>
+                        <button class="rb-btn-generate" @onclick="GenerateReport">
+                            <i class="fas fa-sparkles"></i> Generate Report
+                        </button>
+                    </div>
+                    <div class="rb-examples">
+                        <span>Examples:</span>
+                        <button @onclick='() => prompt = "Monthly sales by region"'>📊 Sales Report</button>
+                        <button @onclick='() => prompt = "Top customers analysis"'>👥 Customer Analytics</button>
+                        <button @onclick='() => prompt = "Inventory status overview"'>📦 Inventory</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Sections Header -->
+                <div class="rb-sections-header">
+                    <h3><i class="fas fa-list-alt"></i> Report Sections</h3>
+                    <div>
+                        <button class="rb-btn-add" @onclick="() => showAddModal = true">
+                            <i class="fas fa-plus"></i> Add Section
+                        </button>
+                        <button class="rb-btn-add rb-btn-ai" @onclick="() => showAIModal = true">
+                            <i class="fas fa-robot"></i> AI Add
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 1: KPI -->
+                <div class="rb-section">
+                    <div class="rb-section-header" @onclick="() => section1Open = !section1Open">
+                        <div class="rb-section-left">
+                            <i class="fas fa-grip-vertical rb-drag"></i>
+                            <div class="rb-section-icon kpi"><i class="fas fa-tachometer-alt"></i></div>
+                            <div>
+                                <h4>Key Performance Indicators</h4>
+                                <span>KPI Cards</span>
+                            </div>
+                        </div>
+                        <div class="rb-section-right">
+                            <span class="rb-data-status has-data"><i class="fas fa-check-circle"></i> Data Loaded</span>
+                            <i class="fas @(section1Open ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                        </div>
+                    </div>
+                    @if (section1Open)
+                    {
+                        <div class="rb-section-body">
+                            <div class="rb-kpi-grid">
+                                <div class="rb-kpi-card">
+                                    <div class="rb-kpi-icon" style="background: #0d9488;"><i class="fas fa-dollar-sign"></i></div>
+                                    <div class="rb-kpi-info">
+                                        <span class="rb-kpi-label">Total Revenue</span>
+                                        <span class="rb-kpi-value">$284,500</span>
+                                        <span class="rb-kpi-change positive"><i class="fas fa-arrow-up"></i> 12.5%</span>
+                                    </div>
+                                </div>
+                                <div class="rb-kpi-card">
+                                    <div class="rb-kpi-icon" style="background: #8b5cf6;"><i class="fas fa-shopping-cart"></i></div>
+                                    <div class="rb-kpi-info">
+                                        <span class="rb-kpi-label">Total Orders</span>
+                                        <span class="rb-kpi-value">1,847</span>
+                                        <span class="rb-kpi-change positive"><i class="fas fa-arrow-up"></i> 8.3%</span>
+                                    </div>
+                                </div>
+                                <div class="rb-kpi-card">
+                                    <div class="rb-kpi-icon" style="background: #f59e0b;"><i class="fas fa-users"></i></div>
+                                    <div class="rb-kpi-info">
+                                        <span class="rb-kpi-label">New Customers</span>
+                                        <span class="rb-kpi-value">342</span>
+                                        <span class="rb-kpi-change negative"><i class="fas fa-arrow-down"></i> 2.1%</span>
+                                    </div>
+                                </div>
+                                <div class="rb-kpi-card">
+                                    <div class="rb-kpi-icon" style="background: #ef4444;"><i class="fas fa-undo"></i></div>
+                                    <div class="rb-kpi-info">
+                                        <span class="rb-kpi-label">Return Rate</span>
+                                        <span class="rb-kpi-value">3.2%</span>
+                                        <span class="rb-kpi-change positive"><i class="fas fa-arrow-down"></i> 0.5%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Section 2: Chart -->
+                <div class="rb-section">
+                    <div class="rb-section-header" @onclick="() => section2Open = !section2Open">
+                        <div class="rb-section-left">
+                            <i class="fas fa-grip-vertical rb-drag"></i>
+                            <div class="rb-section-icon chart"><i class="fas fa-chart-bar"></i></div>
+                            <div>
+                                <h4>Monthly Revenue Trend</h4>
+                                <span>Bar Chart</span>
+                            </div>
+                        </div>
+                        <div class="rb-section-right">
+                            <span class="rb-data-status has-data"><i class="fas fa-check-circle"></i> Data Loaded</span>
+                            <i class="fas @(section2Open ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                        </div>
+                    </div>
+                    @if (section2Open)
+                    {
+                        <div class="rb-section-body">
+                            <div class="rb-chart-toolbar">
+                                <button class="rb-chart-type active"><i class="fas fa-chart-bar"></i></button>
+                                <button class="rb-chart-type"><i class="fas fa-chart-line"></i></button>
+                                <button class="rb-chart-type"><i class="fas fa-chart-area"></i></button>
+                            </div>
+                            <div class="rb-mock-chart">
+                                <div class="rb-bar" style="height: 65%;"><span>Jan</span></div>
+                                <div class="rb-bar" style="height: 78%;"><span>Feb</span></div>
+                                <div class="rb-bar" style="height: 85%;"><span>Mar</span></div>
+                                <div class="rb-bar" style="height: 70%;"><span>Apr</span></div>
+                                <div class="rb-bar" style="height: 92%;"><span>May</span></div>
+                                <div class="rb-bar" style="height: 88%;"><span>Jun</span></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Section 3: Table -->
+                <div class="rb-section">
+                    <div class="rb-section-header" @onclick="() => section3Open = !section3Open">
+                        <div class="rb-section-left">
+                            <i class="fas fa-grip-vertical rb-drag"></i>
+                            <div class="rb-section-icon table"><i class="fas fa-table"></i></div>
+                            <div>
+                                <h4>Top Products by Sales</h4>
+                                <span>Data Table</span>
+                            </div>
+                        </div>
+                        <div class="rb-section-right">
+                            <span class="rb-data-status has-data"><i class="fas fa-check-circle"></i> Data Loaded</span>
+                            <i class="fas @(section3Open ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                        </div>
+                    </div>
+                    @if (section3Open)
+                    {
+                        <div class="rb-section-body">
+                            <div class="rb-table-toolbar">
+                                <div class="rb-search"><i class="fas fa-search"></i><input placeholder="Search..." /></div>
+                                <button class="rb-toolbar-btn"><i class="fas fa-download"></i> Export</button>
+                            </div>
+                            <table class="rb-table">
+                                <thead>
+                                    <tr><th>Product</th><th>Category</th><th>Sales</th><th>Revenue</th><th>Growth</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Laptop Pro X</td><td>Electronics</td><td>245</td><td>$122,500</td><td class="positive">+15%</td></tr>
+                                    <tr><td>Wireless Headphones</td><td>Electronics</td><td>512</td><td>$51,200</td><td class="positive">+22%</td></tr>
+                                    <tr><td>Office Chair Deluxe</td><td>Furniture</td><td>189</td><td>$47,250</td><td class="positive">+8%</td></tr>
+                                    <tr><td>Smart Watch V2</td><td>Electronics</td><td>324</td><td>$32,400</td><td class="negative">-3%</td></tr>
+                                    <tr><td>Standing Desk</td><td>Furniture</td><td>98</td><td>$29,400</td><td class="positive">+12%</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="rb-table-footer">
+                                <span>Showing 1-5 of 24</span>
+                                <div class="rb-pagination">
+                                    <button disabled><i class="fas fa-chevron-left"></i></button>
+                                    <span>Page 1 of 5</span>
+                                    <button><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- AI Assistant Panel -->
+        @if (showAssistant)
+        {
+            <div class="rb-assistant">
+                <div class="rb-assistant-header">
+                    <div class="rb-assistant-title">
+                        <div class="rb-avatar"><i class="fas fa-robot"></i></div>
+                        <div><h4>AI Assistant</h4><span>Ready to help</span></div>
+                    </div>
+                    <button @onclick="() => showAssistant = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="rb-chat">
+                    <div class="rb-message assistant">
+                        <p>👋 Hello! I can help you add sections, explain data, or suggest improvements. What would you like to do?</p>
+                    </div>
+                    @foreach (var msg in chatMessages)
+                    {
+                        <div class="rb-message @msg.Type">
+                            <p>@msg.Text</p>
+                        </div>
+                    }
+                </div>
+                <div class="rb-quick-actions">
+                    <button @onclick='() => AddChat("Add a summary section")'>➕ Add Section</button>
+                    <button @onclick='() => AddChat("Explain trends")'>💡 Explain</button>
+                    <button @onclick='() => AddChat("Suggest charts")'>📊 Suggest</button>
+                </div>
+                <div class="rb-chat-input">
+                    <textarea @bind="chatInput" placeholder="Ask anything..." rows="2"></textarea>
+                    <button @onclick="SendChat"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Export Modal -->
+@if (showExportModal)
+{
+    <div class="rb-modal-backdrop" @onclick="() => showExportModal = false"></div>
+    <div class="rb-modal">
+        <div class="rb-modal-header">
+            <h3><i class="fas fa-file-export"></i> Export Report</h3>
+            <button @onclick="() => showExportModal = false"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="rb-modal-body">
+            <div class="rb-export-options">
+                <div class="rb-export-option @(exportFormat == "pdf" ? "selected" : "")" @onclick='() => exportFormat = "pdf"'>
+                    <i class="fas fa-file-pdf"></i><span>PDF</span>
+                </div>
+                <div class="rb-export-option @(exportFormat == "excel" ? "selected" : "")" @onclick='() => exportFormat = "excel"'>
+                    <i class="fas fa-file-excel"></i><span>Excel</span>
+                </div>
+                <div class="rb-export-option @(exportFormat == "word" ? "selected" : "")" @onclick='() => exportFormat = "word"'>
+                    <i class="fas fa-file-word"></i><span>Word</span>
+                </div>
+            </div>
+        </div>
+        <div class="rb-modal-footer">
+            <button class="rb-btn rb-btn-secondary" @onclick="() => showExportModal = false">Cancel</button>
+            <button class="rb-btn rb-btn-primary" @onclick="() => { showExportModal = false; ShowToast(); }">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+}
+
+<!-- AI Add Section Modal -->
+@if (showAIModal)
+{
+    <div class="rb-modal-backdrop" @onclick="() => showAIModal = false"></div>
+    <div class="rb-modal">
+        <div class="rb-modal-header rb-ai-header">
+            <h3><i class="fas fa-robot"></i> Add Section with AI</h3>
+            <button @onclick="() => showAIModal = false"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="rb-modal-body">
+            <p>Describe what section you want to add:</p>
+            <textarea @bind="aiPrompt" rows="3" placeholder="e.g., Add a pie chart showing sales by region..."></textarea>
+        </div>
+        <div class="rb-modal-footer">
+            <button class="rb-btn rb-btn-secondary" @onclick="() => showAIModal = false">Cancel</button>
+            <button class="rb-btn rb-btn-ai" @onclick="() => { showAIModal = false; ShowToast(); }">
+                <i class="fas fa-magic"></i> Generate
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Toast -->
+@if (showToastMsg)
+{
+    <div class="rb-toast"><i class="fas fa-check-circle"></i> @toastText</div>
+}
+
+<style>
+    /* ====== BASE ====== */
+    .rb-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background: #f8fafc;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* ====== HEADER ====== */
+    .rb-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        height: 64px;
+        background: linear-gradient(135deg, #0d9488, #0f766e);
+        color: white;
+    }
+
+    .rb-header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .rb-header-icon {
+        width: 42px;
+        height: 42px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .rb-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .rb-subtitle {
+        font-size: 0.75rem;
+        opacity: 0.85;
+    }
+
+    .rb-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .rb-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+
+        .rb-status i {
+            font-size: 0.5rem;
+            color: #fbbf24;
+        }
+
+    .rb-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .rb-btn-secondary {
+        background: rgba(255,255,255,0.15);
+        color: white;
+    }
+
+        .rb-btn-secondary:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+    .rb-btn-primary {
+        background: white;
+        color: #0d9488;
+    }
+
+        .rb-btn-primary:hover {
+            background: #f0fdfa;
+        }
+
+    /* ====== CONTENT ====== */
+    .rb-content {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .rb-canvas {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        transition: margin-right 0.3s;
+    }
+
+        .rb-canvas.with-panel {
+            margin-right: 0;
+        }
+
+    /* ====== INFO BAR ====== */
+    .rb-info-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+    }
+
+    .rb-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+        .rb-field label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .rb-field input, .rb-field select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+            .rb-field input:focus, .rb-field select:focus {
+                outline: none;
+                border-color: #0d9488;
+            }
+
+        .rb-field input {
+            width: 280px;
+            font-weight: 600;
+        }
+
+    .rb-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(13,148,136,0.1);
+        color: #0d9488;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-left: auto;
+    }
+
+    /* ====== GENERATION CARD ====== */
+    .rb-generation-card {
+        max-width: 700px;
+        margin: 60px auto;
+        padding: 48px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .rb-gen-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 24px;
+        background: linear-gradient(135deg, rgba(13,148,136,0.1), rgba(13,148,136,0.2));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .rb-gen-icon i {
+            font-size: 2rem;
+            color: #0d9488;
+            animation: float 3s ease-in-out infinite;
+        }
+    @@keyframes float {
+        0%, 100%
+
+    {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+
+    }
+
+    .rb-generation-card h2 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+        color: #1e293b;
+    }
+
+    .rb-generation-card > p {
+        margin: 0 0 32px;
+        color: #64748b;
+    }
+
+    .rb-gen-input {
+        margin-bottom: 24px;
+    }
+
+        .rb-gen-input textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: none;
+            margin-bottom: 16px;
+        }
+
+            .rb-gen-input textarea:focus {
+                outline: none;
+                border-color: #0d9488;
+                box-shadow: 0 0 0 4px rgba(13,148,136,0.1);
+            }
+
+    .rb-btn-generate {
+        padding: 14px 32px;
+        background: linear-gradient(135deg, #0d9488, #0f766e);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+        .rb-btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(13,148,136,0.3);
+        }
+
+    .rb-examples {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+        .rb-examples span {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .rb-examples button {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .rb-examples button:hover {
+                background: #e2e8f0;
+            }
+
+    /* ====== SECTIONS ====== */
+    .rb-sections-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+        .rb-sections-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    .rb-btn-add {
+        padding: 8px 16px;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .rb-btn-add:hover {
+            border-color: #0d9488;
+            color: #0d9488;
+        }
+
+    .rb-btn-ai {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+        border: none;
+    }
+
+        .rb-btn-ai:hover {
+            transform: translateY(-1px);
+        }
+
+    .rb-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .rb-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+        .rb-section-header:hover {
+            background: #f8fafc;
+        }
+
+    .rb-section-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .rb-drag {
+        color: #cbd5e1;
+        cursor: grab;
+    }
+
+    .rb-section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+        .rb-section-icon.kpi {
+            background: linear-gradient(135deg, #0d9488, #14b8a6);
+        }
+
+        .rb-section-icon.chart {
+            background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+        }
+
+        .rb-section-icon.table {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+        }
+
+    .rb-section-left h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #1e293b;
+    }
+
+    .rb-section-left span {
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .rb-section-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .rb-data-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+
+        .rb-data-status.has-data {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+    .rb-section-body {
+        padding: 20px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    /* ====== KPI CARDS ====== */
+    .rb-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .rb-kpi-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+    }
+
+    .rb-kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    .rb-kpi-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rb-kpi-label {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .rb-kpi-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .rb-kpi-change {
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .rb-kpi-change.positive {
+            color: #10b981;
+        }
+
+        .rb-kpi-change.negative {
+            color: #ef4444;
+        }
+
+    /* ====== CHART ====== */
+    .rb-chart-toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .rb-chart-type {
+        width: 36px;
+        height: 36px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .rb-chart-type:hover, .rb-chart-type.active {
+            border-color: #0d9488;
+            color: #0d9488;
+        }
+
+    .rb-mock-chart {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 200px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+    }
+
+    .rb-bar {
+        width: 50px;
+        background: linear-gradient(180deg, #0d9488, #14b8a6);
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        transition: height 0.5s;
+    }
+
+        .rb-bar span {
+            padding: 8px 0;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+    /* ====== TABLE ====== */
+    .rb-table-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .rb-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #f1f5f9;
+        border-radius: 8px;
+    }
+
+        .rb-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+        }
+
+    .rb-toolbar-btn {
+        padding: 8px 12px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+
+    .rb-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .rb-table th, .rb-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .rb-table th {
+            background: #f8fafc;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .rb-table td {
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+            .rb-table td.positive {
+                color: #10b981;
+                font-weight: 500;
+            }
+
+            .rb-table td.negative {
+                color: #ef4444;
+                font-weight: 500;
+            }
+
+    .rb-table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .rb-pagination {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .rb-pagination button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+            .rb-pagination button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+    /* ====== ASSISTANT ====== */
+    .rb-assistant {
+        width: 350px;
+        background: white;
+        border-left: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rb-assistant-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .rb-assistant-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .rb-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .rb-assistant-title h4 {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .rb-assistant-title span {
+        font-size: 0.75rem;
+        color: #10b981;
+    }
+
+    .rb-assistant-header button {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: #f1f5f9;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .rb-chat {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .rb-message {
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        max-width: 90%;
+    }
+
+        .rb-message.assistant {
+            background: #f1f5f9;
+            align-self: flex-start;
+        }
+
+        .rb-message.user {
+            background: #0d9488;
+            color: white;
+            align-self: flex-end;
+        }
+
+    .rb-quick-actions {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid #e2e8f0;
+        flex-wrap: wrap;
+    }
+
+        .rb-quick-actions button {
+            padding: 6px 12px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .rb-quick-actions button:hover {
+                background: #e2e8f0;
+            }
+
+    .rb-chat-input {
+        display: flex;
+        gap: 8px;
+        padding: 16px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+        .rb-chat-input textarea {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            resize: none;
+            font-size: 0.9rem;
+        }
+
+            .rb-chat-input textarea:focus {
+                outline: none;
+                border-color: #0d9488;
+            }
+
+        .rb-chat-input button {
+            width: 44px;
+            height: 44px;
+            background: #0d9488;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+    /* ====== MODALS ====== */
+    .rb-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
+
+    .rb-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 500px;
+        background: white;
+        border-radius: 16px;
+        z-index: 1001;
+        overflow: hidden;
+    }
+
+    .rb-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+        .rb-modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rb-modal-header button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+    .rb-ai-header {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+    }
+
+        .rb-ai-header button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+    .rb-modal-body {
+        padding: 24px;
+    }
+
+        .rb-modal-body textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            resize: none;
+        }
+
+            .rb-modal-body textarea:focus {
+                outline: none;
+                border-color: #8b5cf6;
+            }
+
+    .rb-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .rb-export-options {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+    }
+
+    .rb-export-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 24px 32px;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .rb-export-option:hover, .rb-export-option.selected {
+            border-color: #0d9488;
+            background: rgba(13,148,136,0.05);
+        }
+
+        .rb-export-option i {
+            font-size: 2rem;
+            color: #0d9488;
+        }
+
+    /* ====== TOAST ====== */
+    .rb-toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 16px 24px;
+        background: #10b981;
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+        z-index: 2000;
+    }
+    @@keyframes slideIn {
+        from
+
+    {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    }
+</style>
+
+@code {
+    // UI State
+    bool showGenerationCard = true;
+    bool showAssistant = false;
+    bool showExportModal = false;
+    bool showAddModal = false;
+    bool showAIModal = false;
+    bool showToastMsg = false;
+
+    // Section States
+    bool section1Open = true;
+    bool section2Open = true;
+    bool section3Open = false;
+
+    // Form Data
+    string reportTitle = "Q4 Sales Performance Report";
+    string selectedDb = "sales";
+    string prompt = "";
+    string chatInput = "";
+    string aiPrompt = "";
+    string exportFormat = "pdf";
+    string toastText = "Action completed!";
+
+    // Chat Messages (mock)
+    List<ChatMsg> chatMessages = new();
+
+    void GenerateReport()
+    {
+        showGenerationCard = false;
+    }
+
+    void ShowToast()
+    {
+        toastText = "Action completed successfully!";
+        showToastMsg = true;
+        Task.Delay(3000).ContinueWith(_ => { showToastMsg = false; InvokeAsync(StateHasChanged); });
+    }
+
+    void AddChat(string text)
+    {
+        chatMessages.Add(new ChatMsg { Type = "user", Text = text });
+        Task.Delay(500).ContinueWith(_ =>
+        {
+            chatMessages.Add(new ChatMsg { Type = "assistant", Text = "I'll help you with that! This is a demo response." });
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    void SendChat()
+    {
+        if (!string.IsNullOrWhiteSpace(chatInput))
+        {
+            AddChat(chatInput);
+            chatInput = "";
+        }
+    }
+
+    class ChatMsg { public string Type; public string Text; }
+}

@@ -153,54 +153,65 @@
             <param name="input">The input string (e.g., email or name).</param>
             <returns>A consistent color for the input.</returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "T:DynamicDashboardCommon.Helper.DictionaryObjectConverter" -->
-        <member name="T:DynamicDashboardCommon.Helpers.DashboardTemplateHelper">
+        <member name="T:DynamicDashboardCommon.Helper.DashboardTemplateHelper">
             <summary>
-            Helper class for loading and working with dashboard templates
+            Helper class for loading and managing dashboard templates.
+            Templates define layout (positions) while LLM generates content (titles, queries, chart types).
             </summary>
         </member>
-        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.LoadTemplates(System.String)">
+        <member name="M:DynamicDashboardCommon.Helper.DashboardTemplateHelper.GetTemplateById(System.String,System.String)">
             <summary>
-            Loads templates from the JSON file
+            Gets a template by its ID from the templates file.
             </summary>
-            <param name="templatesFilePath">Path to the templates JSON file</param>
-            <returns>Collection of dashboard templates</returns>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetAllTemplates(System.String)">
-            <summary>
-            Gets all available templates
-            </summary>
-            <param name="templatesFilePath">Path to the templates JSON file</param>
-            <returns>List of templates</returns>
-        </member>
-        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetTemplateById(System.String,System.String)">
-            <summary>
-            Gets a template by ID
-            </summary>
-            <param name="templateId">Template identifier</param>
+            <param name="templateId">The template ID to find</param>
             <param name="templatesFilePath">Path to the templates JSON file</param>
             <returns>The template if found, null otherwise</returns>
         </member>
-        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetTemplatesByCategory(System.String,System.String)">
+        <member name="M:DynamicDashboardCommon.Helper.DashboardTemplateHelper.GetAllTemplates(System.String)">
             <summary>
-            Gets templates by category
+            Gets all available templates from the templates file.
             </summary>
-            <param name="category">Template category</param>
             <param name="templatesFilePath">Path to the templates JSON file</param>
-            <returns>List of templates in the category</returns>
+            <returns>List of all templates</returns>
         </member>
-        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.GetDataViewingTypeFromSlotType(System.String)">
+        <member name="M:DynamicDashboardCommon.Helper.DashboardTemplateHelper.GetTemplatesByCategory(System.String,System.String)">
             <summary>
-            Converts a template component slot to a data viewing type ID
+            Gets templates filtered by category.
             </summary>
-            <param name="type">Component type string</param>
-            <returns>DataViewingTypeEnum value</returns>
+            <param name="category">The category to filter by</param>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>List of templates in the specified category</returns>
         </member>
-        <member name="M:DynamicDashboardCommon.Helpers.DashboardTemplateHelper.ResetCache">
+        <member name="M:DynamicDashboardCommon.Helper.DashboardTemplateHelper.GetTemplateCategories(System.String)">
             <summary>
-            Resets the cached templates (useful for testing or reloading)
+            Gets all unique template categories.
+            </summary>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>List of unique category names</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.DashboardTemplateHelper.GetTemplateSummaries(System.String)">
+            <summary>
+            Gets template summary information for UI display.
+            </summary>
+            <param name="templatesFilePath">Path to the templates JSON file</param>
+            <returns>List of template summaries</returns>
+        </member>
+        <member name="M:DynamicDashboardCommon.Helper.DashboardTemplateHelper.LoadTemplates(System.String)">
+            <summary>
+            Loads templates from the JSON file.
             </summary>
         </member>
+        <member name="T:DynamicDashboardCommon.Helper.DashboardTemplateHelper.TemplatesWrapper">
+            <summary>
+            Wrapper class for deserializing the templates JSON file.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Helper.TemplateSummary">
+            <summary>
+            Summary information for a template (for UI display).
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:DynamicDashboardCommon.Helper.DictionaryObjectConverter" -->
         <member name="T:DynamicDashboardCommon.Models.AssistantChatRequest">
             <summary>
             Request model for AI assistant chat
@@ -899,7 +910,9 @@
         </member>
         <member name="T:DynamicDashboardCommon.Models.DashboardTemplate">
             <summary>
-            Represents a static dashboard template configuration
+            Represents a dashboard template configuration.
+            Templates define LAYOUT (positions, sizes) and GUIDANCE (AI context).
+            Content (titles, descriptions, queries, chart types) is generated by LLM.
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Id">
@@ -919,7 +932,8 @@
         </member>
         <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Category">
             <summary>
-            Category of the template (Executive, Operations, Finance, etc.)
+            Category of the template (Executive, Operations, Finance, Analytics, etc.)
+            This is key for LLM to understand the target audience
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.ThumbnailUrl">
@@ -932,39 +946,71 @@
             Total height of the canvas in grid rows
             </summary>
         </member>
+        <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.AIGuidance">
+            <summary>
+            AI guidance for this template type.
+            Instructs LLM about target audience, focus areas, and what to avoid.
+            </summary>
+        </member>
         <member name="P:DynamicDashboardCommon.Models.DashboardTemplate.Components">
             <summary>
-            List of component slots in this template
+            List of component slots defining LAYOUT ONLY (type + position).
+            LLM generates the actual content for each slot.
+            </summary>
+        </member>
+        <member name="T:DynamicDashboardCommon.Models.TemplateAIGuidance">
+            <summary>
+            AI guidance configuration for a template.
+            Provides context to help LLM generate appropriate components.
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateAIGuidance.TargetAudience">
+            <summary>
+            Target audience for this dashboard.
+            Examples: "C-level executives", "Operations managers", "Data analysts"
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateAIGuidance.FocusAreas">
+            <summary>
+            Primary focus areas for this dashboard type.
+            Examples: "Revenue trends", "Operational efficiency", "Real-time monitoring"
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateAIGuidance.TimeGranularity">
+            <summary>
+            Preferred time granularity for this audience.
+            Examples: "monthly", "quarterly" for executives; "daily", "hourly" for operations
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateAIGuidance.AvoidPatterns">
+            <summary>
+            Patterns to avoid in this dashboard type.
+            Examples: "Granular transaction details" for executives
+            </summary>
+        </member>
+        <member name="P:DynamicDashboardCommon.Models.TemplateAIGuidance.AdditionalGuidance">
+            <summary>
+            Additional free-form guidance text for the LLM.
+            Provides extra context about what makes this dashboard type effective.
             </summary>
         </member>
         <member name="T:DynamicDashboardCommon.Models.TemplateComponentSlot">
             <summary>
-            Represents a component slot within a template
+            Represents a component slot within a template.
+            Defines ONLY the component type and grid position.
+            LLM generates: title, description, query, chartType (for charts).
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Slot">
             <summary>
-            Slot number for ordering
+            Slot number for ordering (1, 2, 3, ...)
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Type">
             <summary>
-            Type of component (kpi, chart, table, card, label)
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.ChartType">
-            <summary>
-            Chart type if this is a chart component (line, bar, pie, area, etc.)
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Title">
-            <summary>
-            Default title for this component
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.Description">
-            <summary>
-            Default description for this component
+            Type of component: "kpi", "chart", "table"
+            LLM will generate appropriate content based on type.
+            For charts, LLM decides the best chart type (line, bar, pie, area, etc.)
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridX">
@@ -974,7 +1020,7 @@
         </member>
         <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridY">
             <summary>
-            Y position in the grid (row number)
+            Y position in the grid (row number, starting from 0)
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.GridWidth">
@@ -987,19 +1033,9 @@
             Height in grid rows
             </summary>
         </member>
-        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.QueryIntent">
-            <summary>
-            Natural language description of what this component should show
-            </summary>
-        </member>
-        <member name="P:DynamicDashboardCommon.Models.TemplateComponentSlot.SuggestedAggregation">
-            <summary>
-            Suggested aggregation function for this component (COUNT, SUM, AVG, PERCENTAGE)
-            </summary>
-        </member>
         <member name="T:DynamicDashboardCommon.Models.DashboardTemplateCollection">
             <summary>
-            Container for all dashboard templates
+            Container for all dashboard templates (used for JSON deserialization)
             </summary>
         </member>
         <member name="P:DynamicDashboardCommon.Models.DashboardTemplateCollection.Templates">

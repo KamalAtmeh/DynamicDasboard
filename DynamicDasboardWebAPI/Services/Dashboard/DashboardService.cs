@@ -242,6 +242,7 @@ namespace DynamicDasboardWebAPI.Services
             }
         }
 
+
         /// <summary>
         /// Validates a dashboard component.
         /// </summary>

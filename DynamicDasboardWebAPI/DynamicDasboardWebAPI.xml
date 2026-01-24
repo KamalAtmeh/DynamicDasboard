@@ -160,6 +160,11 @@
             <param name="dashboard">The updated dashboard data.</param>
             <returns>The updated dashboard.</returns>
         </member>
+        <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.SuggestQuestions(System.Int32)">
+            <summary>
+            Suggests questions based on database schema
+            </summary>
+        </member>
         <member name="M:DynamicDasboardWebAPI.Controllers.DashboardController.DeleteDashboard(System.Int32)">
             <summary>
             Deletes a dashboard.
@@ -1247,37 +1252,52 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.DashboardGenerationService">
             <summary>
-            Service for generating dashboard suggestions using LLM with template support.
+            Service for generating dashboards using LLM with intelligent component suggestions.
+            Templates define LAYOUT (positions), LLM generates CONTENT (titles, queries, chart types).
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetMockLLMResponse(System.String)">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32)">
             <summary>
-            Returns mock LLM response based on template ID for testing
+            Generates dashboard suggestions using default executive template.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetOperationalTemplateMockData">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32,System.String)">
             <summary>
-            Mock data for Operational Template (8 components)
+            Generates a dashboard using template layout and LLM-generated content.
+            Template defines positions (grid layout), LLM generates content (titles, queries, chart types).
+            </summary>
+            <param name="databaseId">Target database ID to analyze schema from</param>
+            <param name="templateId">Template ID defining layout and AI guidance</param>
+            <returns>List containing generated dashboard with intelligent components</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.BuildIntelligentPrompts(DynamicDashboardCommon.Models.DashboardTemplate,System.String,System.String)">
+            <summary>
+            Builds intelligent system and user prompts for LLM dashboard generation.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetExecutiveTemplateMockData">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetDbSyntaxGuidance(System.String)">
             <summary>
-            Mock data for Executive Template (7 components)
+            Returns database-specific SQL syntax guidance for the LLM.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetPerformanceTemplateMockData">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.ParseAndBuildDashboard(System.String,DynamicDashboardCommon.Models.DashboardTemplate,System.Int32)">
             <summary>
-            Mock data for Performance Template (6 components)
+            Parses the LLM response and builds a DashboardModel.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.BuildSimplifiedPrompt(System.String,DynamicDashboardCommon.Models.DashboardTemplate)">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.CleanLLMResponse(System.String)">
             <summary>
-            Builds simplified prompt - LLM only generates SQL, not positions
+            Cleans LLM response by removing markdown code fences.
             </summary>
         </member>
-        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.ParseAndApplyTemplate(System.String,System.Int32,DynamicDashboardCommon.Models.DashboardTemplate)">
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GenerateSuggestedQuestionsAsync(System.Int32)">
             <summary>
-            Parse LLM response and apply template positions
+            Generates suggested questions based on database schema
+            </summary>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.DashboardGenerationService.GetMockLLMResponse(DynamicDashboardCommon.Models.DashboardTemplate)">
+            <summary>
+            Returns mock LLM response for testing without actual LLM calls.
             </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.QueryService">
@@ -1570,23 +1590,30 @@
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.IDashboardGenerationService">
             <summary>
-            Interface for dashboard generation services with template support.
+            Interface for AI-powered dashboard generation service.
+            Uses templates for layout and LLM for intelligent content generation.
             </summary>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32)">
             <summary>
-            Generates dashboard suggestions based on database schema using default template.
+            Generates dashboard suggestions using default template.
             </summary>
-            <param name="databaseId">The database ID to analyze.</param>
-            <returns>A list of suggested dashboards.</returns>
+            <param name="databaseId">Target database ID</param>
+            <returns>List of generated dashboard models</returns>
         </member>
         <member name="M:DynamicDasboardWebAPI.Services.IDashboardGenerationService.GenerateDashboardSuggestionsAsync(System.Int32,System.String)">
             <summary>
-            Generates dashboard suggestions based on database schema using a specific template.
+            Generates a dashboard using template layout and LLM-generated content.
+            Template defines positions (grid layout), LLM generates content (titles, queries, chart types).
             </summary>
-            <param name="databaseId">The database ID to analyze.</param>
-            <param name="templateId">The template ID to use (e.g., "executive-standard", "operational-dashboard").</param>
-            <returns>A list of suggested dashboards.</returns>
+            <param name="databaseId">Target database ID to analyze schema from</param>
+            <param name="templateId">Template ID defining layout and AI guidance</param>
+            <returns>List containing generated dashboard with intelligent components</returns>
+        </member>
+        <member name="M:DynamicDasboardWebAPI.Services.IDashboardGenerationService.GenerateSuggestedQuestionsAsync(System.Int32)">
+            <summary>
+            Generates suggested questions based on database schema
+            </summary>
         </member>
         <member name="T:DynamicDasboardWebAPI.Services.IDashboardService">
             <summary>

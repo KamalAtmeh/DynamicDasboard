@@ -14,6 +14,21 @@
             Loads dataset comparison data for visualization with improved error handling
             </summary>
         </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.LoadSuggestedQuestions">
+            <summary>
+            Loads suggested questions based on the database schema
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.UseSuggestion(System.String)">
+            <summary>
+            Uses a suggested question
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.ClearSuggestions">
+            <summary>
+            Clears the suggestions panel
+            </summary>
+        </member>
         <member name="M:DynamicDashboardFE.Pages.Admin.DashboardBuilder.PrepareDashboardForSave">
             <summary>
             Prepares dashboard object with all required fields before saving
@@ -207,6 +222,11 @@
         <member name="T:DynamicDashboardFE.Pages.User.Dashboard.SqlExecutionRequest">
             <summary>
             Request model for executing SQL queries.
+            </summary>
+        </member>
+        <member name="M:DynamicDashboardFE.Components.Dashboard.TemplateIcons.GetTemplateIcon(System.String,System.String)">
+            <summary>
+            Returns SVG icon markup for a given template category/id
             </summary>
         </member>
     </members>

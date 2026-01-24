@@ -114,12 +114,13 @@ builder.Services.AddScoped<IDashboardGenerationService>(provider =>
 {
     var llmService = provider.GetRequiredService<ILLMService>();
     var schemaService = provider.GetRequiredService<DatabaseSchemaService>();
+    var databaseService = provider.GetRequiredService<DatabaseService>();
     var logsService = provider.GetRequiredService<ILogsService>();
-    var configuration = provider.GetRequiredService<IConfiguration>(); // ADD THIS
+    var configuration = provider.GetRequiredService<IConfiguration>();
 
     var templatesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "dashboard-templates.json");
 
-    return new DashboardGenerationService(llmService, schemaService, logsService, templatesPath, configuration); // ADD configuration
+    return new DashboardGenerationService(llmService, schemaService, databaseService, logsService, templatesPath, configuration);
 });
 
 builder.Services.AddScoped<IAssistantService>(provider =>
@@ -136,7 +137,7 @@ builder.Services.AddScoped<IAssistantService>(provider =>
 
 
 // Register HttpClient with a base address
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(15) });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://dynamicdashboardAPIs/"), Timeout= TimeSpan.FromMinutes(20) });
 
 builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 {
@@ -146,7 +147,7 @@ builder.Services.AddSingleton<Func<string, HttpClient>>(serviceProvider =>
 
         // Read timeout dynamically from configuration
         var timeoutSeconds = configuration.GetValue<int>("LlmService:Timeout");
-        if (timeoutSeconds <= 0) timeoutSeconds = 2500; 
+        if (timeoutSeconds <= 0) timeoutSeconds = 5000; 
 
         var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);

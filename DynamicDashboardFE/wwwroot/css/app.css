@@ -347,10 +347,10 @@ body {
 }
 
 .sidebar-title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     text-align: center;
-    color: #DAA520;
+    color: white;
     font-family: 'Tahoma', 'Arial', sans-serif;
     direction: rtl;
     line-height: 1.8;
@@ -535,7 +535,7 @@ body {
 
 /* Manage Metadata - Primary Green */
 .btn-primary {
-    background: linear-gradient(135deg, #006847 0%, #008556 100%) !important;
+    background: #43618B !important;
     border: none !important;
     color: white !important;
 }
@@ -1004,7 +1004,7 @@ body {
     }
 
 .btn-primary {
-    background: var(--primary-light);
+    background: #43618B;
     color: white;
 }
 
@@ -2034,7 +2034,7 @@ body {
 }
 
 .btn-primary {
-    background: #4361ee;
+    background: #43618B;
     color: white;
     border: none;
     padding: 10px 20px;

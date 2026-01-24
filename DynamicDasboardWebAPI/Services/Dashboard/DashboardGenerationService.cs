@@ -1,23 +1,24 @@
 ﻿using DynamicDasboardWebAPI.Services.LLM;
-using System;
-using DynamicDashboardCommon.Models;
-using DynamicDashboardCommon.Helpers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
 using DynamicDashboardCommon.Enums;
+using DynamicDashboardCommon.Helper;
+
+using DynamicDashboardCommon.Models;
 using Microsoft.Extensions.Configuration;
+using System.Text;
+using System.Text.Json;
 
 namespace DynamicDasboardWebAPI.Services
 {
     /// <summary>
-    /// Service for generating dashboard suggestions using LLM with template support.
+    /// Service for generating dashboards using LLM with intelligent component suggestions.
+    /// Templates define LAYOUT (positions), LLM generates CONTENT (titles, queries, chart types).
     /// </summary>
     public class DashboardGenerationService : IDashboardGenerationService
     {
         private readonly ILLMService _llmService;
         private readonly DatabaseSchemaService _schemaService;
+        //private readonly IDatabaseService _databaseService
+            private readonly DatabaseService _databaseService;
         private readonly ILogsService _logsService;
         private readonly string _templatesFilePath;
         private readonly IConfiguration _configuration;
@@ -26,12 +27,14 @@ namespace DynamicDasboardWebAPI.Services
         public DashboardGenerationService(
             ILLMService llmService,
             DatabaseSchemaService schemaService,
+            DatabaseService databaseService,
             ILogsService logsService,
             string templatesFilePath,
             IConfiguration configuration)
         {
             _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
             _schemaService = schemaService ?? throw new ArgumentNullException(nameof(schemaService));
+            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
             _logsService = logsService ?? throw new ArgumentNullException(nameof(logsService));
             _templatesFilePath = templatesFilePath ?? throw new ArgumentNullException(nameof(templatesFilePath));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -40,346 +43,341 @@ namespace DynamicDasboardWebAPI.Services
             _useMockData = _configuration.GetValue<bool>("Dashboard:UseMockData", false);
         }
 
+        #region Public Methods
+
+        /// <summary>
+        /// Generates dashboard suggestions using default executive template.
+        /// </summary>
         public async Task<List<DashboardModel>> GenerateDashboardSuggestionsAsync(int databaseId)
         {
-            return await GenerateDashboardSuggestionsAsync(databaseId, "executive-template");
+            return await GenerateDashboardSuggestionsAsync(databaseId, "executive-standard");
         }
 
+        /// <summary>
+        /// Generates a dashboard using template layout and LLM-generated content.
+        /// Template defines positions (grid layout), LLM generates content (titles, queries, chart types).
+        /// </summary>
+        /// <param name="databaseId">Target database ID to analyze schema from</param>
+        /// <param name="templateId">Template ID defining layout and AI guidance</param>
+        /// <returns>List containing generated dashboard with intelligent components</returns>
         public async Task<List<DashboardModel>> GenerateDashboardSuggestionsAsync(int databaseId, string templateId)
         {
             try
             {
-                // Load template
+                // 1. Load template
                 var template = DashboardTemplateHelper.GetTemplateById(templateId, _templatesFilePath);
                 if (template == null)
                 {
                     throw new ArgumentException($"Template '{templateId}' not found");
                 }
 
-                string response;
+                string llmResponse;
 
                 if (_useMockData)
                 {
                     // Use mock data for testing
-                    response = GetMockLLMResponse(templateId);
-                    await Task.Delay(500); // Simulate network delay for realistic testing
+                    llmResponse = GetMockLLMResponse(template);
+                    await Task.Delay(500); // Simulate network delay
                 }
                 else
                 {
-                    // Get database schema
-                    var database = await _schemaService.GetSchemaObject(databaseId);
+                    // 2. Get database info to get DatabaseTypeName
+                    var database = await _databaseService.GetDatabaseByIdAsync(databaseId);
                     if (database == null)
+                    {
+                        throw new ArgumentException($"Database with ID {databaseId} not found");
+                    }
+
+                    // 3. Get database schema
+                    var schemaObj = await _schemaService.GetSchemaObject(databaseId);
+                    if (schemaObj == null)
                     {
                         throw new ArgumentException($"Schema not found for database ID {databaseId}");
                     }
 
-                    string optimizedSchema = _schemaService.BuildOptimizedSchemaString(database);
+                    string optimizedSchema = _schemaService.BuildOptimizedSchemaString(schemaObj);
 
-                    // Generate with simplified prompt (NO positions from LLM!)
-                    var prompt = BuildSimplifiedPrompt(optimizedSchema, template);
-                    response = await _llmService.GenerateSchemaAnalysisAsync(prompt);
+                    // 4. Get database type from Database model
+                    string databaseType = database.DatabaseTypeName ?? "SQL Server";
+
+                    // 5. Build intelligent prompts
+                    var (systemPrompt, userPrompt) = BuildIntelligentPrompts(template, optimizedSchema, databaseType);
+
+                    // 6. Call LLM
+                    llmResponse = await _llmService.GenerateDashboardSuggestionsAsync(systemPrompt, userPrompt);
                 }
 
-                return ParseAndApplyTemplate(response, databaseId, template);
+                // 7. Parse response and build dashboard
+                var dashboard = ParseAndBuildDashboard(llmResponse, template, databaseId);
+
+                return new List<DashboardModel> { dashboard };
             }
             catch (Exception ex)
             {
-                throw;
+                throw new Exception($"Failed to generate dashboard: {ex.Message}", ex);
             }
         }
 
+        #endregion
+
+        #region Prompt Building
+
         /// <summary>
-        /// Returns mock LLM response based on template ID for testing
+        /// Builds intelligent system and user prompts for LLM dashboard generation.
         /// </summary>
-        private string GetMockLLMResponse(string templateId)
+        private (string systemPrompt, string userPrompt) BuildIntelligentPrompts(
+            DashboardTemplate template,
+            string schema,
+            string databaseType)
         {
-            return templateId switch
+            // ============================================
+            // SYSTEM PROMPT
+            // ============================================
+            var systemSb = new StringBuilder();
+
+            systemSb.AppendLine("You are an expert Business Intelligence analyst and dashboard designer.");
+            systemSb.AppendLine("Your task is to analyze a database schema and generate meaningful dashboard components.");
+            systemSb.AppendLine();
+            systemSb.AppendLine("CRITICAL RULES:");
+            systemSb.AppendLine("1. Generate ONLY valid JSON output - no markdown, no explanations");
+            systemSb.AppendLine("2. All SQL queries MUST be valid for the specified database type");
+            systemSb.AppendLine("3. Titles must be specific and derived from actual data columns");
+            systemSb.AppendLine("4. DO NOT use generic titles like 'Total Records' or 'Main Chart'");
+            systemSb.AppendLine("5. Each component must provide meaningful business insights");
+
+            string systemPrompt = systemSb.ToString();
+
+            // ============================================
+            // USER PROMPT
+            // ============================================
+            var userSb = new StringBuilder();
+
+            // Section 1: Dashboard Context
+            userSb.AppendLine("## DASHBOARD CONTEXT");
+            userSb.AppendLine();
+            userSb.AppendLine($"**Dashboard Type:** {template.Name}");
+            userSb.AppendLine($"**Category:** {template.Category}");
+            userSb.AppendLine($"**Description:** {template.Description}");
+            userSb.AppendLine();
+
+            // AI Guidance from template
+            if (template.AIGuidance != null)
             {
-                "operational-template" => GetOperationalTemplateMockData(),
-                "executive-template" => GetExecutiveTemplateMockData(),
-                "performance-template" => GetPerformanceTemplateMockData(),
-                _ => GetOperationalTemplateMockData() // Default
-            };
-        }
+                userSb.AppendLine($"**Target Audience:** {template.AIGuidance.TargetAudience}");
+                userSb.AppendLine();
 
-        /// <summary>
-        /// Mock data for Operational Template (8 components)
-        /// </summary>
-        private string GetOperationalTemplateMockData()
-        {
-            return @"{
-  ""components"": [
-    {
-      ""slot"": 1,
-      ""title"": ""Active Traffic Cameras"",
-      ""description"": ""Number of currently active traffic cameras"",
-      ""queryText"": ""SELECT COUNT(*) as value FROM traffic_cameras WHERE is_active = 1"",
-      ""queryIntent"": ""Count of active traffic cameras for monitoring""
-    },
-    {
-      ""slot"": 2,
-      ""title"": ""Paid Violations Rate"",
-      ""description"": ""Percentage of traffic violations that have been paid"",
-      ""queryText"": ""SELECT ROUND((COUNT(CASE WHEN is_paid = 1 THEN 1 END) * 100.0 / COUNT(*)), 2) as value FROM violation_records"",
-      ""queryIntent"": ""Percentage of violation fines that have been paid vs total violations""
-    },
-    {
-      ""slot"": 3,
-      ""title"": ""Average Incident Processing Time"",
-      ""description"": ""Average time between incident creation and current status update"",
-      ""queryText"": ""SELECT AVG(DATEDIFF(DAY, created_at, GETDATE())) as value FROM traffic_incidents WHERE status_id IS NOT NULL"",
-      ""queryIntent"": ""Average number of days incidents have been in the system with a status""
-    },
-    {
-      ""slot"": 4,
-      ""title"": ""Pending Traffic Incidents"",
-      ""description"": ""Number of traffic incidents awaiting investigation or resolution"",
-      ""queryText"": ""SELECT COUNT(*) as value FROM traffic_incidents ti JOIN incident_status ist ON ti.status_id = ist.status_id WHERE ist.status_code IN ('PENDING', 'INVESTIGATING')"",
-      ""queryIntent"": ""Count of incidents that are still pending or under investigation""
-    },
-    {
-      ""slot"": 5,
-      ""title"": ""Violations by Severity Level"",
-      ""description"": ""Number of violations grouped by severity level"",
-      ""queryText"": ""SELECT vt.severity_level as category, COUNT(vr.record_id) as count FROM violation_records vr JOIN violation_types vt ON vr.violation_type_id = vt.violation_type_id GROUP BY vt.severity_level ORDER BY COUNT(vr.record_id) DESC"",
-      ""queryIntent"": ""Distribution of violations across different severity levels for performance analysis""
-    },
-    {
-      ""slot"": 6,
-      ""title"": ""Traffic Incident Status Distribution"",
-      ""description"": ""Distribution of traffic incidents by current status"",
-      ""queryText"": ""SELECT ist.status_name as status, COUNT(ti.incident_id) as count FROM traffic_incidents ti JOIN incident_status ist ON ti.status_id = ist.status_id WHERE ist.is_active = 1 GROUP BY ist.status_name, ist.status_id ORDER BY COUNT(ti.incident_id) DESC"",
-      ""queryIntent"": ""Pie chart showing how incidents are distributed across different status types""
-    },
-    {
-      ""slot"": 7,
-      ""title"": ""Daily Violations Trend"",
-      ""description"": ""Daily count of traffic violations over the last 30 days"",
-      ""queryText"": ""SELECT CAST(violation_date as DATE) as date, COUNT(record_id) as count FROM violation_records WHERE violation_date >= DATEADD(DAY, -30, GETDATE()) GROUP BY CAST(violation_date as DATE) ORDER BY CAST(violation_date as DATE)"",
-      ""queryIntent"": ""Line chart showing daily trend of traffic violations over the past month""
-    },
-    {
-      ""slot"": 8,
-      ""title"": ""Recent Traffic Violations"",
-      ""description"": ""Most recent traffic violation records"",
-      ""queryText"": ""SELECT TOP 10 vr.violation_number, CONCAT(d.first_name, ' ', d.last_name) as driver_name, v.plate_number, vt.violation_name, vr.violation_date, vr.fine_amount, vr.is_paid, vr.location FROM violation_records vr JOIN drivers d ON vr.driver_id = d.driver_id JOIN vehicles v ON vr.vehicle_id = v.vehicle_id JOIN violation_types vt ON vr.violation_type_id = vt.violation_type_id ORDER BY vr.violation_date DESC"",
-      ""queryIntent"": ""Table showing the most recent traffic violations with key details""
-    }
-  ]
-}";
-        }
+                if (template.AIGuidance.FocusAreas?.Any() == true)
+                {
+                    userSb.AppendLine("**Focus Areas:**");
+                    foreach (var area in template.AIGuidance.FocusAreas)
+                    {
+                        userSb.AppendLine($"  - {area}");
+                    }
+                    userSb.AppendLine();
+                }
 
-        /// <summary>
-        /// Mock data for Executive Template (7 components)
-        /// </summary>
-        private string GetExecutiveTemplateMockData()
-        {
-            return @"{
-  ""components"": [
-    {
-      ""slot"": 1,
-      ""title"": ""Total Violations"",
-      ""description"": ""Total number of traffic violations recorded"",
-      ""queryText"": ""SELECT COUNT(*) as value FROM violation_records"",
-      ""queryIntent"": ""Count of all recorded traffic violations""
-    },
-    {
-      ""slot"": 2,
-      ""title"": ""Total Revenue"",
-      ""description"": ""Total fine amount collected from violations"",
-      ""queryText"": ""SELECT SUM(fine_amount) as value FROM violation_records WHERE is_paid = 1"",
-      ""queryIntent"": ""Sum of all paid violation fines""
-    },
-    {
-      ""slot"": 3,
-      ""title"": ""Collection Rate"",
-      ""description"": ""Percentage of fines collected vs issued"",
-      ""queryText"": ""SELECT ROUND((COUNT(CASE WHEN is_paid = 1 THEN 1 END) * 100.0 / COUNT(*)), 2) as value FROM violation_records"",
-      ""queryIntent"": ""Success rate of fine collection""
-    },
-    {
-      ""slot"": 4,
-      ""title"": ""Violation Trend"",
-      ""description"": ""Monthly trend of traffic violations"",
-      ""queryText"": ""SELECT FORMAT(violation_date, 'yyyy-MM') as date, COUNT(*) as count FROM violation_records WHERE violation_date >= DATEADD(MONTH, -12, GETDATE()) GROUP BY FORMAT(violation_date, 'yyyy-MM') ORDER BY FORMAT(violation_date, 'yyyy-MM')"",
-      ""queryIntent"": ""Monthly violation trend over past year""
-    },
-    {
-      ""slot"": 5,
-      ""title"": ""Top Violation Types"",
-      ""description"": ""Most common violation types"",
-      ""queryText"": ""SELECT TOP 5 vt.violation_name as category, COUNT(vr.record_id) as count FROM violation_records vr JOIN violation_types vt ON vr.violation_type_id = vt.violation_type_id GROUP BY vt.violation_name ORDER BY COUNT(vr.record_id) DESC"",
-      ""queryIntent"": ""Top 5 most frequent violation types""
-    },
-    {
-      ""slot"": 6,
-      ""title"": ""Payment Status"",
-      ""description"": ""Distribution of paid vs unpaid violations"",
-      ""queryText"": ""SELECT CASE WHEN is_paid = 1 THEN 'Paid' ELSE 'Unpaid' END as status, COUNT(*) as count FROM violation_records GROUP BY is_paid"",
-      ""queryIntent"": ""Paid vs unpaid violations distribution""
-    },
-    {
-      ""slot"": 7,
-      ""title"": ""Executive Summary"",
-      ""description"": ""Key metrics and statistics"",
-      ""queryText"": ""SELECT TOP 20 violation_number, violation_date, fine_amount, is_paid FROM violation_records ORDER BY violation_date DESC"",
-      ""queryIntent"": ""Recent violations summary""
-    }
-  ]
-}";
-        }
+                if (template.AIGuidance.TimeGranularity?.Any() == true)
+                {
+                    userSb.AppendLine($"**Preferred Time Granularity:** {string.Join(", ", template.AIGuidance.TimeGranularity)}");
+                    userSb.AppendLine();
+                }
 
-        /// <summary>
-        /// Mock data for Performance Template (6 components)
-        /// </summary>
-        private string GetPerformanceTemplateMockData()
-        {
-            return @"{
-  ""components"": [
-    {
-      ""slot"": 1,
-      ""title"": ""Total Incidents Processed"",
-      ""description"": ""Total number of incidents handled"",
-      ""queryText"": ""SELECT COUNT(*) as value FROM traffic_incidents"",
-      ""queryIntent"": ""Total incident count""
-    },
-    {
-      ""slot"": 2,
-      ""title"": ""Average Response Time"",
-      ""description"": ""Average time to respond to incidents"",
-      ""queryText"": ""SELECT AVG(DATEDIFF(HOUR, created_at, updated_at)) as value FROM traffic_incidents WHERE updated_at IS NOT NULL"",
-      ""queryIntent"": ""Average hours to first response""
-    },
-    {
-      ""slot"": 3,
-      ""title"": ""Incident Resolution Trend"",
-      ""description"": ""Monthly incident resolution rate"",
-      ""queryText"": ""SELECT FORMAT(created_at, 'yyyy-MM') as date, COUNT(*) as count FROM traffic_incidents WHERE status_id IN (SELECT status_id FROM incident_status WHERE status_code = 'RESOLVED') GROUP BY FORMAT(created_at, 'yyyy-MM') ORDER BY FORMAT(created_at, 'yyyy-MM')"",
-      ""queryIntent"": ""Monthly resolved incidents trend""
-    },
-    {
-      ""slot"": 4,
-      ""title"": ""Officer Performance"",
-      ""description"": ""Top performing officers by violations issued"",
-      ""queryText"": ""SELECT TOP 10 o.badge_number, CONCAT(o.first_name, ' ', o.last_name) as officer_name, COUNT(vr.record_id) as count FROM officers o JOIN violation_records vr ON o.officer_id = vr.officer_id GROUP BY o.badge_number, o.first_name, o.last_name ORDER BY COUNT(vr.record_id) DESC"",
-      ""queryIntent"": ""Top 10 officers by violation count""
-    },
-    {
-      ""slot"": 5,
-      ""title"": ""Incident Type Distribution"",
-      ""description"": ""Distribution by incident type"",
-      ""queryText"": ""SELECT incident_type, COUNT(*) as count FROM traffic_incidents GROUP BY incident_type ORDER BY COUNT(*) DESC"",
-      ""queryIntent"": ""Incidents grouped by type""
-    },
-    {
-      ""slot"": 6,
-      ""title"": ""Performance Details"",
-      ""description"": ""Detailed performance metrics"",
-      ""queryText"": ""SELECT TOP 15 incident_id, incident_type, created_at, status_id FROM traffic_incidents ORDER BY created_at DESC"",
-      ""queryIntent"": ""Recent incidents details""
-    }
-  ]
-}";
-        }
+                if (template.AIGuidance.AvoidPatterns?.Any() == true)
+                {
+                    userSb.AppendLine("**Patterns to AVOID:**");
+                    foreach (var pattern in template.AIGuidance.AvoidPatterns)
+                    {
+                        userSb.AppendLine($"  - {pattern}");
+                    }
+                    userSb.AppendLine();
+                }
 
-        /// <summary>
-        /// Builds simplified prompt - LLM only generates SQL, not positions
-        /// </summary>
-        private string BuildSimplifiedPrompt(string schema, DashboardTemplate template)
-        {
-            var componentRequirements = new List<string>();
+                if (!string.IsNullOrEmpty(template.AIGuidance.AdditionalGuidance))
+                {
+                    userSb.AppendLine($"**Additional Guidance:** {template.AIGuidance.AdditionalGuidance}");
+                    userSb.AppendLine();
+                }
+            }
 
+            // Section 2: Database Syntax Rules
+            userSb.AppendLine("## DATABASE SYNTAX RULES");
+            userSb.AppendLine();
+            userSb.AppendLine($"**Target Database:** {databaseType}");
+            userSb.AppendLine();
+            userSb.AppendLine(GetDbSyntaxGuidance(databaseType));
+            userSb.AppendLine();
+
+            // Section 3: Database Schema
+            userSb.AppendLine("## DATABASE SCHEMA");
+            userSb.AppendLine();
+            userSb.AppendLine("Analyze the following schema to understand available tables, columns, and relationships:");
+            userSb.AppendLine();
+            userSb.AppendLine("```");
+            userSb.AppendLine(schema);
+            userSb.AppendLine("```");
+            userSb.AppendLine();
+
+            // Section 4: Component Requirements
+            userSb.AppendLine("## COMPONENTS TO GENERATE");
+            userSb.AppendLine();
+
+            var kpiCount = template.Components.Count(c => c.Type.Equals("kpi", StringComparison.OrdinalIgnoreCase));
+            var chartCount = template.Components.Count(c => c.Type.Equals("chart", StringComparison.OrdinalIgnoreCase));
+            var tableCount = template.Components.Count(c => c.Type.Equals("table", StringComparison.OrdinalIgnoreCase));
+
+            userSb.AppendLine($"Generate the following components based on the schema and dashboard context:");
+            userSb.AppendLine();
+            userSb.AppendLine($"- **{kpiCount} KPIs:** Key metrics displayed as single numbers");
+            userSb.AppendLine($"- **{chartCount} Charts:** Visualizations (YOU decide the best chart type: line, bar, pie, area, donut)");
+            userSb.AppendLine($"- **{tableCount} Table(s):** Data tables showing detailed records");
+            userSb.AppendLine();
+
+            userSb.AppendLine("**Slot Assignments:**");
             foreach (var slot in template.Components.OrderBy(c => c.Slot))
             {
-                string req = $"Slot {slot.Slot}: ";
-
-                if (slot.Type == "kpi")
-                {
-                    req += $"Generate SQL for KPI '{slot.Title}' - {slot.QueryIntent}. Use {slot.SuggestedAggregation ?? "COUNT"}.";
-                }
-                else if (slot.Type == "chart")
-                {
-                    req += $"Generate SQL for {slot.ChartType.ToUpper()} chart '{slot.Title}' - {slot.QueryIntent}.";
-                }
-                else if (slot.Type == "table")
-                {
-                    req += $"Generate SQL for data table '{slot.Title}' - {slot.QueryIntent}. Include 5-8 relevant columns.";
-                }
-
-                componentRequirements.Add(req);
+                userSb.AppendLine($"  - Slot {slot.Slot}: {slot.Type.ToUpper()}");
             }
+            userSb.AppendLine();
 
-            return $@"
-You are a BI expert creating SQL queries for a dashboard.
+            // Section 5: Output Requirements
+            userSb.AppendLine("## OUTPUT REQUIREMENTS");
+            userSb.AppendLine();
+            userSb.AppendLine("For each slot, generate:");
+            userSb.AppendLine();
+            userSb.AppendLine("**For KPIs:**");
+            userSb.AppendLine("  - `title`: Descriptive title based on actual data (e.g., 'Total Test Executions')");
+            userSb.AppendLine("  - `description`: Brief explanation of what this KPI shows");
+            userSb.AppendLine("  - `queryText`: SQL query that returns a SINGLE numeric value");
+            userSb.AppendLine("  - `queryIntent`: Explanation of what the query measures");
+            userSb.AppendLine();
+            userSb.AppendLine("**For Charts:**");
+            userSb.AppendLine("  - `title`: Descriptive title based on actual data");
+            userSb.AppendLine("  - `description`: What insight this chart provides");
+            userSb.AppendLine("  - `chartType`: Choose the BEST type based on data pattern:");
+            userSb.AppendLine("      - `line`: For trends over time (requires date/datetime column)");
+            userSb.AppendLine("      - `bar`: For comparing categories or rankings");
+            userSb.AppendLine("      - `pie` or `donut`: For showing distribution/proportions (max 7 categories)");
+            userSb.AppendLine("      - `area`: For cumulative trends");
+            userSb.AppendLine("  - `queryText`: SQL query returning data suitable for the chart type");
+            userSb.AppendLine("  - `queryIntent`: Explanation of the visualization purpose");
+            userSb.AppendLine();
+            userSb.AppendLine("**For Tables:**");
+            userSb.AppendLine("  - `title`: Descriptive title");
+            userSb.AppendLine("  - `description`: What data this table shows");
+            userSb.AppendLine("  - `queryText`: SQL query returning 10-20 rows with relevant columns");
+            userSb.AppendLine("  - `queryIntent`: Explanation of what records are displayed");
+            userSb.AppendLine();
 
-# Database Schema
-{schema}
+            // Section 6: SQL Guidelines
+            userSb.AppendLine("## SQL QUERY GUIDELINES");
+            userSb.AppendLine();
+            userSb.AppendLine("1. **Column Aliasing:** Always use meaningful aliases (e.g., `COUNT(*) as TotalCount`)");
+            userSb.AppendLine("2. **Chart Queries:** Must return appropriate columns:");
+            userSb.AppendLine("   - Line/Area: `label` (date) and `value` (numeric)");
+            userSb.AppendLine("   - Bar: `category` and `value`");
+            userSb.AppendLine("   - Pie: `segment` and `value`");
+            userSb.AppendLine("3. **KPI Queries:** Return single value with alias");
+            userSb.AppendLine("4. **Table Queries:** Include ORDER BY and limit rows");
+            userSb.AppendLine();
 
-# Generate SQL for these {template.Components.Count} components:
-{string.Join("\n", componentRequirements)}
-
-# Response Format - SIMPLE JSON (no positions needed):
-{{
+            // Section 7: Response Format
+            userSb.AppendLine("## RESPONSE FORMAT");
+            userSb.AppendLine();
+            userSb.AppendLine("Respond with ONLY valid JSON (no markdown, no explanation):");
+            userSb.AppendLine();
+            userSb.AppendLine(@"{
+  ""dashboardTitle"": ""<Meaningful title based on data>"",
+  ""dashboardDescription"": ""<Description of what this dashboard shows>"",
   ""components"": [
-    {{
+    {
       ""slot"": 1,
-      ""title"": ""Exact title or improved title"",
-      ""description"": ""Brief description"",
-      ""queryText"": ""SELECT COUNT(*) as value FROM TableName"",
-      ""queryIntent"": ""What this shows""
-    }}
+      ""title"": ""<Component title>"",
+      ""description"": ""<Component description>"",
+      ""chartType"": ""<line|bar|pie|donut|area|null>"",
+      ""queryText"": ""<Valid SQL query>"",
+      ""queryIntent"": ""<What this component shows>""
+    }
   ]
-}}
+}");
 
-RULES:
-- Return exactly {template.Components.Count} components (slots 1-{template.Components.Count})
-- SQL must be valid and use actual tables/columns from schema
-- For KPIs: return single value with alias 'value'
-- For charts: return data suitable for visualization
-- For tables: SELECT relevant columns (5-8 max)
-- NO positions, NO layout info - just SQL!
-- Valid JSON only, no markdown
-";
+            string userPrompt = userSb.ToString();
+
+            return (systemPrompt, userPrompt);
         }
 
         /// <summary>
-        /// Parse LLM response and apply template positions
+        /// Returns database-specific SQL syntax guidance for the LLM.
         /// </summary>
-        private List<DashboardModel> ParseAndApplyTemplate(string llmResponse, int databaseId, DashboardTemplate template)
+        private string GetDbSyntaxGuidance(string databaseType)
+        {
+            var dbType = databaseType?.ToLower() ?? "sql server";
+
+            if (dbType.Contains("mysql"))
+            {
+                return @"**MySQL Syntax Rules - YOU MUST FOLLOW:**
+- Use `LIMIT N` to restrict rows (e.g., `SELECT * FROM table LIMIT 10`)
+- Use `DATE_FORMAT(date, '%Y-%m')` for date formatting
+- Use `NOW()` or `CURDATE()` for current date/time
+- Use `IFNULL(column, default)` for null handling
+- Use `CONCAT(str1, str2)` for string concatenation
+- Use `YEAR(date)`, `MONTH(date)`, `DAY(date)` for date parts
+- Use `DATEDIFF(date1, date2)` for date difference (returns days)
+- Boolean: Use `TRUE`/`FALSE` or `1`/`0`
+- DO NOT use: TOP, GETDATE(), ISNULL(), FORMAT()";
+            }
+            else if (dbType.Contains("oracle"))
+            {
+                return @"**Oracle Syntax Rules - YOU MUST FOLLOW:**
+- Use `FETCH FIRST N ROWS ONLY` to restrict rows
+- Or use `WHERE ROWNUM <= N` for older Oracle versions
+- Use `TO_CHAR(date, 'YYYY-MM')` for date formatting
+- Use `SYSDATE` for current date/time
+- Use `NVL(column, default)` for null handling
+- Use `||` for string concatenation
+- Use `EXTRACT(YEAR FROM date)` for date parts
+- Every SELECT must have FROM (use `FROM DUAL` for constants)
+- DO NOT use: TOP, LIMIT, GETDATE(), ISNULL(), DATE_FORMAT()";
+            }
+            else // Default: SQL Server
+            {
+                return @"**SQL Server Syntax Rules - YOU MUST FOLLOW:**
+- Use `TOP N` to restrict rows (e.g., `SELECT TOP 10 * FROM table`)
+- Use `FORMAT(date, 'yyyy-MM')` for date formatting
+- Use `GETDATE()` for current date/time
+- Use `ISNULL(column, default)` for null handling
+- Use `+` or `CONCAT()` for string concatenation
+- Use `YEAR(date)`, `MONTH(date)`, `DAY(date)` for date parts
+- Use `DATEDIFF(day, date1, date2)` for date difference
+- Boolean: Use `1`/`0` (no TRUE/FALSE)
+- DO NOT use: LIMIT, NOW(), IFNULL(), DATE_FORMAT(), NVL()";
+            }
+        }
+
+        #endregion
+
+        #region Response Parsing
+
+        /// <summary>
+        /// Parses the LLM response and builds a DashboardModel.
+        /// </summary>
+        private DashboardModel ParseAndBuildDashboard(string llmResponse, DashboardTemplate template, int databaseId)
         {
             try
             {
-                // Strip markdown code fences if present
-                string cleanJson = llmResponse.Trim();
+                // Clean response
+                string cleanJson = CleanLLMResponse(llmResponse);
 
-                // Remove ```json and ``` if present
-                if (cleanJson.StartsWith("```"))
-                {
-                    // Find the first newline after ```
-                    int firstNewline = cleanJson.IndexOf('\n');
-                    if (firstNewline > 0)
-                    {
-                        cleanJson = cleanJson.Substring(firstNewline + 1);
-                    }
-
-                    // Remove trailing ```
-                    if (cleanJson.EndsWith("```"))
-                    {
-                        cleanJson = cleanJson.Substring(0, cleanJson.LastIndexOf("```"));
-                    }
-
-                    cleanJson = cleanJson.Trim();
-                }
-
+                // Parse JSON
                 var jsonDoc = JsonDocument.Parse(cleanJson);
-                var componentsArray = jsonDoc.RootElement.GetProperty("components");
+                var root = jsonDoc.RootElement;
 
+                // Create dashboard
                 var dashboard = new DashboardModel
                 {
-                    Title = template.Name,
-                    Description = template.Description,
+                    Title = GetJsonString(root, "dashboardTitle") ?? template.Name,
+                    Description = GetJsonString(root, "dashboardDescription") ?? template.Description,
                     DatabaseID = databaseId,
-                    CategoryID = 1,
+                    CategoryID = GetCategoryId(template.Category),
                     CreatedAt = DateTime.UtcNow,
                     LastUpdated = DateTime.UtcNow,
                     IsAIGenerated = true,
@@ -388,52 +386,58 @@ RULES:
                     Components = new List<DashboardComponent>()
                 };
 
-                // Map LLM components to template
-                foreach (var llmComp in componentsArray.EnumerateArray())
+                // Parse components
+                if (root.TryGetProperty("components", out var componentsArray))
                 {
-                    int slot = llmComp.GetProperty("slot").GetInt32();
-
-                    // Find matching template slot
-                    var templateSlot = template.Components.FirstOrDefault(s => s.Slot == slot);
-                    if (templateSlot == null) continue;
-
-                    var component = new DashboardComponent
+                    foreach (var llmComp in componentsArray.EnumerateArray())
                     {
-                        ComponentID = slot,
-                        Title = GetJsonString(llmComp, "title") ?? templateSlot.Title,
-                        Description = GetJsonString(llmComp, "description") ?? templateSlot.Description,
-                        QueryText = GetJsonString(llmComp, "queryText"),
-                        QueryIntent = GetJsonString(llmComp, "queryIntent") ?? templateSlot.QueryIntent,
+                        int slot = llmComp.GetProperty("slot").GetInt32();
 
-                        // Data viewing type from template
-                        DataViewingTypeID = DashboardTemplateHelper.GetDataViewingTypeFromSlotType(templateSlot.Type),
+                        // Find matching template slot for position
+                        var templateSlot = template.Components.FirstOrDefault(s => s.Slot == slot);
+                        if (templateSlot == null) continue;
 
-                        // POSITIONS FROM TEMPLATE - Simple copy!
-                        GridX = templateSlot.GridX,
-                        GridY = templateSlot.GridY,
-                        GridWidth = templateSlot.GridWidth,
-                        GridHeight = templateSlot.GridHeight,
+                        // Get chart type from LLM response
+                        string chartType = GetJsonString(llmComp, "chartType");
 
-                        FilterExpression = "", // No filter by default
-                        RefreshInterval = 0, // No auto-refresh by default
+                        var component = new DashboardComponent
+                        {
+                            ComponentID = slot,
 
-                        IsAIGenerated = true,
-                        IsValidated = false,
-                        IsVisible = true,
-                        CreatedAt = DateTime.UtcNow,
-                        LastUpdated = DateTime.UtcNow
-                    };
+                            // Content from LLM
+                            Title = GetJsonString(llmComp, "title") ?? $"Component {slot}",
+                            Description = GetJsonString(llmComp, "description") ?? "",
+                            QueryText = GetJsonString(llmComp, "queryText") ?? "",
+                            QueryIntent = GetJsonString(llmComp, "queryIntent") ?? "",
+                            ChartType = chartType,
 
-                    // Add visualization config from template
-                    if (templateSlot.ChartType != null)
-                    {
-                        component.VisualizationConfig = JsonSerializer.Serialize(new { chartType = templateSlot.ChartType });
+                            // Type from template
+                            DataViewingTypeID = GetDataViewingTypeId(templateSlot.Type),
+
+                            // Position from template
+                            GridX = templateSlot.GridX,
+                            GridY = templateSlot.GridY,
+                            GridWidth = templateSlot.GridWidth,
+                            GridHeight = templateSlot.GridHeight,
+
+                            // Visualization config
+                            VisualizationConfig = BuildVisualizationConfig(templateSlot.Type, chartType),
+
+                            // Default values
+                            FilterExpression = "",
+                            RefreshInterval = 0,
+                            IsAIGenerated = true,
+                            IsValidated = false,
+                            IsVisible = true,
+                            CreatedAt = DateTime.UtcNow,
+                            LastUpdated = DateTime.UtcNow
+                        };
+
+                        dashboard.Components.Add(component);
                     }
-
-                    dashboard.Components.Add(component);
                 }
 
-                return new List<DashboardModel> { dashboard };
+                return dashboard;
             }
             catch (JsonException ex)
             {
@@ -441,11 +445,210 @@ RULES:
             }
         }
 
+        /// <summary>
+        /// Cleans LLM response by removing markdown code fences.
+        /// </summary>
+        private string CleanLLMResponse(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+            {
+                throw new ArgumentException("LLM response is empty.");
+            }
+
+            string cleanJson = response.Trim();
+
+            // Remove ```json and ``` if present
+            if (cleanJson.StartsWith("```"))
+            {
+                int firstNewline = cleanJson.IndexOf('\n');
+                if (firstNewline > 0)
+                {
+                    cleanJson = cleanJson.Substring(firstNewline + 1);
+                }
+
+                if (cleanJson.EndsWith("```"))
+                {
+                    cleanJson = cleanJson.Substring(0, cleanJson.LastIndexOf("```"));
+                }
+
+                cleanJson = cleanJson.Trim();
+            }
+
+            return cleanJson;
+        }
+
+        /// <summary>
+        /// Generates suggested questions based on database schema
+        /// </summary>
+        public async Task<List<string>> GenerateSuggestedQuestionsAsync(int databaseId)
+        {
+            try
+            {
+                // Get schema
+                var schemaObj = await _schemaService.GetSchemaObject(databaseId);
+                if (schemaObj == null)
+                    return new List<string>();
+
+                string schema = _schemaService.BuildOptimizedSchemaString(schemaObj);
+
+                // Build prompt
+                string prompt = $@"Based on this database schema, suggest exactly 20 business questions a user might want to visualize in a dashboard chart.
+
+Schema:
+{schema}
+
+Rules:
+- Questions should be practical and business-focused
+- Include a mix of: totals, trends over time, comparisons, rankings, distributions
+- Keep questions short and clear (under 15 words each)
+- Return ONLY a JSON array of strings, no markdown, no explanation
+
+Example format:
+[""Show total sales by month"", ""Top 10 customers by revenue"", ""Order status distribution""]";
+
+                var response = await _llmService.GenerateSchemaAnalysisAsync(prompt);
+
+                // Clean response and parse JSON
+                string cleanJson = response.Trim();
+                if (cleanJson.StartsWith("```"))
+                {
+                    int start = cleanJson.IndexOf('[');
+                    int end = cleanJson.LastIndexOf(']') + 1;
+                    if (start >= 0 && end > start)
+                    {
+                        cleanJson = cleanJson.Substring(start, end - start);
+                    }
+                }
+
+                var questions = JsonSerializer.Deserialize<List<string>>(cleanJson);
+                return questions ?? new List<string>();
+            }
+            catch (Exception)
+            {
+                // Return empty list on error
+                return new List<string>();
+            }
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private int GetDataViewingTypeId(string slotType)
+        {
+            return slotType?.ToLower() switch
+            {
+                "kpi" => (int)DataViewingTypeEnum.Number,
+                "chart" => (int)DataViewingTypeEnum.Chart,
+                "table" => (int)DataViewingTypeEnum.Table,
+                "card" => (int)DataViewingTypeEnum.Card,
+                "label" => (int)DataViewingTypeEnum.Label,
+                _ => (int)DataViewingTypeEnum.Chart
+            };
+        }
+
+        private string BuildVisualizationConfig(string slotType, string chartType)
+        {
+            if (slotType?.ToLower() == "chart" && !string.IsNullOrEmpty(chartType))
+            {
+                return JsonSerializer.Serialize(new { chartType = chartType.ToLower() });
+            }
+            return "{}";
+        }
+
+        private int GetCategoryId(string category)
+        {
+            return category?.ToLower() switch
+            {
+                "executive" => 1,
+                "operations" => 2,
+                "finance" => 3,
+                "analytics" => 4,
+                "performance" => 5,
+                "sales" => 6,
+                "basic" => 7,
+                _ => 1
+            };
+        }
+
         private string GetJsonString(JsonElement element, string propertyName)
         {
-            return element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String
-                ? prop.GetString()
-                : null;
+            if (element.TryGetProperty(propertyName, out var prop))
+            {
+                if (prop.ValueKind == JsonValueKind.String)
+                    return prop.GetString();
+                if (prop.ValueKind == JsonValueKind.Null)
+                    return null;
+            }
+            return null;
         }
+
+        #endregion
+
+        #region Mock Data
+
+        /// <summary>
+        /// Returns mock LLM response for testing without actual LLM calls.
+        /// </summary>
+        private string GetMockLLMResponse(DashboardTemplate template)
+        {
+            var components = new List<object>();
+
+            foreach (var slot in template.Components.OrderBy(c => c.Slot))
+            {
+                object comp = slot.Type.ToLower() switch
+                {
+                    "kpi" => new
+                    {
+                        slot = slot.Slot,
+                        title = $"KPI Metric {slot.Slot}",
+                        description = $"Key performance indicator {slot.Slot}",
+                        chartType = (string)null,
+                        queryText = "SELECT COUNT(*) as Value FROM TestAutomationJobs",
+                        queryIntent = "Shows total count of records"
+                    },
+                    "chart" => new
+                    {
+                        slot = slot.Slot,
+                        title = $"Chart {slot.Slot}",
+                        description = $"Visualization {slot.Slot}",
+                        chartType = slot.Slot % 3 == 0 ? "pie" : slot.Slot % 2 == 0 ? "bar" : "line",
+                        queryText = "SELECT FORMAT(ExecutedAt, 'yyyy-MM') as label, COUNT(*) as value FROM TestAutomationJobs GROUP BY FORMAT(ExecutedAt, 'yyyy-MM')",
+                        queryIntent = "Shows trend over time"
+                    },
+                    "table" => new
+                    {
+                        slot = slot.Slot,
+                        title = "Recent Records",
+                        description = "Latest data entries",
+                        chartType = (string)null,
+                        queryText = "SELECT TOP 15 * FROM TestAutomationJobs ORDER BY ExecutedAt DESC",
+                        queryIntent = "Shows recent records"
+                    },
+                    _ => new
+                    {
+                        slot = slot.Slot,
+                        title = $"Component {slot.Slot}",
+                        description = "Auto-generated component",
+                        chartType = (string)null,
+                        queryText = "SELECT 1",
+                        queryIntent = "Placeholder"
+                    }
+                };
+
+                components.Add(comp);
+            }
+
+            var response = new
+            {
+                dashboardTitle = $"{template.Name} - Generated",
+                dashboardDescription = template.Description,
+                components = components
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+
+        #endregion
     }
 }

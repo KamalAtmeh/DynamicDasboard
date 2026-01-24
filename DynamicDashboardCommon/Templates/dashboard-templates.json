@@ -3,291 +3,788 @@
     {
       "id": "executive-standard",
       "name": "Executive Dashboard",
-      "description": "Standard executive dashboard with KPIs, trend analysis, category comparisons, and detailed data table",
+      "description": "Strategic overview for C-level executives with high-level KPIs, trends, and summary insights",
       "category": "Executive",
       "thumbnailUrl": "/images/templates/executive-standard.png",
       "totalHeight": 15,
+      "aiGuidance": {
+        "targetAudience": "C-level executives, board members, senior leadership who need strategic overview without operational details",
+        "focusAreas": [
+          "Overall business performance and totals",
+          "Growth rates and percentages",
+          "Trend analysis (monthly/quarterly)",
+          "Top performers and rankings",
+          "Summary distributions",
+          "Key performance indicators"
+        ],
+        "timeGranularity": [
+          "monthly",
+          "quarterly",
+          "yearly"
+        ],
+        "avoidPatterns": [
+          "Granular daily or hourly data",
+          "Individual transaction details",
+          "Technical or operational metrics",
+          "Complex queries with many joins"
+        ],
+        "additionalGuidance": "Focus on business outcomes executives care about. Use aggregations (SUM, COUNT, AVG). Show percentages for performance metrics. Include trend comparisons where date columns exist. Keep insights high-level and strategic. Executives want to see the big picture at a glance."
+      },
       "components": [
         {
           "slot": 1,
           "type": "kpi",
-          "title": "Total Records",
-          "description": "Total count of records",
           "gridX": 0,
           "gridY": 0,
-          "gridWidth": 4,
-          "gridHeight": 2,
-          "queryIntent": "Count total number of records",
-          "suggestedAggregation": "COUNT"
+          "gridWidth": 3,
+          "gridHeight": 2
         },
         {
           "slot": 2,
           "type": "kpi",
-          "title": "Primary Metric",
-          "description": "Key performance indicator",
-          "gridX": 4,
+          "gridX": 3,
           "gridY": 0,
-          "gridWidth": 4,
-          "gridHeight": 2,
-          "queryIntent": "Calculate primary metric value",
-          "suggestedAggregation": "SUM"
+          "gridWidth": 3,
+          "gridHeight": 2
         },
         {
           "slot": 3,
           "type": "kpi",
-          "title": "Status Indicator",
-          "description": "Current status percentage",
-          "gridX": 8,
+          "gridX": 6,
           "gridY": 0,
-          "gridWidth": 4,
-          "gridHeight": 2,
-          "queryIntent": "Show status as percentage",
-          "suggestedAggregation": "PERCENTAGE"
+          "gridWidth": 3,
+          "gridHeight": 2
         },
         {
           "slot": 4,
-          "type": "chart",
-          "chartType": "line",
-          "title": "Trend Over Time",
-          "description": "Historical trend analysis",
-          "gridX": 0,
-          "gridY": 2,
-          "gridWidth": 12,
-          "gridHeight": 4,
-          "queryIntent": "Show trend over time period"
+          "type": "kpi",
+          "gridX": 9,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
         },
         {
           "slot": 5,
           "type": "chart",
-          "chartType": "bar",
-          "title": "Category Breakdown",
-          "description": "Comparison across categories",
           "gridX": 0,
-          "gridY": 6,
-          "gridWidth": 6,
-          "gridHeight": 4,
-          "queryIntent": "Compare values across different categories"
+          "gridY": 2,
+          "gridWidth": 8,
+          "gridHeight": 4
         },
         {
           "slot": 6,
           "type": "chart",
-          "chartType": "pie",
-          "title": "Distribution Analysis",
-          "description": "Proportion of different segments",
-          "gridX": 6,
-          "gridY": 6,
-          "gridWidth": 6,
-          "gridHeight": 4,
-          "queryIntent": "Show distribution of segments as percentages"
+          "gridX": 8,
+          "gridY": 2,
+          "gridWidth": 4,
+          "gridHeight": 4
         },
         {
           "slot": 7,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 8,
+          "type": "chart",
+          "gridX": 6,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 9,
           "type": "table",
-          "title": "Detailed Records",
-          "description": "Paginated list of records",
           "gridX": 0,
           "gridY": 10,
           "gridWidth": 12,
-          "gridHeight": 5,
-          "queryIntent": "Show detailed records with key columns"
+          "gridHeight": 5
         }
       ]
     },
     {
       "id": "operational-dashboard",
       "name": "Operational Dashboard",
-      "description": "Operational metrics with performance tracking and status monitoring",
+      "description": "Real-time operational metrics for day-to-day monitoring and management",
       "category": "Operations",
       "thumbnailUrl": "/images/templates/operational-dashboard.png",
       "totalHeight": 14,
+      "aiGuidance": {
+        "targetAudience": "Operations managers, team leads, supervisors who need real-time visibility into daily operations",
+        "focusAreas": [
+          "Current status and active items",
+          "Today's activity and counts",
+          "Pending items and backlogs",
+          "Processing efficiency",
+          "Status distributions",
+          "Recent activity monitoring"
+        ],
+        "timeGranularity": [
+          "hourly",
+          "daily",
+          "weekly"
+        ],
+        "avoidPatterns": [
+          "Long-term yearly trends",
+          "High-level strategic summaries",
+          "Complex financial calculations",
+          "Historical data older than 30 days"
+        ],
+        "additionalGuidance": "Focus on actionable, real-time data. Operations teams need to see what is happening NOW. Include today's counts, active items, pending work. Use date filters for current day/week. Show status breakdowns prominently. Highlight items needing attention."
+      },
       "components": [
         {
           "slot": 1,
           "type": "kpi",
-          "title": "Active Items",
-          "description": "Current active count",
           "gridX": 0,
           "gridY": 0,
           "gridWidth": 3,
-          "gridHeight": 2,
-          "queryIntent": "Count active items",
-          "suggestedAggregation": "COUNT"
+          "gridHeight": 2
         },
         {
           "slot": 2,
           "type": "kpi",
-          "title": "Completion Rate",
-          "description": "Percentage completed",
           "gridX": 3,
           "gridY": 0,
           "gridWidth": 3,
-          "gridHeight": 2,
-          "queryIntent": "Calculate completion percentage",
-          "suggestedAggregation": "PERCENTAGE"
+          "gridHeight": 2
         },
         {
           "slot": 3,
           "type": "kpi",
-          "title": "Average Processing Time",
-          "description": "Mean time to process",
           "gridX": 6,
           "gridY": 0,
           "gridWidth": 3,
-          "gridHeight": 2,
-          "queryIntent": "Calculate average processing time",
-          "suggestedAggregation": "AVG"
+          "gridHeight": 2
         },
         {
           "slot": 4,
           "type": "kpi",
-          "title": "Pending Items",
-          "description": "Items awaiting action",
           "gridX": 9,
           "gridY": 0,
           "gridWidth": 3,
-          "gridHeight": 2,
-          "queryIntent": "Count pending items",
-          "suggestedAggregation": "COUNT"
+          "gridHeight": 2
         },
         {
           "slot": 5,
           "type": "chart",
-          "chartType": "bar",
-          "title": "Performance by Category",
-          "description": "Performance metrics breakdown",
           "gridX": 0,
           "gridY": 2,
-          "gridWidth": 8,
-          "gridHeight": 4,
-          "queryIntent": "Show performance metrics by category"
+          "gridWidth": 6,
+          "gridHeight": 4
         },
         {
           "slot": 6,
           "type": "chart",
-          "chartType": "pie",
-          "title": "Status Distribution",
-          "description": "Current status breakdown",
-          "gridX": 8,
+          "gridX": 6,
           "gridY": 2,
-          "gridWidth": 4,
-          "gridHeight": 4,
-          "queryIntent": "Show distribution of status types"
+          "gridWidth": 6,
+          "gridHeight": 4
         },
         {
           "slot": 7,
           "type": "chart",
-          "chartType": "line",
-          "title": "Daily Activity Trend",
-          "description": "Activity over time",
           "gridX": 0,
           "gridY": 6,
-          "gridWidth": 12,
-          "gridHeight": 4,
-          "queryIntent": "Show daily activity trend over time"
+          "gridWidth": 4,
+          "gridHeight": 4
         },
         {
           "slot": 8,
+          "type": "chart",
+          "gridX": 4,
+          "gridY": 6,
+          "gridWidth": 8,
+          "gridHeight": 4
+        },
+        {
+          "slot": 9,
           "type": "table",
-          "title": "Recent Activities",
-          "description": "Latest activity records",
           "gridX": 0,
           "gridY": 10,
           "gridWidth": 12,
-          "gridHeight": 4,
-          "queryIntent": "Show recent activity records"
+          "gridHeight": 4
         }
       ]
     },
     {
       "id": "financial-dashboard",
       "name": "Financial Dashboard",
-      "description": "Financial metrics with revenue tracking and cost analysis",
+      "description": "Financial metrics with revenue tracking, cost analysis, and monetary insights",
       "category": "Finance",
       "thumbnailUrl": "/images/templates/financial-dashboard.png",
       "totalHeight": 15,
+      "aiGuidance": {
+        "targetAudience": "Finance managers, CFOs, accountants, budget owners who need financial visibility and monetary tracking",
+        "focusAreas": [
+          "Revenue and income totals",
+          "Cost and expense tracking",
+          "Monetary value trends",
+          "Average transaction values",
+          "Financial distributions by category",
+          "Top items by monetary value"
+        ],
+        "timeGranularity": [
+          "monthly",
+          "quarterly",
+          "yearly"
+        ],
+        "avoidPatterns": [
+          "Non-monetary operational metrics",
+          "Technical system details",
+          "Granular transaction-level data without aggregation"
+        ],
+        "additionalGuidance": "Prioritize monetary values and financial metrics. Look for columns with amounts, prices, costs, values, or currency. Use SUM for totals, AVG for averages. Show trends over time for monetary values. If monetary columns exist, prioritize them for KPIs and charts."
+      },
       "components": [
         {
           "slot": 1,
           "type": "kpi",
-          "title": "Total Revenue",
-          "description": "Total revenue amount",
           "gridX": 0,
           "gridY": 0,
           "gridWidth": 4,
-          "gridHeight": 2,
-          "queryIntent": "Calculate total revenue",
-          "suggestedAggregation": "SUM"
+          "gridHeight": 2
         },
         {
           "slot": 2,
           "type": "kpi",
-          "title": "Total Cost",
-          "description": "Total cost amount",
           "gridX": 4,
           "gridY": 0,
           "gridWidth": 4,
-          "gridHeight": 2,
-          "queryIntent": "Calculate total cost",
-          "suggestedAggregation": "SUM"
+          "gridHeight": 2
         },
         {
           "slot": 3,
           "type": "kpi",
-          "title": "Net Profit",
-          "description": "Net profit amount",
           "gridX": 8,
           "gridY": 0,
           "gridWidth": 4,
-          "gridHeight": 2,
-          "queryIntent": "Calculate net profit (revenue minus cost)",
-          "suggestedAggregation": "SUM"
+          "gridHeight": 2
         },
         {
           "slot": 4,
           "type": "chart",
-          "chartType": "line",
-          "title": "Revenue Trend",
-          "description": "Revenue over time",
           "gridX": 0,
           "gridY": 2,
-          "gridWidth": 12,
-          "gridHeight": 4,
-          "queryIntent": "Show revenue trend over time"
+          "gridWidth": 8,
+          "gridHeight": 4
         },
         {
           "slot": 5,
           "type": "chart",
-          "chartType": "bar",
-          "title": "Revenue by Category",
-          "description": "Revenue breakdown",
-          "gridX": 0,
-          "gridY": 6,
-          "gridWidth": 6,
-          "gridHeight": 4,
-          "queryIntent": "Show revenue by category"
+          "gridX": 8,
+          "gridY": 2,
+          "gridWidth": 4,
+          "gridHeight": 4
         },
         {
           "slot": 6,
           "type": "chart",
-          "chartType": "pie",
-          "title": "Cost Distribution",
-          "description": "Cost allocation",
-          "gridX": 6,
+          "gridX": 0,
           "gridY": 6,
           "gridWidth": 6,
-          "gridHeight": 4,
-          "queryIntent": "Show cost distribution by type"
+          "gridHeight": 4
         },
         {
           "slot": 7,
+          "type": "chart",
+          "gridX": 6,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 8,
           "type": "table",
-          "title": "Financial Transactions",
-          "description": "Recent financial records",
           "gridX": 0,
           "gridY": 10,
           "gridWidth": 12,
-          "gridHeight": 5,
-          "queryIntent": "Show recent financial transactions"
+          "gridHeight": 5
+        }
+      ]
+    },
+    {
+      "id": "analytics-dashboard",
+      "name": "Analytics Dashboard",
+      "description": "Deep-dive analytics with detailed breakdowns, patterns, and comparative analysis",
+      "category": "Analytics",
+      "thumbnailUrl": "/images/templates/analytics-dashboard.png",
+      "totalHeight": 16,
+      "aiGuidance": {
+        "targetAudience": "Data analysts, business analysts, product managers who need detailed insights, patterns, and segment analysis",
+        "focusAreas": [
+          "Detailed data breakdowns",
+          "Pattern identification",
+          "Comparative analysis across segments",
+          "Statistical measures (count, avg, min, max)",
+          "Distinct counts and unique values",
+          "Multi-dimensional analysis"
+        ],
+        "timeGranularity": [
+          "daily",
+          "weekly",
+          "monthly"
+        ],
+        "avoidPatterns": [
+          "Over-simplified single-number summaries",
+          "Missing dimensional breakdowns",
+          "Lack of comparative context"
+        ],
+        "additionalGuidance": "Analysts need depth and detail. Include multiple dimensions where possible. Show comparisons across categories. Include both totals and breakdowns. Use COUNT DISTINCT for unique counts. Show patterns and segment distributions. More data points are welcome."
+      },
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "gridX": 3,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "gridX": 6,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 4,
+          "type": "kpi",
+          "gridX": 9,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 5,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 12,
+          "gridHeight": 4
+        },
+        {
+          "slot": 6,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 7,
+          "type": "chart",
+          "gridX": 6,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 8,
+          "type": "table",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 6
+        }
+      ]
+    },
+    {
+      "id": "performance-dashboard",
+      "name": "Performance Dashboard",
+      "description": "Performance tracking with scores, ratings, success rates, and quality metrics",
+      "category": "Performance",
+      "thumbnailUrl": "/images/templates/performance-dashboard.png",
+      "totalHeight": 14,
+      "aiGuidance": {
+        "targetAudience": "Quality managers, team leads, HR managers, anyone tracking performance scores and success metrics",
+        "focusAreas": [
+          "Performance scores and ratings",
+          "Success and failure rates",
+          "Pass/fail distributions",
+          "Average scores and benchmarks",
+          "Top and bottom performers",
+          "Performance trends over time"
+        ],
+        "timeGranularity": [
+          "daily",
+          "weekly",
+          "monthly"
+        ],
+        "avoidPatterns": [
+          "Raw data without performance context",
+          "Missing success/failure categorization",
+          "Unlabeled or unclear metrics"
+        ],
+        "additionalGuidance": "Focus on scores, ratings, and success metrics. Look for columns with scores, percentages, boolean success/failure indicators, or status columns indicating pass/fail. Calculate success rates as percentages. Show top performers and trends. Compare performance across groups."
+      },
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "gridX": 3,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "gridX": 6,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 4,
+          "type": "kpi",
+          "gridX": 9,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 5,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 8,
+          "gridHeight": 4
+        },
+        {
+          "slot": 6,
+          "type": "chart",
+          "gridX": 8,
+          "gridY": 2,
+          "gridWidth": 4,
+          "gridHeight": 4
+        },
+        {
+          "slot": 7,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 8,
+          "type": "chart",
+          "gridX": 6,
+          "gridY": 6,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 9,
+          "type": "table",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 4
+        }
+      ]
+    },
+    {
+      "id": "sales-dashboard",
+      "name": "Sales Dashboard",
+      "description": "Sales performance tracking with pipeline, conversion rates, and revenue by segments",
+      "category": "Sales",
+      "thumbnailUrl": "/images/templates/sales-dashboard.png",
+      "totalHeight": 14,
+      "aiGuidance": {
+        "targetAudience": "Sales managers, sales representatives, business development teams tracking sales performance",
+        "focusAreas": [
+          "Total sales and revenue",
+          "Sales counts and volumes",
+          "Conversion rates",
+          "Sales by product/region/category",
+          "Top customers or products",
+          "Sales trends over time"
+        ],
+        "timeGranularity": [
+          "daily",
+          "weekly",
+          "monthly"
+        ],
+        "avoidPatterns": [
+          "Technical operational metrics",
+          "Non-sales related data",
+          "Complex financial accounting details"
+        ],
+        "additionalGuidance": "Focus on sales metrics. Look for columns related to sales amounts, order counts, customer information, products, regions. Show revenue totals, transaction counts, and trends. Identify top performers (customers, products, regions). Calculate conversion rates if applicable."
+      },
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "gridX": 3,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "gridX": 6,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 4,
+          "type": "kpi",
+          "gridX": 9,
+          "gridY": 0,
+          "gridWidth": 3,
+          "gridHeight": 2
+        },
+        {
+          "slot": 5,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 7,
+          "gridHeight": 4
+        },
+        {
+          "slot": 6,
+          "type": "chart",
+          "gridX": 7,
+          "gridY": 2,
+          "gridWidth": 5,
+          "gridHeight": 4
+        },
+        {
+          "slot": 7,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 12,
+          "gridHeight": 4
+        },
+        {
+          "slot": 8,
+          "type": "table",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 4
+        }
+      ]
+    },
+    {
+      "id": "simple-overview",
+      "name": "Simple Overview",
+      "description": "Minimal dashboard with essential KPIs and one main visualization",
+      "category": "Basic",
+      "thumbnailUrl": "/images/templates/simple-overview.png",
+      "totalHeight": 8,
+      "aiGuidance": {
+        "targetAudience": "Anyone needing a quick, simple overview without complexity",
+        "focusAreas": [
+          "Key totals and counts",
+          "One primary percentage or rate",
+          "One main visualization"
+        ],
+        "timeGranularity": [
+          "monthly"
+        ],
+        "avoidPatterns": [
+          "Complex multi-dimensional analysis",
+          "Multiple chart types",
+          "Detailed breakdowns"
+        ],
+        "additionalGuidance": "Keep it simple. Only essential metrics. One chart that tells the main story. This is for users who want a quick snapshot, not detailed analysis. Maximum clarity with minimum complexity."
+      },
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "gridX": 4,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "gridX": 8,
+          "gridY": 0,
+          "gridWidth": 4,
+          "gridHeight": 2
+        },
+        {
+          "slot": 4,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 12,
+          "gridHeight": 6
+        }
+      ]
+    },
+    {
+      "id": "detailed-analysis",
+      "name": "Detailed Analysis",
+      "description": "Comprehensive dashboard with extensive charts and large data table",
+      "category": "Analytics",
+      "thumbnailUrl": "/images/templates/detailed-analysis.png",
+      "totalHeight": 18,
+      "aiGuidance": {
+        "targetAudience": "Analysts and managers who need comprehensive data visibility with multiple perspectives",
+        "focusAreas": [
+          "Multiple KPI metrics",
+          "Various chart types for different insights",
+          "Comprehensive data table",
+          "Trend analysis",
+          "Category breakdowns",
+          "Distribution analysis"
+        ],
+        "timeGranularity": [
+          "daily",
+          "weekly",
+          "monthly"
+        ],
+        "avoidPatterns": [
+          "Oversimplification",
+          "Missing important dimensions"
+        ],
+        "additionalGuidance": "This template is for comprehensive analysis. Use all available data dimensions. Include multiple chart types to show different perspectives. The large table should include many relevant columns. Show both aggregated and detailed views."
+      },
+      "components": [
+        {
+          "slot": 1,
+          "type": "kpi",
+          "gridX": 0,
+          "gridY": 0,
+          "gridWidth": 2,
+          "gridHeight": 2
+        },
+        {
+          "slot": 2,
+          "type": "kpi",
+          "gridX": 2,
+          "gridY": 0,
+          "gridWidth": 2,
+          "gridHeight": 2
+        },
+        {
+          "slot": 3,
+          "type": "kpi",
+          "gridX": 4,
+          "gridY": 0,
+          "gridWidth": 2,
+          "gridHeight": 2
+        },
+        {
+          "slot": 4,
+          "type": "kpi",
+          "gridX": 6,
+          "gridY": 0,
+          "gridWidth": 2,
+          "gridHeight": 2
+        },
+        {
+          "slot": 5,
+          "type": "kpi",
+          "gridX": 8,
+          "gridY": 0,
+          "gridWidth": 2,
+          "gridHeight": 2
+        },
+        {
+          "slot": 6,
+          "type": "kpi",
+          "gridX": 10,
+          "gridY": 0,
+          "gridWidth": 2,
+          "gridHeight": 2
+        },
+        {
+          "slot": 7,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 2,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 8,
+          "type": "chart",
+          "gridX": 6,
+          "gridY": 2,
+          "gridWidth": 6,
+          "gridHeight": 4
+        },
+        {
+          "slot": 9,
+          "type": "chart",
+          "gridX": 0,
+          "gridY": 6,
+          "gridWidth": 4,
+          "gridHeight": 4
+        },
+        {
+          "slot": 10,
+          "type": "chart",
+          "gridX": 4,
+          "gridY": 6,
+          "gridWidth": 4,
+          "gridHeight": 4
+        },
+        {
+          "slot": 11,
+          "type": "chart",
+          "gridX": 8,
+          "gridY": 6,
+          "gridWidth": 4,
+          "gridHeight": 4
+        },
+        {
+          "slot": 12,
+          "type": "table",
+          "gridX": 0,
+          "gridY": 10,
+          "gridWidth": 12,
+          "gridHeight": 8
         }
       ]
     }

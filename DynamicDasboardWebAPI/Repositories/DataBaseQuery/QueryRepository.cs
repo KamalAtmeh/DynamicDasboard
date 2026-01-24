@@ -59,7 +59,7 @@ namespace DynamicDasboardWebAPI.Repositories
                     return new List<Dictionary<string, object>>();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 throw;
             }

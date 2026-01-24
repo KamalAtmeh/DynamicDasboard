@@ -6,9 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicDashboardCommon.Models;
-using DynamicDashboardCommon.Helpers;
+
 using System.IO;
 using DynamicDasboardWebAPI.Services.LLM;
+using DynamicDashboardCommon.Helper;
 
 namespace DynamicDasboardWebAPI.Controllers
 {
@@ -224,6 +225,23 @@ namespace DynamicDasboardWebAPI.Controllers
                     error = ex.Message,  // ⚠️ Remove this in production
                     timestamp = DateTime.UtcNow
                 });
+            }
+        }
+
+        /// <summary>
+        /// Suggests questions based on database schema
+        /// </summary>
+        [HttpGet("suggest-questions/{databaseId}")]
+        public async Task<IActionResult> SuggestQuestions(int databaseId)
+        {
+            try
+            {
+                var questions = await _dashboardGenerationService.GenerateSuggestedQuestionsAsync(databaseId);
+                return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, EnumLoggingType.Error.ToString());
             }
         }
 

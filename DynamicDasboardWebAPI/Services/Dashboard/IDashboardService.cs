@@ -67,5 +67,7 @@ namespace DynamicDasboardWebAPI.Services
         /// <param name="databaseId">The database ID to analyze.</param>
         /// <returns>A list of suggested dashboards.</returns>
         Task<List<DashboardModel>> GenerateDashboardSuggestionsAsync(int databaseId);
+
+
     }
 }
