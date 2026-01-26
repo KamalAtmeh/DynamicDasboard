@@ -13,3 +13,4 @@ obj/
 /test/            # If test/ is a local test folder
 
 /.vs/DynamicDasboardWebAPI/FileContentIndex
+/SQLDATA
